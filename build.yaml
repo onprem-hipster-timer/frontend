@@ -1,0 +1,23 @@
+/// Build Runner 설정
+/// 이 파일은 코드 생성 도구의 동작을 제어합니다.
+
+const Map<String, dynamic> buildConfig = {
+  'targets': {
+    r'$default': {
+      'builders': {
+        'riverpod_generator': {
+          'options': {
+            'custom_class_name': true,
+          },
+        },
+        'freezed': {
+          'options': {
+            'map': true,
+            'equals': true,
+            'copy_with': true,
+          },
+        },
+      },
+    },
+  },
+};
