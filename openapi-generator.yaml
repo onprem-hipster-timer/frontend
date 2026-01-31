@@ -1,0 +1,13 @@
+# openapi-generator.yaml
+generatorName: dart-dio
+
+inputSpec: ./lib/openapi/openapi.json
+outputDir: ./lib/shared/api/generated
+
+additionalProperties:
+  pubName: momeet_api
+  pubVersion: 1.0.0
+  useEnumExtension: true
+  legacyDiscriminatorBehavior: false
+  dateLibrary: core
+  nullableFields: true

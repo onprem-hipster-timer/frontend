@@ -20,10 +20,8 @@ dependencies:
 
   # HTTP Client
   dio: ^5.9.1
-
-  # OpenAPI Client
-  openapi_client:
-    path: ./lib/shared/api/generated
+  momeet_api:
+    path: lib/shared/api/generated
 
   # Routing
   go_router: ^17.0.1
