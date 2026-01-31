@@ -1,0 +1,91 @@
+import 'package:test/test.dart';
+import 'package:openapi_client/openapi_client.dart';
+
+// tests for ScheduleRead
+void main() {
+  final instance = ScheduleReadBuilder();
+  // TODO add properties to the builder and call build()
+
+  group(ScheduleRead, () {
+    // String id
+    test('to test the property `id`', () async {
+      // TODO
+    });
+
+    // String title
+    test('to test the property `title`', () async {
+      // TODO
+    });
+
+    // String description
+    test('to test the property `description`', () async {
+      // TODO
+    });
+
+    // DateTime startTime
+    test('to test the property `startTime`', () async {
+      // TODO
+    });
+
+    // DateTime endTime
+    test('to test the property `endTime`', () async {
+      // TODO
+    });
+
+    // String recurrenceRule
+    test('to test the property `recurrenceRule`', () async {
+      // TODO
+    });
+
+    // DateTime recurrenceEnd
+    test('to test the property `recurrenceEnd`', () async {
+      // TODO
+    });
+
+    // String parentId
+    test('to test the property `parentId`', () async {
+      // TODO
+    });
+
+    // String tagGroupId
+    test('to test the property `tagGroupId`', () async {
+      // TODO
+    });
+
+    // String sourceTodoId
+    test('to test the property `sourceTodoId`', () async {
+      // TODO
+    });
+
+    // ScheduleState state
+    test('to test the property `state`', () async {
+      // TODO
+    });
+
+    // DateTime createdAt
+    test('to test the property `createdAt`', () async {
+      // TODO
+    });
+
+    // BuiltList<TagRead> tags (default value: ListBuilder())
+    test('to test the property `tags`', () async {
+      // TODO
+    });
+
+    // String ownerId
+    test('to test the property `ownerId`', () async {
+      // TODO
+    });
+
+    // VisibilityLevel visibilityLevel
+    test('to test the property `visibilityLevel`', () async {
+      // TODO
+    });
+
+    // bool isShared (default value: false)
+    test('to test the property `isShared`', () async {
+      // TODO
+    });
+
+  });
+}

@@ -1,0 +1,57 @@
+# OpenAPI Generator Configuration for Flutter Dart Client
+# This configuration generates a REST client library from the OpenAPI specification
+
+generatorName: dart-dio
+inputSpec: lib/openapi/openapi.json
+outputDir: lib/shared/api/generated
+
+# Package Configuration
+packageName: openapi_client
+packageVersion: 1.0.0
+
+# Documentation
+authors: "Mo'meet Team"
+
+# Generator Specific Configuration
+additionalProperties:
+  # Dart/Flutter specific settings
+  pubName: openapi_client
+  pubVersion: 1.0.0
+
+  # Use freezed for immutable models
+  useFreezed: true
+
+  # Nullable models
+  useNullSafety: true
+
+  # Use enums
+  enumUnknownDefaultCase: true
+
+# Global Configuration
+globalProperty:
+  # Ignore files
+  ignoreFileOverwrite: false
+
+# Type mappings
+typeMapping:
+  # Map DateTime properly
+  DateTime: DateTime
+  date-time: DateTime
+
+# Variable naming
+variableNamingConvention: camelCase
+
+# Model naming
+modelNameSuffix: ""
+
+# Enable features
+enablePostProcessFile: true
+
+# Ensure models are generated with proper documentation
+withAuditInfo: true
+
+# Skip validation
+skipValidateSpec: false
+
+# Template location (optional)
+# templateDir: path/to/templates
