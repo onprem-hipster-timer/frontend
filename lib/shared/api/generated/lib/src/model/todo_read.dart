@@ -86,7 +86,7 @@ abstract class TodoRead implements Built<TodoRead, TodoReadBuilder> {
   static void _defaults(TodoReadBuilder b) => b
       ..tags = ListBuilder()
       ..schedules = ListBuilder()
-      ..includeReason = const ._(TodoIncludeReason.MATCH)
+      ..includeReason = const TodoIncludeReason._(0)
       ..isShared = false;
 
   @BuiltValueSerializer(custom: true)

@@ -3,6 +3,10 @@ analyzer:
     strict-inference: true
     strict-raw-types: true
     strict-casts: false
+  enable-experiment:
+    - records
+    - patterns
+    - class-modifiers
   exclude:
     - test/*.dart
   errors:

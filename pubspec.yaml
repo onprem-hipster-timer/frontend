@@ -21,7 +21,7 @@ dependencies:
   # HTTP Client
   dio: ^5.9.1
   momeet_api:
-    path: lib/shared/api/generated
+    path: lib/shared/api/generated/
 
   # Routing
   go_router: ^17.0.1
