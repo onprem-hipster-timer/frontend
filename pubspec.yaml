@@ -22,6 +22,7 @@ dependencies:
   # HTTP Client
   dio: ^5.9.1
   built_collection: ^5.1.1
+  built_value: ^8.9.3
   momeet_api:
     path: lib/shared/api/generated/
 
@@ -61,8 +62,6 @@ dev_dependencies:
   # Code Generator (Open API)
   openapi_generator_cli: ^6.1.0
 
-  # Freezed Model
-  freezed_annotation: ^3.1.0
 
   # Testing
   mocktail: ^1.0.4

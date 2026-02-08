@@ -1,11 +1,12 @@
-/// 인증 상태 관리 프로바이더 (Supabase)
-///
-/// 이 파일은 다음을 관리합니다:
-/// - Supabase 인증 상태
-/// - JWT 토큰 관리
-/// - 사용자 세션
-/// - 로그인/로그아웃 로직
+// 인증 상태 관리 프로바이더 (Supabase)
+//
+// 이 파일은 다음을 관리합니다:
+// - Supabase 인증 상태
+// - JWT 토큰 관리
+// - 사용자 세션
+// - 로그인/로그아웃 로직
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -72,10 +73,10 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
 /// state.whenData((authState) {
 ///   authState.maybeWhen(
 ///     authenticated: (user, token, refreshToken) {
-///       print('로그인됨: ${user.email}');
+///       debugPrint('로그인됨: ${user.email}');
 ///     },
 ///     unauthenticated: () {
-///       print('로그아웃됨');
+///       debugPrint('로그아웃됨');
 ///     },
 ///     loading: () => showLoader(),
 ///     error: (message, error) => showError(message),
@@ -100,23 +101,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final supabase = ref.read(supabaseClientProvider);
       final session = supabase.auth.currentSession;
 
-      if (session != null && session.user != null) {
+      if (session != null) {
         final token = session.accessToken;
         ref.read(authTokenProvider.notifier).state = token;
 
         state = AuthState.authenticated(
-          user: session.user!,
+          user: session.user,
           accessToken: token,
           refreshToken: session.refreshToken,
         );
 
         if (AppConfig.enableDebugLogging) {
-          print('✅ [AUTH] Session restored for ${session.user!.email}');
+          debugPrint('✅ [AUTH] Session restored for ${session.user.email}');
         }
       } else {
         state = const AuthState.unauthenticated();
         if (AppConfig.enableDebugLogging) {
-          print('❌ [AUTH] No active session');
+          debugPrint('❌ [AUTH] No active session');
         }
       }
     } catch (e) {
@@ -125,7 +126,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         originalError: e,
       );
       if (AppConfig.enableDebugLogging) {
-        print('❌ [AUTH] Initialization error: $e');
+        debugPrint('❌ [AUTH] Initialization error: $e');
       }
     }
   }
@@ -160,7 +161,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
 
         if (AppConfig.enableDebugLogging) {
-          print('✅ [AUTH] Signed in: ${response.user!.email}');
+          debugPrint('✅ [AUTH] Signed in: ${response.user!.email}');
         }
       } else {
         throw AuthException(message: '로그인에 실패했습니다');
@@ -191,7 +192,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (response.user != null) {
         if (AppConfig.enableDebugLogging) {
-          print('✅ [AUTH] Signed up: ${response.user!.email}');
+          debugPrint('✅ [AUTH] Signed up: ${response.user!.email}');
         }
 
         // 회원가입 후 자동 로그인되지 않을 수 있으므로, 이메일 인증 후 로그인 필요
@@ -221,7 +222,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthState.unauthenticated();
 
       if (AppConfig.enableDebugLogging) {
-        print('✅ [AUTH] Signed out');
+        debugPrint('✅ [AUTH] Signed out');
       }
     } catch (e) {
       final message = _parseError(e);
@@ -237,7 +238,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await supabase.auth.resetPasswordForEmail(email);
 
       if (AppConfig.enableDebugLogging) {
-        print('✅ [AUTH] Password reset email sent to $email');
+        debugPrint('✅ [AUTH] Password reset email sent to $email');
       }
     } catch (e) {
       final message = _parseError(e);
@@ -254,7 +255,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       if (AppConfig.enableDebugLogging) {
-        print('✅ [AUTH] Password updated');
+        debugPrint('✅ [AUTH] Password updated');
       }
     } catch (e) {
       final message = _parseError(e);
@@ -278,7 +279,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           ref.read(authTokenProvider.notifier).state = newToken;
 
           if (AppConfig.enableDebugLogging) {
-            print('✅ [AUTH] Token refreshed');
+            debugPrint('✅ [AUTH] Token refreshed');
           }
 
           return newToken;
@@ -288,7 +289,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return null;
     } catch (e) {
       if (AppConfig.enableDebugLogging) {
-        print('❌ [AUTH] Token refresh failed: $e');
+        debugPrint('❌ [AUTH] Token refresh failed: $e');
       }
 
       // 토큰 갱신 실패 시 로그아웃
@@ -303,7 +304,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return error.message;
     } else if (error is AuthError) {
       // Supabase AuthError 처리
-      return error.message ?? '인증 오류가 발생했습니다';
+      return error.message;
     } else if (error is NetworkException) {
       return error.message;
     } else {
@@ -322,19 +323,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
 /// ```dart
 /// final user = ref.watch(currentUserProvider);
 /// if (user != null) {
-///   print('Email: ${user.email}');
+///   debugPrint('Email: ${user.email}');
 /// }
 /// ```
 final currentUserProvider = Provider<User?>((ref) {
   return ref.watch(authStateProvider).whenOrNull(
-        authenticated: (user, _, __) => user,
+        authenticated: (user, token, refreshToken) => user,
       );
 });
 
 /// 현재 액세스 토큰 제공자
 final accessTokenProvider = Provider<String?>((ref) {
   return ref.watch(authStateProvider).whenOrNull(
-        authenticated: (_, token, __) => token,
+        authenticated: (user, token, refreshToken) => token,
       );
 });
 
@@ -346,7 +347,7 @@ final accessTokenProvider = Provider<String?>((ref) {
 /// ```
 final isAuthenticatedProvider = Provider<bool>((ref) {
   return ref.watch(authStateProvider).maybeWhen(
-        authenticated: (_, __, ___) => true,
+        authenticated: (user, token, refreshToken) => true,
         orElse: () => false,
       );
 });

@@ -1,5 +1,6 @@
-/// Dio HTTP 클라이언트 프로바이더 with AuthInterceptor
+// Dio HTTP 클라이언트 프로바이더 with AuthInterceptor
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:momeet/core/config/app_config.dart';
@@ -23,9 +24,9 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (AppConfig.enableDebugLogging) {
-      print('🚀 [HTTP] ${options.method} ${options.path}');
+      debugPrint('🚀 [HTTP] ${options.method} ${options.path}');
       if (token != null) {
-        print('   ✓ Authorization Header Added');
+        debugPrint('   ✓ Authorization Header Added');
       }
     }
 
@@ -35,25 +36,25 @@ class AuthInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
-      print('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
+      debugPrint('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
     }
     return handler.next(response);
   }
 
   @override
-  void onError(DioException error, ErrorInterceptorHandler handler) {
+  void onError(DioException err, ErrorInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
-      print('❌ [HTTP] Error: ${error.message}');
-      print('   Status: ${error.response?.statusCode}');
+      debugPrint('❌ [HTTP] Error: ${err.message}');
+      debugPrint('   Status: ${err.response?.statusCode}');
     }
 
     // 401 Unauthorized 처리 (토큰 만료 등)
-    if (error.response?.statusCode == 401) {
-      print('⚠️ [AUTH] Unauthorized - Token may have expired');
+    if (err.response?.statusCode == 401) {
+      debugPrint('⚠️ [AUTH] Unauthorized - Token may have expired');
       // TODO: 토큰 갱신 또는 로그아웃 로직 추가
     }
 
-    return handler.next(error);
+    return handler.next(err);
   }
 }
 

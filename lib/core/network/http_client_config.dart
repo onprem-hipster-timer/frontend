@@ -1,5 +1,6 @@
-/// Dio HTTP 클라이언트 설정
+// Dio HTTP 클라이언트 설정
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:momeet/core/config/app_config.dart';
 
 class HttpClientConfig {
@@ -25,19 +26,19 @@ class HttpClientConfig {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           if (AppConfig.enableDebugLogging) {
-            print('🚀 [HTTP] ${options.method} ${options.path}');
+            debugPrint('🚀 [HTTP] ${options.method} ${options.path}');
           }
           return handler.next(options);
         },
         onResponse: (response, handler) {
           if (AppConfig.enableDebugLogging) {
-            print('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
+            debugPrint('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
           }
           return handler.next(response);
         },
         onError: (error, handler) {
           if (AppConfig.enableDebugLogging) {
-            print('❌ [HTTP] Error: ${error.message}');
+            debugPrint('❌ [HTTP] Error: ${error.message}');
           }
           return handler.next(error);
         },

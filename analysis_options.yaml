@@ -11,10 +11,9 @@ include: package:flutter_lints/flutter.yaml
 
 # Enable experimental language features
 analyzer:
-  enable-experiment:
-    - records
-    - patterns
-    - class-modifiers
+  exclude:
+    - lib/shared/api/generated/**
+    - lib/core/templates/**
 
 linter:
   # The lint rules applied to this project can be customized in the

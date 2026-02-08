@@ -1,4 +1,4 @@
-/// 공유 Riverpod 프로바이더
+// 공유 Riverpod 프로바이더
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet_api/momeet_api.dart';
 

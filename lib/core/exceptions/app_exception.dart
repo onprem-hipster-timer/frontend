@@ -16,35 +16,35 @@ class AppException implements Exception {
 
 class NetworkException extends AppException {
   NetworkException({
-    required String message,
-    String? code,
-    StackTrace? stackTrace,
-  }) : super(message: message, code: code, stackTrace: stackTrace);
+    required super.message,
+    super.code,
+    super.stackTrace,
+  });
 }
 
 class ServerException extends AppException {
   final int? statusCode;
 
   ServerException({
-    required String message,
+    required super.message,
     this.statusCode,
-    String? code,
-    StackTrace? stackTrace,
-  }) : super(message: message, code: code, stackTrace: stackTrace);
+    super.code,
+    super.stackTrace,
+  });
 }
 
 class AuthException extends AppException {
   AuthException({
-    required String message,
-    String? code,
-    StackTrace? stackTrace,
-  }) : super(message: message, code: code, stackTrace: stackTrace);
+    required super.message,
+    super.code,
+    super.stackTrace,
+  });
 }
 
 class ValidationException extends AppException {
   ValidationException({
-    required String message,
-    String? code,
-    StackTrace? stackTrace,
-  }) : super(message: message, code: code, stackTrace: stackTrace);
+    required super.message,
+    super.code,
+    super.stackTrace,
+  });
 }

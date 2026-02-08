@@ -1,4 +1,4 @@
 /// 공통 위젯 및 유틸리티
-library shared;
+library;
 
 export 'widgets/app_scaffold.dart';

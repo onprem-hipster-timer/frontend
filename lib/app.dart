@@ -1,4 +1,4 @@
-/// 앱 메인 위젯
+// 앱 메인 위젯
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/config/app_config.dart';

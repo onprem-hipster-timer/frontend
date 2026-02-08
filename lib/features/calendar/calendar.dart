@@ -8,7 +8,7 @@
 /// - `CalendarSettingsState`: UI 설정 상태 (Freezed)
 /// - `CalendarFilterState`: 필터 상태 (Freezed)
 /// - `ScheduleCalendarDataSource`: Syncfusion DataSource
-library calendar;
+library;
 
 // Pages
 export 'presentation/pages/calendar_page.dart';
