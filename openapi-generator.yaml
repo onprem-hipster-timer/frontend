@@ -11,3 +11,4 @@ additionalProperties:
   legacyDiscriminatorBehavior: false
   dateLibrary: core
   nullableFields: true
+  serializationLibrary: built_value
