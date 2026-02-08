@@ -17,7 +17,8 @@ final todosProvider = FutureProvider.family<List<TodoRead>, String?>((ref, group
   final api = ref.watch(todosApiProvider);
 
   final response = await api.readTodosV1TodosGet(
-    groupIds: groupId != null ? BuiltList<String>([groupId]) : null,
+    groupIds: groupId != null ? BuiltList<String>([groupId]) : BuiltList<String>([]),
+    tagIds: BuiltList<String>([]),
   );
 
   return response.data?.toList() ?? [];
@@ -126,7 +127,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     try {
       final api = ref.read(todosApiProvider);
 
-      // TodoUpdate 빌더 사용
+      // TodoUpdate 객체 생성 (built_value 패턴)
       final updateBuilder = TodoUpdateBuilder()
         ..parentId = newParentId;
 
@@ -153,6 +154,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     try {
       final api = ref.read(todosApiProvider);
 
+      // TodoUpdate 객체 생성 (built_value 패턴)
       final updateBuilder = TodoUpdateBuilder()
         ..status = newStatus;
 
