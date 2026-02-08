@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
+import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/home/presentation/pages/home_page.dart';
 import 'package:momeet/features/todo/todo.dart';
 
@@ -31,9 +32,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${state.matchedLocation}';
       }
 
-      // 3. 인증된 사용자가 로그인 페이지에 있으면 홈으로
+      // 3. 인증된 사용자가 로그인 페이지에 있으면 캘린더로
       if (isAuthenticated && isLoginRoute) {
-        return '/';
+        return '/calendar';
       }
 
       // 리다이렉트 없음
@@ -101,11 +102,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/calendar',
         name: 'calendar',
         builder: (context, state) {
-          // TODO: CalendarPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('캘린더')),
-            body: const Center(child: Text('캘린더 페이지')),
-          );
+          return const CalendarPage();
         },
       ),
 
