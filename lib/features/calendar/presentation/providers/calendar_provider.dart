@@ -1,4 +1,9 @@
 /// Calendar Feature - Providers
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+///
+/// 이 파일은 calendar_providers.dart로 대체되었습니다.
+/// @see calendar_providers.dart
+library calendar_provider;
 
-// 캘린더 기능 프로바이더는 추가되면 여기에 작성됩니다
+// 이 파일은 backward compatibility를 위해 유지됩니다.
+// 새 코드에서는 calendar_providers.dart를 사용하세요.
+export 'calendar_providers.dart';
