@@ -21,6 +21,7 @@ dependencies:
 
   # HTTP Client
   dio: ^5.9.1
+  built_collection: ^5.1.1
   momeet_api:
     path: lib/shared/api/generated/
 
