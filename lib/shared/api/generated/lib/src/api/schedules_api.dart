@@ -603,7 +603,7 @@ class SchedulesApi {
   Future<Response<BuiltList<ScheduleRead>>> readSchedulesV1SchedulesGet({ 
     required DateTime startDate,
     required DateTime endDate,
-    ResourceScope? scope = mine,
+    ResourceScope? scope = ResourceScope.mine,
     BuiltList<String>? tagIds,
     BuiltList<String>? groupIds,
     String? timezone,

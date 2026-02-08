@@ -575,7 +575,7 @@ class TodosApi {
   /// Returns a [Future] containing a [Response] with a [BuiltList<TodoRead>] as data
   /// Throws [DioException] if API call or serialization fails
   Future<Response<BuiltList<TodoRead>>> readTodosV1TodosGet({ 
-    ResourceScope? scope = mine,
+    ResourceScope? scope = ResourceScope.mine,
     BuiltList<String>? tagIds,
     BuiltList<String>? groupIds,
     CancelToken? cancelToken,

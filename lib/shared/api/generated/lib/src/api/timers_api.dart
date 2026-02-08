@@ -128,7 +128,7 @@ class TimersApi {
     required String timerId,
     bool? includeSchedule = false,
     bool? includeTodo = false,
-    TagIncludeMode? tagIncludeMode = none,
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     String? timezone,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -223,7 +223,7 @@ class TimersApi {
   Future<Response<TimerRead>> getUserActiveTimerV1TimersActiveGet({ 
     bool? includeSchedule = false,
     bool? includeTodo = false,
-    TagIncludeMode? tagIncludeMode = none,
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     String? timezone,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -321,14 +321,14 @@ class TimersApi {
   /// Returns a [Future] containing a [Response] with a [BuiltList<TimerRead>] as data
   /// Throws [DioException] if API call or serialization fails
   Future<Response<BuiltList<TimerRead>>> listTimersV1TimersGet({ 
-    ResourceScope? scope = mine,
+    ResourceScope? scope = ResourceScope.mine,
     BuiltList<String>? status,
     String? type,
     DateTime? startDate,
     DateTime? endDate,
     bool? includeSchedule = false,
     bool? includeTodo = false,
-    TagIncludeMode? tagIncludeMode = none,
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     String? timezone,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -432,7 +432,7 @@ class TimersApi {
     required TimerUpdate timerUpdate,
     bool? includeSchedule = false,
     bool? includeTodo = false,
-    TagIncludeMode? tagIncludeMode = none,
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     String? timezone,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,

@@ -30,7 +30,7 @@ abstract class VisibilitySettings implements Built<VisibilitySettings, Visibilit
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(VisibilitySettingsBuilder b) => b
-      ..level = const VisibilityLevel._(0);
+      ..level = VisibilityLevel.private;
 
   @BuiltValueSerializer(custom: true)
   static Serializer<VisibilitySettings> get serializer => _$VisibilitySettingsSerializer();

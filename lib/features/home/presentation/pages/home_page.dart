@@ -1,9 +1,9 @@
-/// 홈 화면
+// 홈 화면
 import 'package:flutter/material.dart';
 import 'package:momeet/shared/widgets/app_scaffold.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
