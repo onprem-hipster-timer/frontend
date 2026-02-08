@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:momeet/app.dart';
 import 'package:momeet/core/config/app_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ============================================================
+  // Intl Locale 초기화 (DateFormat 사용을 위해 필요)
+  // ============================================================
+  await initializeDateFormatting('ko_KR', null);
+  await initializeDateFormatting('en_US', null);
 
   await dotenv.load(fileName: "assets/.env");
 
