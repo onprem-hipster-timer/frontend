@@ -23,7 +23,7 @@ part 'auth_provider.freezed.dart';
 
 /// 인증 상태
 @freezed
-class AuthState with _$AuthState {
+sealed class AuthState with _$AuthState {
   /// 인증 대기 중 (초기 로딩)
   const factory AuthState.loading() = AuthLoading;
 
@@ -103,7 +103,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (session != null) {
         final token = session.accessToken;
-        ref.read(authTokenProvider.notifier).state = token;
+
+        Future.microtask(() {
+          ref.read(authTokenProvider.notifier).state = token;
+        });
 
         state = AuthState.authenticated(
           user: session.user,
