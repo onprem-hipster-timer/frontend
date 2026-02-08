@@ -12,8 +12,10 @@ include: package:flutter_lints/flutter.yaml
 # Enable experimental language features
 analyzer:
   exclude:
-    - lib/shared/api/generated/**
     - lib/core/templates/**
+    - lib/shared/api/generated/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
 
 linter:
   # The lint rules applied to this project can be customized in the

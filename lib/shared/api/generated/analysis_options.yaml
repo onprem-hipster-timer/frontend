@@ -1,9 +1,17 @@
 analyzer:
   language:
-    strict-inference: true
-    strict-raw-types: true
+    strict-inference: false
+    strict-raw-types: false
     strict-casts: false
   exclude:
     - test/*.dart
   errors:
     deprecated_member_use_from_same_package: ignore
+    invalid_annotation_target: ignore
+    unused_element: ignore
+    unused_field: ignore
+    unused_import: ignore
+    constant_identifier_names: ignore
+    non_constant_identifier_names: ignore
+    implementation_imports: ignore
+    library_private_types_in_public_api: ignore
