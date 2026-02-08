@@ -1,9 +1,12 @@
-/// 라우팅 설정 with 인증 리다이렉트 로직
+// 라우팅 설정 with 인증 리다이렉트 로직
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/home/presentation/pages/home_page.dart';
+import 'package:momeet/features/todo/todo.dart';
 
 /// GoRouter 인스턴스 (Riverpod 통합)
 final routerProvider = Provider<GoRouter>((ref) {
@@ -47,12 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         name: 'login',
         builder: (context, state) {
-          final redirect = state.uri.queryParameters['redirect'];
-          // TODO: LoginPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('로그인')),
-            body: Center(child: Text('로그인 페이지 (redirect to: $redirect)')),
-          );
+          return const LoginPage();
         },
       ),
 
@@ -60,11 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/signup',
         name: 'signup',
         builder: (context, state) {
-          // TODO: SignUpPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('회원가입')),
-            body: const Center(child: Text('회원가입 페이지')),
-          );
+          return const SignupPage();
         },
       ),
 
@@ -72,11 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/forgot-password',
         name: 'forgot-password',
         builder: (context, state) {
-          // TODO: ForgotPasswordPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('비밀번호 재설정')),
-            body: const Center(child: Text('비밀번호 재설정 페이지')),
-          );
+          return const ForgotPasswordPage();
         },
       ),
 
@@ -139,11 +129,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/todo',
         name: 'todo',
         builder: (context, state) {
-          // TODO: TodoListPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('할 일')),
-            body: const Center(child: Text('할 일 페이지')),
-          );
+          final groupId = state.uri.queryParameters['group_id'];
+          return TodoListPage(groupId: groupId);
         },
       ),
 
@@ -224,16 +211,22 @@ final routeObserverProvider = Provider<NavigatorObserver>((ref) {
 class GoRouterObserver extends NavigatorObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    print('🔀 [ROUTE] Pushed: ${route.settings.name}');
+    if (kDebugMode) {
+      debugPrint('🔀 [ROUTE] Pushed: ${route.settings.name}');
+    }
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    print('🔀 [ROUTE] Popped: ${route.settings.name}');
+    if (kDebugMode) {
+      debugPrint('🔀 [ROUTE] Popped: ${route.settings.name}');
+    }
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    print('🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+    if (kDebugMode) {
+      debugPrint('🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+    }
   }
 }
