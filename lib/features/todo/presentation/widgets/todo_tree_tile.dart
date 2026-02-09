@@ -4,7 +4,7 @@
 // 드래그 앤 드롭으로 부모 변경을 지원합니다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet_api/momeet_api.dart';
+import 'package:momeet/shared/api/export.dart';
 
 import '../providers/todo_provider.dart';
 import '../utils/todo_tree_builder.dart';
@@ -265,7 +265,7 @@ class TodoTreeTile extends ConsumerWidget {
               ),
 
               // 태그 표시
-              if (todo.tags != null && todo.tags!.isNotEmpty)
+              if (todo.tags.isNotEmpty)
                 _buildTagIndicators(context, todo),
 
               // 자식 개수 표시
@@ -324,8 +324,8 @@ class TodoTreeTile extends ConsumerWidget {
     WidgetRef ref,
     TodoRead todo,
   ) {
-    final isDone = todo.status == TodoStatus.DONE;
-    final isCancelled = todo.status == TodoStatus.CANCELLED;
+    final isDone = todo.status == TodoStatus.done;
+    final isCancelled = todo.status == TodoStatus.cancelled;
 
     return Checkbox(
       value: isDone,
@@ -333,7 +333,7 @@ class TodoTreeTile extends ConsumerWidget {
       onChanged: (value) async {
         if (isCancelled) return; // 취소된 항목은 변경 불가
 
-        final newStatus = value == true ? TodoStatus.DONE : TodoStatus.UNSCHEDULED;
+        final newStatus = value == true ? TodoStatus.done : TodoStatus.unscheduled;
         await ref.read(todoMutationsProvider.notifier).changeStatus(
           todo.id,
           newStatus,
@@ -344,7 +344,7 @@ class TodoTreeTile extends ConsumerWidget {
 
   /// 태그 인디케이터
   Widget _buildTagIndicators(BuildContext context, TodoRead todo) {
-    final tags = todo.tags!.toList();
+    final tags = todo.tags.toList();
     final displayCount = tags.length > 3 ? 3 : tags.length;
 
     return Row(
@@ -374,9 +374,9 @@ class TodoTreeTile extends ConsumerWidget {
   /// 상태에 따른 텍스트 장식
   TextDecoration? _getTextDecoration(TodoStatus status) {
     switch (status) {
-      case TodoStatus.DONE:
+      case TodoStatus.done:
         return TextDecoration.lineThrough;
-      case TodoStatus.CANCELLED:
+      case TodoStatus.cancelled:
         return TextDecoration.lineThrough;
       default:
         return null;
@@ -386,9 +386,9 @@ class TodoTreeTile extends ConsumerWidget {
   /// 상태에 따른 텍스트 색상
   Color? _getTextColor(BuildContext context, TodoStatus status) {
     switch (status) {
-      case TodoStatus.DONE:
+      case TodoStatus.done:
         return Theme.of(context).colorScheme.onSurface.withAlpha(128);
-      case TodoStatus.CANCELLED:
+      case TodoStatus.cancelled:
         return Theme.of(context).colorScheme.error.withAlpha(128);
       default:
         return null;
