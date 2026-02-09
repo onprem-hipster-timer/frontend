@@ -1,8 +1,7 @@
 // Todo Feature - Providers
-import 'package:built_collection/built_collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
-import 'package:momeet_api/momeet_api.dart';
+import 'package:momeet/shared/api/export.dart';
 
 import '../utils/todo_tree_builder.dart';
 
@@ -17,11 +16,11 @@ final todosProvider = FutureProvider.family<List<TodoRead>, String?>((ref, group
   final api = ref.watch(todosApiProvider);
 
   final response = await api.readTodosV1TodosGet(
-    groupIds: groupId != null ? BuiltList<String>([groupId]) : BuiltList<String>([]),
-    tagIds: BuiltList<String>([]),
+    groupIds: groupId != null ? [groupId] : null,
+    tagIds: null,
   );
 
-  return response.data?.toList() ?? [];
+  return response;
 });
 
 /// 모든 Todo 조회 (그룹 필터 없음)
@@ -63,13 +62,13 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
 
     try {
       final api = ref.read(todosApiProvider);
-      final response = await api.createTodoV1TodosPost(todoCreate: data);
+      final response = await api.createTodoV1TodosPost(body: data);
 
       // 목록 갱신
       ref.invalidate(todosProvider);
 
       state = const AsyncValue.data(null);
-      return response.data;
+      return response;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return null;
@@ -84,14 +83,14 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
       final api = ref.read(todosApiProvider);
       final response = await api.updateTodoV1TodosTodoIdPatch(
         todoId: todoId,
-        todoUpdate: data,
+        body: data,
       );
 
       // 목록 갱신
       ref.invalidate(todosProvider);
 
       state = const AsyncValue.data(null);
-      return response.data;
+      return response;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return null;
@@ -127,20 +126,19 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     try {
       final api = ref.read(todosApiProvider);
 
-      // TodoUpdate 객체 생성 (built_value 패턴)
-      final updateBuilder = TodoUpdateBuilder()
-        ..parentId = newParentId;
+      // TodoUpdate 객체 생성 (Freezed 패턴)
+      final updateData = TodoUpdate(parentId: newParentId);
 
       final response = await api.updateTodoV1TodosTodoIdPatch(
         todoId: todoId,
-        todoUpdate: updateBuilder.build(),
+        body: updateData,
       );
 
       // 목록 갱신
       ref.invalidate(todosProvider);
 
       state = const AsyncValue.data(null);
-      return response.data;
+      return response;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return null;
@@ -154,20 +152,19 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     try {
       final api = ref.read(todosApiProvider);
 
-      // TodoUpdate 객체 생성 (built_value 패턴)
-      final updateBuilder = TodoUpdateBuilder()
-        ..status = newStatus;
+      // TodoUpdate 객체 생성 (Freezed 패턴)
+      final updateData = TodoUpdate(status: newStatus);
 
       final response = await api.updateTodoV1TodosTodoIdPatch(
         todoId: todoId,
-        todoUpdate: updateBuilder.build(),
+        body: updateData,
       );
 
       // 목록 갱신
       ref.invalidate(todosProvider);
 
       state = const AsyncValue.data(null);
-      return response.data;
+      return response;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return null;

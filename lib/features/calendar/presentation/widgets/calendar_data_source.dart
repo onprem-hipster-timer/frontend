@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:momeet_api/momeet_api.dart';
+import 'package:momeet/shared/api/export.dart';
 
 /// ScheduleRead를 Syncfusion Calendar의 Appointment로 매핑하는 DataSource
 ///
@@ -52,8 +52,8 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   ///
   /// 태그가 있으면 첫 번째 태그의 색상을 사용, 없으면 기본 색상
   Color _getScheduleColor(ScheduleRead schedule) {
-    final tags = schedule.tags?.toList();
-    if (tags != null && tags.isNotEmpty) {
+    final tags = schedule.tags.toList();
+    if (tags.isNotEmpty) {
       return _parseColor(tags.first.color);
     }
 

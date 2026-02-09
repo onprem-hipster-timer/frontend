@@ -1,7 +1,7 @@
-// Todo 트리 구조 빌더 유틸리티
+// Todo 트리 구조 빌더
 //
-// 평면 목록의 Todo 데이터를 계층형 트리 구조로 변환합니다.
-import 'package:momeet_api/momeet_api.dart';
+// Flat한 Todo 리스트를 parent-child 관계로 트리 구조로 변환합니다.
+import 'package:momeet/shared/api/export.dart';
 
 /// 트리 노드 - Todo와 자식들을 포함
 class TodoTreeNode {

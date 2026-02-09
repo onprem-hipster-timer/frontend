@@ -3,7 +3,7 @@
 // 계층형 할 일 트리를 표시하고 드래그 앤 드롭 기능을 제공합니다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet_api/momeet_api.dart';
+import 'package:momeet/shared/api/export.dart';
 
 import '../providers/todo_provider.dart';
 import '../widgets/todo_tree_tile.dart';
@@ -312,13 +312,13 @@ class _TodoDetailSheetState extends ConsumerState<TodoDetailSheet> {
 
   String _getStatusLabel(TodoStatus status) {
     switch (status) {
-      case TodoStatus.UNSCHEDULED:
+      case TodoStatus.unscheduled:
         return '미예정';
-      case TodoStatus.SCHEDULED:
+      case TodoStatus.scheduled:
         return '예정됨';
-      case TodoStatus.DONE:
+      case TodoStatus.done:
         return '완료';
-      case TodoStatus.CANCELLED:
+      case TodoStatus.cancelled:
         return '취소됨';
       default:
         return status.toString();
@@ -326,13 +326,14 @@ class _TodoDetailSheetState extends ConsumerState<TodoDetailSheet> {
   }
 
   Future<void> _saveChanges() async {
-    final updateBuilder = TodoUpdateBuilder()
-      ..title = _titleController.text
-      ..description = _descriptionController.text;
+    final updateData = TodoUpdate(
+      title: _titleController.text,
+      description: _descriptionController.text,
+    );
 
     await ref.read(todoMutationsProvider.notifier).update(
       widget.todo.id,
-      updateBuilder.build(),
+      updateData,
     );
 
     if (mounted) {
@@ -466,12 +467,13 @@ class _CreateTodoDialogState extends ConsumerState<CreateTodoDialog> {
     // 그룹 ID가 없으면 기본값 사용 (실제 구현에서는 선택 UI 추가 필요)
     final groupId = _selectedGroupId ?? '00000000-0000-0000-0000-000000000000';
 
-    final createBuilder = TodoCreateBuilder()
-      ..title = _titleController.text
-      ..description = _descriptionController.text.isEmpty ? null : _descriptionController.text
-      ..tagGroupId = groupId;
+    final createData = TodoCreate(
+      title: _titleController.text,
+      tagGroupId: groupId,
+      description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+    );
 
-    await ref.read(todoMutationsProvider.notifier).create(createBuilder.build());
+    await ref.read(todoMutationsProvider.notifier).create(createData);
 
     if (mounted) {
       Navigator.of(context).pop();

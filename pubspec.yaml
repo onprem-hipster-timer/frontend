@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -21,10 +21,13 @@ dependencies:
 
   # HTTP Client
   dio: ^5.9.1
+  retrofit: ^4.9.2
+  # momeet_api:
+  #   path: lib/shared/api/generated/
+
+  # Build Pacakge
   built_collection: ^5.1.1
-  built_value: ^8.9.3
-  momeet_api:
-    path: lib/shared/api/generated/
+  built_value: ^8.12.3
 
   # Routing
   go_router: ^17.0.1
@@ -35,6 +38,7 @@ dependencies:
   hive_flutter: ^1.1.0
 
   # Authorization
+  supabase: ^2.10.2
   supabase_flutter: ^2.12.0
 
   # UI utilities
@@ -44,8 +48,9 @@ dependencies:
   # Calendar
   syncfusion_flutter_calendar: ^32.1.25
 
-  # Freezed Model
+  # Annotation
   freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
 
 
 dev_dependencies:
@@ -53,19 +58,22 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  build_runner: ^2.11.0
 
   # Code Generator (Rivorpod)
-  build_runner: ^2.10.5
   riverpod_generator: ^4.0.0
 
   # Code Generator (Open API)
-  openapi_generator_cli: ^6.1.0
+  # openapi_generator_cli: ^6.1.0
+  retrofit_generator: ^10.2.1
+  swagger_parser: ^1.42.0
+  json_serializable: ^6.9.0
 
   # Freezed
   freezed: ^3.2.3
 
   # Testing
-  mocktail: ^1.0.4
+  # mocktail: ^1.0.4
 
 
 flutter:

@@ -1,7 +1,0 @@
-# build.yaml
-targets:
-  $default:
-    builders:
-      openapi_generator:
-        options:
-          config_file: openapi-generator.yaml

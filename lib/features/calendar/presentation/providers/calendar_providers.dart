@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
-import 'package:momeet_api/momeet_api.dart';
+import 'package:momeet/shared/api/export.dart';
 
 part 'calendar_providers.g.dart';
 
@@ -190,7 +190,7 @@ Future<List<ScheduleRead>> currentSchedules(Ref ref) async {
     endDate: endDate.toUtc(),
   );
 
-  return response.data?.toList() ?? [];
+  return response;
 }
 
 /// 필터링된 일정 목록
@@ -204,7 +204,7 @@ Future<List<ScheduleRead>> filteredSchedules(Ref ref) async {
   return schedules.where((schedule) {
     // 태그 필터
     if (filter.tagIds.isNotEmpty) {
-      final scheduleTags = schedule.tags?.toList() ?? [];
+      final scheduleTags = schedule.tags.toList();
       final hasMatchingTag = scheduleTags.any(
         (tag) => filter.tagIds.contains(tag.id),
       );
@@ -243,13 +243,13 @@ class ScheduleMutations extends _$ScheduleMutations {
   Future<ScheduleRead> createSchedule(ScheduleCreate data) async {
     final api = ref.read(schedulesApiProvider);
     final response = await api.createScheduleV1SchedulesPost(
-      scheduleCreate: data,
+      body: data,
     );
 
     // 일정 목록 새로고침
     ref.invalidate(currentSchedulesProvider);
 
-    return response.data!;
+    return response;
   }
 
   /// 일정 수정
@@ -257,13 +257,13 @@ class ScheduleMutations extends _$ScheduleMutations {
     final api = ref.read(schedulesApiProvider);
     final response = await api.updateScheduleV1SchedulesScheduleIdPatch(
       scheduleId: id,
-      scheduleUpdate: data,
+      body: data,
     );
 
     // 일정 목록 새로고침
     ref.invalidate(currentSchedulesProvider);
 
-    return response.data!;
+    return response;
   }
 
   /// 일정 삭제
@@ -281,10 +281,10 @@ class ScheduleMutations extends _$ScheduleMutations {
     required DateTime newStartTime,
     required DateTime newEndTime,
   }) async {
-    // ScheduleUpdate를 built_value factory로 생성
-    final scheduleUpdate = ScheduleUpdate((b) => b
-      ..startTime = newStartTime.toUtc()
-      ..endTime = newEndTime.toUtc(),
+    // ScheduleUpdate를 Freezed 패턴으로 생성
+    final scheduleUpdate = ScheduleUpdate(
+      startTime: newStartTime.toUtc(),
+      endTime: newEndTime.toUtc(),
     );
 
     return updateSchedule(id, scheduleUpdate);
@@ -296,10 +296,10 @@ class ScheduleMutations extends _$ScheduleMutations {
     DateTime? newStartTime,
     required DateTime newEndTime,
   }) async {
-    // ScheduleUpdate를 built_value factory로 생성
-    final scheduleUpdate = ScheduleUpdate((b) => b
-      ..endTime = newEndTime.toUtc()
-      ..startTime = newStartTime?.toUtc(),
+    // ScheduleUpdate를 Freezed 패턴으로 생성
+    final scheduleUpdate = ScheduleUpdate(
+      startTime: newStartTime?.toUtc(),
+      endTime: newEndTime.toUtc(),
     );
 
     return updateSchedule(id, scheduleUpdate);
