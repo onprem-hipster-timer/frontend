@@ -190,7 +190,7 @@ final class CurrentSchedulesProvider
   }
 }
 
-String _$currentSchedulesHash() => r'217577344a61b80ec70bdd05128e994be00e6c91';
+String _$currentSchedulesHash() => r'1c63196c9959c4be5787be0ab7dc2665c96a23d3';
 
 /// 필터링된 일정 목록
 ///
@@ -325,7 +325,7 @@ final class ScheduleMutationsProvider
   ScheduleMutations create() => ScheduleMutations();
 }
 
-String _$scheduleMutationsHash() => r'fcbe1f86c817438481e154f8f47aefe37466ac7a';
+String _$scheduleMutationsHash() => r'aa706ff2f1639c9008c2079568296abd4e64b56e';
 
 /// 일정 생성/수정/삭제 관리
 
