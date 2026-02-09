@@ -1,0 +1,10 @@
+swagger_parser:
+  schema_path: lib/openapi/openapi.json
+  output_directory: lib/shared/api
+  language: dart
+  json_serializer: freezed
+
+  dio_options_parameter_by_default: true
+  name: momeet_api
+  root_client_name: MoMeetClient
+  use_freezed3: true
