@@ -5,6 +5,8 @@ import 'package:momeet/features/calendar/presentation/providers/calendar_provide
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 
+import '../widgets/schedule_form_sheet.dart';
+
 /// 캘린더 메인 페이지
 ///
 /// 캘린더 뷰와 네비게이션 컨트롤을 포함합니다.
@@ -22,8 +24,7 @@ class CalendarPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: 새 일정 생성 다이얼로그/페이지로 이동
-          _showCreateScheduleDialog(context, ref);
+          showScheduleFormSheet(context);
         },
         child: const Icon(Icons.add),
       ),
@@ -230,46 +231,6 @@ class CalendarPage extends ConsumerWidget {
         builder: (context, scrollController) {
           return _FilterSheetContent(scrollController: scrollController);
         },
-      ),
-    );
-  }
-
-  /// 일정 생성 다이얼로그
-  void _showCreateScheduleDialog(BuildContext context, WidgetRef ref) {
-    final settings = ref.read(calendarSettingsProvider);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('새 일정'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${DateFormat('yyyy년 M월 d일', 'ko').format(settings.selectedDate)}에 새 일정을 추가합니다.',
-            ),
-            const SizedBox(height: 16),
-            // TODO: 일정 생성 폼 추가
-            const Text(
-              '(일정 생성 폼은 추후 구현 예정입니다)',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () {
-              // TODO: 일정 생성 API 호출
-              Navigator.pop(context);
-            },
-            child: const Text('생성'),
-          ),
-        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
 import 'package:momeet/shared/api/export.dart';
+export 'schedule_mutations.dart';
 
 part 'calendar_providers.g.dart';
 
@@ -229,79 +230,3 @@ Future<ScheduleCalendarDataSource> calendarDataSource(Ref ref) async {
   return ScheduleCalendarDataSource(schedules);
 }
 
-// ============================================================
-// 일정 Mutation Provider
-// ============================================================
-
-/// 일정 생성/수정/삭제 관리
-@riverpod
-class ScheduleMutations extends _$ScheduleMutations {
-  @override
-  FutureOr<void> build() {}
-
-  /// 일정 생성
-  Future<ScheduleRead> createSchedule(ScheduleCreate data) async {
-    final api = ref.read(schedulesApiProvider);
-    final response = await api.createScheduleV1SchedulesPost(
-      body: data,
-    );
-
-    // 일정 목록 새로고침
-    ref.invalidate(currentSchedulesProvider);
-
-    return response;
-  }
-
-  /// 일정 수정
-  Future<ScheduleRead> updateSchedule(String id, ScheduleUpdate data) async {
-    final api = ref.read(schedulesApiProvider);
-    final response = await api.updateScheduleV1SchedulesScheduleIdPatch(
-      scheduleId: id,
-      body: data,
-    );
-
-    // 일정 목록 새로고침
-    ref.invalidate(currentSchedulesProvider);
-
-    return response;
-  }
-
-  /// 일정 삭제
-  Future<void> deleteSchedule(String id) async {
-    final api = ref.read(schedulesApiProvider);
-    await api.deleteScheduleV1SchedulesScheduleIdDelete(scheduleId: id);
-
-    // 일정 목록 새로고침
-    ref.invalidate(currentSchedulesProvider);
-  }
-
-  /// 일정 이동 (드래그 앤 드롭용)
-  Future<ScheduleRead> moveSchedule(
-    String id, {
-    required DateTime newStartTime,
-    required DateTime newEndTime,
-  }) async {
-    // ScheduleUpdate를 Freezed 패턴으로 생성
-    final scheduleUpdate = ScheduleUpdate(
-      startTime: newStartTime.toUtc(),
-      endTime: newEndTime.toUtc(),
-    );
-
-    return updateSchedule(id, scheduleUpdate);
-  }
-
-  /// 일정 리사이즈
-  Future<ScheduleRead> resizeSchedule(
-    String id, {
-    DateTime? newStartTime,
-    required DateTime newEndTime,
-  }) async {
-    // ScheduleUpdate를 Freezed 패턴으로 생성
-    final scheduleUpdate = ScheduleUpdate(
-      startTime: newStartTime?.toUtc(),
-      endTime: newEndTime.toUtc(),
-    );
-
-    return updateSchedule(id, scheduleUpdate);
-  }
-}
