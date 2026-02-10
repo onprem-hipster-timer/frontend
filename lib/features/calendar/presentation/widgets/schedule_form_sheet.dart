@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 
-/// 일정 생성을 위한 Modal Bottom Sheet 위젯
+/// 일정 생성/수정을 위한 Modal Bottom Sheet 위젯
 ///
 /// FloatingActionButton을 눌렀을 때 올라오는 Bottom Sheet 내부에서 사용됩니다.
-/// 제목, 일시(시작/종료), 설명, 종일 옵션을 입력받아 새로운 일정을 생성합니다.
+/// 제목, 일시(시작/종료), 설명, 종일 옵션을 입력받아 새로운 일정을 생성하거나 기존 일정을 수정합니다.
 class ScheduleFormSheet extends ConsumerStatefulWidget {
   /// 초기 시작 시간 (선택사항)
   final DateTime? initialStartTime;
@@ -15,10 +15,14 @@ class ScheduleFormSheet extends ConsumerStatefulWidget {
   /// 초기 종료 시간 (선택사항)
   final DateTime? initialEndTime;
 
+  /// 수정할 기존 일정 (수정 모드인 경우)
+  final ScheduleRead? existingSchedule;
+
   const ScheduleFormSheet({
     super.key,
     this.initialStartTime,
     this.initialEndTime,
+    this.existingSchedule,
   });
 
   @override
@@ -47,12 +51,38 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     _titleController = TextEditingController();
     _descriptionController = TextEditingController();
 
-    // 초기 시간 설정 (현재 시간의 다음 정각, 종료는 +1시간)
-    final now = DateTime.now();
-    final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1, 0);
+    // 기존 일정 데이터가 있으면 사용, 없으면 초기값 설정
+    if (widget.existingSchedule != null) {
+      final schedule = widget.existingSchedule!;
 
-    _startTime = widget.initialStartTime ?? nextHour;
-    _endTime = widget.initialEndTime ?? _startTime.add(const Duration(hours: 1));
+      // 폼 데이터 초기화
+      _titleController.text = schedule.title;
+      _descriptionController.text = schedule.description ?? '';
+
+      // 시간 설정
+      _startTime = schedule.startTime.toLocal();
+      _endTime = schedule.endTime.toLocal();
+
+      // 종일 여부 판단
+      _isAllDay = _checkIsAllDay(_startTime, _endTime);
+    } else {
+      // 새 일정 생성 모드
+      final now = DateTime.now();
+      final roundedNow = DateTime(
+        now.year, now.month, now.day, now.hour,
+        (now.minute ~/ 15) * 15, // 15분 단위로 반올림
+      );
+
+      _startTime = widget.initialStartTime ?? roundedNow;
+      _endTime = widget.initialEndTime ?? _startTime.add(const Duration(hours: 1));
+    }
+  }
+
+  /// 종일 이벤트인지 확인하는 헬퍼 메서드
+  bool _checkIsAllDay(DateTime start, DateTime end) {
+    return start.hour == 0 && start.minute == 0 &&
+           end.hour == 0 && end.minute == 0 &&
+           end.difference(start).inHours >= 24;
   }
 
   @override
@@ -97,7 +127,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
               // 헤더
               Text(
-                '새 일정',
+                widget.existingSchedule != null ? '일정 수정' : '새 일정',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -307,7 +337,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('저장'),
+                        : Text(widget.existingSchedule != null ? '수정' : '저장'),
                     ),
                   ),
                 ],
@@ -418,40 +448,71 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
-      // ScheduleCreate 객체 생성
-      final scheduleCreate = ScheduleCreate(
-        title: _titleController.text.trim(),
-        startTime: _startTime.toUtc(), // UTC로 변환
-        endTime: _endTime.toUtc(), // UTC로 변환
-        description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      );
-
-      // API 호출
-      await ref.read(scheduleMutationsProvider.notifier).createSchedule(scheduleCreate);
-
-      // 성공 시 Bottom Sheet 닫기
-      if (mounted) {
-        navigator.pop();
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('일정이 생성되었습니다'),
-              ],
-            ),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+      if (widget.existingSchedule != null) {
+        // 수정 모드
+        final scheduleUpdate = ScheduleUpdate(
+          title: _titleController.text.trim(),
+          startTime: _startTime.toUtc(),
+          endTime: _endTime.toUtc(),
+          description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
         );
+
+        await ref.read(scheduleMutationsProvider.notifier)
+            .updateSchedule(widget.existingSchedule!.id, scheduleUpdate);
+
+        if (mounted) {
+          navigator.pop();
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('일정이 수정되었습니다'),
+                ],
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        // 생성 모드
+        final scheduleCreate = ScheduleCreate(
+          title: _titleController.text.trim(),
+          startTime: _startTime.toUtc(),
+          endTime: _endTime.toUtc(),
+          description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        );
+
+        await ref.read(scheduleMutationsProvider.notifier).createSchedule(scheduleCreate);
+
+        if (mounted) {
+          navigator.pop();
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('일정이 생성되었습니다'),
+                ],
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
 
     } catch (error) {
       // 에러 처리
-      debugPrint('일정 생성 에러: $error');
+      final action = widget.existingSchedule != null ? '수정' : '생성';
+      debugPrint('일정 $action 에러: $error');
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
@@ -460,7 +521,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                 const Icon(Icons.error, color: Colors.white),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text('일정 생성에 실패했습니다: ${error.toString()}'),
+                  child: Text('일정 $action에 실패했습니다: ${error.toString()}'),
                 ),
               ],
             ),
@@ -490,7 +551,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   }
 }
 
-/// Modal Bottom Sheet를 보여주는 헬퍼 함수
+/// Modal Bottom Sheet를 보여주는 헬퍼 함수 (일정 생성)
 ///
 /// FloatingActionButton의 onPressed에서 호출하여 사용합니다.
 ///
@@ -525,3 +586,35 @@ Future<void> showScheduleFormSheet(
     ),
   );
 }
+
+/// Modal Bottom Sheet를 보여주는 헬퍼 함수 (일정 수정)
+///
+/// 기존 일정 데이터를 받아서 수정 폼을 표시합니다.
+///
+/// 사용 예:
+/// ```dart
+/// showScheduleEditSheet(context, existingSchedule);
+/// ```
+Future<void> showScheduleEditSheet(
+  BuildContext context,
+  ScheduleRead existingSchedule,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: ScheduleFormSheet(
+        existingSchedule: existingSchedule,
+      ),
+    ),
+  );
+}
+

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_appointment_builder.dart'
     as custom_builder;
-import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
+import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_sheet.dart';
 
 /// SfCalendar 위젯을 래핑한 캘린더 뷰
 ///
@@ -46,7 +47,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(calendarSettingsProvider);
-    final dataSourceAsync = ref.watch(calendarDataSourceProvider);
+    final dataSourceAsync = ref.watch(mixedCalendarDataSourceProvider);
 
     // 컨트롤러와 Provider 상태 동기화
     _calendarController.view = settings.viewType.toSfCalendarView();
@@ -58,7 +59,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       loading: () => _buildCalendar(
         context,
         settings,
-        ScheduleCalendarDataSource.empty(),
+        MixedCalendarDataSource([]),
         isLoading: true,
       ),
       error: (error, stack) => _buildErrorView(context, error),
@@ -68,7 +69,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   Widget _buildCalendar(
     BuildContext context,
     CalendarSettingsState settings,
-    ScheduleCalendarDataSource dataSource, {
+    MixedCalendarDataSource dataSource, {
     bool isLoading = false,
   }) {
     final theme = Theme.of(context);
@@ -288,16 +289,72 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     if (details.targetElement == CalendarElement.appointment &&
         details.appointments != null &&
         details.appointments!.isNotEmpty) {
-      // 일정 탭
+      // 일정 또는 휴일 탭
       final appointment = details.appointments!.first as Appointment;
-      final scheduleId = appointment.id as String?;
-      if (scheduleId != null && widget.onScheduleTap != null) {
-        widget.onScheduleTap!(scheduleId);
+      final appointmentId = appointment.id as String?;
+
+      if (appointmentId != null) {
+        _handleAppointmentTap(appointmentId);
       }
     } else if (details.targetElement == CalendarElement.calendarCell &&
         details.date != null) {
       // 날짜 셀 탭 - 선택 날짜 변경
       ref.read(calendarSettingsProvider.notifier).setSelectedDate(details.date!);
+    }
+  }
+
+  /// 일정/휴일 탭 처리
+  void _handleAppointmentTap(String appointmentId) async {
+    // 휴일인지 확인 (ID가 'holiday_'로 시작)
+    if (appointmentId.startsWith('holiday_')) {
+      await _handleHolidayTap(appointmentId);
+    } else {
+      // 일반 일정 처리
+      if (widget.onScheduleTap != null) {
+        widget.onScheduleTap!(appointmentId);
+      } else {
+        // 기본 상세 보기 처리
+        await _handleScheduleTap(appointmentId);
+      }
+    }
+  }
+
+  /// 휴일 탭 처리
+  Future<void> _handleHolidayTap(String holidayId) async {
+    try {
+      // holiday_YYYYMMDD_seq 형태에서 YYYYMMDD 추출
+      final parts = holidayId.split('_');
+      if (parts.length >= 2) {
+        final locdate = parts[1];
+        final year = int.parse(locdate.substring(0, 4));
+
+        // 해당 연도의 휴일 목록에서 찾기
+        final holidays = await ref.read(holidaysProvider(year).future);
+        final holiday = holidays.where((h) => holidayId.contains(h.locdate)).firstOrNull;
+
+        if (holiday != null && context.mounted) {
+          // ignore: use_build_context_synchronously
+          showHolidayDetailSheet(context, holiday);
+        }
+      }
+    } catch (error) {
+      debugPrint('휴일 상세 보기 오류: $error');
+    }
+  }
+
+  /// 일정 탭 처리
+  Future<void> _handleScheduleTap(String scheduleId) async {
+    try {
+      // 현재 로드된 일정들에서 찾기
+      final schedules = await ref.read(filteredSchedulesProvider.future);
+      final schedule = schedules.where((s) => s.id == scheduleId).firstOrNull;
+
+      if (schedule != null && context.mounted) {
+        // ignore: use_build_context_synchronously
+        showScheduleDetailSheet(context, schedule);
+      }
+    } catch (error) {
+      debugPrint('일정 상세 보기 오류: $error');
     }
   }
 
@@ -315,8 +372,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     if (details.appointment == null || details.droppingTime == null) return;
 
     final appointment = details.appointment as Appointment;
-    final scheduleId = appointment.id as String?;
-    if (scheduleId == null) return;
+    final appointmentId = appointment.id as String?;
+    if (appointmentId == null || appointmentId.startsWith('holiday_')) return; // 휴일은 드래그 불가
 
     // 시간 차이 계산
     final duration = appointment.endTime.difference(appointment.startTime);
@@ -325,7 +382,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     // API 호출로 일정 이동
     ref.read(scheduleMutationsProvider.notifier).moveSchedule(
-          scheduleId,
+          appointmentId,
           newStartTime: newStartTime,
           newEndTime: newEndTime,
         );
@@ -336,12 +393,12 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     if (details.appointment == null) return;
 
     final appointment = details.appointment as Appointment;
-    final scheduleId = appointment.id as String?;
-    if (scheduleId == null) return;
+    final appointmentId = appointment.id as String?;
+    if (appointmentId == null || appointmentId.startsWith('holiday_')) return; // 휴일은 리사이즈 불가
 
     // API 호출로 일정 리사이즈
     ref.read(scheduleMutationsProvider.notifier).resizeSchedule(
-          scheduleId,
+          appointmentId,
           newStartTime: details.startTime,
           newEndTime: details.endTime!,
         );
@@ -378,7 +435,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              ref.invalidate(calendarDataSourceProvider);
+              ref.invalidate(mixedCalendarDataSourceProvider);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('다시 시도'),
