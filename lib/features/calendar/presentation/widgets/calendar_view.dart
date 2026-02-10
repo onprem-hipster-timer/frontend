@@ -47,7 +47,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(calendarSettingsProvider);
-    final dataSourceAsync = ref.watch(mixedCalendarDataSourceProvider);
+    final dataSourceAsync = ref.watch(scheduleOnlyDataSourceProvider);
 
     // 컨트롤러와 Provider 상태 동기화
     _calendarController.view = settings.viewType.toSfCalendarView();
@@ -59,7 +59,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       loading: () => _buildCalendar(
         context,
         settings,
-        MixedCalendarDataSource([]),
+        ScheduleOnlyDataSource([]),
         isLoading: true,
       ),
       error: (error, stack) => _buildErrorView(context, error),
@@ -69,7 +69,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   Widget _buildCalendar(
     BuildContext context,
     CalendarSettingsState settings,
-    MixedCalendarDataSource dataSource, {
+    ScheduleOnlyDataSource dataSource, {
     bool isLoading = false,
   }) {
     final theme = Theme.of(context);
@@ -88,6 +88,13 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           allowViewNavigation: true,
           allowDragAndDrop: true,
           allowAppointmentResize: true,
+
+          // ============================================================
+          // 휴일 표시 설정
+          // ============================================================
+
+          monthCellBuilder: _buildMonthCell, // 월간 뷰 휴일 표시
+          specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
 
           // ============================================================
           // 콜백 설정
@@ -289,63 +296,49 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     if (details.targetElement == CalendarElement.appointment &&
         details.appointments != null &&
         details.appointments!.isNotEmpty) {
-      // 일정 또는 휴일 탭
+      // 일정 탭 (휴일은 Appointment에서 제외됨)
       final appointment = details.appointments!.first as Appointment;
       final appointmentId = appointment.id as String?;
 
       if (appointmentId != null) {
-        _handleAppointmentTap(appointmentId);
+        _handleScheduleTap(appointmentId);
       }
     } else if (details.targetElement == CalendarElement.calendarCell &&
         details.date != null) {
-      // 날짜 셀 탭 - 선택 날짜 변경
-      ref.read(calendarSettingsProvider.notifier).setSelectedDate(details.date!);
+      // 날짜 셀 탭 - 휴일 확인 후 처리
+      _handleDateCellTap(details.date!);
     }
   }
 
-  /// 일정/휴일 탭 처리
-  void _handleAppointmentTap(String appointmentId) async {
-    // 휴일인지 확인 (ID가 'holiday_'로 시작)
-    if (appointmentId.startsWith('holiday_')) {
-      await _handleHolidayTap(appointmentId);
-    } else {
-      // 일반 일정 처리
-      if (widget.onScheduleTap != null) {
-        widget.onScheduleTap!(appointmentId);
-      } else {
-        // 기본 상세 보기 처리
-        await _handleScheduleTap(appointmentId);
+  /// 날짜 셀 탭 처리 (휴일 포함)
+  void _handleDateCellTap(DateTime date) {
+    // 선택 날짜 변경
+    ref.read(calendarSettingsProvider.notifier).setSelectedDate(date);
+
+    // 휴일인지 확인하여 상세 시트 표시
+    final holidayAsync = ref.read(currentHolidaysProvider);
+    holidayAsync.whenData((holidays) {
+      final holiday = holidays.where((h) {
+        final holidayDate = parseHolidayDate(h.locdate);
+        return holidayDate != null && _isSameDay(holidayDate, date);
+      }).firstOrNull;
+
+      if (holiday != null && context.mounted) {
+        showHolidayDetailSheet(context, holiday);
       }
-    }
-  }
-
-  /// 휴일 탭 처리
-  Future<void> _handleHolidayTap(String holidayId) async {
-    try {
-      // holiday_YYYYMMDD_seq 형태에서 YYYYMMDD 추출
-      final parts = holidayId.split('_');
-      if (parts.length >= 2) {
-        final locdate = parts[1];
-        final year = int.parse(locdate.substring(0, 4));
-
-        // 해당 연도의 휴일 목록에서 찾기
-        final holidays = await ref.read(holidaysProvider(year).future);
-        final holiday = holidays.where((h) => holidayId.contains(h.locdate)).firstOrNull;
-
-        if (holiday != null && context.mounted) {
-          // ignore: use_build_context_synchronously
-          showHolidayDetailSheet(context, holiday);
-        }
-      }
-    } catch (error) {
-      debugPrint('휴일 상세 보기 오류: $error');
-    }
+    });
   }
 
   /// 일정 탭 처리
   Future<void> _handleScheduleTap(String scheduleId) async {
+    // 외부 콜백이 있으면 우선 사용
+    if (widget.onScheduleTap != null) {
+      widget.onScheduleTap!(scheduleId);
+      return;
+    }
+
+    // 기본 상세 보기 처리
     try {
-      // 현재 로드된 일정들에서 찾기
       final schedules = await ref.read(filteredSchedulesProvider.future);
       final schedule = schedules.where((s) => s.id == scheduleId).firstOrNull;
 
@@ -373,7 +366,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     final appointment = details.appointment as Appointment;
     final appointmentId = appointment.id as String?;
-    if (appointmentId == null || appointmentId.startsWith('holiday_')) return; // 휴일은 드래그 불가
+    if (appointmentId == null) return; // 일정만 드래그 가능
 
     // 시간 차이 계산
     final duration = appointment.endTime.difference(appointment.startTime);
@@ -394,7 +387,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     final appointment = details.appointment as Appointment;
     final appointmentId = appointment.id as String?;
-    if (appointmentId == null || appointmentId.startsWith('holiday_')) return; // 휴일은 리사이즈 불가
+    if (appointmentId == null) return; // 일정만 리사이즈 가능
 
     // API 호출로 일정 리사이즈
     ref.read(scheduleMutationsProvider.notifier).resizeSchedule(
@@ -435,7 +428,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              ref.invalidate(mixedCalendarDataSourceProvider);
+              ref.invalidate(scheduleOnlyDataSourceProvider);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('다시 시도'),
@@ -443,5 +436,127 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         ],
       ),
     );
+  }
+
+  // ============================================================
+  // 휴일 표시 관련 헬퍼 메서드들
+  // ============================================================
+
+  /// 월간 뷰 셀 빌더 - 휴일 표시
+  Widget _buildMonthCell(BuildContext context, MonthCellDetails details) {
+    final theme = Theme.of(context);
+
+    // 휴일 확인
+    final holidayAsync = ref.watch(currentHolidaysProvider);
+
+    return holidayAsync.when(
+      data: (holidays) {
+        // 현재 날짜에 해당하는 휴일 찾기
+        final holiday = holidays.where((h) {
+          final holidayDate = parseHolidayDate(h.locdate);
+          return holidayDate != null &&
+                 _isSameDay(holidayDate, details.date);
+        }).firstOrNull;
+
+        // 기본 셀 위젯
+        return Container(
+          alignment: Alignment.topCenter,
+          padding: const EdgeInsets.all(2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 날짜 숫자
+              Text(
+                '${details.date.day}',
+                style: TextStyle(
+                  color: holiday != null
+                    ? Colors.red
+                    : details.date.month == details.visibleDates[details.visibleDates.length ~/ 2].month
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  fontSize: 16,
+                  fontWeight: holiday != null ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+
+              // 휴일 이름 (있는 경우)
+              if (holiday != null)
+                Flexible(
+                  child: Text(
+                    holiday.dateName,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+      loading: () => _buildDefaultMonthCell(context, details),
+      error: (error, stack) => _buildDefaultMonthCell(context, details),
+    );
+  }
+
+  /// 기본 월간 셀 (휴일 로딩 실패 시)
+  Widget _buildDefaultMonthCell(BuildContext context, MonthCellDetails details) {
+    final theme = Theme.of(context);
+    final isCurrentMonth = details.date.month ==
+        details.visibleDates[details.visibleDates.length ~/ 2].month;
+
+    return Container(
+      alignment: Alignment.topCenter,
+      padding: const EdgeInsets.all(2),
+      child: Text(
+        '${details.date.day}',
+        style: TextStyle(
+          color: isCurrentMonth
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  /// Special Regions 빌더 - 일간/주간 뷰 휴일 표시
+  List<TimeRegion> _buildSpecialRegions(CalendarSettingsState settings) {
+    final holidayAsync = ref.read(currentHolidaysProvider);
+
+    return holidayAsync.when(
+      data: (holidays) {
+        return holidays.map((holiday) {
+          final holidayDate = parseHolidayDate(holiday.locdate);
+          if (holidayDate == null) return null;
+
+          return TimeRegion(
+            startTime: holidayDate,
+            endTime: holidayDate.add(const Duration(days: 1)),
+            text: holiday.dateName,
+            color: Colors.red.withValues(alpha: 0.1),
+            enablePointerInteraction: false,
+            textStyle: const TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          );
+        }).whereType<TimeRegion>().toList();
+      },
+      loading: () => [],
+      error: (error, stack) => [],
+    );
+  }
+
+  /// 두 날짜가 같은 날인지 확인
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+           date1.month == date2.month &&
+           date1.day == date2.day;
   }
 }

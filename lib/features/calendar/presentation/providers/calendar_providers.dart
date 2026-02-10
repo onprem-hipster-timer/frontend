@@ -339,33 +339,6 @@ Appointment _scheduleToAppointment(ScheduleRead schedule) {
   );
 }
 
-/// HolidayItem을 Appointment로 변환하는 헬퍼 함수
-Appointment _holidayToAppointment(HolidayItem holiday) {
-  final date = parseHolidayDate(holiday.locdate);
-  if (date == null) {
-    // 파싱 실패 시 현재 날짜 사용 (오류 방지)
-    final now = DateTime.now();
-    return Appointment(
-      id: 'holiday_${holiday.seq}',
-      subject: holiday.dateName,
-      startTime: now,
-      endTime: now.add(const Duration(hours: 1)),
-      color: Colors.red.withValues(alpha: 0.8),
-      isAllDay: true,
-    );
-  }
-
-  return Appointment(
-    id: 'holiday_${holiday.locdate}_${holiday.seq}',
-    subject: holiday.dateName,
-    startTime: date,
-    endTime: date.add(const Duration(days: 1)),
-    color: Colors.red.withValues(alpha: 0.8),
-    isAllDay: true,
-    notes: '휴일',
-  );
-}
-
 /// 종일 이벤트 여부 판단 헬퍼 함수
 bool _isAllDayEvent(ScheduleRead schedule) {
   final start = schedule.startTime.toLocal();
@@ -411,10 +384,11 @@ Color _parseColor(String colorString) {
   }
 }
 
-
-/// 혼합 데이터(일정 + 휴일)를 위한 CalendarDataSource
-class MixedCalendarDataSource extends CalendarDataSource {
-  MixedCalendarDataSource(List<Appointment> appointments) {
+/// 일정 전용 CalendarDataSource (휴일 제외)
+///
+/// 사용자의 실제 일정만을 포함하며, 휴일은 별도의 UI 요소로 표시됩니다.
+class ScheduleOnlyDataSource extends CalendarDataSource {
+  ScheduleOnlyDataSource(List<Appointment> appointments) {
     this.appointments = appointments;
   }
 }
