@@ -7,6 +7,8 @@ import 'package:momeet/features/calendar/presentation/state/calendar_state.dart'
 import 'package:momeet/features/calendar/presentation/widgets/calendar_appointment_builder.dart'
     as custom_builder;
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_sheet.dart';
+import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
+import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
 
 /// SfCalendar 위젯을 래핑한 캘린더 뷰
 ///
@@ -315,7 +317,13 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     // 선택 날짜 변경
     ref.read(calendarSettingsProvider.notifier).setSelectedDate(date);
 
-    // 휴일인지 확인하여 상세 시트 표시
+    // 해당 날짜에 일정이 있는지 확인
+    final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
+    final hasAppointments = scheduleDataSource?.appointments
+        ?.where((app) => _isSameDay(app.startTime, date))
+        .isNotEmpty ?? false;
+
+    // 휴일인지 확인
     final holidayAsync = ref.read(currentHolidaysProvider);
     holidayAsync.whenData((holidays) {
       final holiday = holidays.where((h) {
@@ -324,7 +332,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       }).firstOrNull;
 
       if (holiday != null && context.mounted) {
+        // 휴일인 경우 휴일 상세 시트 표시
         showHolidayDetailSheet(context, holiday);
+      } else if (!hasAppointments && context.mounted) {
+        // 일정이 없는 날짜인 경우 일정 생성 폼 표시
+        showScheduleFormSheet(context, initialDate: date);
       }
     });
   }
@@ -445,6 +457,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   /// 월간 뷰 셀 빌더 - 휴일 표시
   Widget _buildMonthCell(BuildContext context, MonthCellDetails details) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isToday = _isSameDay(details.date, DateTime.now());
+    final isCurrentMonth = details.date.month ==
+        details.visibleDates[details.visibleDates.length ~/ 2].month;
+    final isWeekend = details.date.weekday == DateTime.sunday;
 
     // 휴일 확인
     final holidayAsync = ref.watch(currentHolidaysProvider);
@@ -454,44 +471,73 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         // 현재 날짜에 해당하는 휴일 찾기
         final holiday = holidays.where((h) {
           final holidayDate = parseHolidayDate(h.locdate);
-          return holidayDate != null &&
-                 _isSameDay(holidayDate, details.date);
+          return holidayDate != null && _isSameDay(holidayDate, details.date);
         }).firstOrNull;
 
-        // 기본 셀 위젯
+        final isHoliday = holiday != null;
+        final isRedDay = isHoliday || isWeekend;
+
         return Container(
-          alignment: Alignment.topCenter,
-          padding: const EdgeInsets.all(2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              width: 0.5,
+            ),
+            color: isToday
+                ? colorScheme.primary.withValues(alpha: 0.1)
+                : colorScheme.surface,
+          ),
+          child: Stack(
             children: [
-              // 날짜 숫자
-              Text(
-                '${details.date.day}',
-                style: TextStyle(
-                  color: holiday != null
-                    ? Colors.red
-                    : details.date.month == details.visibleDates[details.visibleDates.length ~/ 2].month
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                  fontSize: 16,
-                  fontWeight: holiday != null ? FontWeight.bold : FontWeight.normal,
-                ),
+              // 날짜 (좌측 상단)
+              Positioned(
+                left: 4,
+                top: 4,
+                child: isToday
+                    ? CircleAvatar(
+                        radius: 12,
+                        backgroundColor: colorScheme.primary,
+                        child: Text(
+                          '${details.date.day}',
+                          style: TextStyle(
+                            color: colorScheme.onPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        '${details.date.day}',
+                        style: TextStyle(
+                          color: isRedDay
+                              ? Colors.red
+                              : isCurrentMonth
+                                  ? colorScheme.onSurface
+                                  : colorScheme.onSurface.withValues(alpha: 0.4),
+                          fontSize: 14,
+                          fontWeight: isRedDay ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
               ),
 
-              // 휴일 이름 (있는 경우)
-              if (holiday != null)
-                Flexible(
-                  child: Text(
-                    holiday.dateName,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w500,
+              // 휴일 이름 (우측 상단)
+              if (isHoliday)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 60),
+                    child: Text(
+                      holiday.dateName,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                   ),
                 ),
             ],
@@ -506,20 +552,55 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   /// 기본 월간 셀 (휴일 로딩 실패 시)
   Widget _buildDefaultMonthCell(BuildContext context, MonthCellDetails details) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isToday = _isSameDay(details.date, DateTime.now());
     final isCurrentMonth = details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
+    final isWeekend = details.date.weekday == DateTime.sunday;
 
     return Container(
-      alignment: Alignment.topCenter,
-      padding: const EdgeInsets.all(2),
-      child: Text(
-        '${details.date.day}',
-        style: TextStyle(
-          color: isCurrentMonth
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSurface.withValues(alpha: 0.4),
-          fontSize: 16,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          width: 0.5,
         ),
+        color: isToday
+            ? colorScheme.primary.withValues(alpha: 0.1)
+            : colorScheme.surface,
+      ),
+      child: Stack(
+        children: [
+          // 날짜 (좌측 상단)
+          Positioned(
+            left: 4,
+            top: 4,
+            child: isToday
+                ? CircleAvatar(
+                    radius: 12,
+                    backgroundColor: colorScheme.primary,
+                    child: Text(
+                      '${details.date.day}',
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : Text(
+                    '${details.date.day}',
+                    style: TextStyle(
+                      color: isWeekend
+                          ? Colors.red
+                          : isCurrentMonth
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                      fontSize: 14,
+                      fontWeight: isWeekend ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }

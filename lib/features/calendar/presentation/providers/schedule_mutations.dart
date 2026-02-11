@@ -25,6 +25,9 @@ class ScheduleMutations extends _$ScheduleMutations {
   /// [data] 생성할 일정 정보
   /// 성공 시 일정 목록을 새로고침하고, UI 로딩 상태를 관리합니다.
   Future<void> createSchedule(ScheduleCreate data) async {
+    // 이미 dispose된 상태인지 확인
+    if (!ref.mounted) return;
+
     // 로딩 상태로 설정
     state = const AsyncValue.loading();
 
@@ -62,6 +65,9 @@ class ScheduleMutations extends _$ScheduleMutations {
   /// [id] 수정할 일정 ID
   /// [data] 수정할 일정 정보
   Future<void> updateSchedule(String id, ScheduleUpdate data) async {
+    // 이미 dispose된 상태인지 확인
+    if (!ref.mounted) return;
+
     state = const AsyncValue.loading();
 
     try {
@@ -93,6 +99,9 @@ class ScheduleMutations extends _$ScheduleMutations {
   ///
   /// [id] 삭제할 일정 ID
   Future<void> deleteSchedule(String id) async {
+    // 이미 dispose된 상태인지 확인
+    if (!ref.mounted) return;
+
     state = const AsyncValue.loading();
 
     try {

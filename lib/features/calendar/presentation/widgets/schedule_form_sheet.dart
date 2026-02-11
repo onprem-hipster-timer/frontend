@@ -566,7 +566,22 @@ Future<void> showScheduleFormSheet(
   BuildContext context, {
   DateTime? initialStartTime,
   DateTime? initialEndTime,
+  DateTime? initialDate, // 특정 날짜 클릭 시 사용
 }) {
+  // initialDate가 제공되면 해당 날짜의 다음 정각으로 시작 시간 설정
+  DateTime? defaultStartTime = initialStartTime;
+  DateTime? defaultEndTime = initialEndTime;
+
+  if (initialDate != null && defaultStartTime == null) {
+    final now = DateTime.now();
+    final targetDate = initialDate;
+
+    // 클릭한 날짜에 현재 시간의 다음 정각으로 설정
+    final nextHour = now.hour < 23 ? now.hour + 1 : now.hour;
+    defaultStartTime = DateTime(targetDate.year, targetDate.month, targetDate.day, nextHour, 0);
+    defaultEndTime = defaultStartTime.add(const Duration(hours: 1));
+  }
+
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true, // 키보드가 올라와도 전체 크기 유지
@@ -580,8 +595,8 @@ Future<void> showScheduleFormSheet(
         ),
       ),
       child: ScheduleFormSheet(
-        initialStartTime: initialStartTime,
-        initialEndTime: initialEndTime,
+        initialStartTime: defaultStartTime,
+        initialEndTime: defaultEndTime,
       ),
     ),
   );

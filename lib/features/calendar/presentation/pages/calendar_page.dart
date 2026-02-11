@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_view_selector.dart';
 
 import '../widgets/schedule_form_sheet.dart';
 
@@ -55,56 +56,10 @@ class CalendarPage extends ConsumerWidget {
             ref.read(calendarSettingsProvider.notifier).goToToday();
           },
         ),
-        // 뷰 모드 선택
-        PopupMenuButton<CalendarViewType>(
-          icon: const Icon(Icons.view_agenda),
-          tooltip: '뷰 모드',
-          initialValue: settings.viewType,
-          onSelected: (viewType) {
-            ref.read(calendarSettingsProvider.notifier).setViewType(viewType);
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: CalendarViewType.day,
-              child: Row(
-                children: [
-                  Icon(Icons.view_day, size: 20),
-                  SizedBox(width: 12),
-                  Text('일간'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: CalendarViewType.week,
-              child: Row(
-                children: [
-                  Icon(Icons.view_week, size: 20),
-                  SizedBox(width: 12),
-                  Text('주간'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: CalendarViewType.month,
-              child: Row(
-                children: [
-                  Icon(Icons.calendar_view_month, size: 20),
-                  SizedBox(width: 12),
-                  Text('월간'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: CalendarViewType.agenda,
-              child: Row(
-                children: [
-                  Icon(Icons.view_list, size: 20),
-                  SizedBox(width: 12),
-                  Text('아젠다'),
-                ],
-              ),
-            ),
-          ],
+        // 뷰 선택기 (컴팩트)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.0),
+          child: CalendarViewSelector(isCompact: true),
         ),
         // 필터 버튼
         IconButton(

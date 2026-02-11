@@ -589,15 +589,3 @@ Future<void> showScheduleDetailSheet(
   );
 }
 
-/// 휴일 상세 시트를 표시하는 헬퍼 함수
-Future<void> showHolidayDetailSheet(
-  BuildContext context,
-  HolidayItem holiday,
-) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => ScheduleDetailSheet.holiday(holiday: holiday),
-  );
-}
