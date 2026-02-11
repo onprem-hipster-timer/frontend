@@ -15,5 +15,5 @@ export 'presentation/widgets/tag_group_form_sheet.dart';
 // Providers
 export 'presentation/providers/tag_providers.dart';
 
-// Utils (기존 color_utils는 features 레벨에 있었지만, core로 이동)
-export 'presentation/utils/color_utils.dart';
+// Utils
+export 'presentation/utils/tag_color_palette.dart';

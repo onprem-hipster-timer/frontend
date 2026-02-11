@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
-import 'package:momeet/features/tag/presentation/utils/color_utils.dart';
+import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
+import 'package:momeet/core/utils/color_utils.dart';
 
 /// 태그 그룹 생성/수정 폼 시트
 class TagGroupFormSheet extends ConsumerStatefulWidget {
@@ -34,11 +35,11 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     if (widget.tagGroup != null) {
       _nameController.text = widget.tagGroup!.name;
       _descriptionController.text = widget.tagGroup!.description ?? '';
-      _selectedColor = ColorExt.fromHex(widget.tagGroup!.color);
+      _selectedColor = HexColor.fromHex(widget.tagGroup!.color);
       _isTodoGroup = widget.tagGroup!.isTodoGroup;
     } else {
       // 생성 모드인 경우 기본값 설정
-      _selectedColor = TagColors.defaultColor;
+      _selectedColor = TagColorPalette.defaultColor;
       _isTodoGroup = false;
     }
   }
@@ -217,7 +218,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         Wrap(
           spacing: 12,
           runSpacing: 12,
-        children: TagColors.palette.map((color) {
+        children: TagColorPalette.colors.map((color) {
             final isSelected = color.toARGB32() == _selectedColor.toARGB32();
 
             return GestureDetector(

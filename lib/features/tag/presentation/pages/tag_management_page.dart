@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
-import 'package:momeet/features/tag/presentation/utils/color_utils.dart';
+import 'package:momeet/core/utils/color_utils.dart';
 
 /// 태그 관리 페이지
 ///
-/// 태그 그룹과 태그를 계층형 리스트로 보여주고,
-/// 생성/수정/삭제 기능을 제공합니다.
+/// CustomScrollView + SliverList를 사용하여 계층형 태그 구조를 효율적으로 렌더링합니다.
+/// 태그 그룹과 하위 태그들을 ExpansionTile로 표시하고, 생성/수정/삭제 기능을 제공합니다.
 class TagManagementPage extends ConsumerWidget {
   const TagManagementPage({super.key});
 
@@ -21,28 +22,27 @@ class TagManagementPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('태그 관리'),
         elevation: 0,
-        actions: [
-          // 새 그룹 추가 버튼
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: '새 태그 그룹',
-            onPressed: () => _showCreateGroupDialog(context),
-          ),
-        ],
+        centerTitle: true,
       ),
       body: tagTreeAsync.when(
         data: (tagGroups) => _buildTagList(context, ref, tagGroups),
         loading: () => _buildLoadingView(),
         error: (error, stack) => _buildErrorView(context, ref, error),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCreateGroupSheet(context),
+        icon: const Icon(Icons.add),
+        label: const Text('새 그룹'),
+        tooltip: '새 태그 그룹 만들기',
+      ),
     );
   }
 
-  /// 태그 리스트 위젯
+  /// 태그 리스트 위젯 (CustomScrollView + SliverList)
   Widget _buildTagList(
     BuildContext context,
     WidgetRef ref,
-    List<TagGroupReadWithTags> tagGroups,
+    List<TagGroupWithTags> tagGroups,
   ) {
     if (tagGroups.isEmpty) {
       return _buildEmptyView(context);
@@ -50,111 +50,69 @@ class TagManagementPage extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        // 태그 그룹들을 슬리버로 렌더링
-        ...tagGroups.map((group) => _buildTagGroupSliver(context, ref, group)),
-
-        // 하단 여백
-        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-      ],
-    );
-  }
-
-  /// 개별 태그 그룹을 슬리버로 구성
-  Widget _buildTagGroupSliver(
-    BuildContext context,
-    WidgetRef ref,
-    TagGroupReadWithTags group,
-  ) {
-    return SliverMainAxisGroup(
-      slivers: [
-        // 그룹 헤더
-        SliverToBoxAdapter(
-          child: _buildTagGroupHeader(context, ref, group),
+        // 각 태그 그룹을 SliverList로 렌더링
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _buildTagGroupItem(context, ref, tagGroups[index]),
+            childCount: tagGroups.length,
+          ),
         ),
 
-        // 태그 목록 (그룹 내)
-        if (group.tags.isNotEmpty)
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildTagItem(
-                context,
-                ref,
-                group.tags[index],
-                group,
-              ),
-              childCount: group.tags.length,
-            ),
-          )
-        else
-          // 태그가 없는 경우
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Card(
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
-                      const Text('이 그룹에는 태그가 없습니다'),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () => _showCreateTagDialog(context, ref, group),
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('태그 추가'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+        // 하단 여백 (FloatingActionButton 공간 확보)
+        const SliverPadding(
+          padding: EdgeInsets.only(bottom: 80),
+        ),
       ],
     );
   }
 
-  /// 태그 그룹 헤더 위젯
-  Widget _buildTagGroupHeader(
+  /// 개별 태그 그룹 아이템
+  Widget _buildTagGroupItem(
     BuildContext context,
     WidgetRef ref,
-    TagGroupReadWithTags group,
+    TagGroupWithTags tagGroup,
   ) {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Card(
         elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: ExpansionTile(
           initiallyExpanded: true,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+
+          // 그룹 헤더 - 좌측에 색상 점과 그룹 이름
           leading: Container(
             width: 20,
             height: 20,
             decoration: BoxDecoration(
-              color: ColorExt.fromHex(group.color),
+              color: HexColor.fromHex(tagGroup.groupColor),
               shape: BoxShape.circle,
             ),
           ),
+
           title: Row(
             children: [
               Expanded(
                 child: Text(
-                  group.name,
+                  tagGroup.groupName,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              if (group.isTodoGroup)
+
+              // Todo 그룹 배지
+              if (tagGroup.isTodoGroup) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -162,197 +120,197 @@ class TagManagementPage extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+                      color: theme.colorScheme.secondary,
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
+              ],
             ],
           ),
-          subtitle: group.description != null
-              ? Text(group.description!)
-              : Text('${group.tags.length}개의 태그'),
+
+          subtitle: tagGroup.groupDescription != null
+              ? Text(tagGroup.groupDescription!)
+              : Text('${tagGroup.tagCount}개의 태그'),
+
+          // 그룹 헤더 우측 액션 버튼들
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               // 태그 추가 버튼
               IconButton(
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.add, size: 20),
                 tooltip: '태그 추가',
-                onPressed: () => _showCreateTagDialog(context, ref, group),
+                onPressed: () => _showCreateTagSheet(context, ref, tagGroup),
                 visualDensity: VisualDensity.compact,
               ),
+
               // 그룹 설정 버튼
               IconButton(
-                icon: const Icon(Icons.settings),
-                tooltip: '그룹 설정',
-                onPressed: () => _showGroupSettingsSheet(context, ref, group),
+                icon: const Icon(Icons.settings, size: 20),
+                tooltip: '그룹 수정',
+                onPressed: () => _showEditGroupSheet(context, tagGroup),
                 visualDensity: VisualDensity.compact,
               ),
-              // 확장 아이콘 (ExpansionTile 기본)
+
+              // ExpansionTile 기본 화살표를 위한 공간
               const SizedBox(width: 12),
             ],
           ),
-          children: const [], // 실제 컨텐츠는 SliverList에서 처리
+
+          // 하위 태그 목록
+          children: tagGroup.tags.map((tag) =>
+            _buildTagItem(context, ref, tag, tagGroup)
+          ).toList(),
         ),
       ),
     );
   }
 
-  /// 개별 태그 아이템 위젯
+  /// 개별 태그 아이템 (ListTile)
   Widget _buildTagItem(
     BuildContext context,
     WidgetRef ref,
     TagRead tag,
-    TagGroupReadWithTags group,
+    TagGroupWithTags parentGroup,
   ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Dismissible(
-          key: Key('tag_${tag.id}'),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (direction) => _confirmDeleteTag(context, tag),
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            color: Colors.red,
-            child: const Icon(
-              Icons.delete,
-              color: Colors.white,
-            ),
-          ),
-          onDismissed: (direction) {
-            ref.read(tagMutationsProvider.notifier).deleteTag(tag.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${tag.name} 태그가 삭제되었습니다'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          child: ListTile(
-            leading: Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: ColorExt.fromHex(tag.color),
-                shape: BoxShape.circle,
-              ),
-            ),
-            title: Text(tag.name),
-            subtitle: tag.description != null ? Text(tag.description!) : null,
-            trailing: IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              tooltip: '태그 수정',
-              onPressed: () => _showEditTagDialog(context, ref, tag, group),
-              visualDensity: VisualDensity.compact,
-            ),
-            onTap: () => _showEditTagDialog(context, ref, tag, group),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+
+        // 좌측: 태그 색상의 원(Dot)
+        leading: Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: HexColor.fromHex(tag.color),
+            shape: BoxShape.circle,
           ),
         ),
+
+        // 중앙: 태그 이름
+        title: Text(
+          tag.name,
+          style: theme.textTheme.bodyLarge,
+        ),
+
+        subtitle: tag.description?.isNotEmpty == true
+            ? Text(tag.description!)
+            : null,
+
+        // 우측: 수정 버튼
+        trailing: IconButton(
+          icon: const Icon(Icons.edit, size: 18),
+          tooltip: '태그 수정',
+          onPressed: () => _showEditTagSheet(context, ref, tag, parentGroup),
+          visualDensity: VisualDensity.compact,
+        ),
+
+        // Interaction: 탭하면 수정 폼, 길게 누르면 삭제
+        onTap: () => _showEditTagSheet(context, ref, tag, parentGroup),
+        onLongPress: () => _showDeleteTagDialog(context, ref, tag),
+
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        tileColor: theme.colorScheme.surface,
+        hoverColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
       ),
     );
   }
 
   /// 로딩 뷰
   Widget _buildLoadingView() {
-    return const CustomScrollView(
-      slivers: [
-        SliverFillRemaining(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('태그를 불러오는 중...'),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('태그를 불러오는 중...'),
+        ],
+      ),
     );
   }
 
   /// 에러 뷰
   Widget _buildErrorView(BuildContext context, WidgetRef ref, Object error) {
-    return CustomScrollView(
-      slivers: [
-        SliverFillRemaining(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '태그를 불러올 수 없습니다',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  error.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => ref.invalidate(tagTreeProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('다시 시도'),
-                ),
-              ],
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error,
             ),
-          ),
+            const SizedBox(height: 16),
+            Text(
+              '태그를 불러올 수 없습니다',
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => ref.invalidate(tagTreeProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('다시 시도'),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   /// 빈 상태 뷰
   Widget _buildEmptyView(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverFillRemaining(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.label_outline,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '아직 태그가 없습니다',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '태그 그룹을 만들어 태그를 정리해보세요',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => _showCreateGroupDialog(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('첫 태그 그룹 만들기'),
-                ),
-              ],
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.label_outline,
+              size: 64,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
-          ),
+            const SizedBox(height: 16),
+            Text(
+              '아직 태그가 없습니다',
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '태그 그룹을 만들어 태그를 정리해보세요',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _showCreateGroupSheet(context),
+              icon: const Icon(Icons.add),
+              label: const Text('첫 태그 그룹 만들기'),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -360,24 +318,45 @@ class TagManagementPage extends ConsumerWidget {
   // Event Handlers
   // ============================================================
 
-  /// 새 태그 그룹 생성 다이얼로그
-  void _showCreateGroupDialog(BuildContext context) {
+  /// 새 태그 그룹 생성 시트 표시
+  void _showCreateGroupSheet(BuildContext context) {
     showTagGroupFormSheet(context);
   }
 
-  /// 새 태그 생성 다이얼로그
-  void _showCreateTagDialog(
+  /// 태그 그룹 수정 시트 표시
+  void _showEditGroupSheet(
+    BuildContext context,
+    TagGroupWithTags tagGroup,
+  ) {
+    // TagGroupReadWithTags를 생성하여 전달
+    final groupWithTags = TagGroupReadWithTags(
+      id: tagGroup.groupId,
+      name: tagGroup.groupName,
+      color: tagGroup.groupColor,
+      isTodoGroup: tagGroup.isTodoGroup,
+      createdAt: tagGroup.createdAt,
+      updatedAt: tagGroup.updatedAt,
+      description: tagGroup.groupDescription,
+      tags: tagGroup.tags,
+    );
+
+    showTagGroupFormSheet(context, tagGroup: groupWithTags);
+  }
+
+  /// 새 태그 생성 시트 표시
+  void _showCreateTagSheet(
     BuildContext context,
     WidgetRef ref,
-    TagGroupReadWithTags group,
+    TagGroupWithTags parentGroup,
   ) {
     final tagGroupsAsync = ref.read(tagTreeProvider);
+
     tagGroupsAsync.when(
-      data: (groups) {
+      data: (allGroups) {
         showTagFormSheet(
           context,
-          defaultGroupId: group.id,
-          availableGroups: groups,
+          availableGroups: allGroups,
+          defaultGroupId: parentGroup.groupId,
         );
       },
       loading: () {},
@@ -385,20 +364,21 @@ class TagManagementPage extends ConsumerWidget {
     );
   }
 
-  /// 태그 수정 다이얼로그
-  void _showEditTagDialog(
+  /// 태그 수정 시트 표시
+  void _showEditTagSheet(
     BuildContext context,
     WidgetRef ref,
     TagRead tag,
-    TagGroupReadWithTags group,
+    TagGroupWithTags parentGroup,
   ) {
     final tagGroupsAsync = ref.read(tagTreeProvider);
+
     tagGroupsAsync.when(
-      data: (groups) {
+      data: (allGroups) {
         showTagFormSheet(
           context,
           tag: tag,
-          availableGroups: groups,
+          availableGroups: allGroups,
         );
       },
       loading: () {},
@@ -406,127 +386,18 @@ class TagManagementPage extends ConsumerWidget {
     );
   }
 
-  /// 그룹 설정 시트 (수정/삭제)
-  void _showGroupSettingsSheet(
+  /// 태그 삭제 확인 다이얼로그
+  Future<void> _showDeleteTagDialog(
     BuildContext context,
     WidgetRef ref,
-    TagGroupReadWithTags group,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => _TagGroupSettingsSheet(group: group),
-    );
-  }
-
-  /// 태그 삭제 확인
-  Future<bool> _confirmDeleteTag(BuildContext context, TagRead tag) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('태그 삭제'),
-        content: Text('${tag.name} 태그를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
-}
-
-/// 태그 그룹 설정 시트
-class _TagGroupSettingsSheet extends ConsumerWidget {
-  final TagGroupReadWithTags group;
-
-  const _TagGroupSettingsSheet({required this.group});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 핸들
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 제목
-          Text(
-            '${group.name} 그룹',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 수정 버튼
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                showTagGroupFormSheet(context, tagGroup: group);
-              },
-              icon: const Icon(Icons.edit),
-              label: const Text('그룹 수정'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 삭제 버튼
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _confirmDeleteGroup(context, ref),
-              icon: const Icon(Icons.delete, color: Colors.red),
-              label: const Text('그룹 삭제', style: TextStyle(color: Colors.red)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Colors.red),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-
-  /// 그룹 삭제 확인
-  Future<void> _confirmDeleteGroup(BuildContext context, WidgetRef ref) async {
+    TagRead tag,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('태그 그룹 삭제'),
+        title: const Text('태그 삭제'),
         content: Text(
-          '${group.name} 그룹을 삭제하시겠습니까?\n'
-          '이 그룹에 속한 ${group.tags.length}개의 태그도 함께 삭제됩니다.\n'
+          '${tag.name} 태그를 삭제하시겠습니까?\n'
           '이 작업은 되돌릴 수 없습니다.',
         ),
         actions: [
@@ -544,15 +415,13 @@ class _TagGroupSettingsSheet extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      Navigator.of(context).pop(); // 설정 시트 닫기
-
       try {
-        await ref.read(tagMutationsProvider.notifier).deleteGroup(group.id);
+        await ref.read(tagMutationsProvider.notifier).deleteTag(tag.id);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${group.name} 그룹이 삭제되었습니다'),
+              content: Text('${tag.name} 태그가 삭제되었습니다'),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -561,7 +430,7 @@ class _TagGroupSettingsSheet extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('그룹 삭제에 실패했습니다: $error'),
+              content: Text('태그 삭제에 실패했습니다: $error'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
             ),
