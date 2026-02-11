@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
-import 'package:momeet/features/home/presentation/pages/home_page.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/todo/todo.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
 /// GoRouter 인스턴스 (Riverpod 통합)
 final routerProvider = Provider<GoRouter>((ref) {
@@ -33,9 +33,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login?redirect=${state.matchedLocation}';
       }
 
-      // 3. 인증된 사용자가 로그인 페이지에 있으면 캘린더로
+      // 3. 인증된 사용자가 로그인 페이지에 있으면 메인 앱으로
       if (isAuthenticated && isLoginRoute) {
-        return '/calendar';
+        return '/';
       }
 
       // 리다이렉트 없음
@@ -46,7 +46,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     routes: [
       // ============================================================
-      // 인증 페이지
+      // 인증 페이지 (Floating Navigation 없음)
       // ============================================================
       GoRoute(
         path: '/login',
@@ -88,102 +88,110 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ============================================================
-      // 메인 페이지
+      // 메인 앱 (Floating Navigation 포함)
       // ============================================================
-      GoRoute(
-        path: '/',
-        name: 'home',
-        builder: (context, state) => const HomePage(),
-      ),
-
-      // ============================================================
-      // 캘린더 페이지
-      // ============================================================
-      GoRoute(
-        path: '/calendar',
-        name: 'calendar',
-        builder: (context, state) {
-          return const CalendarPage();
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          // Floating Navigation Bar와 함께 렌더링
+          return ScaffoldWithNavBar(navigationShell: navigationShell);
         },
-      ),
+        branches: [
+          // 1. 캘린더 브랜치
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                name: 'calendar',
+                builder: (context, state) => const CalendarPage(),
+                routes: [
+                  // 캘린더 하위 라우트
+                  GoRoute(
+                    path: 'schedule/detail',
+                    name: 'schedule-detail',
+                    builder: (context, state) {
+                      final scheduleId = state.uri.queryParameters['id'];
+                      return Scaffold(
+                        appBar: AppBar(title: const Text('일정 상세')),
+                        body: Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
 
-      GoRoute(
-        path: '/schedule/detail',
-        name: 'schedule-detail',
-        builder: (context, state) {
-          final scheduleId = state.uri.queryParameters['id'];
-          // TODO: ScheduleDetailPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('일정 상세')),
-            body: Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
-          );
-        },
-      ),
+          // 2. 할 일 브랜치
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/todo',
+                name: 'todo',
+                builder: (context, state) {
+                  final groupId = state.uri.queryParameters['group_id'];
+                  return TodoListPage(groupId: groupId);
+                },
+              ),
+            ],
+          ),
 
-      // ============================================================
-      // 할 일 페이지
-      // ============================================================
-      GoRoute(
-        path: '/todo',
-        name: 'todo',
-        builder: (context, state) {
-          final groupId = state.uri.queryParameters['group_id'];
-          return TodoListPage(groupId: groupId);
-        },
-      ),
+          // 3. 타이머 브랜치
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/timer',
+                name: 'timer',
+                builder: (context, state) => const TimerPage(),
+                routes: [
+                  // 타이머 하위 라우트
+                  GoRoute(
+                    path: 'detail',
+                    name: 'timer-detail',
+                    builder: (context, state) {
+                      final timerId = state.uri.queryParameters['id'];
+                      return Scaffold(
+                        appBar: AppBar(title: const Text('타이머 상세')),
+                        body: Center(child: Text('타이머 상세 페이지 (ID: $timerId)')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
 
-      // ============================================================
-      // 타이머 페이지
-      // ============================================================
-      GoRoute(
-        path: '/timer',
-        name: 'timer',
-        builder: (context, state) {
-          return TimerPage();
-        },
-      ),
+          // 4. 태그 브랜치
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/tags',
+                name: 'tags',
+                builder: (context, state) {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('태그 관리')),
+                    body: const Center(child: Text('태그 관리 페이지')),
+                  );
+                },
+              ),
+            ],
+          ),
 
-      GoRoute(
-        path: '/timer/detail',
-        name: 'timer-detail',
-        builder: (context, state) {
-          final timerId = state.uri.queryParameters['id'];
-          // TODO: TimerDetailPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('타이머 상세')),
-            body: Center(child: Text('타이머 상세 페이지 (ID: $timerId)')),
-          );
-        },
-      ),
-
-      // ============================================================
-      // 태그 관리 페이지
-      // ============================================================
-      GoRoute(
-        path: '/tag',
-        name: 'tag',
-        builder: (context, state) {
-          // TODO: TagManagementPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('태그 관리')),
-            body: const Center(child: Text('태그 관리 페이지')),
-          );
-        },
-      ),
-
-      // ============================================================
-      // 마이페이지
-      // ============================================================
-      GoRoute(
-        path: '/mypage',
-        name: 'mypage',
-        builder: (context, state) {
-          // TODO: MyPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('마이페이지')),
-            body: const Center(child: Text('마이페이지')),
-          );
-        },
+          // 5. 마이페이지 브랜치
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/mypage',
+                name: 'mypage',
+                builder: (context, state) {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('마이페이지')),
+                    body: const Center(child: Text('마이페이지')),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     ],
 
@@ -195,6 +203,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
 
 /// 라우터 리스너 프로바이더 (네비게이션 이벤트 감지용)
 final routeObserverProvider = Provider<NavigatorObserver>((ref) {
@@ -224,3 +233,4 @@ class GoRouterObserver extends NavigatorObserver {
     }
   }
 }
+
