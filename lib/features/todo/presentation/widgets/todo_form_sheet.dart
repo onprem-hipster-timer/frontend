@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// Todo 생성/수정 폼 시트
@@ -333,17 +334,41 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       data: (tagGroups) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '태그',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+          // 태그 섹션 헤더 (제목 + 새 태그 추가 버튼)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '태그',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => _showCreateTagDialog(context, tagGroups),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('새 태그'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 8),
 
+          // 선택된 태그들 표시 (상단에 고정)
+          if (_selectedTagIds.isNotEmpty) ...[
+            _buildSelectedTags(theme, tagGroups),
+            const SizedBox(height: 16),
+          ],
+
           // 태그 그룹별로 태그 표시
-          ...tagGroups.map((tagGroup) => _buildTagGroupSection(theme, tagGroup)),
+          if (tagGroups.isNotEmpty)
+            ...tagGroups.map((tagGroup) => _buildTagGroupSection(theme, tagGroup))
+          else
+            _buildEmptyTagState(theme),
         ],
       ),
       loading: () => Column(
@@ -356,22 +381,158 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          const Center(child: CircularProgressIndicator()),
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: CircularProgressIndicator(),
+            ),
+          ),
         ],
       ),
       error: (error, stack) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '태그',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => _showCreateTagDialog(context, []),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('새 태그'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: theme.colorScheme.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '태그를 불러오지 못했습니다: $error',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 선택된 태그들을 상단에 표시
+  Widget _buildSelectedTags(ThemeData theme, List<dynamic> tagGroups) {
+    // 선택된 태그들을 찾아서 표시
+    final selectedTags = <TagRead>[];
+    for (final group in tagGroups) {
+      for (final tag in group.tags) {
+        if (_selectedTagIds.contains(tag.id)) {
+          selectedTags.add(tag);
+        }
+      }
+    }
+
+    if (selectedTags.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '선택된 태그 (${selectedTags.length})',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: selectedTags.map((tag) {
+            final tagColor = HexColor.fromHex(tag.color);
+
+            return Chip(
+              label: Text(tag.name),
+              backgroundColor: tagColor.withValues(alpha: 0.2),
+              side: BorderSide(color: tagColor, width: 1),
+              deleteIcon: Icon(
+                Icons.close,
+                size: 16,
+                color: tagColor,
+              ),
+              onDeleted: () {
+                setState(() {
+                  _selectedTagIds.remove(tag.id);
+                });
+              },
+              labelStyle: TextStyle(
+                color: tagColor,
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  /// 빈 태그 상태 (태그가 없을 때)
+  Widget _buildEmptyTagState(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.label_outline,
+            size: 48,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 12),
           Text(
-            '태그',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            '아직 태그가 없습니다',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '태그를 불러오지 못했습니다: $error',
-            style: TextStyle(color: theme.colorScheme.error),
+            '새 태그를 만들어 할 일을 분류해보세요',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => _showCreateTagDialog(context, []),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('첫 태그 만들기'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
           ),
         ],
       ),
@@ -383,13 +544,13 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     if (tagGroup.tags.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 그룹 이름
+          // 그룹 헤더
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               children: [
                 Container(
@@ -401,10 +562,27 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  tagGroup.groupName,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    tagGroup.groupName,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                // 이 그룹에 새 태그 추가 버튼
+                TextButton.icon(
+                  onPressed: () => _showCreateTagDialog(
+                    context,
+                    [tagGroup],
+                    defaultGroupId: tagGroup.groupId,
+                  ),
+                  icon: const Icon(Icons.add, size: 14),
+                  label: const Text('추가'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    textStyle: theme.textTheme.labelSmall,
                   ),
                 ),
               ],
@@ -415,38 +593,74 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: tagGroup.tags.map<Widget>((tag) {
-                final isSelected = _selectedTagIds.contains(tag.id);
-                final tagColor = HexColor.fromHex(tag.color);
+              children: [
+                ...tagGroup.tags.map<Widget>((tag) {
+                  final isSelected = _selectedTagIds.contains(tag.id);
+                  final tagColor = HexColor.fromHex(tag.color);
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(tag.name),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedTagIds.add(tag.id);
-                        } else {
-                          _selectedTagIds.remove(tag.id);
-                        }
-                      });
-                    },
-                    selectedColor: tagColor.withValues(alpha: 0.3),
-                    backgroundColor: theme.colorScheme.surface,
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(tag.name),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTagIds.add(tag.id);
+                          } else {
+                            _selectedTagIds.remove(tag.id);
+                          }
+                        });
+                      },
+                      selectedColor: tagColor.withValues(alpha: 0.2),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      checkmarkColor: tagColor,
+                      side: BorderSide(
+                        color: isSelected ? tagColor : theme.colorScheme.outline.withValues(alpha: 0.3),
+                        width: isSelected ? 1.5 : 0.8,
+                      ),
+                      labelStyle: TextStyle(
+                        color: isSelected ? tagColor : theme.colorScheme.onSurface,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontSize: 13,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  );
+                }),
+
+                // 이 그룹에 태그 추가하는 플러스 버튼
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: ActionChip(
+                    avatar: Icon(
+                      Icons.add,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    label: Text(
+                      '태그 추가',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    onPressed: () => _showCreateTagDialog(
+                      context,
+                      [tagGroup],
+                      defaultGroupId: tagGroup.groupId,
+                    ),
+                    backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                     side: BorderSide(
-                      color: isSelected ? tagColor : theme.colorScheme.outline.withValues(alpha: 0.5),
-                      width: isSelected ? 2 : 1,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                      width: 1,
                     ),
-                    checkmarkColor: tagColor,
-                    labelStyle: TextStyle(
-                      color: isSelected ? tagColor : theme.colorScheme.onSurface,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
           ),
         ],
@@ -518,6 +732,37 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       setState(() {
         _selectedDeadline = picked;
       });
+    }
+  }
+
+  /// 새 태그 생성 다이얼로그 표시
+  Future<void> _showCreateTagDialog(
+    BuildContext context,
+    List<dynamic> availableGroups, {
+    String? defaultGroupId,
+  }) async {
+    if (availableGroups.isEmpty) {
+      // 태그 그룹이 없는 경우 안내
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('먼저 태그 그룹을 생성해주세요. 태그 관리 페이지에서 그룹을 만들 수 있습니다.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // 태그 생성 폼 시트 표시
+    await showTagFormSheet(
+      context,
+      availableGroups: availableGroups.cast(),
+      defaultGroupId: defaultGroupId,
+    );
+
+    // 태그 생성 후 상태 새로고침
+    if (mounted) {
+      // TagTree Provider를 새로고침하여 새로 생성된 태그 반영
+      ref.invalidate(tagTreeProvider);
     }
   }
 
