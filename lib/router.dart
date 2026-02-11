@@ -8,6 +8,7 @@ import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/todo/todo.dart';
+import 'package:momeet/features/tag/tag.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
 /// GoRouter 인스턴스 (Riverpod 통합)
@@ -166,12 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/tags',
                 name: 'tags',
-                builder: (context, state) {
-                  return Scaffold(
-                    appBar: AppBar(title: const Text('태그 관리')),
-                    body: const Center(child: Text('태그 관리 페이지')),
-                  );
-                },
+                builder: (context, state) => const TagManagementPage(),
               ),
             ],
           ),
