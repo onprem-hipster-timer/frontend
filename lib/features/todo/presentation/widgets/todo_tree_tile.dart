@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/core/utils/color_utils.dart';
 
 import '../providers/todo_provider.dart';
 import '../utils/todo_tree_builder.dart';
@@ -345,29 +346,62 @@ class TodoTreeTile extends ConsumerWidget {
   /// 태그 인디케이터
   Widget _buildTagIndicators(BuildContext context, TodoRead todo) {
     final tags = todo.tags.toList();
-    final displayCount = tags.length > 3 ? 3 : tags.length;
+    if (tags.isEmpty) return const SizedBox.shrink();
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ...tags.take(displayCount).map((tag) => Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.only(left: 4),
-          decoration: BoxDecoration(
-            color: _parseColor(tag.color),
-            shape: BoxShape.circle,
-          ),
-        )),
-        if (tags.length > 3)
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              '+${tags.length - 3}',
-              style: Theme.of(context).textTheme.labelSmall,
+    final theme = Theme.of(context);
+    final displayCount = tags.length > 2 ? 2 : tags.length;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 태그 색상 점들
+          ...tags.take(displayCount).map((tag) => Padding(
+            padding: const EdgeInsets.only(right: 3),
+            child: Tooltip(
+              message: tag.name,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: HexColor.fromHex(tag.color),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+              ),
             ),
-          ),
-      ],
+          )),
+
+          // 첫 번째 태그 이름 (공간이 있을 때)
+          if (tags.isNotEmpty)
+            Text(
+              tags.first.name,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+          // 추가 태그 개수 표시
+          if (tags.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 2),
+              child: Text(
+                '+${tags.length - 1}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  fontSize: 10,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -393,21 +427,6 @@ class TodoTreeTile extends ConsumerWidget {
       default:
         return null;
     }
-  }
-
-  /// 색상 문자열 파싱
-  Color _parseColor(String colorString) {
-    try {
-      if (colorString.startsWith('#')) {
-        final hex = colorString.substring(1);
-        if (hex.length == 6) {
-          return Color(int.parse('FF$hex', radix: 16));
-        } else if (hex.length == 8) {
-          return Color(int.parse(hex, radix: 16));
-        }
-      }
-    } catch (_) {}
-    return Colors.grey;
   }
 }
 
