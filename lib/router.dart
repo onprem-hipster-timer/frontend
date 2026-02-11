@@ -7,6 +7,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/home/presentation/pages/home_page.dart';
+import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/todo/todo.dart';
 
 /// GoRouter 인스턴스 (Riverpod 통합)
@@ -138,11 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/timer',
         name: 'timer',
         builder: (context, state) {
-          // TODO: TimerPage 구현
-          return Scaffold(
-            appBar: AppBar(title: const Text('타이머')),
-            body: const Center(child: Text('타이머 페이지')),
-          );
+          return TimerPage();
         },
       ),
 
