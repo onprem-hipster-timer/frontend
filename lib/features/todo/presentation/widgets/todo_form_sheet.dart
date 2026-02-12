@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/features/tag/presentation/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
 
 /// Todo 생성/수정 폼 시트
 ///
@@ -59,7 +60,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     } else {
       // 생성 모드: 기본값으로 초기화
       _selectedStatus = TodoStatus.unscheduled;
-      _selectedTagGroupId = widget.defaultTagGroupId ?? 'default';
+      _selectedTagGroupId = widget.defaultTagGroupId ?? '';
     }
   }
 
@@ -328,49 +329,66 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   /// 태그 선택기
   Widget _buildTagSelector(ThemeData theme) {
-    final tagTreeAsync = ref.watch(tagTreeProvider);
+    final tagTreeAsync = ref.watch(tag_providers.tagTreeProvider);
 
     return tagTreeAsync.when(
-      data: (tagGroups) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 태그 섹션 헤더 (제목 + 새 태그 추가 버튼)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '태그',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+      data: (tagGroups) {
+        // 생성 모드에서 tagGroupId가 비어있다면 첫 번째 그룹을 기본값으로 설정
+        if (!_isEditMode && _selectedTagGroupId.isEmpty && tagGroups.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _selectedTagGroupId = tagGroups.first.group.id;
+            });
+          });
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 태그 섹션 헤더 (제목 + 새 태그 추가 버튼)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '태그',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              TextButton.icon(
-                onPressed: () => _showCreateTagDialog(context, tagGroups),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('새 태그'),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                TextButton.icon(
+                  onPressed: () => _showCreateTagDialog(context, tagGroups),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('새 태그'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
                 ),
-              ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // 선택된 태그 그룹 표시 (생성 모드에서만)
+            if (!_isEditMode && _selectedTagGroupId.isNotEmpty) ...[
+              _buildSelectedTagGroup(theme, tagGroups),
+              const SizedBox(height: 12),
             ],
-          ),
 
-          const SizedBox(height: 8),
+            // 선택된 태그들 표시 (상단에 고정)
+            if (_selectedTagIds.isNotEmpty) ...[
+              _buildSelectedTags(theme, tagGroups),
+              const SizedBox(height: 16),
+            ],
 
-          // 선택된 태그들 표시 (상단에 고정)
-          if (_selectedTagIds.isNotEmpty) ...[
-            _buildSelectedTags(theme, tagGroups),
-            const SizedBox(height: 16),
+            // 태그 그룹별로 태그 표시
+            if (tagGroups.isNotEmpty)
+              ...tagGroups.map((tagGroup) => _buildTagGroupSection(theme, tagGroup))
+            else
+              _buildEmptyTagState(theme),
           ],
-
-          // 태그 그룹별로 태그 표시
-          if (tagGroups.isNotEmpty)
-            ...tagGroups.map((tagGroup) => _buildTagGroupSection(theme, tagGroup))
-          else
-            _buildEmptyTagState(theme),
-        ],
-      ),
+        );
+      },
       loading: () => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -436,8 +454,58 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     );
   }
 
+  /// 선택된 태그 그룹 표시 (생성 모드에서만)
+  Widget _buildSelectedTagGroup(ThemeData theme, List<TagGroupWithTags> tagGroups) {
+    // 현재 선택된 태그 그룹 찾기
+    final selectedGroup = tagGroups.firstWhere(
+      (group) => group.group.id == _selectedTagGroupId,
+      orElse: () => tagGroups.isNotEmpty ? tagGroups.first :
+        throw StateError('No tag groups available'),
+    );
+
+    final groupColor = HexColor.fromHex(selectedGroup.group.color);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: groupColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: groupColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            selectedGroup.group.isTodoGroup
+                ? Icons.task_alt_rounded
+                : Icons.label_outline_rounded,
+            size: 16,
+            color: groupColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${selectedGroup.group.name} 그룹',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: groupColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.lock_outline,
+            size: 12,
+            color: groupColor.withValues(alpha: 0.7),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 선택된 태그들을 상단에 표시
-  Widget _buildSelectedTags(ThemeData theme, List<dynamic> tagGroups) {
+  Widget _buildSelectedTags(ThemeData theme, List<TagGroupWithTags> tagGroups) {
     // 선택된 태그들을 찾아서 표시
     final selectedTags = <TagRead>[];
     for (final group in tagGroups) {
@@ -540,7 +608,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   }
 
   /// 태그 그룹 섹션
-  Widget _buildTagGroupSection(ThemeData theme, dynamic tagGroup) {
+  Widget _buildTagGroupSection(ThemeData theme, TagGroupWithTags tagGroup) {
     if (tagGroup.tags.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -557,14 +625,14 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: HexColor.fromHex(tagGroup.groupColor),
+                    color: HexColor.fromHex(tagGroup.group.color),
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    tagGroup.groupName,
+                    tagGroup.group.name,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -575,7 +643,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                   onPressed: () => _showCreateTagDialog(
                     context,
                     [tagGroup],
-                    defaultGroupId: tagGroup.groupId,
+                    defaultGroupId: tagGroup.group.id,
                   ),
                   icon: const Icon(Icons.add, size: 14),
                   label: const Text('추가'),
@@ -649,7 +717,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                     onPressed: () => _showCreateTagDialog(
                       context,
                       [tagGroup],
-                      defaultGroupId: tagGroup.groupId,
+                      defaultGroupId: tagGroup.group.id,
                     ),
                     backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                     side: BorderSide(
@@ -738,7 +806,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   /// 새 태그 생성 다이얼로그 표시
   Future<void> _showCreateTagDialog(
     BuildContext context,
-    List<dynamic> availableGroups, {
+    List<TagGroupWithTags> availableGroups, {
     String? defaultGroupId,
   }) async {
     if (availableGroups.isEmpty) {
@@ -755,14 +823,14 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     // 태그 생성 폼 시트 표시
     await showTagFormSheet(
       context,
-      availableGroups: availableGroups.cast(),
-      defaultGroupId: defaultGroupId,
+      availableGroups: availableGroups,
+      defaultGroupId: defaultGroupId ?? (availableGroups.isNotEmpty ? availableGroups.first.group.id : null),
     );
 
     // 태그 생성 후 상태 새로고침
     if (mounted) {
       // TagTree Provider를 새로고침하여 새로 생성된 태그 반영
-      ref.invalidate(tagTreeProvider);
+      ref.invalidate(tag_providers.tagTreeProvider);
     }
   }
 
@@ -772,19 +840,56 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       return;
     }
 
-    // tagGroupId 검증 (생성 모드에서 필수)
-    if (!_isEditMode && _selectedTagGroupId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('태그 그룹 정보가 필요합니다. 먼저 태그 그룹을 생성해주세요.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // 생성 모드에서 tagGroupId 검증 및 기본 그룹 생성
+    if (!_isEditMode) {
+      // 태그 그룹 데이터 확인
+      final tagTreeAsync = ref.read(tag_providers.tagTreeProvider);
+      var tagGroups = tagTreeAsync.when(
+        data: (groups) => groups,
+        loading: () => <TagGroupWithTags>[],
+        error: (_, __) => <TagGroupWithTags>[],
+      );
+
+      // 태그 그룹이 없으면 기본 그룹 생성
+      if (tagGroups.isEmpty) {
+        try {
+          final defaultGroup = TagGroupCreate(
+            name: '기본 그룹',
+            color: '#2196F3', // 파란색
+            isTodoGroup: true,
+            description: '할 일을 위한 기본 태그 그룹입니다.',
+          );
+
+          await ref.read(tag_providers.tagMutationsProvider.notifier).createGroup(defaultGroup);
+
+          // 생성 후 다시 태그 그룹 데이터 가져오기
+          final updatedAsync = await ref.refresh(tag_providers.tagTreeProvider.future);
+          tagGroups = updatedAsync;
+
+          if (tagGroups.isNotEmpty) {
+            _selectedTagGroupId = tagGroups.first.group.id;
+          }
+        } catch (error) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('기본 태그 그룹 생성에 실패했습니다: $error'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      } else {
+        // 선택된 그룹 ID가 비어있거나 유효하지 않은 경우
+        if (_selectedTagGroupId.isEmpty ||
+            !tagGroups.any((group) => group.group.id == _selectedTagGroupId)) {
+          // 첫 번째 유효한 그룹으로 설정
+          _selectedTagGroupId = tagGroups.first.group.id;
+        }
+      }
+    }
 
     try {
       if (_isEditMode) {

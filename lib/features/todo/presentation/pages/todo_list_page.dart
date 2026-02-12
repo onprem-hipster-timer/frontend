@@ -8,6 +8,7 @@ import 'package:momeet/shared/api/export.dart';
 import '../providers/todo_provider.dart';
 import '../widgets/todo_tree_tile.dart';
 import '../widgets/todo_form_sheet.dart';
+import 'tag_group_selector_page.dart';
 
 /// Todo 목록 페이지
 class TodoListPage extends ConsumerWidget {
@@ -180,10 +181,29 @@ class TodoListPage extends ConsumerWidget {
   }
 
   /// 할 일 생성 다이얼로그
-  void _showCreateTodoDialog(BuildContext context, WidgetRef ref) {
+  Future<void> _showCreateTodoDialog(BuildContext context, WidgetRef ref) async {
+    String? selectedTagGroupId = groupId;
+
+    // 태그 그룹이 선택되지 않은 경우 선택 페이지를 먼저 띄움
+    if (selectedTagGroupId == null) {
+      final selectedGroup = await Navigator.of(context).push<TagGroupRead>(
+        MaterialPageRoute(
+          builder: (context) => const TagGroupSelectorPage(),
+        ),
+      );
+
+      // 사용자가 그룹을 선택하지 않고 돌아온 경우 중단
+      if (selectedGroup == null) {
+        return;
+      }
+
+      selectedTagGroupId = selectedGroup.id;
+    }
+
+    // 선택된 태그 그룹으로 할 일 생성 폼 띄우기
     showTodoFormSheet(
       context,
-      defaultTagGroupId: groupId,
+      defaultTagGroupId: selectedTagGroupId,
     );
   }
 }

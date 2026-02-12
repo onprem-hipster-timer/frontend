@@ -128,10 +128,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/todo',
                 name: 'todo',
-                builder: (context, state) {
-                  final groupId = state.uri.queryParameters['group_id'];
-                  return TodoListPage(groupId: groupId);
-                },
+                builder: (context, state) => const TodoDashboardPage(),
+                routes: [
+                  // 특정 그룹의 상세 페이지
+                  GoRoute(
+                    path: '/:groupId',
+                    name: 'todo-group-detail',
+                    builder: (context, state) {
+                      final groupId = state.pathParameters['groupId']!;
+                      return TodoGroupDetailPage(groupId: groupId);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
