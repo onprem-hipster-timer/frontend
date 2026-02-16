@@ -56,7 +56,7 @@ pubspec.lock
 doc/api/
 
 # dotenv environment variables file
-.env*
+assets/.env
 
 # Avoid committing generated Javascript files:
 *.dart.js
@@ -72,12 +72,11 @@ doc/api/
 
 ### Dart Patch ###
 # dotenv environment variables file
-.env
+assets/.env
 
 ### Flutter ###
 # Flutter/Dart/Pub related
 **/doc/api/
-.fvm/flutter_sdk
 .pub-cache/
 .pub/
 coverage/
@@ -443,3 +442,10 @@ hs_err_pid*
 !/gradle/wrapper/gradle-wrapper.jar
 
 # End of https://www.toptal.com/developers/gitignore/api/flutter,androidstudio,jetbrains,dart,android,swift
+
+# FVM Version Cache
+.fvm/
+.fvmrc
+
+*.freezed.dart
+*.g.dart
