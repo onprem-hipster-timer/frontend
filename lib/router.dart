@@ -11,6 +11,55 @@ import 'package:momeet/features/todo/todo.dart';
 import 'package:momeet/features/tag/tag.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
+// ============================================================
+// 라우트 정의
+// ============================================================
+
+/// 앱의 모든 라우트를 정의하는 enum
+///
+/// 각 라우트는 경로(path)와 인증 필요 여부(requiresAuth)를 포함합니다.
+/// 새로운 페이지를 추가할 때 이 enum에만 등록하면 리다이렉트 로직이 자동 적용됩니다.
+///
+/// 사용 예:
+/// ```dart
+/// context.go(AppRoute.todo.path);
+/// ```
+enum AppRoute {
+  // 인증 불필요 (공개 페이지)
+  login(path: '/login', requiresAuth: false),
+  signup(path: '/signup', requiresAuth: false),
+  forgotPassword(path: '/forgot-password', requiresAuth: false),
+  loading(path: '/loading', requiresAuth: false),
+
+  // 인증 필요 (보호된 페이지)
+  calendar(path: '/'),
+  scheduleDetail(path: '/schedule/detail'),
+  todo(path: '/todo'),
+  todoGroupDetail(path: '/todo/:groupId'),
+  timer(path: '/timer'),
+  timerDetail(path: '/timer/detail'),
+  tags(path: '/tags'),
+  mypage(path: '/mypage');
+
+  const AppRoute({required this.path, this.requiresAuth = true});
+
+  /// 라우트 경로
+  final String path;
+
+  /// 인증 필요 여부 (기본값: true)
+  final bool requiresAuth;
+
+  /// 공개 라우트(인증 불필요) 경로 집합
+  static final publicPaths = {
+    for (final route in values)
+      if (!route.requiresAuth) route.path,
+  };
+}
+
+// ============================================================
+// 리다이렉트 로직
+// ============================================================
+
 /// 인증 상태 변화를 GoRouter에 전달하는 Listenable
 ///
 /// authProvider의 상태가 변경되면 notifyListeners()를 호출하여
@@ -31,23 +80,21 @@ String? authRedirect({
   required bool isAuthLoading,
   required String matchedLocation,
 }) {
-  final isLoginRoute = matchedLocation == '/login' ||
-      matchedLocation == '/signup' ||
-      matchedLocation == '/forgot-password';
+  final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
   // 1. 인증 초기화 중이면 로딩 페이지로
   if (isAuthLoading) {
-    return '/loading';
+    return AppRoute.loading.path;
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
-  if (!isAuthenticated && !isLoginRoute) {
-    return '/login?redirect=$matchedLocation';
+  if (!isAuthenticated && !isPublicRoute) {
+    return '${AppRoute.login.path}?redirect=$matchedLocation';
   }
 
-  // 3. 인증된 사용자가 로그인 페이지에 있으면 메인 앱으로
-  if (isAuthenticated && isLoginRoute) {
-    return '/';
+  // 3. 인증된 사용자가 공개 페이지에 있으면 메인 앱으로
+  if (isAuthenticated && isPublicRoute) {
+    return AppRoute.calendar.path;
   }
 
   // 리다이렉트 없음
@@ -71,49 +118,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
 
-    initialLocation: '/',
+    initialLocation: AppRoute.calendar.path,
 
     routes: [
       // ============================================================
       // 인증 페이지 (Floating Navigation 없음)
       // ============================================================
       GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) {
-          return const LoginPage();
-        },
+        path: AppRoute.login.path,
+        name: AppRoute.login.name,
+        builder: (context, state) => const LoginPage(),
       ),
 
       GoRoute(
-        path: '/signup',
-        name: 'signup',
-        builder: (context, state) {
-          return const SignupPage();
-        },
+        path: AppRoute.signup.path,
+        name: AppRoute.signup.name,
+        builder: (context, state) => const SignupPage(),
       ),
 
       GoRoute(
-        path: '/forgot-password',
-        name: 'forgot-password',
-        builder: (context, state) {
-          return const ForgotPasswordPage();
-        },
+        path: AppRoute.forgotPassword.path,
+        name: AppRoute.forgotPassword.name,
+        builder: (context, state) => const ForgotPasswordPage(),
       ),
 
       // ============================================================
       // 로딩 페이지
       // ============================================================
       GoRoute(
-        path: '/loading',
-        name: 'loading',
-        builder: (context, state) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        },
+        path: AppRoute.loading.path,
+        name: AppRoute.loading.name,
+        builder: (context, state) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
       ),
 
       // ============================================================
@@ -121,7 +158,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ============================================================
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          // Floating Navigation Bar와 함께 렌더링
           return ScaffoldWithNavBar(navigationShell: navigationShell);
         },
         branches: [
@@ -129,14 +165,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/',
-                name: 'calendar',
+                path: AppRoute.calendar.path,
+                name: AppRoute.calendar.name,
                 builder: (context, state) => const CalendarPage(),
                 routes: [
-                  // 캘린더 하위 라우트
                   GoRoute(
                     path: 'schedule/detail',
-                    name: 'schedule-detail',
+                    name: AppRoute.scheduleDetail.name,
                     builder: (context, state) {
                       final scheduleId = state.uri.queryParameters['id'];
                       return Scaffold(
@@ -154,14 +189,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/todo',
-                name: 'todo',
+                path: AppRoute.todo.path,
+                name: AppRoute.todo.name,
                 builder: (context, state) => const TodoDashboardPage(),
                 routes: [
-                  // 특정 그룹의 상세 페이지
                   GoRoute(
                     path: '/:groupId',
-                    name: 'todo-group-detail',
+                    name: AppRoute.todoGroupDetail.name,
                     builder: (context, state) {
                       final groupId = state.pathParameters['groupId']!;
                       return TodoGroupDetailPage(groupId: groupId);
@@ -176,14 +210,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/timer',
-                name: 'timer',
+                path: AppRoute.timer.path,
+                name: AppRoute.timer.name,
                 builder: (context, state) => const TimerPage(),
                 routes: [
-                  // 타이머 하위 라우트
                   GoRoute(
                     path: 'detail',
-                    name: 'timer-detail',
+                    name: AppRoute.timerDetail.name,
                     builder: (context, state) {
                       final timerId = state.uri.queryParameters['id'];
                       return Scaffold(
@@ -201,8 +234,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/tags',
-                name: 'tags',
+                path: AppRoute.tags.path,
+                name: AppRoute.tags.name,
                 builder: (context, state) => const TagManagementPage(),
               ),
             ],
@@ -212,8 +245,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/mypage',
-                name: 'mypage',
+                path: AppRoute.mypage.path,
+                name: AppRoute.mypage.name,
                 builder: (context, state) {
                   return Scaffold(
                     appBar: AppBar(title: const Text('마이페이지')),

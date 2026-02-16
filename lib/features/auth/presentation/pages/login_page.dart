@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
 
@@ -144,7 +145,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => context.push('/forgot-password'),
+                  onPressed: () => context.push(AppRoute.forgotPassword.path),
                   child: const Text('비밀번호를 잊으셨나요?'),
                 ),
               ),
@@ -164,7 +165,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 children: [
                   const Text('계정이 없으신가요?'),
                   TextButton(
-                    onPressed: () => context.push('/signup'),
+                    onPressed: () => context.push(AppRoute.signup.path),
                     child: const Text('회원가입'),
                   ),
                 ],

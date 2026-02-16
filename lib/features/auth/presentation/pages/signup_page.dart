@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
 
@@ -53,7 +54,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  context.go('/login');
+                  context.go(AppRoute.login.path);
                 },
                 child: const Text('확인'),
               ),
