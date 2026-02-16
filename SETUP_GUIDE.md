@@ -1,93 +1,119 @@
-# MoMeet 프로젝트 초기 설정 가이드
+# Momeet 프로젝트 초기 설정 가이드
 
 ## 🚀 빠른 시작
 
-이 가이드는 MoMeet 프로젝트의 초기 설정 및 개발 환경을 구성하는 방법을 설명합니다.
+이 가이드는 Momeet 프로젝트의 초기 설정 및 개발 환경을 구성하는 방법을 설명합니다.
+
+> 더 자세한 내용은 [README.md](README.md)를 참고하세요.
 
 ## ✅ 환경 요구사항
 
-- **Flutter**: ^3.8.1
-- **Dart**: ^3.8.1
-- **Node.js**: ^18.0.0 (OpenAPI Generator CLI용)
-- **Java**: ^11.0.0 (OpenAPI Generator CLI용)
+- **FVM**: 최신 버전 ([설치 가이드](https://fvm.app/documentation/getting-started/installation))
+- **Flutter**: `3.41.1 (stable)` — FVM으로 관리
+- **Dart**: `3.11.0` — Flutter에 포함
+- **Android Studio**: 최신 stable (Android SDK + 에뮬레이터)
+- **Xcode**: 최신 stable (macOS 전용, iOS 빌드)
+- **Java**: OpenJDK 21 (Android Studio bundled JBR 권장)
 
-## 📦 프로젝트 의존성 설치
+## 📦 프로젝트 설정
 
-### 1. Flutter 패키지 설치
+### 1. FVM 설치
+
+<details>
+<summary><b>macOS</b></summary>
 
 ```bash
-# 프로젝트 디렉토리로 이동
-cd momeet
-
-# 의존성 설치
-flutter pub get
+brew tap leoafarias/fvm
+brew install fvm
 ```
 
-### 2. Code Generation 실행
+</details>
 
-프로젝트에는 Riverpod, Freezed, OpenAPI Generator 등의 코드 생성 도구가 포함되어 있습니다.
+<details>
+<summary><b>Windows</b></summary>
+
+```powershell
+choco install fvm
+```
+
+또는 [GitHub Releases](https://github.com/leoafarias/fvm/releases)에서 다운로드.
+
+</details>
+
+```bash
+# 설치 확인
+fvm --version
+```
+
+### 2. Flutter SDK 설치 및 프로젝트 연결
+
+```bash
+# Flutter stable 설치
+fvm install stable
+
+# 프로젝트에 SDK 연결
+fvm use stable
+```
+
+### 3. 의존성 설치
+
+```bash
+fvm flutter pub get
+```
+
+### 4. Code Generation 실행
+
+프로젝트에는 Riverpod, Freezed, Retrofit, json_serializable 코드 생성 도구가 포함되어 있습니다.
 
 ```bash
 # 모든 코드 생성 실행
-dart run build_runner build
+fvm dart run build_runner build --delete-conflicting-outputs
 
 # 또는 watch 모드 (개발 중에 사용)
-dart run build_runner watch
+fvm dart run build_runner watch --delete-conflicting-outputs
 ```
 
-### 3. OpenAPI 코드 생성 (API 스펙이 준비되면)
+> ⚠️ `fvm flutter pub run ...`은 deprecated입니다. 항상 `fvm dart run ...`을 사용하세요.
 
-API 스펙 파일(예: `api.yaml`)이 준비되면 다음 명령어로 코드를 생성합니다:
+### 5. 환경 확인
 
 ```bash
-openapi-generator-cli generate \
-  -i api.yaml \
-  -g dart-dio \
-  -o lib/shared/api/generated \
-  --additional-properties=pubName=momeet_api,pubVersion=1.0.0
+fvm flutter doctor -v
 ```
 
-또는 `pubspec.yaml`의 `openapi_generator_cli` 섹션을 구성하여 자동화할 수 있습니다:
+정상 기준: `No issues found!`
 
-```yaml
-openapi_generator_cli:
-  project:
-    name: momeet_api
-    output-dir: lib/shared/api/generated
-    input-spec: api.yaml
-    generator-name: dart-dio
+### 6. 앱 실행
+
+```bash
+fvm flutter run
 ```
 
 ## 🏗️ 프로젝트 구조 이해
 
 ### Core 레이어
-- **config**: 앱 전역 설정 (API URL, 타임아웃 등)
+- **config**: 앱 전역 설정 (API URL, 환경변수 등)
 - **exceptions**: 사용자 정의 예외 클래스
-- **network**: HTTP 클라이언트 설정
-- **providers**: Core Riverpod 프로바이더
+- **network**: HTTP 클라이언트 설정 (Dio + Interceptor)
+- **providers**: Core Riverpod 프로바이더 (인증 등)
+- **utils**: 유틸리티 함수
 
 ### Shared 레이어
-- **api/generated**: OpenAPI Generator로 자동 생성된 API 클래스
+- **api/models**: Freezed 데이터 모델 (ScheduleRead, TodoRead 등)
+- **api/{feature}**: Retrofit API 클라이언트 (schedules, todos, timers 등)
 - **widgets**: 전역 공통 위젯
 - **providers**: 공유 Riverpod 프로바이더
-- **models**: 공유 데이터 모델
 
 ### Features 레이어
 각 기능(Feature)별로 다음과 같이 구성됩니다:
 
 ```
 features/<feature_name>/
-├── domain/           # 비즈니스 로직
-│   ├── entities/
-│   └── repositories/
-├── data/             # 데이터 접근
-│   ├── datasources/
-│   ├── models/
-│   └── repositories/
-└── presentation/     # UI
-    ├── pages/
-    ├── widgets/
-    └── providers/
+├── presentation/         # UI 계층
+│   ├── pages/            #   전체 페이지
+│   ├── widgets/          #   UI 컴포넌트
+│   ├── providers/        #   화면 상태 관리 (Riverpod)
+│   └── state/            #   Freezed UI 상태 모델
 ```
 
 ## 🔑 주요 파일
@@ -98,113 +124,63 @@ features/<feature_name>/
 | `lib/app.dart` | 앱 루트 위젯 (테마 설정) |
 | `lib/router.dart` | GoRouter 라우팅 설정 |
 | `lib/core/config/app_config.dart` | 앱 전역 설정 |
-| `lib/shared/api/generated/` | OpenAPI 생성 코드 |
+| `assets/.env` | 환경변수 (API URL 등) |
+| `.fvmrc` | FVM Flutter 버전 설정 |
 
 ## 📝 새로운 Feature 추가하기
-
-새로운 기능을 추가하려면 다음 단계를 따르세요:
 
 ### 1단계: Feature 폴더 생성
 
 ```
 features/<new_feature>/
-├── domain/
-│   ├── entities/
-│   │   └── <entity>.dart
-│   └── repositories/
-│       └── <repository>.dart
-├── data/
-│   ├── datasources/
-│   │   ├── <feature>_remote_data_source.dart
-│   │   └── <feature>_local_data_source.dart
-│   ├── models/
-│   │   └── <model>.dart
-│   └── repositories/
-│       └── <feature>_repository_impl.dart
 └── presentation/
     ├── pages/
     │   └── <feature>_page.dart
     ├── widgets/
     │   └── <widget>.dart
-    └── providers/
-        └── <feature>_provider.dart
+    ├── providers/
+    │   └── <feature>_providers.dart
+    └── state/
+        └── <feature>_state.dart       # (필요 시) Freezed UI 상태
 ```
 
-### 2단계: Domain Layer 작성
+### 2단계: Freezed 모델 작성 (필요 시)
 
-**entities/<entity>.dart**
 ```dart
-class <Entity> {
-  final String id;
-  // ... properties
-  
-  <Entity>({
-    required this.id,
-    // ...
-  });
-}
-```
-
-**repositories/<repository>.dart**
-```dart
-abstract class <Repository> {
-  Future<List<<Entity>>> getAll();
-  // ... methods
-}
-```
-
-### 3단계: Data Layer 작성
-
-**models/<model>.dart** (Freezed 사용)
-```dart
+// presentation/state/<feature>_state.dart
 @freezed
-class <Model> with _$<Model> {
-  const factory <Model>({
-    required String id,
+class FeatureState with _$FeatureState {
+  const factory FeatureState({
+    @Default(false) bool isLoading,
     // ...
-  }) = _<Model>;
-  
-  factory <Model>.fromJson(Map<String, dynamic> json) =>
-      _$<Model>FromJson(json);
+  }) = _FeatureState;
 }
 ```
 
-**repositories/<feature>_repository_impl.dart**
-```dart
-class <RepositoryImpl> implements <Repository> {
-  final <RemoteDataSource> remoteDataSource;
-  
-  <RepositoryImpl>(this.remoteDataSource);
-  
-  @override
-  Future<List<<Entity>>> getAll() async {
-    // ... implementation
-  }
-}
-```
+### 3단계: Riverpod Provider 작성
 
-### 4단계: Presentation Layer 작성
-
-**providers/<feature>_provider.dart**
 ```dart
+// presentation/providers/<feature>_providers.dart
 @riverpod
-Future<List<<Entity>>> <feature>List(<Feature>ListRef ref) async {
-  final repository = ref.watch(<repositoryProvider>);
-  return repository.getAll();
+Future<List<SomeModel>> featureItems(Ref ref) async {
+  final client = ref.watch(someClientProvider);
+  return client.getItems();
 }
 ```
 
-**pages/<feature>_page.dart**
+### 4단계: UI 페이지 작성
+
 ```dart
-class <Feature>Page extends ConsumerWidget {
+// presentation/pages/<feature>_page.dart
+class FeaturePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final itemsAsync = ref.watch(<featureListProvider>);
-    
+    final itemsAsync = ref.watch(featureItemsProvider);
+
     return itemsAsync.when(
       data: (items) => ListView(...),
-      loading: () => LoadingWidget(),
-      error: (error, stack) => ErrorWidget(error: error),
+      loading: () => const CircularProgressIndicator(),
+      error: (error, stack) => Text('Error: $error'),
     );
   }
 }
@@ -212,98 +188,111 @@ class <Feature>Page extends ConsumerWidget {
 
 ### 5단계: 라우팅 설정
 
-**router.dart**에 새로운 라우트 추가:
+`router.dart`에 새로운 라우트 추가:
+
 ```dart
 GoRoute(
   path: '/<feature>',
   name: '<feature>',
-  builder: (context, state) => const <Feature>Page(),
+  builder: (context, state) => const FeaturePage(),
 )
+```
+
+### 6단계: 코드 생성 실행
+
+```bash
+fvm dart run build_runner build --delete-conflicting-outputs
 ```
 
 ## 🔄 코드 생성 명령어
 
-### Riverpod 프로바이더 생성
 ```bash
-dart run build_runner build
+# 1회 빌드 (Freezed + Retrofit + Riverpod + json_serializable)
+fvm dart run build_runner build --delete-conflicting-outputs
 
-# 또는 watch 모드
-dart run build_runner watch
-```
+# Watch 모드 (파일 변경 시 자동 재생성)
+fvm dart run build_runner watch --delete-conflicting-outputs
 
-### Freezed 모델 생성
-```bash
-dart run build_runner build
-```
-
-### 모든 코드 생성 일괄 실행
-```bash
-dart run build_runner build --delete-conflicting-outputs
+# 캐시 초기화 (빌드 문제 시)
+fvm dart run build_runner clean
 ```
 
 ## 🧪 개발 팁
 
 ### 1. Hot Reload 활용
-```bash
-flutter run
-```
-앱이 실행된 후 파일을 저장하면 자동으로 hot reload됩니다.
 
-### 2. 디버그 로깅 활성화
-`lib/core/config/app_config.dart`에서 `enableDebugLogging`을 `true`로 설정합니다:
-```dart
-static const bool enableDebugLogging = true;
+```bash
+fvm flutter run
+```
+
+앱이 실행된 후 파일을 저장하면 자동으로 Hot Reload됩니다.
+
+### 2. 터미널 2개 병렬 운영
+
+```bash
+# 터미널 1: 코드 생성 Watch
+fvm dart run build_runner watch --delete-conflicting-outputs
+
+# 터미널 2: 앱 실행
+fvm flutter run
 ```
 
 ### 3. Riverpod 상태 검사 (DevTools)
-Flutter DevTools에서 Riverpod 탭을 사용하여 상태를 실시간으로 확인할 수 있습니다:
+
+Flutter DevTools에서 Riverpod 탭으로 상태를 실시간 확인:
+
 ```bash
-flutter pub global activate devtools
-devtools
+fvm flutter pub global activate devtools
+fvm flutter pub global run devtools
 ```
-
-## 📚 주요 참고 자료
-
-- [Flutter Documentation](https://flutter.dev/docs)
-- [Riverpod Guide](https://riverpod.dev)
-- [Freezed Package](https://pub.dev/packages/freezed)
-- [GoRouter Guide](https://pub.dev/packages/go_router)
-- [Clean Architecture](https://resocoder.com/flutter-clean-architecture)
 
 ## 🐛 문제 해결
 
-### "Build runner stuck" 문제
+### Build Runner 캐시 문제
+
 ```bash
-dart run build_runner clean
-dart run build_runner build
+fvm dart run build_runner clean
+fvm dart run build_runner build --delete-conflicting-outputs
 ```
 
-### Gradle 빌드 오류
+### 클린 빌드
+
 ```bash
-cd android
-./gradlew clean build
-cd ..
-flutter clean
-flutter pub get
+fvm flutter clean
+fvm flutter pub get
+fvm dart run build_runner build --delete-conflicting-outputs
+fvm flutter run
 ```
 
-### iOS 빌드 오류
+### Android Gradle 빌드 오류
+
+```bash
+fvm flutter clean
+fvm flutter pub get
+fvm flutter run
+```
+
+### iOS 빌드 오류 (macOS)
+
 ```bash
 cd ios
 rm -rf Pods
 pod install
 cd ..
-flutter clean
-flutter pub get
+fvm flutter clean
+fvm flutter pub get
+fvm flutter run
 ```
 
-## ✨ 다음 단계
+## 📚 주요 참고 자료
 
-1. **의뢰서 문서 확인** - 프로젝트 요구사항 파악
-2. **API 스펙 설정** - OpenAPI/Swagger 정의
-3. **OpenAPI 코드 생성** - API 클라이언트 자동 생성
-4. **Feature 구현 시작** - Domain → Data → Presentation 순서로 작성
+- [Flutter Documentation](https://flutter.dev/docs)
+- [FVM Documentation](https://fvm.app/documentation/getting-started/installation)
+- [Riverpod Guide](https://riverpod.dev)
+- [Freezed](https://pub.dev/packages/freezed)
+- [Retrofit](https://pub.dev/packages/retrofit)
+- [GoRouter](https://pub.dev/packages/go_router)
 
 ---
 
-**질문이나 문제가 있으면 ARCHITECTURE.md를 참고하세요!**
+**더 자세한 아키텍처 정보는 [ARCHITECTURE.md](ARCHITECTURE.md)를 참고하세요.**
