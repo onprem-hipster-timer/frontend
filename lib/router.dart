@@ -11,9 +11,26 @@ import 'package:momeet/features/todo/todo.dart';
 import 'package:momeet/features/tag/tag.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
+/// 인증 상태 변화를 GoRouter에 전달하는 Listenable
+///
+/// authProvider의 상태가 변경되면 notifyListeners()를 호출하여
+/// GoRouter가 redirect를 재평가하도록 합니다.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(Ref ref) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      notifyListeners();
+    });
+  }
+}
+
 /// GoRouter 인스턴스 (Riverpod 통합)
 final routerProvider = Provider<GoRouter>((ref) {
+  final authChangeNotifier = _AuthChangeNotifier(ref);
+
   return GoRouter(
+    // 인증 상태 변화 시 redirect 재평가
+    refreshListenable: authChangeNotifier,
+
     // 인증 상태 리다이렉트
     redirect: (context, state) {
       // 현재 인증 상태와 라우트 경로 확인
