@@ -37,7 +37,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     });
 
     try {
-      await ref.read(authStateProvider.notifier).signUpWithEmail(
+      await ref.read(authProvider.notifier).signUpWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );

@@ -13,7 +13,7 @@ class MoMeetApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 인증 상태 감시 (초기화)
-    final _ = ref.watch(authStateProvider);
+    final _ = ref.watch(authProvider);
 
     // GoRouter 인스턴스 가져오기
     final router = ref.watch(routerProvider);

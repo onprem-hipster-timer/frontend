@@ -34,7 +34,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     try {
-      await ref.read(authStateProvider.notifier).signInWithEmail(
+      await ref.read(authProvider.notifier).signInWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );

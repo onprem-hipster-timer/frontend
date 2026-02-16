@@ -9,11 +9,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 
 part 'auth_provider.freezed.dart';
+part 'auth_provider.g.dart';
 
 // ============================================================
 // 상태 모델
@@ -55,46 +57,41 @@ sealed class AuthState with _$AuthState {
 ///   anonKey: 'YOUR_SUPABASE_ANON_KEY',
 /// );
 /// ```
-final supabaseClientProvider = Provider<SupabaseClient>((ref) {
+@Riverpod(keepAlive: true)
+SupabaseClient supabaseClient(Ref ref) {
   return Supabase.instance.client;
-});
+}
 
 // ============================================================
 // 인증 상태 프로바이더
 // ============================================================
 
-/// 현재 인증 상태를 제공하는 AsyncNotifier
+/// 인증 상태를 관리하는 Notifier
 ///
 /// 사용 예:
 /// ```dart
-/// final state = ref.watch(authStateProvider);
-/// state.whenData((authState) {
-///   authState.maybeWhen(
-///     authenticated: (user, token, refreshToken) {
-///       debugPrint('로그인됨: ${user.email}');
-///     },
-///     unauthenticated: () {
-///       debugPrint('로그아웃됨');
-///     },
-///     loading: () => showLoader(),
-///     error: (message, error) => showError(message),
-///   );
-/// });
+/// final state = ref.watch(authProvider);
+/// state.maybeWhen(
+///   authenticated: (user, token, refreshToken) {
+///     debugPrint('로그인됨: ${user.email}');
+///   },
+///   unauthenticated: () {
+///     debugPrint('로그아웃됨');
+///   },
+///   loading: () => showLoader(),
+///   error: (message, error) => showError(message),
+///   orElse: () {},
+/// );
 /// ```
-final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(ref),
-);
-
-/// 인증 상태를 관리하는 StateNotifier
-class AuthNotifier extends StateNotifier<AuthState> {
-  final Ref ref;
-
-  AuthNotifier(this.ref) : super(const AuthState.loading()) {
-    _initializeAuth();
+@Riverpod(keepAlive: true)
+class AuthNotifier extends _$AuthNotifier {
+  @override
+  AuthState build() {
+    return _initializeAuth();
   }
 
-  /// 인증 상태 초기화 (앱 시작 시 자동 호출)
-  void _initializeAuth() {
+  /// 인증 상태 초기화 (build에서 호출)
+  AuthState _initializeAuth() {
     try {
       final supabase = ref.read(supabaseClientProvider);
       final session = supabase.auth.currentSession;
@@ -102,35 +99,35 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (session != null) {
         final token = session.accessToken;
 
-        state = AuthState.authenticated(
+        if (AppConfig.enableDebugLogging) {
+          debugPrint('✅ [AUTH] Session restored for ${session.user.email}');
+        }
+
+        return AuthState.authenticated(
           user: session.user,
           accessToken: token,
           refreshToken: session.refreshToken,
         );
-
-        if (AppConfig.enableDebugLogging) {
-          debugPrint('✅ [AUTH] Session restored for ${session.user.email}');
-        }
       } else {
-        state = const AuthState.unauthenticated();
         if (AppConfig.enableDebugLogging) {
           debugPrint('❌ [AUTH] No active session');
         }
+        return const AuthState.unauthenticated();
       }
     } catch (e) {
-      state = AuthState.error(
-        message: 'Failed to initialize authentication',
-        originalError: e,
-      );
       if (AppConfig.enableDebugLogging) {
         debugPrint('❌ [AUTH] Initialization error: $e');
       }
+      return AuthState.error(
+        message: 'Failed to initialize authentication',
+        originalError: e,
+      );
     }
   }
 
   /// 이메일/비밀번호로 로그인
   ///
-  /// 성공 시 authStateProvider가 authenticated 상태로 변경됩니다.
+  /// 성공 시 authProvider가 authenticated 상태로 변경됩니다.
   /// 토큰은 accessTokenProvider를 통해 자동으로 파생됩니다.
   Future<void> signInWithEmail({
     required String email,
@@ -266,7 +263,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         if (response.session?.accessToken != null) {
           final newToken = response.session!.accessToken;
 
-          // authStateProvider를 갱신하여 accessTokenProvider에 자동 반영
+          // authProvider를 갱신하여 accessTokenProvider에 자동 반영
           state = AuthState.authenticated(
             user: response.session!.user,
             accessToken: newToken,
@@ -297,9 +294,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   String _parseError(dynamic error) {
     if (error is AuthException) {
       return error.message;
-    } else if (error is AuthError) {
-      // Supabase AuthError 처리
-      return error.message;
     } else if (error is NetworkException) {
       return error.message;
     } else {
@@ -321,18 +315,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
 ///   debugPrint('Email: ${user.email}');
 /// }
 /// ```
-final currentUserProvider = Provider<User?>((ref) {
-  return ref.watch(authStateProvider).whenOrNull(
+@riverpod
+User? currentUser(Ref ref) {
+  return ref.watch(authProvider).whenOrNull(
         authenticated: (user, token, refreshToken) => user,
       );
-});
+}
 
 /// 현재 액세스 토큰 제공자
-final accessTokenProvider = Provider<String?>((ref) {
-  return ref.watch(authStateProvider).whenOrNull(
+@riverpod
+String? accessToken(Ref ref) {
+  return ref.watch(authProvider).whenOrNull(
         authenticated: (user, token, refreshToken) => token,
       );
-});
+}
 
 /// 인증 여부 확인
 ///
@@ -340,25 +336,28 @@ final accessTokenProvider = Provider<String?>((ref) {
 /// ```dart
 /// final isAuthenticated = ref.watch(isAuthenticatedProvider);
 /// ```
-final isAuthenticatedProvider = Provider<bool>((ref) {
-  return ref.watch(authStateProvider).maybeWhen(
+@riverpod
+bool isAuthenticated(Ref ref) {
+  return ref.watch(authProvider).maybeWhen(
         authenticated: (user, token, refreshToken) => true,
         orElse: () => false,
       );
-});
+}
 
 /// 인증 로딩 여부 확인
-final isAuthLoadingProvider = Provider<bool>((ref) {
-  return ref.watch(authStateProvider).maybeWhen(
+@riverpod
+bool isAuthLoading(Ref ref) {
+  return ref.watch(authProvider).maybeWhen(
         loading: () => true,
         orElse: () => false,
       );
-});
+}
 
 /// 인증 에러 메시지 제공자
-final authErrorProvider = Provider<String?>((ref) {
-  return ref.watch(authStateProvider).maybeWhen(
+@riverpod
+String? authError(Ref ref) {
+  return ref.watch(authProvider).maybeWhen(
         error: (message, _) => message,
         orElse: () => null,
       );
-});
+}
