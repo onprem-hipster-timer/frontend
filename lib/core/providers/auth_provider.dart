@@ -8,12 +8,10 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
-import 'package:momeet/core/network/dio_provider.dart';
 
 part 'auth_provider.freezed.dart';
 
@@ -104,10 +102,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (session != null) {
         final token = session.accessToken;
 
-        Future.microtask(() {
-          ref.read(authTokenProvider.notifier).state = token;
-        });
-
         state = AuthState.authenticated(
           user: session.user,
           accessToken: token,
@@ -137,7 +131,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// 이메일/비밀번호로 로그인
   ///
   /// 성공 시 authStateProvider가 authenticated 상태로 변경됩니다.
-  /// 토큰은 자동으로 authTokenProvider에 저장됩니다.
+  /// 토큰은 accessTokenProvider를 통해 자동으로 파생됩니다.
   Future<void> signInWithEmail({
     required String email,
     required String password,
@@ -153,9 +147,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (response.session != null && response.user != null) {
         final token = response.session!.accessToken;
-
-        // 토큰을 authTokenProvider에 저장 (Dio Interceptor에서 사용)
-        ref.read(authTokenProvider.notifier).state = token;
 
         state = AuthState.authenticated(
           user: response.user!,
@@ -219,9 +210,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final supabase = ref.read(supabaseClientProvider);
       await supabase.auth.signOut();
 
-      // 토큰 제거
-      ref.read(authTokenProvider.notifier).state = null;
-
       state = const AuthState.unauthenticated();
 
       if (AppConfig.enableDebugLogging) {
@@ -278,8 +266,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         if (response.session?.accessToken != null) {
           final newToken = response.session!.accessToken;
 
-          // 새 토큰 저장
-          ref.read(authTokenProvider.notifier).state = newToken;
+          // authStateProvider를 갱신하여 accessTokenProvider에 자동 반영
+          state = AuthState.authenticated(
+            user: response.session!.user,
+            accessToken: newToken,
+            refreshToken: response.session!.refreshToken,
+          );
 
           if (AppConfig.enableDebugLogging) {
             debugPrint('✅ [AUTH] Token refreshed');
