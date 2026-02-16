@@ -1,0 +1,72 @@
+# CODEOWNERS - 코드 영역별 리뷰어 지정
+#
+# 이 파일은 PR 생성 시 자동으로 리뷰어를 할당합니다.
+# 패턴 매칭은 위에서 아래로, 마지막 매칭이 우선합니다.
+#
+# 참고: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ============================================================================
+# 전체 코드베이스 기본 소유자
+# ============================================================================
+*                                       @gunyu1019
+
+# ============================================================================
+# Feature 도메인별 소유자
+# ============================================================================
+
+# Auth
+lib/features/auth/                      @gunyu1019
+
+# Calendar / Schedule
+lib/features/calendar/                  @gunyu1019
+lib/shared/api/schedules/               @gunyu1019
+
+# Todo
+lib/features/todo/                      @gunyu1019
+lib/shared/api/todos/                   @gunyu1019
+
+# Timer
+lib/features/timer/                     @gunyu1019
+lib/shared/api/timers/                  @gunyu1019
+
+# Tag
+lib/features/tag/                       @gunyu1019
+lib/shared/api/tags/                    @gunyu1019
+
+# Home
+lib/features/home/                      @gunyu1019
+
+# ============================================================================
+# 핵심 인프라
+# ============================================================================
+
+# Core (config, network, auth, exceptions)
+lib/core/                               @gunyu1019
+
+# Shared (API models, providers, widgets)
+lib/shared/                             @gunyu1019
+
+# 앱 진입점 & 라우팅
+lib/main.dart                           @gunyu1019
+lib/app.dart                            @gunyu1019
+lib/router.dart                         @gunyu1019
+
+# ============================================================================
+# 설정 & 인프라 (조직 관리자 + 프론트엔드 엔지니어)
+# ============================================================================
+
+# CI/CD
+.github/workflows/                      @jjh4450 @gunyu1019
+
+# 의존성
+pubspec.yaml                            @gunyu1019
+pubspec.lock                            @gunyu1019
+
+# Android / iOS 네이티브
+android/                                @gunyu1019
+ios/                                    @gunyu1019
+
+# ============================================================================
+# 문서
+# ============================================================================
+*.md                                    @jjh4450 @gunyu1019
