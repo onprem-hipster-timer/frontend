@@ -75,7 +75,7 @@ dev_dependencies:
   freezed: ^3.2.3
 
   # Testing
-  # mocktail: ^1.0.4
+  mocktail: ^1.0.4
 
 
 flutter:

@@ -17,10 +17,41 @@ import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 /// GoRouter가 redirect를 재평가하도록 합니다.
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
+    ref.listen<AuthStatus>(authProvider, (previous, next) {
       notifyListeners();
     });
   }
+}
+
+/// 인증 상태에 따른 리다이렉트 로직 (순수 함수 — 테스트 가능)
+///
+/// 반환값이 null이면 리다이렉트 없음.
+String? authRedirect({
+  required bool isAuthenticated,
+  required bool isAuthLoading,
+  required String matchedLocation,
+}) {
+  final isLoginRoute = matchedLocation == '/login' ||
+      matchedLocation == '/signup' ||
+      matchedLocation == '/forgot-password';
+
+  // 1. 인증 초기화 중이면 로딩 페이지로
+  if (isAuthLoading) {
+    return '/loading';
+  }
+
+  // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
+  if (!isAuthenticated && !isLoginRoute) {
+    return '/login?redirect=$matchedLocation';
+  }
+
+  // 3. 인증된 사용자가 로그인 페이지에 있으면 메인 앱으로
+  if (isAuthenticated && isLoginRoute) {
+    return '/';
+  }
+
+  // 리다이렉트 없음
+  return null;
 }
 
 /// GoRouter 인스턴스 (Riverpod 통합)
@@ -33,31 +64,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // 인증 상태 리다이렉트
     redirect: (context, state) {
-      // 현재 인증 상태와 라우트 경로 확인
-      final isAuthenticated = ref.read(isAuthenticatedProvider);
-      final isAuthLoading = ref.read(isAuthLoadingProvider);
-
-      final isLoginRoute = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup' ||
-          state.matchedLocation == '/forgot-password';
-
-      // 1. 인증 초기화 중이면 로딩 페이지로
-      if (isAuthLoading) {
-        return '/loading';
-      }
-
-      // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
-      if (!isAuthenticated && !isLoginRoute) {
-        return '/login?redirect=${state.matchedLocation}';
-      }
-
-      // 3. 인증된 사용자가 로그인 페이지에 있으면 메인 앱으로
-      if (isAuthenticated && isLoginRoute) {
-        return '/';
-      }
-
-      // 리다이렉트 없음
-      return null;
+      return authRedirect(
+        isAuthenticated: ref.read(isAuthenticatedProvider),
+        isAuthLoading: ref.read(isAuthLoadingProvider),
+        matchedLocation: state.matchedLocation,
+      );
     },
 
     initialLocation: '/',
