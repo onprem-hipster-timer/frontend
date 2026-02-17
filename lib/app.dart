@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // 앱 메인 위젯
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,17 +9,13 @@ import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'core/providers/auth_provider.dart';
-
 class MoMeetApp extends ConsumerWidget {
   const MoMeetApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 인증 상태 감시 (초기화)
-    final _ = ref.watch(authStateProvider);
-
     // GoRouter 인스턴스 가져오기
+    // (routerProvider 내부에서 authProvider를 listen하여 redirect를 자동 재평가)
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
