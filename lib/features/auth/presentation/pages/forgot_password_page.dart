@@ -30,7 +30,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
 
     try {
-      await ref.read(authStateProvider.notifier).resetPassword(
+      await ref.read(authProvider.notifier).resetPassword(
             _emailController.text.trim(),
           );
 

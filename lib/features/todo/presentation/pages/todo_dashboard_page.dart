@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/core/utils/color_utils.dart';
@@ -113,7 +114,7 @@ class TodoDashboardPage extends ConsumerWidget {
                 final group = todoGroups[index];
                 return TodoGroupCard(
                   group: group,
-                  onTap: () => context.go('/todo/${group.id}'),
+                  onTap: () => context.go('${AppRoute.todo.path}/${group.id}'),
                 );
               },
               childCount: todoGroups.length,

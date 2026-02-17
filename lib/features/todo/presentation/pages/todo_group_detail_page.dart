@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
@@ -91,7 +92,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
           foregroundColor: groupColor,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/todo'),
+            onPressed: () => context.go(AppRoute.todo.path),
           ),
           actions: [
             IconButton(
@@ -143,14 +144,14 @@ class TodoGroupDetailPage extends ConsumerWidget {
         title: const Text('로딩 중...'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/todo'),
+          onPressed: () => context.go(AppRoute.todo.path),
         ),
       ),
       error: (error, stack) => SliverAppBar(
         title: const Text('오류 발생'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/todo'),
+          onPressed: () => context.go(AppRoute.todo.path),
         ),
         backgroundColor: theme.colorScheme.errorContainer,
       ),
@@ -312,7 +313,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 OutlinedButton.icon(
-                  onPressed: () => context.go('/todo'),
+                  onPressed: () => context.go(AppRoute.todo.path),
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('대시보드로'),
                 ),

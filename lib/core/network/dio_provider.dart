@@ -2,12 +2,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:momeet/core/config/app_config.dart';
-
-/// 인증 토큰 제공자 (Supabase 또는 다른 소스에서)
-/// 실제 구현은 auth_provider.dart에서 정의됨
-final authTokenProvider = StateProvider<String?>((ref) => null);
+import 'package:momeet/core/providers/auth_provider.dart';
 
 /// JWT 토큰을 요청 헤더에 추가하는 Interceptor
 class AuthInterceptor extends Interceptor {
@@ -17,7 +13,7 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final token = ref.read(authTokenProvider);
+    final token = ref.read(accessTokenProvider);
 
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
