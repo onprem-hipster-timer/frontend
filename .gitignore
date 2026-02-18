@@ -56,7 +56,7 @@ pubspec.lock
 doc/api/
 
 # dotenv environment variables file
-assets/.env
+**/.env
 
 # Avoid committing generated Javascript files:
 *.dart.js
@@ -72,7 +72,7 @@ assets/.env
 
 ### Dart Patch ###
 # dotenv environment variables file
-assets/.env
+**/.env
 
 ### Flutter ###
 # Flutter/Dart/Pub related
@@ -449,3 +449,4 @@ hs_err_pid*
 
 *.freezed.dart
 *.g.dart
+/.run/main.dart.run.xml

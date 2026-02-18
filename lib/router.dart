@@ -88,7 +88,14 @@ String? authRedirect({
 
   // 1. 인증 초기화 중이면 로딩 페이지로
   if (isAuthLoading) {
-    return AppRoute.loading.path;
+    return matchedLocation == AppRoute.loading.path
+        ? null
+        : AppRoute.loading.path;
+  }
+
+  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
+  if (matchedLocation == AppRoute.loading.path) {
+    return isAuthenticated ? AppRoute.calendar.path : AppRoute.login.path;
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
