@@ -13,6 +13,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
+import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 part 'auth_provider.freezed.dart';
 part 'auth_provider.g.dart';
@@ -160,7 +161,7 @@ class AuthNotifier extends _$AuthNotifier {
       );
     } catch (e) {
       throw AuthException(
-        errorType: AuthErrorType.classify(e),
+        message: AuthErrorType.classify(e).localized,
         originalError: e,
       );
     }
@@ -182,7 +183,7 @@ class AuthNotifier extends _$AuthNotifier {
       );
     } catch (e) {
       throw AuthException(
-        errorType: AuthErrorType.classify(e),
+        message: AuthErrorType.classify(e).localized,
         originalError: e,
       );
     }
@@ -195,7 +196,7 @@ class AuthNotifier extends _$AuthNotifier {
       await supabase.auth.signOut();
     } catch (e) {
       throw AuthException(
-        errorType: AuthErrorType.classify(e),
+        message: AuthErrorType.classify(e).localized,
         originalError: e,
       );
     }
@@ -208,7 +209,7 @@ class AuthNotifier extends _$AuthNotifier {
       await supabase.auth.resetPasswordForEmail(email);
     } catch (e) {
       throw AuthException(
-        errorType: AuthErrorType.classify(e),
+        message: AuthErrorType.classify(e).localized,
         originalError: e,
       );
     }
@@ -223,7 +224,7 @@ class AuthNotifier extends _$AuthNotifier {
       );
     } catch (e) {
       throw AuthException(
-        errorType: AuthErrorType.classify(e),
+        message: AuthErrorType.classify(e).localized,
         originalError: e,
       );
     }

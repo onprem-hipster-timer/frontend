@@ -2,6 +2,9 @@
 //
 // 인증 기능의 공개 API를 정의합니다.
 
+// Domain
+export 'domain/auth_error_type.dart';
+
 // Pages
 export 'presentation/pages/login_page.dart';
 export 'presentation/pages/signup_page.dart';
