@@ -44,6 +44,10 @@ jobs:
     name: Auth Architecture Guard
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
