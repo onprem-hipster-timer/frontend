@@ -19,10 +19,10 @@ class CalendarPage extends ConsumerWidget {
     return Scaffold(
       appBar: _buildAppBar(context, ref),
       body: const CalendarViewWidget(
-        // TODO: 라우팅 연결
-        // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
-        // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
-      ),
+          // TODO: 라우팅 연결
+          // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
+          // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
+          ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showScheduleFormSheet(context);
@@ -245,7 +245,9 @@ class _FilterSheetContent extends ConsumerWidget {
                 title: const Text('취소된 일정 표시'),
                 value: filter.showCancelled,
                 onChanged: (value) {
-                  ref.read(calendarFilterProvider.notifier).toggleShowCancelled();
+                  ref
+                      .read(calendarFilterProvider.notifier)
+                      .toggleShowCancelled();
                 },
               ),
               const Divider(),

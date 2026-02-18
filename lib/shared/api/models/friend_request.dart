@@ -11,9 +11,9 @@ part 'friend_request.g.dart';
 @Freezed()
 abstract class FriendRequest with _$FriendRequest {
   const factory FriendRequest({
-    @JsonKey(name: 'addressee_id')
-    required String addresseeId,
+    @JsonKey(name: 'addressee_id') required String addresseeId,
   }) = _FriendRequest;
-  
-  factory FriendRequest.fromJson(Map<String, Object?> json) => _$FriendRequestFromJson(json);
+
+  factory FriendRequest.fromJson(Map<String, Object?> json) =>
+      _$FriendRequestFromJson(json);
 }

@@ -13,6 +13,7 @@ enum ScheduleState {
   confirmed('CONFIRMED'),
   @JsonValue('CANCELLED')
   cancelled('CANCELLED'),
+
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
@@ -27,6 +28,8 @@ enum ScheduleState {
 
   @override
   String toString() => json?.toString() ?? super.toString();
+
   /// Returns all defined enum values excluding the $unknown value.
-  static List<ScheduleState> get $valuesDefined => values.where((value) => value != $unknown).toList();
+  static List<ScheduleState> get $valuesDefined =>
+      values.where((value) => value != $unknown).toList();
 }

@@ -115,7 +115,8 @@ void main() {
           isAuthLoading: false,
           matchedLocation: AppRoute.calendar.path,
         );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}');
+        expect(result,
+            '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}');
       });
 
       test('미인증 사용자가 /todo에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {

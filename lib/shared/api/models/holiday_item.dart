@@ -17,6 +17,7 @@ abstract class HolidayItem with _$HolidayItem {
     required String dateName,
     required bool isHoliday,
   }) = _HolidayItem;
-  
-  factory HolidayItem.fromJson(Map<String, Object?> json) => _$HolidayItemFromJson(json);
+
+  factory HolidayItem.fromJson(Map<String, Object?> json) =>
+      _$HolidayItemFromJson(json);
 }

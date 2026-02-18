@@ -187,7 +187,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final scheduleId = state.uri.queryParameters['id'];
                       return Scaffold(
                         appBar: AppBar(title: const Text('일정 상세')),
-                        body: Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
+                        body:
+                            Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
                       );
                     },
                   ),
@@ -280,7 +281,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-
 /// 라우터 리스너 프로바이더 (네비게이션 이벤트 감지용)
 final routeObserverProvider = Provider<NavigatorObserver>((ref) {
   return GoRouterObserver();
@@ -305,8 +305,8 @@ class GoRouterObserver extends NavigatorObserver {
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     if (kDebugMode) {
-      debugPrint('🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+      debugPrint(
+          '🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
     }
   }
 }
-

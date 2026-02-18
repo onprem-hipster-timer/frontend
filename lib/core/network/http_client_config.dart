@@ -32,7 +32,8 @@ class HttpClientConfig {
         },
         onResponse: (response, handler) {
           if (AppConfig.enableDebugLogging) {
-            debugPrint('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
+            debugPrint(
+                '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
           }
           return handler.next(response);
         },

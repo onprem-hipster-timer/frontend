@@ -13,11 +13,10 @@ part 'visibility_settings.g.dart';
 @Freezed()
 abstract class VisibilitySettings with _$VisibilitySettings {
   const factory VisibilitySettings({
-    @JsonKey(name: 'allowed_user_ids')
-    List<String>? allowedUserIds,
-    @Default(VisibilityLevel.private)
-    VisibilityLevel level,
+    @JsonKey(name: 'allowed_user_ids') List<String>? allowedUserIds,
+    @Default(VisibilityLevel.private) VisibilityLevel level,
   }) = _VisibilitySettings;
-  
-  factory VisibilitySettings.fromJson(Map<String, Object?> json) => _$VisibilitySettingsFromJson(json);
+
+  factory VisibilitySettings.fromJson(Map<String, Object?> json) =>
+      _$VisibilitySettingsFromJson(json);
 }

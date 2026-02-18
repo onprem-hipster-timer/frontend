@@ -21,16 +21,18 @@ Future<List<TagGroupRead>> tagGroups(Ref ref) async {
     final groupsWithTags = await api.readTagGroupsV1TagsGroupsGet();
 
     // TagGroupRead만 추출
-    return groupsWithTags.map((groupWithTags) => TagGroupRead(
-      id: groupWithTags.id,
-      name: groupWithTags.name,
-      color: groupWithTags.color,
-      isTodoGroup: groupWithTags.isTodoGroup,
-      createdAt: groupWithTags.createdAt,
-      updatedAt: groupWithTags.updatedAt,
-      description: groupWithTags.description,
-      goalRatios: groupWithTags.goalRatios,
-    )).toList();
+    return groupsWithTags
+        .map((groupWithTags) => TagGroupRead(
+              id: groupWithTags.id,
+              name: groupWithTags.name,
+              color: groupWithTags.color,
+              isTodoGroup: groupWithTags.isTodoGroup,
+              createdAt: groupWithTags.createdAt,
+              updatedAt: groupWithTags.updatedAt,
+              description: groupWithTags.description,
+              goalRatios: groupWithTags.goalRatios,
+            ))
+        .toList();
   } catch (error) {
     throw Exception('태그 그룹 조회 실패: $error');
   }
@@ -70,9 +72,7 @@ Future<List<TagGroupWithTags>> tagTree(Ref ref) async {
 
   for (final group in groups) {
     // 이 그룹에 속한 태그들을 필터링
-    final groupTags = allTags
-        .where((tag) => tag.groupId == group.id)
-        .toList();
+    final groupTags = allTags.where((tag) => tag.groupId == group.id).toList();
 
     // 태그가 없는 그룹도 포함 (Left Join)
     result.add(TagGroupWithTags(

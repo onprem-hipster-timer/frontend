@@ -31,7 +31,8 @@ Future<TagGroupReadWithTags> tagGroup(
 ) async {
   final api = ref.watch(tagsApiProvider);
   try {
-    final response = await api.readTagGroupV1TagsGroupsGroupIdGet(groupId: groupId);
+    final response =
+        await api.readTagGroupV1TagsGroupsGroupIdGet(groupId: groupId);
     return response;
   } catch (error) {
     throw Exception('태그 그룹 조회 실패: $error');
@@ -69,7 +70,8 @@ class TagMutations extends _$TagMutations {
   }
 
   /// 태그 그룹 수정
-  Future<TagGroupRead> updateTagGroup(String groupId, TagGroupUpdate data) async {
+  Future<TagGroupRead> updateTagGroup(
+      String groupId, TagGroupUpdate data) async {
     state = const AsyncValue.loading();
 
     try {
@@ -104,7 +106,6 @@ class TagMutations extends _$TagMutations {
 
       // 태그 그룹 목록 새로고침
       ref.invalidate(tagGroupsProvider);
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -167,7 +168,6 @@ class TagMutations extends _$TagMutations {
 
       // 모든 태그 그룹 새로고침
       ref.invalidate(tagGroupsProvider);
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;

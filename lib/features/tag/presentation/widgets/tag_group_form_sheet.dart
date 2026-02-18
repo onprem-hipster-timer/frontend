@@ -218,7 +218,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         Wrap(
           spacing: 12,
           runSpacing: 12,
-        children: TagColorPalette.colors.map((color) {
+          children: TagColorPalette.colors.map((color) {
             final isSelected = color.toARGB32() == _selectedColor.toARGB32();
 
             return GestureDetector(
@@ -342,7 +342,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
               : _descriptionController.text.trim(),
         );
 
-        await ref.read(tagMutationsProvider.notifier)
+        await ref
+            .read(tagMutationsProvider.notifier)
             .updateGroup(widget.tagGroup!.id, updateData);
 
         if (mounted) {

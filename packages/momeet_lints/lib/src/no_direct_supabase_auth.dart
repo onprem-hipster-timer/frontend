@@ -24,8 +24,7 @@ class NoDirectSupabaseAuth extends DartLintRule {
 
   static const _code = LintCode(
     name: 'no_direct_supabase_auth',
-    problemMessage:
-        'Supabase 인증 API를 직접 호출하지 마세요. '
+    problemMessage: 'Supabase 인증 API를 직접 호출하지 마세요. '
         'AuthNotifier(authProvider)를 통해서만 인증 로직을 수행해야 합니다.',
     errorSeverity: ErrorSeverity.WARNING,
   );

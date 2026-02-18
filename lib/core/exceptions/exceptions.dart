@@ -23,7 +23,9 @@ class NetworkException extends AppException {
   NetworkException({
     String? message,
     super.originalError,
-  }) : super(message: message ?? _l('네트워크 연결을 확인해주세요', 'Please check your network connection'));
+  }) : super(
+            message: message ??
+                _l('네트워크 연결을 확인해주세요', 'Please check your network connection'));
 }
 
 /// 인증 관련 예외
@@ -39,7 +41,9 @@ class TokenExpiredException extends AuthException {
   TokenExpiredException({
     String? message,
     super.originalError,
-  }) : super(message: message ?? _l('인증이 만료되었습니다. 다시 로그인해주세요', 'Session expired'));
+  }) : super(
+            message:
+                message ?? _l('인증이 만료되었습니다. 다시 로그인해주세요', 'Session expired'));
 }
 
 /// 서버 오류
@@ -66,7 +70,8 @@ class NotFoundException extends AppException {
   NotFoundException({
     String? message,
     super.originalError,
-  }) : super(message: message ?? _l('요청한 리소스를 찾을 수 없습니다', 'Resource not found'));
+  }) : super(
+            message: message ?? _l('요청한 리소스를 찾을 수 없습니다', 'Resource not found'));
 }
 
 /// 권한 부족
@@ -82,5 +87,7 @@ class UnknownException extends AppException {
   UnknownException({
     String? message,
     super.originalError,
-  }) : super(message: message ?? _l('알 수 없는 오류가 발생했습니다', 'An unknown error occurred'));
+  }) : super(
+            message: message ??
+                _l('알 수 없는 오류가 발생했습니다', 'An unknown error occurred'));
 }

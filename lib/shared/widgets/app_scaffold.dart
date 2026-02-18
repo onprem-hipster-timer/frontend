@@ -22,9 +22,7 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: showAppBar
-          ? appBar ?? AppBar(title: Text(title ?? ''))
-          : null,
+      appBar: showAppBar ? appBar ?? AppBar(title: Text(title ?? '')) : null,
       body: body,
       floatingActionButton: floatingActionButton,
       backgroundColor: backgroundColor,

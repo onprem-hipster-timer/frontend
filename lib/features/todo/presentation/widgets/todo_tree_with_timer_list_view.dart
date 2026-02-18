@@ -18,10 +18,12 @@ class TodoTreeWithTimerListView extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TodoTreeWithTimerListView> createState() => _TodoTreeWithTimerListViewState();
+  ConsumerState<TodoTreeWithTimerListView> createState() =>
+      _TodoTreeWithTimerListViewState();
 }
 
-class _TodoTreeWithTimerListViewState extends ConsumerState<TodoTreeWithTimerListView> {
+class _TodoTreeWithTimerListViewState
+    extends ConsumerState<TodoTreeWithTimerListView> {
   final Set<String> _expandedIds = {};
 
   @override
@@ -84,9 +86,8 @@ class _TodoTreeWithTimerListViewState extends ConsumerState<TodoTreeWithTimerLis
               node: node,
               isExpanded: _expandedIds.contains(node.id),
               onTap: () => _handleNodeTap(node),
-              onExpand: node.hasChildren
-                  ? () => _toggleExpansion(node.id)
-                  : null,
+              onExpand:
+                  node.hasChildren ? () => _toggleExpansion(node.id) : null,
             );
           },
         );
@@ -211,9 +212,8 @@ class ActiveTimerStatusBar extends ConsumerWidget {
           return const SizedBox();
         }
 
-        final runningTimers = activeStates.values
-            .where((state) => state.isRunning)
-            .toList();
+        final runningTimers =
+            activeStates.values.where((state) => state.isRunning).toList();
 
         if (runningTimers.isEmpty) {
           return const SizedBox();

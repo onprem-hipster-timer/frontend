@@ -17,34 +17,22 @@ abstract class ScheduleRead with _$ScheduleRead {
   const factory ScheduleRead({
     required String id,
     required String title,
-    @JsonKey(name: 'start_time')
-    required DateTime startTime,
-    @JsonKey(name: 'end_time')
-    required DateTime endTime,
+    @JsonKey(name: 'start_time') required DateTime startTime,
+    @JsonKey(name: 'end_time') required DateTime endTime,
     required ScheduleState state,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @Default([])
-    List<TagRead> tags,
-    @JsonKey(name: 'is_shared')
-    @Default(false)
-    bool isShared,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @Default([]) List<TagRead> tags,
+    @JsonKey(name: 'is_shared') @Default(false) bool isShared,
     String? description,
-    @JsonKey(name: 'recurrence_rule')
-    String? recurrenceRule,
-    @JsonKey(name: 'recurrence_end')
-    DateTime? recurrenceEnd,
-    @JsonKey(name: 'parent_id')
-    String? parentId,
-    @JsonKey(name: 'tag_group_id')
-    String? tagGroupId,
-    @JsonKey(name: 'source_todo_id')
-    String? sourceTodoId,
-    @JsonKey(name: 'owner_id')
-    String? ownerId,
-    @JsonKey(name: 'visibility_level')
-    VisibilityLevel? visibilityLevel,
+    @JsonKey(name: 'recurrence_rule') String? recurrenceRule,
+    @JsonKey(name: 'recurrence_end') DateTime? recurrenceEnd,
+    @JsonKey(name: 'parent_id') String? parentId,
+    @JsonKey(name: 'tag_group_id') String? tagGroupId,
+    @JsonKey(name: 'source_todo_id') String? sourceTodoId,
+    @JsonKey(name: 'owner_id') String? ownerId,
+    @JsonKey(name: 'visibility_level') VisibilityLevel? visibilityLevel,
   }) = _ScheduleRead;
-  
-  factory ScheduleRead.fromJson(Map<String, Object?> json) => _$ScheduleReadFromJson(json);
+
+  factory ScheduleRead.fromJson(Map<String, Object?> json) =>
+      _$ScheduleReadFromJson(json);
 }

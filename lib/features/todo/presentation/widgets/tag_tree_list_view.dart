@@ -100,12 +100,12 @@ class TagGroupExpansionTile extends ConsumerWidget {
           // 다른 그룹으로 태그 이동
           try {
             await ref.read(tagMutationsProvider.notifier).updateTag(
-              dragData.tagId,
-              TagUpdate(
-                // groupId는 TagUpdate에 없으므로 다른 방법 사용 필요
-                name: null, // 이름은 변경하지 않음
-              ),
-            );
+                  dragData.tagId,
+                  TagUpdate(
+                    // groupId는 TagUpdate에 없으므로 다른 방법 사용 필요
+                    name: null, // 이름은 변경하지 않음
+                  ),
+                );
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -132,9 +132,7 @@ class TagGroupExpansionTile extends ConsumerWidget {
 
         return Card(
           elevation: isReceivingDrag ? 4 : 1,
-          color: isReceivingDrag
-            ? groupColor.withValues(alpha: 0.1)
-            : null,
+          color: isReceivingDrag ? groupColor.withValues(alpha: 0.1) : null,
           child: ExpansionTile(
             key: PageStorageKey('tag_group_${group.id}'),
             initiallyExpanded: isExpanded,
@@ -163,7 +161,8 @@ class TagGroupExpansionTile extends ConsumerWidget {
                 ),
                 if (group.isTodoGroup)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
@@ -196,9 +195,9 @@ class TagGroupExpansionTile extends ConsumerWidget {
                 )
               else
                 ...group.tags.map((tag) => DraggableTagTile(
-                  tag: tag,
-                  groupColor: groupColor,
-                )),
+                      tag: tag,
+                      groupColor: groupColor,
+                    )),
 
               // 태그 추가 버튼
               ListTile(
@@ -236,7 +235,8 @@ class TagGroupExpansionTile extends ConsumerWidget {
   }
 
   /// 태그 생성 다이얼로그 표시
-  void _showCreateTagDialog(BuildContext context, WidgetRef ref, String groupId) {
+  void _showCreateTagDialog(
+      BuildContext context, WidgetRef ref, String groupId) {
     // TODO: 태그 생성 다이얼로그 구현
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('태그 생성 다이얼로그가 곧 구현됩니다')),

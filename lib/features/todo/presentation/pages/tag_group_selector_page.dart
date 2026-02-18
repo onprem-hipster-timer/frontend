@@ -66,7 +66,8 @@ class TagGroupSelectorPage extends ConsumerWidget {
                     child: Text(
                       '새로 만들 투두들이 속할 그룹을 선택해주세요.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -161,7 +162,8 @@ class TagGroupSelectorPage extends ConsumerWidget {
                 const SizedBox(height: 4),
 
                 // 그룹 설명 (있는 경우)
-                if (tagGroup.description != null && tagGroup.description!.isNotEmpty) ...[
+                if (tagGroup.description != null &&
+                    tagGroup.description!.isNotEmpty) ...[
                   Text(
                     tagGroup.description!,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -178,7 +180,8 @@ class TagGroupSelectorPage extends ConsumerWidget {
                 // Todo 그룹 배지 (있는 경우)
                 if (tagGroup.isTodoGroup)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),

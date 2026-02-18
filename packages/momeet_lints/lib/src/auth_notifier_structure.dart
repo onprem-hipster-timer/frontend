@@ -43,8 +43,7 @@ class AuthNotifierBuildStructure extends DartLintRule {
 
   static const _code = LintCode(
     name: 'auth_notifier_build_structure',
-    problemMessage:
-        'AuthNotifier.build()에 필수 아키텍처 요소가 누락되었습니다. '
+    problemMessage: 'AuthNotifier.build()에 필수 아키텍처 요소가 누락되었습니다. '
         'onAuthStateChange.listen(), ref.onDispose(..cancel()), '
         'currentSession 체크가 모두 필요합니다.',
     errorSeverity: ErrorSeverity.ERROR,
@@ -113,16 +112,14 @@ class AuthActionNoStateMutation extends DartLintRule {
 
   static const _stateCode = LintCode(
     name: 'auth_action_no_state_mutation',
-    problemMessage:
-        '액션 메서드에서 state를 직접 변경하면 안 됩니다. '
+    problemMessage: '액션 메서드에서 state를 직접 변경하면 안 됩니다. '
         '인증 상태 전이는 오직 onAuthStateChange 스트림 리스너에서만 수행됩니다.',
     errorSeverity: ErrorSeverity.ERROR,
   );
 
   static const _loadingCode = LintCode(
     name: 'auth_action_no_loading_state',
-    problemMessage:
-        '액션 메서드에서 AuthStatus.loading()을 사용하면 안 됩니다. '
+    problemMessage: '액션 메서드에서 AuthStatus.loading()을 사용하면 안 됩니다. '
         'loading 상태는 앱 초기화(build) 전용이며, '
         '사용 시 라우터가 /loading으로 리다이렉트하여 무한 로딩 버그가 발생합니다.',
     errorSeverity: ErrorSeverity.ERROR,
@@ -177,8 +174,7 @@ class AuthCatchRequireClassify extends DartLintRule {
 
   static const _code = LintCode(
     name: 'auth_catch_require_classify',
-    problemMessage:
-        '예외 처리 블록에서 AuthErrorType.classify를 사용해야 합니다. '
+    problemMessage: '예외 처리 블록에서 AuthErrorType.classify를 사용해야 합니다. '
         '직접 에러 메시지를 파싱하는 것은 금지됩니다.',
     errorSeverity: ErrorSeverity.WARNING,
   );
@@ -327,8 +323,7 @@ class _LoadingUsageChecker extends RecursiveAstVisitor<void> {
 
   @override
   void visitPrefixedIdentifier(PrefixedIdentifier node) {
-    if (node.prefix.name == 'AuthStatus' &&
-        node.identifier.name == 'loading') {
+    if (node.prefix.name == 'AuthStatus' && node.identifier.name == 'loading') {
       violations.add(node);
     }
     super.visitPrefixedIdentifier(node);

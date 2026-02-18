@@ -108,12 +108,12 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
           Expanded(
             child: Text(
               node.todo.title,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              decoration: node.todo.status == TodoStatus.done
-                  ? TextDecoration.lineThrough
-                  : null,
-            ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                decoration: node.todo.status == TodoStatus.done
+                    ? TextDecoration.lineThrough
+                    : null,
+              ),
             ),
           ),
           if (aggregation != null && aggregation.totalElapsedSeconds > 0)
@@ -253,7 +253,8 @@ class TimerControlButtons extends ConsumerWidget {
                 Icons.stop,
                 color: theme.colorScheme.outline,
               ),
-              onPressed: () => _handleTimerStop(context, ref, activeTimerState!),
+              onPressed: () =>
+                  _handleTimerStop(context, ref, activeTimerState!),
               tooltip: '정지',
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               padding: EdgeInsets.zero,
@@ -297,7 +298,8 @@ class TimerControlButtons extends ConsumerWidget {
   }
 
   /// 타이머 일시정지/재개 토글
-  Future<void> _handleTimerToggle(WidgetRef ref, ActiveTimerState timerState) async {
+  Future<void> _handleTimerToggle(
+      WidgetRef ref, ActiveTimerState timerState) async {
     try {
       // 현재는 타이머 제어 API가 없으므로 placeholder 구현
       debugPrint('타이머 토글: ${timerState.timerId}');
@@ -317,9 +319,8 @@ class TimerControlButtons extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('타이머 정지'),
-        content: Text(
-          '현재 진행 중인 타이머를 정지하시겠습니까?\n경과 시간: ${timerState.formattedTime}'
-        ),
+        content:
+            Text('현재 진행 중인 타이머를 정지하시겠습니까?\n경과 시간: ${timerState.formattedTime}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

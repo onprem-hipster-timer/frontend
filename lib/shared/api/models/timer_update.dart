@@ -22,14 +22,12 @@ abstract class TimerUpdate with _$TimerUpdate {
   const factory TimerUpdate({
     String? title,
     String? description,
-    @JsonKey(name: 'tag_ids')
-    List<String>? tagIds,
-    @JsonKey(name: 'todo_id')
-    String? todoId,
-    @JsonKey(name: 'schedule_id')
-    String? scheduleId,
+    @JsonKey(name: 'tag_ids') List<String>? tagIds,
+    @JsonKey(name: 'todo_id') String? todoId,
+    @JsonKey(name: 'schedule_id') String? scheduleId,
     VisibilitySettings? visibility,
   }) = _TimerUpdate;
-  
-  factory TimerUpdate.fromJson(Map<String, Object?> json) => _$TimerUpdateFromJson(json);
+
+  factory TimerUpdate.fromJson(Map<String, Object?> json) =>
+      _$TimerUpdateFromJson(json);
 }
