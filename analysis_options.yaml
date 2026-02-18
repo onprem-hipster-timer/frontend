@@ -11,6 +11,8 @@ include: package:flutter_lints/flutter.yaml
 
 # Enable experimental language features
 analyzer:
+  plugins:
+    - custom_lint
   exclude:
     - lib/core/templates/**
     - lib/shared/api/generated/**

@@ -450,3 +450,4 @@ hs_err_pid*
 *.freezed.dart
 *.g.dart
 /.run/main.dart.run.xml
+/.cursor/

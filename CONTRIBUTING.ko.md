@@ -91,6 +91,25 @@ fvm flutter test test/widget_test.dart
 fvm flutter test --coverage
 ```
 
+### 아키텍처 린트 실행
+
+```bash
+# 아키텍처 린트 검사
+fvm dart run custom_lint
+```
+
+검출되는 규칙:
+
+| 규칙 | 설명 |
+|------|------|
+| `no_direct_supabase_auth` | `auth_provider.dart` 외부에서 Supabase 인증 API 직접 호출 금지 |
+| `auth_notifier_build_structure` | `AuthNotifier.build()`에 필수 구조 누락 감지 |
+| `auth_action_no_state_mutation` | 액션 메서드에서 `state` 직접 변경 금지 |
+| `auth_action_no_loading_state` | 액션 메서드에서 `AuthStatus.loading()` 사용 금지 |
+| `auth_catch_require_classify` | catch 블록에서 `AuthErrorType.classify` 사용 강제 |
+
+> IDE에 `custom_lint` 플러그인이 활성화되어 있으면 코드 작성 시 실시간 경고가 표시됩니다.
+
 ---
 
 ## 코딩 표준
@@ -183,6 +202,7 @@ Closes #42
 
 - [ ] 모든 테스트 통과 (`fvm flutter test`)
 - [ ] 코드 분석 통과 (`fvm flutter analyze`)
+- [ ] 아키텍처 린트 통과 (`fvm dart run custom_lint`)
 - [ ] 새 코드에 적절한 테스트 작성
 - [ ] 코드 생성 정상 동작 (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] 필요시 문서 업데이트

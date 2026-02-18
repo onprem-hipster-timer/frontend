@@ -91,6 +91,25 @@ fvm flutter test test/widget_test.dart
 fvm flutter test --coverage
 ```
 
+### Running Architecture Lints
+
+```bash
+# Run architecture lint checks
+fvm dart run custom_lint
+```
+
+Rules enforced:
+
+| Rule | Description |
+|------|-------------|
+| `no_direct_supabase_auth` | Disallow direct Supabase auth API calls outside `auth_provider.dart` |
+| `auth_notifier_build_structure` | Detect missing required structure in `AuthNotifier.build()` |
+| `auth_action_no_state_mutation` | Disallow direct `state` mutation in action methods |
+| `auth_action_no_loading_state` | Disallow `AuthStatus.loading()` in action methods |
+| `auth_catch_require_classify` | Require `AuthErrorType.classify` in catch blocks |
+
+> If the `custom_lint` plugin is active in your IDE, warnings will appear in real-time as you write code.
+
 ---
 
 ## Coding Standards
@@ -212,6 +231,7 @@ Fixes #87
 
 - [ ] All tests pass (`fvm flutter test`)
 - [ ] Code follows style guidelines (`fvm flutter analyze`)
+- [ ] Architecture lints pass (`fvm dart run custom_lint`)
 - [ ] New code has appropriate tests
 - [ ] Code generation runs cleanly (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] Documentation updated if needed
