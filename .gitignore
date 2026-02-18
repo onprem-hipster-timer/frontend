@@ -447,6 +447,9 @@ hs_err_pid*
 .fvm/
 .fvmrc
 
+# Lefthook local overrides
+lefthook-local.yml
+
 *.freezed.dart
 *.g.dart
 /.run/main.dart.run.xml

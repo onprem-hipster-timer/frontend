@@ -1,0 +1,38 @@
+pre-commit:
+  commands:
+    format:
+      glob: "*.dart"
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm dart format {staged_files}
+        else
+          dart format {staged_files}
+        fi
+      stage_fixed: true
+
+    analyze:
+      glob: "*.dart"
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm flutter analyze
+        else
+          flutter analyze
+        fi
+
+    architecture-lint:
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm dart run custom_lint
+        else
+          flutter pub run custom_lint
+        fi
+
+pre-push:
+  commands:
+    test:
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm flutter test
+        else
+          flutter test
+        fi

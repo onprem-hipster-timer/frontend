@@ -64,6 +64,10 @@ fvm flutter pub get
 
 # Run code generation
 fvm dart run build_runner build --delete-conflicting-outputs
+
+# Install Git Hooks (Lefthook)
+dart pub global activate lefthook_dart
+lefthook install
 ```
 
 ### Running the App
@@ -90,6 +94,34 @@ fvm flutter test test/widget_test.dart
 # Run with coverage
 fvm flutter test --coverage
 ```
+
+### Git Hooks (Lefthook)
+
+This project uses [Lefthook](https://github.com/evilmartians/lefthook) to manage Git Hooks. Quality checks run automatically on commit and push.
+
+| Hook | Command | Description |
+|------|---------|-------------|
+| `pre-commit` | `dart format` | Format staged files and auto-fix |
+| `pre-commit` | `flutter analyze` | Static analysis |
+| `pre-commit` | `dart run custom_lint` | Architecture lints |
+| `pre-push` | `flutter test` | Full test suite |
+
+> If FVM is installed, commands run via `fvm` automatically. Otherwise, system Flutter/Dart is used.
+
+**Installation:**
+
+```bash
+dart pub global activate lefthook_dart
+lefthook install
+```
+
+**Bypass temporarily** (emergency commits only):
+
+```bash
+git commit --no-verify -m "hotfix: ..."
+```
+
+> Only use `--no-verify` in emergencies. CI runs the same checks again.
 
 ### Running Architecture Lints
 

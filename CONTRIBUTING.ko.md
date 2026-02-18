@@ -64,6 +64,10 @@ fvm flutter pub get
 
 # 코드 생성
 fvm dart run build_runner build --delete-conflicting-outputs
+
+# Git Hooks 설치 (Lefthook)
+dart pub global activate lefthook_dart
+lefthook install
 ```
 
 ### 앱 실행
@@ -90,6 +94,34 @@ fvm flutter test test/widget_test.dart
 # 커버리지 포함
 fvm flutter test --coverage
 ```
+
+### Git Hooks (Lefthook)
+
+이 프로젝트는 [Lefthook](https://github.com/evilmartians/lefthook)으로 Git Hook을 관리합니다. 커밋/푸시 시 자동으로 품질 검사가 실행됩니다.
+
+| Hook | 명령 | 설명 |
+|------|------|------|
+| `pre-commit` | `dart format` | staged 파일 포맷 검사 및 자동 수정 |
+| `pre-commit` | `flutter analyze` | 정적 분석 |
+| `pre-commit` | `dart run custom_lint` | 아키텍처 린트 |
+| `pre-push` | `flutter test` | 전체 테스트 |
+
+> FVM이 설치되어 있으면 자동으로 `fvm` 경유, 없으면 시스템 Flutter/Dart를 사용합니다.
+
+**설치:**
+
+```bash
+dart pub global activate lefthook_dart
+lefthook install
+```
+
+**일시 비활성화** (긴급 커밋 시):
+
+```bash
+git commit --no-verify -m "hotfix: ..."
+```
+
+> `--no-verify`는 긴급 상황에서만 사용하세요. CI에서 동일한 검사가 다시 실행됩니다.
 
 ### 아키텍처 린트 실행
 
