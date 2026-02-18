@@ -132,7 +132,16 @@ class AuthNotifier extends _$AuthNotifier {
 
     ref.onDispose(() => subscription.cancel());
 
-    return const AuthStatus.loading();
+    // currentSession은 Supabase.initialize() 완료 후 동기적으로 사용 가능
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      return AuthStatus.authenticated(
+        user: session.user,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      );
+    }
+    return const AuthStatus.unauthenticated();
   }
 
   /// 이메일/비밀번호로 로그인
