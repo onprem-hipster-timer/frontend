@@ -15,6 +15,9 @@ jobs:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -25,8 +28,39 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Cache build_runner state
+        uses: actions/cache@v4
+        with:
+          path: .dart_tool/build
+          key: build-runner-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            build-runner-${{ runner.os }}-
+
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Cleanup old build_runner caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT_KEY="build-runner-${{ runner.os }}-${{ github.run_id }}"
+          gh cache list --key build-runner- --limit 100 --json id,key --jq \
+            ".[] | select(.key != \"$CURRENT_KEY\") | .id" \
+          | while read id; do
+              gh cache delete "$id" || true
+            done
 
       - name: Check formatting
         run: dart format --set-exit-if-changed .
