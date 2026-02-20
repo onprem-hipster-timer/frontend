@@ -20,11 +20,12 @@ pre-commit:
         fi
 
     architecture-lint:
+      glob: "**/auth_provider.dart"
       run: |
         if command -v fvm &> /dev/null; then
           fvm dart run custom_lint
         else
-          flutter pub run custom_lint
+          dart run custom_lint
         fi
 
 post-merge:
