@@ -7,7 +7,6 @@
 // - 로그인/로그아웃 로직
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
@@ -119,6 +118,9 @@ class AuthNotifier extends _$AuthNotifier {
             state = const AuthStatus.unauthenticated();
           case AuthChangeEvent.passwordRecovery:
           case AuthChangeEvent.mfaChallengeVerified:
+          // userDeleted: 백엔드에서 발행된 적 없는 구현 불가능 이벤트
+          // https://github.com/supabase/supabase/issues/10309
+          // ignore: deprecated_member_use
           case AuthChangeEvent.userDeleted:
             break;
         }

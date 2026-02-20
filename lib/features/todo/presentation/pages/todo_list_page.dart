@@ -201,7 +201,8 @@ class TodoListPage extends ConsumerWidget {
       selectedTagGroupId = selectedGroup.id;
     }
 
-    // 선택된 태그 그룹으로 할 일 생성 폼 띄우기
+    if (!context.mounted) return;
+
     showTodoFormSheet(
       context,
       defaultTagGroupId: selectedTagGroupId,

@@ -48,6 +48,11 @@ jobs:
           restore-keys: |
             build-runner-${{ runner.os }}-
 
+      - name: Create dummy .env for analysis
+        run: |
+          mkdir -p assets
+          touch assets/.env
+
       - name: Run code generation
         run: dart run build_runner build --delete-conflicting-outputs
 
