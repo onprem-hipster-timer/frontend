@@ -231,22 +231,6 @@ class AuthNotifier extends _$AuthNotifier {
       );
     }
   }
-
-  /// 토큰 수동 갱신 (onAuthStateChange가 tokenRefreshed를 자동 처리하지만,
-  /// 명시적 갱신이 필요한 경우 사용)
-  Future<String?> refreshAccessToken() async {
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-      final response = await supabase.auth.refreshSession();
-      return response.session?.accessToken;
-    } catch (e) {
-      if (AppConfig.enableDebugLogging) {
-        debugPrint('❌ [AUTH] Token refresh failed: $e');
-      }
-      await signOut();
-      return null;
-    }
-  }
 }
 
 // ============================================================

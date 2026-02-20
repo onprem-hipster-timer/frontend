@@ -11,5 +11,6 @@ class _MomeetLints extends PluginBase {
         const AuthNotifierBuildStructure(),
         const AuthActionNoStateMutation(),
         const AuthCatchRequireClassify(),
+        const NoManualTokenRefresh(),
       ];
 }

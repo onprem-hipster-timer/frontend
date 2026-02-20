@@ -15,17 +15,18 @@ const _actionMethodNames = {
   'signOut',
   'resetPassword',
   'updatePassword',
-  'refreshAccessToken',
 };
 
-/// classify를 강제할 메서드 (에러를 throw하여 호출자에게 전파하는 메서드만 해당)
-/// refreshAccessToken은 에러를 내부 복구하므로 제외
-const _classifyRequiredMethodNames = {
-  'signInWithEmail',
-  'signUpWithEmail',
-  'signOut',
-  'resetPassword',
-  'updatePassword',
+const _classifyRequiredMethodNames = _actionMethodNames;
+
+/// 수동 토큰 갱신 메서드 금지 패턴.
+/// Supabase가 토큰 갱신을 자동 처리하므로 수동 구현은 불필요하고 위험합니다.
+const _forbiddenTokenRefreshPatterns = {
+  'refreshAccessToken',
+  'refreshToken',
+  'refreshSession',
+  'renewToken',
+  'renewAccessToken',
 };
 
 // ============================================================
@@ -208,6 +209,52 @@ class AuthCatchRequireClassify extends DartLintRule {
 
           if (!classifyChecker.hasClassify) {
             reporter.atNode(catchClause, _code);
+          }
+        }
+      }
+    });
+  }
+}
+
+// ============================================================
+// Rule 5: 수동 토큰 갱신 메서드 금지
+// ============================================================
+
+/// AuthNotifier에 수동 토큰 갱신 메서드를 추가하는 것을 금지합니다.
+///
+/// Supabase GoTrueClient가 토큰 갱신을 자동 처리하며,
+/// onAuthStateChange 스트림의 tokenRefreshed 이벤트로 상태가 갱신됩니다.
+/// 수동 구현은 불필요하고, 이중 실패(갱신 실패 + signOut 실패) 같은
+/// 복잡한 에러 시나리오를 유발합니다.
+class NoManualTokenRefresh extends DartLintRule {
+  const NoManualTokenRefresh() : super(code: _code);
+
+  static const _code = LintCode(
+    name: 'no_manual_token_refresh',
+    problemMessage: 'AuthNotifier에 수동 토큰 갱신 메서드를 추가하지 마세요. '
+        'Supabase가 토큰 갱신을 자동 처리하며, '
+        'onAuthStateChange의 tokenRefreshed 이벤트로 상태가 갱신됩니다.',
+    errorSeverity: ErrorSeverity.ERROR,
+  );
+
+  @override
+  void run(
+    CustomLintResolver resolver,
+    ErrorReporter reporter,
+    CustomLintContext context,
+  ) {
+    if (!resolver.path.endsWith(_authProviderFile)) return;
+
+    context.registry.addClassDeclaration((node) {
+      if (node.name.lexeme != 'AuthNotifier') return;
+
+      for (final member in node.members) {
+        if (member is! MethodDeclaration) continue;
+        final name = member.name.lexeme.toLowerCase();
+        for (final pattern in _forbiddenTokenRefreshPatterns) {
+          if (name == pattern.toLowerCase()) {
+            reporter.atToken(member.name, _code);
+            break;
           }
         }
       }
