@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/shared/api/models/todo_status.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 타이머 기능이 통합된 Todo Tree Tile
 ///
@@ -315,26 +316,14 @@ class TimerControlButtons extends ConsumerWidget {
     WidgetRef ref,
     ActiveTimerState timerState,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('타이머 정지'),
-        content:
-            Text('현재 진행 중인 타이머를 정지하시겠습니까?\n경과 시간: ${timerState.formattedTime}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('정지'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '타이머 정지',
+      content: '현재 진행 중인 타이머를 정지하시겠습니까?\n경과 시간: ${timerState.formattedTime}',
+      confirmText: '정지',
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       try {
         // 현재는 타이머 정지 API가 없으므로 placeholder 구현
         debugPrint('타이머 정지: ${timerState.timerId}');

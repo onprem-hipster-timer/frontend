@@ -13,6 +13,8 @@ import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/todo/todo.dart';
 import 'package:momeet/features/tag/tag.dart';
+import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
+import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
 // ============================================================
@@ -34,6 +36,7 @@ enum AppRoute {
   signup(path: '/signup', requiresAuth: false),
   forgotPassword(path: '/forgot-password', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
+  securityWarning(path: '/security-warning', requiresAuth: false),
 
   // 인증 필요 (보호된 페이지)
   calendar(path: '/'),
@@ -58,6 +61,23 @@ enum AppRoute {
     for (final route in values)
       if (!route.requiresAuth) route.path,
   };
+
+  /// 보호된 라우트의 경로 패턴 (RegExp) 목록
+  ///
+  /// `:param` 세그먼트를 `[^/]+` 정규식으로 변환하여
+  /// `/todo/abc-123` 같은 동적 경로도 매칭합니다.
+  static final _protectedPatterns = [
+    for (final route in values)
+      if (route.requiresAuth)
+        RegExp(
+          '^${route.path.replaceAllMapped(RegExp(r':(\w+)'), (_) => r'[^/]+')}\$',
+        ),
+  ];
+
+  /// 주어진 경로가 등록된 보호 라우트와 매칭되는지 확인
+  static bool isKnownProtectedPath(String path) {
+    return _protectedPatterns.any((pattern) => pattern.hasMatch(path));
+  }
 }
 
 // ============================================================
@@ -76,6 +96,23 @@ class _AuthChangeNotifier extends ChangeNotifier {
   }
 }
 
+/// redirect 경로가 안전한 내부 경로인지 검증 (Open Redirect 방지)
+///
+/// 허용 조건:
+/// - `/`로 시작하는 상대 경로
+/// - `//`로 시작하지 않음 (프로토콜 상대 URL 차단)
+/// - `://` 포함하지 않음 (절대 URL 차단)
+/// - AppRoute enum에 등록된 보호 경로와 매칭 (화이트리스트)
+@visibleForTesting
+bool isValidRedirectPath(String path) {
+  if (path.isEmpty) return false;
+  if (!path.startsWith('/')) return false;
+  if (path.startsWith('//')) return false;
+  if (path.contains('://')) return false;
+  if (!AppRoute.isKnownProtectedPath(path)) return false;
+  return true;
+}
+
 /// 인증 상태에 따른 리다이렉트 로직 (순수 함수 — 테스트 가능)
 ///
 /// 반환값이 null이면 리다이렉트 없음.
@@ -83,6 +120,7 @@ String? authRedirect({
   required bool isAuthenticated,
   required bool isAuthLoading,
   required String matchedLocation,
+  String? redirectAfterLogin,
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
@@ -103,8 +141,16 @@ String? authRedirect({
     return '${AppRoute.login.path}?redirect=$matchedLocation';
   }
 
-  // 3. 인증된 사용자가 공개 페이지에 있으면 메인 앱으로
+  // 3. 인증된 사용자가 공개 페이지에 있으면 원래 목적지 또는 메인 앱으로
   if (isAuthenticated && isPublicRoute) {
+    if (redirectAfterLogin != null && redirectAfterLogin.isNotEmpty) {
+      if (isValidRedirectPath(redirectAfterLogin)) {
+        return redirectAfterLogin;
+      }
+      if (!AppRoute.publicPaths.contains(redirectAfterLogin)) {
+        return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(redirectAfterLogin)}';
+      }
+    }
     return AppRoute.calendar.path;
   }
 
@@ -126,6 +172,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         isAuthenticated: ref.read(isAuthenticatedProvider),
         isAuthLoading: ref.read(isAuthLoadingProvider),
         matchedLocation: state.matchedLocation,
+        redirectAfterLogin: state.uri.queryParameters['redirect'],
       );
     },
 
@@ -161,6 +208,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.loading.name,
         builder: (context, state) => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+
+      // ============================================================
+      // 보안 경고 페이지
+      // ============================================================
+      GoRoute(
+        path: AppRoute.securityWarning.path,
+        name: AppRoute.securityWarning.name,
+        builder: (context, state) => SecurityWarningPage(
+          attemptedUrl: state.uri.queryParameters['blocked'],
         ),
       ),
 
@@ -259,12 +317,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.mypage.path,
                 name: AppRoute.mypage.name,
-                builder: (context, state) {
-                  return Scaffold(
-                    appBar: AppBar(title: const Text('마이페이지')),
-                    body: const Center(child: Text('마이페이지')),
-                  );
-                },
+                builder: (context, state) => const MyPage(),
               ),
             ],
           ),
