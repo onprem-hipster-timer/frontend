@@ -371,7 +371,7 @@ class DraggableTagTile extends StatelessWidget {
                 ),
               ),
             ],
-            onSelected: (value) {
+            onSelected: (value) async {
               switch (value) {
                 case 'edit':
                   // TODO: 태그 수정 다이얼로그
@@ -380,7 +380,7 @@ class DraggableTagTile extends StatelessWidget {
                   );
                   break;
                 case 'delete':
-                  _showDeleteConfirmDialog(context, tag);
+                  await _showDeleteConfirmDialog(context, tag);
                   break;
               }
             },
