@@ -143,7 +143,8 @@ bool isDescendantOf(TodoTree tree, String nodeId, String potentialAncestorId) {
   final node = tree.getNode(nodeId);
   if (node == null) return false;
 
-  return node.pathIds.contains(potentialAncestorId) && nodeId != potentialAncestorId;
+  return node.pathIds.contains(potentialAncestorId) &&
+      nodeId != potentialAncestorId;
 }
 
 /// 노드가 다른 노드의 조상인지 확인

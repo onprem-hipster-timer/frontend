@@ -191,9 +191,13 @@ class TodoGroupDetailPage extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           '이 그룹의 할 일들입니다. 드래그로 순서를 바꿀 수 있습니다.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
                         ),
                       ),
                     ],
@@ -268,7 +272,8 @@ class TodoGroupDetailPage extends ConsumerWidget {
               icon: const Icon(Icons.add_task),
               label: const Text('첫 할 일 추가하기'),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],

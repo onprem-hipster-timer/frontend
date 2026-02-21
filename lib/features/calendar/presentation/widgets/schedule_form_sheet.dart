@@ -74,15 +74,18 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       );
 
       _startTime = widget.initialStartTime ?? roundedNow;
-      _endTime = widget.initialEndTime ?? _startTime.add(const Duration(hours: 1));
+      _endTime =
+          widget.initialEndTime ?? _startTime.add(const Duration(hours: 1));
     }
   }
 
   /// 종일 이벤트인지 확인하는 헬퍼 메서드
   bool _checkIsAllDay(DateTime start, DateTime end) {
-    return start.hour == 0 && start.minute == 0 &&
-           end.hour == 0 && end.minute == 0 &&
-           end.difference(start).inHours >= 24;
+    return start.hour == 0 &&
+        start.minute == 0 &&
+        end.hour == 0 &&
+        end.minute == 0 &&
+        end.difference(start).inHours >= 24;
   }
 
   @override
@@ -119,7 +122,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -171,9 +175,11 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                     _isAllDay = value;
                     if (_isAllDay) {
                       // 종일로 설정하면 시간을 00:00과 23:59로 조정
-                      final startDate = DateTime(_startTime.year, _startTime.month, _startTime.day);
+                      final startDate = DateTime(
+                          _startTime.year, _startTime.month, _startTime.day);
                       _startTime = startDate;
-                      _endTime = DateTime(_endTime.year, _endTime.month, _endTime.day, 23, 59);
+                      _endTime = DateTime(
+                          _endTime.year, _endTime.month, _endTime.day, 23, 59);
                     }
                   });
                 },
@@ -209,8 +215,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                       Expanded(
                         child: Text(
                           _isAllDay
-                            ? _dateFormat.format(_startTime)
-                            : _dateTimeFormat.format(_startTime),
+                              ? _dateFormat.format(_startTime)
+                              : _dateTimeFormat.format(_startTime),
                           style: theme.textTheme.bodyLarge,
                         ),
                       ),
@@ -252,8 +258,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                       Expanded(
                         child: Text(
                           _isAllDay
-                            ? _dateFormat.format(_endTime)
-                            : _dateTimeFormat.format(_endTime),
+                              ? _dateFormat.format(_endTime)
+                              : _dateTimeFormat.format(_endTime),
                           style: theme.textTheme.bodyLarge,
                         ),
                       ),
@@ -304,7 +310,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                   // 취소 버튼
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: mutations.isLoading ? null : () => Navigator.of(context).pop(),
+                      onPressed: mutations.isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -329,15 +337,15 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                         ),
                       ),
                       child: mutations.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(widget.existingSchedule != null ? '수정' : '저장'),
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(widget.existingSchedule != null ? '수정' : '저장'),
                     ),
                   ),
                 ],
@@ -353,7 +361,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   }
 
   /// 날짜/시간 선택 다이얼로그 표시
-  Future<void> _selectDateTime(BuildContext context, {required bool isStartTime}) async {
+  Future<void> _selectDateTime(BuildContext context,
+      {required bool isStartTime}) async {
     final currentTime = isStartTime ? _startTime : _endTime;
 
     // 날짜 선택
@@ -397,9 +406,11 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     } else {
       // 종일인 경우 시작은 00:00, 종료는 23:59
       if (isStartTime) {
-        newDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+        newDateTime =
+            DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
       } else {
-        newDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59);
+        newDateTime = DateTime(
+            selectedDate.year, selectedDate.month, selectedDate.day, 23, 59);
       }
     }
 
@@ -410,7 +421,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           // 시작 시간이 종료 시간보다 늦으면 종료 시간을 조정
           if (_startTime.isAfter(_endTime)) {
             if (_isAllDay) {
-              _endTime = DateTime(_startTime.year, _startTime.month, _startTime.day, 23, 59);
+              _endTime = DateTime(
+                  _startTime.year, _startTime.month, _startTime.day, 23, 59);
             } else {
               _endTime = _startTime.add(const Duration(hours: 1));
             }
@@ -420,7 +432,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           // 종료 시간이 시작 시간보다 빠르면 시작 시간을 조정
           if (_endTime.isBefore(_startTime)) {
             if (_isAllDay) {
-              _startTime = DateTime(_endTime.year, _endTime.month, _endTime.day);
+              _startTime =
+                  DateTime(_endTime.year, _endTime.month, _endTime.day);
             } else {
               _startTime = _endTime.subtract(const Duration(hours: 1));
             }
@@ -455,11 +468,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           startTime: _startTime.toUtc(),
           endTime: _endTime.toUtc(),
           description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
+              ? null
+              : _descriptionController.text.trim(),
         );
 
-        await ref.read(scheduleMutationsProvider.notifier)
+        await ref
+            .read(scheduleMutationsProvider.notifier)
             .updateSchedule(widget.existingSchedule!.id, scheduleUpdate);
 
         if (mounted) {
@@ -485,11 +499,13 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           startTime: _startTime.toUtc(),
           endTime: _endTime.toUtc(),
           description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
+              ? null
+              : _descriptionController.text.trim(),
         );
 
-        await ref.read(scheduleMutationsProvider.notifier).createSchedule(scheduleCreate);
+        await ref
+            .read(scheduleMutationsProvider.notifier)
+            .createSchedule(scheduleCreate);
 
         if (mounted) {
           navigator.pop();
@@ -508,7 +524,6 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           );
         }
       }
-
     } catch (error) {
       // 에러 처리
       final action = widget.existingSchedule != null ? '수정' : '생성';
@@ -578,7 +593,8 @@ Future<void> showScheduleFormSheet(
 
     // 클릭한 날짜에 현재 시간의 다음 정각으로 설정
     final nextHour = now.hour < 23 ? now.hour + 1 : now.hour;
-    defaultStartTime = DateTime(targetDate.year, targetDate.month, targetDate.day, nextHour, 0);
+    defaultStartTime = DateTime(
+        targetDate.year, targetDate.month, targetDate.day, nextHour, 0);
     defaultEndTime = defaultStartTime.add(const Duration(hours: 1));
   }
 
@@ -632,4 +648,3 @@ Future<void> showScheduleEditSheet(
     ),
   );
 }
-

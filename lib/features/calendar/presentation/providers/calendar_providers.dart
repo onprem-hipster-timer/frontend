@@ -166,7 +166,8 @@ Future<List<ScheduleRead>> currentSchedules(Ref ref) async {
 
   switch (settings.viewType) {
     case CalendarViewType.day:
-      startDate = DateTime(displayDate.year, displayDate.month, displayDate.day);
+      startDate =
+          DateTime(displayDate.year, displayDate.month, displayDate.day);
       endDate = startDate.add(const Duration(days: 1));
     case CalendarViewType.week:
       // 주의 시작일 계산 (월요일 기준)
@@ -239,7 +240,8 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
 
   switch (settings.viewType) {
     case CalendarViewType.day:
-      startDate = DateTime(displayDate.year, displayDate.month, displayDate.day);
+      startDate =
+          DateTime(displayDate.year, displayDate.month, displayDate.day);
       endDate = startDate.add(const Duration(days: 1));
     case CalendarViewType.week:
       final weekday = displayDate.weekday;
@@ -279,8 +281,8 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   return allHolidays.where((holiday) {
     final holidayDate = parseHolidayDate(holiday.locdate);
     return holidayDate != null &&
-           holidayDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
-           holidayDate.isBefore(endDate);
+        holidayDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+        holidayDate.isBefore(endDate);
   }).toList();
 }
 
@@ -392,4 +394,3 @@ class ScheduleOnlyDataSource extends CalendarDataSource {
     this.appointments = appointments;
   }
 }
-

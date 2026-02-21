@@ -11,6 +11,7 @@ enum TodoIncludeReason {
   match('MATCH'),
   @JsonValue('ANCESTOR')
   ancestor('ANCESTOR'),
+
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
@@ -25,6 +26,8 @@ enum TodoIncludeReason {
 
   @override
   String toString() => json?.toString() ?? super.toString();
+
   /// Returns all defined enum values excluding the $unknown value.
-  static List<TodoIncludeReason> get $valuesDefined => values.where((value) => value != $unknown).toList();
+  static List<TodoIncludeReason> get $valuesDefined =>
+      values.where((value) => value != $unknown).toList();
 }

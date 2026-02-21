@@ -15,6 +15,7 @@ enum VisibilityLevel {
   selected('selected'),
   @JsonValue('public')
   public('public'),
+
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
@@ -29,6 +30,8 @@ enum VisibilityLevel {
 
   @override
   String toString() => json?.toString() ?? super.toString();
+
   /// Returns all defined enum values excluding the $unknown value.
-  static List<VisibilityLevel> get $valuesDefined => values.where((value) => value != $unknown).toList();
+  static List<VisibilityLevel> get $valuesDefined =>
+      values.where((value) => value != $unknown).toList();
 }

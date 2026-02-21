@@ -5,6 +5,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/shared/widgets/error_banner.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -19,9 +20,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_clearError);
+    _passwordController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) {
+      setState(() => _errorMessage = null);
+    }
+  }
 
   @override
   void dispose() {
+    _emailController.removeListener(_clearError);
+    _passwordController.removeListener(_clearError);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -32,6 +49,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
@@ -39,22 +57,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
-
-      // router.dart의 리다이렉트 로직에 의해 자동으로 이동됩니다.
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        setState(() => _errorMessage = e.toString());
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -141,7 +150,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
               const SizedBox(height: 12),
 
-              // Forgot Password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -149,7 +157,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: const Text('비밀번호를 잊으셨나요?'),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+
+              ErrorBanner(
+                message: _errorMessage,
+                onDismiss: _clearError,
+              ),
 
               AuthButton(
                 text: '로그인',

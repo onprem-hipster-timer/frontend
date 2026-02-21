@@ -72,7 +72,8 @@ class TimerDashboard extends ConsumerWidget {
           timerTicker.when(
             data: (duration) => DigitalClock(duration: duration),
             loading: () => const DigitalClock(duration: Duration.zero),
-            error: (error, stack) => const DigitalClock(duration: Duration.zero),
+            error: (error, stack) =>
+                const DigitalClock(duration: Duration.zero),
           ),
 
           const SizedBox(height: 32),
@@ -248,9 +249,9 @@ class CurrentTaskDisplay extends StatelessWidget {
     }
 
     final taskName = timer!.title ??
-                     timer!.todo?.title ??
-                     timer!.schedule?.title ??
-                     '알 수 없는 작업';
+        timer!.todo?.title ??
+        timer!.schedule?.title ??
+        '알 수 없는 작업';
 
     final statusText = timer!.status == 'RUNNING' ? '실행 중' : '일시정지';
     final statusColor = timer!.status == 'RUNNING'
@@ -448,8 +449,8 @@ class TimerHistoryList extends ConsumerWidget {
           Text(
             '새 작업을 시작해보세요',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
+                  color: Theme.of(context).colorScheme.outline,
+                ),
           ),
         ],
       ),
@@ -505,9 +506,9 @@ class TimerHistoryList extends ConsumerWidget {
               child: Text(
                 date,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
             // 해당 날짜의 타이머들
@@ -533,12 +534,14 @@ class TimerHistoryItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     final taskName = timer.title ??
-                     timer.todo?.title ??
-                     timer.schedule?.title ??
-                     '알 수 없는 작업';
+        timer.todo?.title ??
+        timer.schedule?.title ??
+        '알 수 없는 작업';
 
-    final startTime = timer.startedAt != null ? formatTime(timer.startedAt!) : '--:--';
-    final endTime = timer.endedAt != null ? formatTime(timer.endedAt!) : '--:--';
+    final startTime =
+        timer.startedAt != null ? formatTime(timer.startedAt!) : '--:--';
+    final endTime =
+        timer.endedAt != null ? formatTime(timer.endedAt!) : '--:--';
     final duration = Duration(seconds: timer.elapsedTime);
 
     return Card(

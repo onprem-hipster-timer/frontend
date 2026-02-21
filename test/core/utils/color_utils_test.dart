@@ -31,7 +31,7 @@ void main() {
     test('should return default color for invalid hex strings', () {
       // Given & When
       final color1 = HexColor.fromHex('invalid');
-      final color2 = HexColor.fromHex('#12345');  // 5자리
+      final color2 = HexColor.fromHex('#12345'); // 5자리
       final color3 = HexColor.fromHex('#1234567'); // 7자리
 
       // Then

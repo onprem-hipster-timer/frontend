@@ -14,18 +14,14 @@ part 'friendship_read.g.dart';
 abstract class FriendshipRead with _$FriendshipRead {
   const factory FriendshipRead({
     required String id,
-    @JsonKey(name: 'requester_id')
-    required String requesterId,
-    @JsonKey(name: 'addressee_id')
-    required String addresseeId,
+    @JsonKey(name: 'requester_id') required String requesterId,
+    @JsonKey(name: 'addressee_id') required String addresseeId,
     required FriendshipStatus status,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @JsonKey(name: 'updated_at')
-    required DateTime updatedAt,
-    @JsonKey(name: 'blocked_by')
-    String? blockedBy,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') required DateTime updatedAt,
+    @JsonKey(name: 'blocked_by') String? blockedBy,
   }) = _FriendshipRead;
-  
-  factory FriendshipRead.fromJson(Map<String, Object?> json) => _$FriendshipReadFromJson(json);
+
+  factory FriendshipRead.fromJson(Map<String, Object?> json) =>
+      _$FriendshipReadFromJson(json);
 }

@@ -13,10 +13,10 @@ abstract class TagCreate with _$TagCreate {
   const factory TagCreate({
     required String name,
     required String color,
-    @JsonKey(name: 'group_id')
-    required String groupId,
+    @JsonKey(name: 'group_id') required String groupId,
     String? description,
   }) = _TagCreate;
-  
-  factory TagCreate.fromJson(Map<String, Object?> json) => _$TagCreateFromJson(json);
+
+  factory TagCreate.fromJson(Map<String, Object?> json) =>
+      _$TagCreateFromJson(json);
 }

@@ -53,7 +53,8 @@ class TagManagementPage extends ConsumerWidget {
         // 각 태그 그룹을 SliverList로 렌더링
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildTagGroupItem(context, ref, tagGroups[index]),
+            (context, index) =>
+                _buildTagGroupItem(context, ref, tagGroups[index]),
             childCount: tagGroups.length,
           ),
         ),
@@ -110,7 +111,8 @@ class TagManagementPage extends ConsumerWidget {
               // Todo 그룹 배지
               if (tagGroup.isTodoGroup) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -159,9 +161,9 @@ class TagManagementPage extends ConsumerWidget {
           ),
 
           // 하위 태그 목록
-          children: tagGroup.tags.map((tag) =>
-            _buildTagItem(context, ref, tag, tagGroup)
-          ).toList(),
+          children: tagGroup.tags
+              .map((tag) => _buildTagItem(context, ref, tag, tagGroup))
+              .toList(),
         ),
       ),
     );
@@ -197,9 +199,8 @@ class TagManagementPage extends ConsumerWidget {
           style: theme.textTheme.bodyLarge,
         ),
 
-        subtitle: tag.description?.isNotEmpty == true
-            ? Text(tag.description!)
-            : null,
+        subtitle:
+            tag.description?.isNotEmpty == true ? Text(tag.description!) : null,
 
         // 우측: 수정 버튼
         trailing: IconButton(

@@ -13,6 +13,7 @@ enum TagIncludeMode {
   timerOnly('timer_only'),
   @JsonValue('inherit_from_schedule')
   inheritFromSchedule('inherit_from_schedule'),
+
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
@@ -27,6 +28,8 @@ enum TagIncludeMode {
 
   @override
   String toString() => json?.toString() ?? super.toString();
+
   /// Returns all defined enum values excluding the $unknown value.
-  static List<TagIncludeMode> get $valuesDefined => values.where((value) => value != $unknown).toList();
+  static List<TagIncludeMode> get $valuesDefined =>
+      values.where((value) => value != $unknown).toList();
 }

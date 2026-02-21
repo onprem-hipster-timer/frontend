@@ -7,12 +7,12 @@
 // - 로그인/로그아웃 로직
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
+import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 part 'auth_provider.freezed.dart';
 part 'auth_provider.g.dart';
@@ -89,117 +89,105 @@ SupabaseClient supabaseClient(Ref ref) {
 class AuthNotifier extends _$AuthNotifier {
   @override
   AuthStatus build() {
-    return _initializeAuth();
+    final supabase = ref.read(supabaseClientProvider);
+
+    final subscription = supabase.auth.onAuthStateChange.listen(
+      (data) {
+        final session = data.session;
+
+        if (AppConfig.enableDebugLogging) {
+          debugPrint(
+              '🔀 [AUTH] ${data.event.name}, user: ${session?.user.email}');
+        }
+
+        switch (data.event) {
+          case AuthChangeEvent.initialSession:
+          case AuthChangeEvent.signedIn:
+          case AuthChangeEvent.tokenRefreshed:
+          case AuthChangeEvent.userUpdated:
+            if (session != null) {
+              state = AuthStatus.authenticated(
+                user: session.user,
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken,
+              );
+            } else {
+              state = const AuthStatus.unauthenticated();
+            }
+          case AuthChangeEvent.signedOut:
+            state = const AuthStatus.unauthenticated();
+          case AuthChangeEvent.passwordRecovery:
+          case AuthChangeEvent.mfaChallengeVerified:
+          // userDeleted: 백엔드에서 발행된 적 없는 구현 불가능 이벤트
+          // https://github.com/supabase/supabase/issues/10309
+          // ignore: deprecated_member_use
+          case AuthChangeEvent.userDeleted:
+            break;
+        }
+      },
+      onError: (error) {
+        if (AppConfig.enableDebugLogging) {
+          debugPrint('❌ [AUTH] Stream error: $error');
+        }
+        state = const AuthStatus.unauthenticated();
+      },
+    );
+
+    ref.onDispose(() => subscription.cancel());
+
+    // currentSession은 Supabase.initialize() 완료 후 동기적으로 사용 가능
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      return AuthStatus.authenticated(
+        user: session.user,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      );
+    }
+    return const AuthStatus.unauthenticated();
   }
 
-  /// 인증 상태 초기화 (build에서 호출)
-  AuthStatus _initializeAuth() {
+  /// 이메일/비밀번호로 로그인
+  ///
+  /// 성공 시 onAuthStateChange 스트림이 signedIn 이벤트를 발행하여
+  /// 자동으로 authenticated 상태로 전환됩니다.
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-      final session = supabase.auth.currentSession;
-
-      if (session != null) {
-        final token = session.accessToken;
-
-        if (AppConfig.enableDebugLogging) {
-          debugPrint('✅ [AUTH] Session restored for ${session.user.email}');
-        }
-
-        return AuthStatus.authenticated(
-          user: session.user,
-          accessToken: token,
-          refreshToken: session.refreshToken,
-        );
-      } else {
-        if (AppConfig.enableDebugLogging) {
-          debugPrint('❌ [AUTH] No active session');
-        }
-        return const AuthStatus.unauthenticated();
-      }
+      await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
     } catch (e) {
-      if (AppConfig.enableDebugLogging) {
-        debugPrint('❌ [AUTH] Initialization error: $e');
-      }
-      return AuthStatus.error(
-        message: 'Failed to initialize authentication',
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
         originalError: e,
       );
     }
   }
 
-  /// 이메일/비밀번호로 로그인
-  ///
-  /// 성공 시 authProvider가 authenticated 상태로 변경됩니다.
-  /// 토큰은 accessTokenProvider를 통해 자동으로 파생됩니다.
-  Future<void> signInWithEmail({
-    required String email,
-    required String password,
-  }) async {
-    state = const AuthStatus.loading();
-
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-      final response = await supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-
-      if (response.session != null && response.user != null) {
-        final token = response.session!.accessToken;
-
-        state = AuthStatus.authenticated(
-          user: response.user!,
-          accessToken: token,
-          refreshToken: response.session!.refreshToken,
-        );
-
-        if (AppConfig.enableDebugLogging) {
-          debugPrint('✅ [AUTH] Signed in: ${response.user!.email}');
-        }
-      } else {
-        throw AuthException(message: '로그인에 실패했습니다');
-      }
-    } on AuthException catch (e) {
-      state = AuthStatus.error(message: e.message, originalError: e);
-      rethrow;
-    } catch (e) {
-      final message = _parseError(e);
-      state = AuthStatus.error(message: message, originalError: e);
-      throw AuthException(message: message, originalError: e);
-    }
-  }
-
   /// 회원가입
+  ///
+  /// 이메일 인증이 필요한 경우 signedIn 이벤트가 발행되지 않으므로
+  /// 상태는 unauthenticated로 유지됩니다.
   Future<void> signUpWithEmail({
     required String email,
     required String password,
   }) async {
-    state = const AuthStatus.loading();
-
     try {
       final supabase = ref.read(supabaseClientProvider);
-      final response = await supabase.auth.signUp(
+      await supabase.auth.signUp(
         email: email,
         password: password,
       );
-
-      if (response.user != null) {
-        if (AppConfig.enableDebugLogging) {
-          debugPrint('✅ [AUTH] Signed up: ${response.user!.email}');
-        }
-
-        // 회원가입 후 자동 로그인되지 않을 수 있으므로, 이메일 인증 후 로그인 필요
-        state = const AuthStatus.unauthenticated();
-      } else {
-        throw AuthException(message: '회원가입에 실패했습니다');
-      }
-    } on AuthException catch (e) {
-      state = AuthStatus.error(message: e.message, originalError: e);
-      rethrow;
     } catch (e) {
-      final message = _parseError(e);
-      state = AuthStatus.error(message: message, originalError: e);
-      throw AuthException(message: message, originalError: e);
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
     }
   }
 
@@ -208,16 +196,11 @@ class AuthNotifier extends _$AuthNotifier {
     try {
       final supabase = ref.read(supabaseClientProvider);
       await supabase.auth.signOut();
-
-      state = const AuthStatus.unauthenticated();
-
-      if (AppConfig.enableDebugLogging) {
-        debugPrint('✅ [AUTH] Signed out');
-      }
     } catch (e) {
-      final message = _parseError(e);
-      state = AuthStatus.error(message: message, originalError: e);
-      throw AuthException(message: message, originalError: e);
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
     }
   }
 
@@ -226,13 +209,11 @@ class AuthNotifier extends _$AuthNotifier {
     try {
       final supabase = ref.read(supabaseClientProvider);
       await supabase.auth.resetPasswordForEmail(email);
-
-      if (AppConfig.enableDebugLogging) {
-        debugPrint('✅ [AUTH] Password reset email sent to $email');
-      }
     } catch (e) {
-      final message = _parseError(e);
-      throw AuthException(message: message, originalError: e);
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
     }
   }
 
@@ -243,63 +224,11 @@ class AuthNotifier extends _$AuthNotifier {
       await supabase.auth.updateUser(
         UserAttributes(password: newPassword),
       );
-
-      if (AppConfig.enableDebugLogging) {
-        debugPrint('✅ [AUTH] Password updated');
-      }
     } catch (e) {
-      final message = _parseError(e);
-      throw AuthException(message: message, originalError: e);
-    }
-  }
-
-  /// 토큰 갱신
-  Future<String?> refreshAccessToken() async {
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-      final session = supabase.auth.currentSession;
-
-      if (session?.refreshToken != null) {
-        final response = await supabase.auth.refreshSession();
-
-        if (response.session?.accessToken != null) {
-          final newToken = response.session!.accessToken;
-
-          // authProvider를 갱신하여 accessTokenProvider에 자동 반영
-          state = AuthStatus.authenticated(
-            user: response.session!.user,
-            accessToken: newToken,
-            refreshToken: response.session!.refreshToken,
-          );
-
-          if (AppConfig.enableDebugLogging) {
-            debugPrint('✅ [AUTH] Token refreshed');
-          }
-
-          return newToken;
-        }
-      }
-
-      return null;
-    } catch (e) {
-      if (AppConfig.enableDebugLogging) {
-        debugPrint('❌ [AUTH] Token refresh failed: $e');
-      }
-
-      // 토큰 갱신 실패 시 로그아웃
-      await signOut();
-      return null;
-    }
-  }
-
-  /// 에러 메시지 파싱
-  String _parseError(dynamic error) {
-    if (error is AuthException) {
-      return error.message;
-    } else if (error is NetworkException) {
-      return error.message;
-    } else {
-      return '알 수 없는 오류가 발생했습니다';
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
     }
   }
 }

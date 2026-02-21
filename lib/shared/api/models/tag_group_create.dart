@@ -13,13 +13,11 @@ abstract class TagGroupCreate with _$TagGroupCreate {
   const factory TagGroupCreate({
     required String name,
     required String color,
-    @JsonKey(name: 'is_todo_group')
-    @Default(false)
-    bool isTodoGroup,
+    @JsonKey(name: 'is_todo_group') @Default(false) bool isTodoGroup,
     String? description,
-    @JsonKey(name: 'goal_ratios')
-    Map<String, num>? goalRatios,
+    @JsonKey(name: 'goal_ratios') Map<String, num>? goalRatios,
   }) = _TagGroupCreate;
-  
-  factory TagGroupCreate.fromJson(Map<String, Object?> json) => _$TagGroupCreateFromJson(json);
+
+  factory TagGroupCreate.fromJson(Map<String, Object?> json) =>
+      _$TagGroupCreateFromJson(json);
 }

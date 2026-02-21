@@ -11,12 +11,11 @@ part 'friend_read.g.dart';
 @Freezed()
 abstract class FriendRead with _$FriendRead {
   const factory FriendRead({
-    @JsonKey(name: 'user_id')
-    required String userId,
-    @JsonKey(name: 'friendship_id')
-    required String friendshipId,
+    @JsonKey(name: 'user_id') required String userId,
+    @JsonKey(name: 'friendship_id') required String friendshipId,
     required DateTime since,
   }) = _FriendRead;
-  
-  factory FriendRead.fromJson(Map<String, Object?> json) => _$FriendReadFromJson(json);
+
+  factory FriendRead.fromJson(Map<String, Object?> json) =>
+      _$FriendReadFromJson(json);
 }

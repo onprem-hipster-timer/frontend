@@ -11,12 +11,11 @@ part 'tag_stat.g.dart';
 @Freezed()
 abstract class TagStat with _$TagStat {
   const factory TagStat({
-    @JsonKey(name: 'tag_id')
-    required String tagId,
-    @JsonKey(name: 'tag_name')
-    required String tagName,
+    @JsonKey(name: 'tag_id') required String tagId,
+    @JsonKey(name: 'tag_name') required String tagName,
     required int count,
   }) = _TagStat;
-  
-  factory TagStat.fromJson(Map<String, Object?> json) => _$TagStatFromJson(json);
+
+  factory TagStat.fromJson(Map<String, Object?> json) =>
+      _$TagStatFromJson(json);
 }

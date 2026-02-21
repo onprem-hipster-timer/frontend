@@ -28,8 +28,7 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
       isAllDay: _isAllDayEvent(schedule),
       color: _getScheduleColor(schedule),
       recurrenceRule: schedule.recurrenceRule,
-      recurrenceExceptionDates:
-          null, // TODO: 반복 예외 날짜 처리 (백엔드 지원 필요)
+      recurrenceExceptionDates: null, // TODO: 반복 예외 날짜 처리 (백엔드 지원 필요)
     );
   }
 
