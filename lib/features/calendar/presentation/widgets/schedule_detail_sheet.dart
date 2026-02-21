@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 일정 상세 정보를 표시하는 Bottom Sheet
 ///
@@ -349,26 +350,15 @@ class ScheduleDetailSheet extends ConsumerWidget {
   Future<void> _handleDelete(
       BuildContext context, WidgetRef ref, ScheduleRead schedule) async {
     // 삭제 확인 다이얼로그
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('일정 삭제'),
-        content: Text('"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '일정 삭제',
+      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+      confirmText: '삭제',
+      destructive: true,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       // 삭제 실행

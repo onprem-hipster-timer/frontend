@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/export.dart';
 import 'package:momeet/features/todo/presentation/providers/tag_providers.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 태그 트리 리스트 뷰
 ///
@@ -370,7 +371,7 @@ class DraggableTagTile extends StatelessWidget {
                 ),
               ),
             ],
-            onSelected: (value) {
+            onSelected: (value) async {
               switch (value) {
                 case 'edit':
                   // TODO: 태그 수정 다이얼로그
@@ -379,7 +380,7 @@ class DraggableTagTile extends StatelessWidget {
                   );
                   break;
                 case 'delete':
-                  _showDeleteConfirmDialog(context, tag);
+                  await _showDeleteConfirmDialog(context, tag);
                   break;
               }
             },
@@ -403,30 +404,21 @@ class DraggableTagTile extends StatelessWidget {
   }
 
   /// 삭제 확인 다이얼로그
-  void _showDeleteConfirmDialog(BuildContext context, TagRead tag) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('태그 삭제'),
-        content: Text('태그 "${tag.name}"을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: 삭제 로직 구현
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('태그 삭제 기능이 곧 구현됩니다')),
-              );
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirmDialog(
+      BuildContext context, TagRead tag) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '태그 삭제',
+      content: '태그 "${tag.name}"을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+      confirmText: '삭제',
+      destructive: true,
+    );
+
+    if (!confirmed || !context.mounted) return;
+
+    // TODO: 삭제 로직 구현
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('태그 삭제 기능이 곧 구현됩니다')),
     );
   }
 }
