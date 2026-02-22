@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
+import 'timer_ws_provider.dart';
+
 part 'timer_providers.g.dart';
 
 // ============================================================
@@ -116,32 +118,33 @@ class TimerController extends _$TimerController {
 
   /// 타이머 시작
   ///
-  /// 현재는 타이머 생성 API가 없으므로 placeholder 구현입니다.
-  /// 실제로는 TimerCreate 데이터로 POST 요청을 보내야 합니다.
-  Future<TimerRead> startTimer({String? relatedTodoId, String? title}) async {
+  /// WebSocket으로 timer.create 전송. 연결 시 자동 동기화되며
+  /// timer.created 수신 시 activeTimerProvider가 무효화되어 UI가 갱신됩니다.
+  Future<TimerRead?> startTimer({
+    String? relatedTodoId,
+    String? title,
+    String? scheduleId,
+    int? allocatedDurationSeconds,
+  }) async {
     state = const AsyncValue.loading();
 
     try {
-      // TODO: 실제 타이머 생성 API 구현 필요
-      // final api = ref.read(timersApiProvider);
-      // final newTimer = await api.createTimerV1TimersPost(
-      //   body: TimerCreate(
-      //     todoId: relatedTodoId,
-      //     title: title ?? '새 작업',
-      //     allocatedDuration: null,
-      //   ),
-      // );
-
-      // 임시로 mock 데이터 반환
-      throw UnimplementedError('타이머 생성 API가 아직 구현되지 않았습니다');
-
-      // state = const AsyncValue.data(null);
-      //
-      // // 활성 타이머와 히스토리 새로고침
-      // ref.invalidate(activeTimerProvider);
-      // ref.invalidate(timerHistoryProvider);
-      //
-      // return newTimer;
+      final ws = ref.read(timerWsClientProvider);
+      if (ws != null && ws.isConnected) {
+        ws.createTimer(
+          todoId: relatedTodoId,
+          scheduleId: scheduleId,
+          title: title ?? '새 작업',
+          allocatedDuration: allocatedDurationSeconds,
+        );
+        ref.invalidate(activeTimerProvider);
+        state = const AsyncValue.data(null);
+        // 서버에서 timer.created 후 동기화되므로 잠시 후 활성 타이머 조회
+        await Future.delayed(const Duration(milliseconds: 600));
+        final result = await ref.read(activeTimerProvider.future);
+        return result;
+      }
+      throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -150,7 +153,7 @@ class TimerController extends _$TimerController {
 
   /// 타이머 정지
   ///
-  /// 현재 활성 타이머를 종료합니다.
+  /// WebSocket으로 timer.stop 전송. 실패 시 REST PATCH로 폴백.
   Future<void> stopTimer() async {
     state = const AsyncValue.loading();
 
@@ -164,20 +167,21 @@ class TimerController extends _$TimerController {
         throw Exception('정지할 활성 타이머가 없습니다');
       }
 
-      final api = ref.read(timersApiProvider);
+      final ws = ref.read(timerWsClientProvider);
+      if (ws != null && ws.isConnected) {
+        ws.stopTimer(activeTimer.id);
+        ref.invalidate(activeTimerProvider);
+        ref.invalidate(timerHistoryProvider);
+        state = const AsyncValue.data(null);
+        return;
+      }
 
-      // 타이머 종료 시간 설정
+      final api = ref.read(timersApiProvider);
       await api.updateTimerV1TimersTimerIdPatch(
         timerId: activeTimer.id,
-        body: TimerUpdate(
-            // endedAt을 설정하려고 하지만 TimerUpdate에 해당 필드가 없을 수 있음
-            // 실제 API 스펙에 맞게 조정 필요
-            ),
+        body: const TimerUpdate(),
       );
-
       state = const AsyncValue.data(null);
-
-      // 관련 Provider들 새로고침
       ref.invalidate(activeTimerProvider);
       ref.invalidate(timerHistoryProvider);
     } catch (error, stackTrace) {
@@ -188,7 +192,7 @@ class TimerController extends _$TimerController {
 
   /// 타이머 일시정지
   ///
-  /// 현재 활성 타이머를 일시정지합니다.
+  /// WebSocket으로 timer.pause 전송. 실패 시 REST로 폴백.
   Future<void> pauseTimer() async {
     state = const AsyncValue.loading();
 
@@ -202,17 +206,20 @@ class TimerController extends _$TimerController {
         throw Exception('일시정지할 실행 중인 타이머가 없습니다');
       }
 
-      final api = ref.read(timersApiProvider);
+      final ws = ref.read(timerWsClientProvider);
+      if (ws != null && ws.isConnected) {
+        ws.pauseTimer(activeTimer.id);
+        ref.invalidate(activeTimerProvider);
+        state = const AsyncValue.data(null);
+        return;
+      }
 
-      // 일시정지 처리 (실제 API 스펙에 맞게 구현 필요)
+      final api = ref.read(timersApiProvider);
       await api.updateTimerV1TimersTimerIdPatch(
         timerId: activeTimer.id,
         body: const TimerUpdate(),
       );
-
       state = const AsyncValue.data(null);
-
-      // 활성 타이머 새로고침
       ref.invalidate(activeTimerProvider);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -222,7 +229,7 @@ class TimerController extends _$TimerController {
 
   /// 타이머 재개
   ///
-  /// 일시정지된 타이머를 재개합니다.
+  /// WebSocket으로 timer.resume 전송. 실패 시 REST로 폴백.
   Future<void> resumeTimer() async {
     state = const AsyncValue.loading();
 
@@ -236,17 +243,20 @@ class TimerController extends _$TimerController {
         throw Exception('재개할 일시정지된 타이머가 없습니다');
       }
 
-      final api = ref.read(timersApiProvider);
+      final ws = ref.read(timerWsClientProvider);
+      if (ws != null && ws.isConnected) {
+        ws.resumeTimer(activeTimer.id);
+        ref.invalidate(activeTimerProvider);
+        state = const AsyncValue.data(null);
+        return;
+      }
 
-      // 재개 처리 (실제 API 스펙에 맞게 구현 필요)
+      final api = ref.read(timersApiProvider);
       await api.updateTimerV1TimersTimerIdPatch(
         timerId: activeTimer.id,
         body: const TimerUpdate(),
       );
-
       state = const AsyncValue.data(null);
-
-      // 활성 타이머 새로고침
       ref.invalidate(activeTimerProvider);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
