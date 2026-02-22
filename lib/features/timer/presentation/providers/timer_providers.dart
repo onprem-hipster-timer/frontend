@@ -1,64 +1,127 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:momeet/shared/providers/api_providers.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/utils/timezone_utils.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-
-import 'timer_ws_provider.dart';
+import 'package:momeet/shared/api/ws/models/timer_ws_error.dart';
+import 'package:momeet/shared/api/ws/timer_ws_client.dart';
+import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 
 part 'timer_providers.g.dart';
+
+// ============================================================
+// Timer WebSocket Client
+// ============================================================
+
+/// 타이머 WebSocket 클라이언트
+///
+/// 로그인된 경우에만 non-null. 토큰이 없거나 비어 있으면 null.
+/// 기기 타임존을 쿼리로 전달해 서버 응답 타임스탬프를 해당 타임존으로 받습니다.
+final timerWsClientProvider = Provider<TimerWsClient?>((ref) {
+  final token = ref.watch(accessTokenProvider);
+  if (token == null || token.isEmpty) return null;
+
+  final timezone = deviceTimezoneOffsetString();
+  final client = TimerWsClient(accessToken: token, timezone: timezone);
+  ref.onDispose(() => client.dispose());
+
+  return client;
+});
 
 // ============================================================
 // Timer Data Providers
 // ============================================================
 
-/// 활성 타이머 조회 (Backend Sync)
+/// 마지막 WebSocket 에러 (서버 error 메시지 수신 시 설정, UI에서 에러 배너로 표시·닫기 시 초기화)
+class TimerWsLastErrorNotifier extends Notifier<TimerWsError?> {
+  @override
+  TimerWsError? build() => null;
+
+  void setError(TimerWsError? error) => state = error;
+}
+
+final timerWsLastErrorProvider =
+    NotifierProvider<TimerWsLastErrorNotifier, TimerWsError?>(
+  TimerWsLastErrorNotifier.new,
+);
+
+/// 활성 타이머 조회 (실시간)
 ///
-/// API를 호출하여 현재 서버에서 실행 중인 타이머가 있는지 확인합니다.
-/// 실행 중인 타이머가 없으면 null을 반환합니다.
+/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / completed / sync_result) payload로만 갱신합니다.
 @riverpod
-Future<TimerRead?> activeTimer(Ref ref) async {
+Stream<TimerRead?> activeTimer(Ref ref) async* {
   final api = ref.watch(timersApiProvider);
 
+  TimerRead? initial;
   try {
-    final timer = await api.getUserActiveTimerV1TimersActiveGet(
+    initial = await api.getUserActiveTimerV1TimersActiveGet(
       includeTodo: true,
       includeSchedule: true,
     );
-    return timer;
   } catch (error) {
-    // 404는 활성 타이머가 없다는 의미이므로 null 반환
     if (error.toString().contains('404')) {
-      return null;
+      initial = null;
+    } else {
+      debugPrint('활성 타이머 조회 실패: $error');
+      initial = null;
     }
-    debugPrint('활성 타이머 조회 실패: $error');
-    return null;
+  }
+  yield initial;
+
+  final client = ref.watch(timerWsClientProvider);
+  if (client == null) return;
+
+  await for (final event in client.messageStream) {
+    switch (event) {
+      case TimerWsConnected():
+        client.resetReconnectAttempts();
+      case TimerWsTimerCreated(timer: final timer):
+      case TimerWsTimerUpdated(timer: final timer):
+        ref.invalidate(timerHistoryProvider);
+        yield timer;
+      case TimerWsTimerCompleted():
+        ref.invalidate(timerHistoryProvider);
+        yield null;
+      case TimerWsSyncResult():
+        ref.invalidate(timerHistoryProvider);
+        if (event.timers.isEmpty) {
+          yield null;
+        } else {
+          final sorted = List<TimerRead>.from(event.timers)
+            ..sort((a, b) {
+              final aStart = a.startedAt ?? a.createdAt;
+              final bStart = b.startedAt ?? b.createdAt;
+              return bStart.compareTo(aStart);
+            });
+          yield sorted.first;
+        }
+      case TimerWsError():
+        ref.read(timerWsLastErrorProvider.notifier).setError(event);
+      default:
+        break;
+    }
   }
 }
 
 /// 타이머 히스토리 조회
 ///
-/// 과거 완료된 타이머 기록을 조회합니다.
+/// RUNNING·PAUSED·COMPLETED 타이머를 모두 조회합니다.
+/// 활성(RUNNING/PAUSED)이 상단, 완료(COMPLETED)가 하단 — 각 그룹 내에서 최신순.
 @riverpod
 Future<List<TimerRead>> timerHistory(Ref ref) async {
   final api = ref.watch(timersApiProvider);
 
   try {
     final timers = await api.listTimersV1TimersGet(
-      status: ['COMPLETED'],
+      status: ['RUNNING', 'PAUSED', 'COMPLETED'],
       includeTodo: true,
       includeSchedule: true,
     );
 
-    // 시작 시간 기준으로 최신순 정렬
-    final sortedTimers = List<TimerRead>.from(timers);
-    sortedTimers.sort((a, b) {
-      final aStarted = a.startedAt ?? a.createdAt;
-      final bStarted = b.startedAt ?? b.createdAt;
-      return bStarted.compareTo(aStarted);
-    });
-
-    return sortedTimers;
+    return sortTimerHistory(timers);
   } catch (error) {
     debugPrint('타이머 히스토리 조회 실패: $error');
     throw Exception('타이머 히스토리를 불러올 수 없습니다: $error');
@@ -71,11 +134,11 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
 
 /// 실시간 타이머 틱 제공
 ///
-/// 활성 타이머가 있다면 1초마다 현재 경과 시간을 계산해서 Duration으로 방출합니다.
-/// 활성 타이머가 없다면 Duration.zero를 방출합니다.
+/// - RUNNING: 서버 `elapsed_time` + (now - paused_at이 없으면 now - started_at 보정분)을 1초마다 갱신
+/// - PAUSED: 서버 `elapsed_time`을 그대로 유지 (0으로 리셋하지 않음)
+/// - null/기타: Duration.zero
 @riverpod
 Stream<Duration> timerTicker(Ref ref) async* {
-  // 활성 타이머 상태를 구독
   final activeTimerAsync = ref.watch(activeTimerProvider);
 
   await for (final _ in Stream.periodic(const Duration(seconds: 1))) {
@@ -85,22 +148,12 @@ Stream<Duration> timerTicker(Ref ref) async* {
       error: (error, stack) => null,
     );
 
-    if (activeTimer == null ||
-        activeTimer.status != 'RUNNING' ||
-        activeTimer.startedAt == null) {
-      yield Duration.zero;
-      continue;
-    }
-
-    // 현재 시간과 시작 시간의 차이 계산
-    final now = DateTime.now().toUtc();
-    final startedAt = activeTimer.startedAt!;
-    final baseDuration = now.difference(startedAt);
-
-    // 기존 경과 시간(일시정지 시간 포함) 추가
-    final totalSeconds = baseDuration.inSeconds + activeTimer.elapsedTime;
-
-    yield Duration(seconds: totalSeconds.clamp(0, double.infinity).toInt());
+    yield calculateElapsed(
+      status: activeTimer?.status,
+      elapsedTime: activeTimer?.elapsedTime ?? 0,
+      startedAt: activeTimer?.startedAt,
+      pausedAt: activeTimer?.pausedAt,
+    );
   }
 }
 
@@ -118,9 +171,9 @@ class TimerController extends _$TimerController {
 
   /// 타이머 시작
   ///
-  /// WebSocket으로 timer.create 전송. 연결 시 자동 동기화되며
-  /// timer.created 수신 시 activeTimerProvider가 무효화되어 UI가 갱신됩니다.
-  Future<TimerRead?> startTimer({
+  /// WebSocket으로 timer.create 전송. 서버가 timer.created를 보내면
+  /// activeTimer 스트림이 payload로 즉시 갱신됩니다.
+  Future<void> startTimer({
     String? relatedTodoId,
     String? title,
     String? scheduleId,
@@ -135,14 +188,10 @@ class TimerController extends _$TimerController {
           todoId: relatedTodoId,
           scheduleId: scheduleId,
           title: title ?? '새 작업',
-          allocatedDuration: allocatedDurationSeconds,
+          allocatedDuration: allocatedDurationSeconds ?? 3600,
         );
-        ref.invalidate(activeTimerProvider);
         state = const AsyncValue.data(null);
-        // 서버에서 timer.created 후 동기화되므로 잠시 후 활성 타이머 조회
-        await Future.delayed(const Duration(milliseconds: 600));
-        final result = await ref.read(activeTimerProvider.future);
-        return result;
+        return;
       }
       throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
     } catch (error, stackTrace) {
@@ -153,24 +202,24 @@ class TimerController extends _$TimerController {
 
   /// 타이머 정지
   ///
-  /// WebSocket으로 timer.stop 전송. 실패 시 REST PATCH로 폴백.
-  Future<void> stopTimer() async {
+  /// [timerId]를 주면 해당 타이머를 정지하고, 생략 시 활성 타이머를 정지합니다.
+  Future<void> stopTimer({String? timerId}) async {
     state = const AsyncValue.loading();
 
     try {
-      final activeTimer = ref.read(activeTimerProvider).when(
-            data: (timer) => timer,
-            loading: () => null,
-            error: (error, stack) => null,
-          );
-      if (activeTimer == null) {
+      final id = timerId ??
+          ref.read(activeTimerProvider).when(
+                data: (timer) => timer?.id,
+                loading: () => null,
+                error: (_, __) => null,
+              );
+      if (id == null) {
         throw Exception('정지할 활성 타이머가 없습니다');
       }
 
       final ws = ref.read(timerWsClientProvider);
       if (ws != null && ws.isConnected) {
-        ws.stopTimer(activeTimer.id);
-        ref.invalidate(activeTimerProvider);
+        ws.stopTimer(id);
         ref.invalidate(timerHistoryProvider);
         state = const AsyncValue.data(null);
         return;
@@ -178,11 +227,10 @@ class TimerController extends _$TimerController {
 
       final api = ref.read(timersApiProvider);
       await api.updateTimerV1TimersTimerIdPatch(
-        timerId: activeTimer.id,
+        timerId: id,
         body: const TimerUpdate(),
       );
       state = const AsyncValue.data(null);
-      ref.invalidate(activeTimerProvider);
       ref.invalidate(timerHistoryProvider);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -192,8 +240,8 @@ class TimerController extends _$TimerController {
 
   /// 타이머 일시정지
   ///
-  /// WebSocket으로 timer.pause 전송. 실패 시 REST로 폴백.
-  Future<void> pauseTimer() async {
+  /// [timerId]를 주면 해당 타이머를 일시정지하고, 생략 시 활성 타이머를 일시정지합니다.
+  Future<void> pauseTimer({String? timerId}) async {
     state = const AsyncValue.loading();
 
     try {
@@ -202,25 +250,28 @@ class TimerController extends _$TimerController {
             loading: () => null,
             error: (error, stack) => null,
           );
-      if (activeTimer == null || activeTimer.status != 'RUNNING') {
+      final id = timerId ?? activeTimer?.id;
+      if (id == null) {
+        throw Exception('일시정지할 실행 중인 타이머가 없습니다');
+      }
+      if (timerId == null &&
+          (activeTimer == null || activeTimer.status != 'RUNNING')) {
         throw Exception('일시정지할 실행 중인 타이머가 없습니다');
       }
 
       final ws = ref.read(timerWsClientProvider);
       if (ws != null && ws.isConnected) {
-        ws.pauseTimer(activeTimer.id);
-        ref.invalidate(activeTimerProvider);
+        ws.pauseTimer(id);
         state = const AsyncValue.data(null);
         return;
       }
 
       final api = ref.read(timersApiProvider);
       await api.updateTimerV1TimersTimerIdPatch(
-        timerId: activeTimer.id,
+        timerId: id,
         body: const TimerUpdate(),
       );
       state = const AsyncValue.data(null);
-      ref.invalidate(activeTimerProvider);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -229,8 +280,8 @@ class TimerController extends _$TimerController {
 
   /// 타이머 재개
   ///
-  /// WebSocket으로 timer.resume 전송. 실패 시 REST로 폴백.
-  Future<void> resumeTimer() async {
+  /// [timerId]를 주면 해당 타이머를 재개하고, 생략 시 활성 타이머를 재개합니다.
+  Future<void> resumeTimer({String? timerId}) async {
     state = const AsyncValue.loading();
 
     try {
@@ -239,30 +290,87 @@ class TimerController extends _$TimerController {
             loading: () => null,
             error: (error, stack) => null,
           );
-      if (activeTimer == null || activeTimer.status != 'PAUSED') {
+      final id = timerId ?? activeTimer?.id;
+      if (id == null) {
+        throw Exception('재개할 일시정지된 타이머가 없습니다');
+      }
+      if (timerId == null &&
+          (activeTimer == null || activeTimer.status != 'PAUSED')) {
         throw Exception('재개할 일시정지된 타이머가 없습니다');
       }
 
       final ws = ref.read(timerWsClientProvider);
       if (ws != null && ws.isConnected) {
-        ws.resumeTimer(activeTimer.id);
-        ref.invalidate(activeTimerProvider);
+        ws.resumeTimer(id);
         state = const AsyncValue.data(null);
         return;
       }
 
       final api = ref.read(timersApiProvider);
       await api.updateTimerV1TimersTimerIdPatch(
-        timerId: activeTimer.id,
+        timerId: id,
         body: const TimerUpdate(),
       );
       state = const AsyncValue.data(null);
-      ref.invalidate(activeTimerProvider);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
     }
   }
+}
+
+// ============================================================
+// Timer History Sorting (순수 함수 — 테스트 용이)
+// ============================================================
+
+/// 타이머 히스토리를 정렬합니다.
+///
+/// 활성(RUNNING/PAUSED)이 상단, 완료(COMPLETED 등)가 하단 — 각 그룹 내 최신순.
+List<TimerRead> sortTimerHistory(List<TimerRead> timers) {
+  final sorted = List<TimerRead>.from(timers);
+  sorted.sort((a, b) {
+    final aActive = a.status == 'RUNNING' || a.status == 'PAUSED';
+    final bActive = b.status == 'RUNNING' || b.status == 'PAUSED';
+    if (aActive != bActive) return aActive ? -1 : 1;
+
+    final aStarted = a.startedAt ?? a.createdAt;
+    final bStarted = b.startedAt ?? b.createdAt;
+    return bStarted.compareTo(aStarted);
+  });
+  return sorted;
+}
+
+// ============================================================
+// Timer Elapsed Calculation (순수 함수 — 테스트 용이)
+// ============================================================
+
+/// 타이머의 현재 경과 시간을 계산합니다.
+///
+/// - [status]가 null이면 Duration.zero
+/// - PAUSED / COMPLETED 등 비실행 상태: [elapsedTime] 그대로
+/// - RUNNING: [elapsedTime] + (now - [resumedAt]) 보정
+Duration calculateElapsed({
+  required String? status,
+  required int elapsedTime,
+  DateTime? startedAt,
+  DateTime? pausedAt,
+  DateTime? now,
+}) {
+  if (status == null) return Duration.zero;
+
+  if (status != 'RUNNING') {
+    return Duration(seconds: elapsedTime);
+  }
+
+  final currentTime = now ?? DateTime.now().toUtc();
+  final resumedAt = pausedAt ?? startedAt;
+  if (resumedAt == null) {
+    return Duration(seconds: elapsedTime);
+  }
+
+  final currentSegment = currentTime.difference(resumedAt).inSeconds;
+  final totalSeconds = elapsedTime + currentSegment;
+  return Duration(seconds: totalSeconds.clamp(0, double.infinity).toInt());
 }
 
 // ============================================================

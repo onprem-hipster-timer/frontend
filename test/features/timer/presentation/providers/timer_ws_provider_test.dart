@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/features/timer/presentation/providers/timer_ws_provider.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 
 void main() {

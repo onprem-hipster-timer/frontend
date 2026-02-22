@@ -164,8 +164,10 @@ class TimerWsClient {
   }
 
   /// 타이머 생성 및 시작
+  ///
+  /// [allocatedDuration]은 서버에서 필수(양수, 초 단위)입니다.
   void createTimer({
-    int? allocatedDuration,
+    required int allocatedDuration,
     String? title,
     String? description,
     String? scheduleId,
