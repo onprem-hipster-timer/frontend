@@ -13,6 +13,7 @@ enum FriendshipStatus {
   accepted('accepted'),
   @JsonValue('blocked')
   blocked('blocked'),
+
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
@@ -27,6 +28,8 @@ enum FriendshipStatus {
 
   @override
   String toString() => json?.toString() ?? super.toString();
+
   /// Returns all defined enum values excluding the $unknown value.
-  static List<FriendshipStatus> get $valuesDefined => values.where((value) => value != $unknown).toList();
+  static List<FriendshipStatus> get $valuesDefined =>
+      values.where((value) => value != $unknown).toList();
 }

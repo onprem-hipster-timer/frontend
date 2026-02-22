@@ -11,9 +11,9 @@ part 'create_todo_options.g.dart';
 @Freezed()
 abstract class CreateTodoOptions with _$CreateTodoOptions {
   const factory CreateTodoOptions({
-    @JsonKey(name: 'tag_group_id')
-    required String tagGroupId,
+    @JsonKey(name: 'tag_group_id') required String tagGroupId,
   }) = _CreateTodoOptions;
-  
-  factory CreateTodoOptions.fromJson(Map<String, Object?> json) => _$CreateTodoOptionsFromJson(json);
+
+  factory CreateTodoOptions.fromJson(Map<String, Object?> json) =>
+      _$CreateTodoOptionsFromJson(json);
 }

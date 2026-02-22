@@ -35,7 +35,8 @@ class ScheduleMutations extends _$ScheduleMutations {
       final api = ref.read(schedulesApiProvider);
 
       // API 호출하여 일정 생성
-      final createdSchedule = await api.createScheduleV1SchedulesPost(body: data);
+      final createdSchedule =
+          await api.createScheduleV1SchedulesPost(body: data);
 
       // provider가 dispose되지 않았는지 확인
       if (!ref.mounted) return;
@@ -73,7 +74,8 @@ class ScheduleMutations extends _$ScheduleMutations {
     try {
       final api = ref.read(schedulesApiProvider);
 
-      final updatedSchedule = await api.updateScheduleV1SchedulesScheduleIdPatch(
+      final updatedSchedule =
+          await api.updateScheduleV1SchedulesScheduleIdPatch(
         scheduleId: id,
         body: data,
       );

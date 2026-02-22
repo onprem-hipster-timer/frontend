@@ -71,6 +71,38 @@ void main() {
         );
         expect(result, AppRoute.loading.path);
       });
+
+      test('로딩 중이고 이미 /loading에 있으면 리다이렉트하지 않는다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: AppRoute.loading.path,
+        );
+        expect(result, isNull);
+      });
+    });
+
+    // ----------------------------------------------------------
+    // /loading 탈출 로직
+    // ----------------------------------------------------------
+    group('로딩 페이지 탈출', () {
+      test('로딩 끝나고 미인증이면 /loading에서 /login으로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+        );
+        expect(result, AppRoute.login.path);
+      });
+
+      test('로딩 끝나고 인증이면 /loading에서 /로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+        );
+        expect(result, AppRoute.calendar.path);
+      });
     });
 
     // ----------------------------------------------------------
@@ -83,7 +115,8 @@ void main() {
           isAuthLoading: false,
           matchedLocation: AppRoute.calendar.path,
         );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}');
+        expect(result,
+            '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}');
       });
 
       test('미인증 사용자가 /todo에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {

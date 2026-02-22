@@ -54,9 +54,9 @@ class TagGroupWithTags {
 
   /// 태그 이름으로 태그 찾기
   List<TagRead> findTagsByName(String name) {
-    return tags.where((tag) => 
-      tag.name.toLowerCase().contains(name.toLowerCase())
-    ).toList();
+    return tags
+        .where((tag) => tag.name.toLowerCase().contains(name.toLowerCase()))
+        .toList();
   }
 
   /// 새로운 태그 목록으로 복사본 생성
@@ -78,7 +78,7 @@ class TagGroupWithTags {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    
+
     return other is TagGroupWithTags &&
         other.group.id == group.id &&
         other.tags.length == tags.length &&

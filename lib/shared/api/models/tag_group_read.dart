@@ -14,16 +14,13 @@ abstract class TagGroupRead with _$TagGroupRead {
     required String id,
     required String name,
     required String color,
-    @JsonKey(name: 'is_todo_group')
-    required bool isTodoGroup,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @JsonKey(name: 'updated_at')
-    required DateTime updatedAt,
+    @JsonKey(name: 'is_todo_group') required bool isTodoGroup,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') required DateTime updatedAt,
     String? description,
-    @JsonKey(name: 'goal_ratios')
-    Map<String, num>? goalRatios,
+    @JsonKey(name: 'goal_ratios') Map<String, num>? goalRatios,
   }) = _TagGroupRead;
-  
-  factory TagGroupRead.fromJson(Map<String, Object?> json) => _$TagGroupReadFromJson(json);
+
+  factory TagGroupRead.fromJson(Map<String, Object?> json) =>
+      _$TagGroupReadFromJson(json);
 }

@@ -17,42 +17,27 @@ part 'timer_read.g.dart';
 abstract class TimerRead with _$TimerRead {
   const factory TimerRead({
     required String id,
-    @JsonKey(name: 'allocated_duration')
-    required int allocatedDuration,
-    @JsonKey(name: 'elapsed_time')
-    required int elapsedTime,
+    @JsonKey(name: 'allocated_duration') required int allocatedDuration,
+    @JsonKey(name: 'elapsed_time') required int elapsedTime,
     required String status,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @JsonKey(name: 'updated_at')
-    required DateTime updatedAt,
-    @JsonKey(name: 'pause_history')
-    @Default([])
-    List<dynamic> pauseHistory,
-    @Default([])
-    List<TagRead> tags,
-    @JsonKey(name: 'is_shared')
-    @Default(false)
-    bool isShared,
-    @JsonKey(name: 'schedule_id')
-    String? scheduleId,
-    @JsonKey(name: 'todo_id')
-    String? todoId,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') required DateTime updatedAt,
+    @JsonKey(name: 'pause_history') @Default([]) List<dynamic> pauseHistory,
+    @Default([]) List<TagRead> tags,
+    @JsonKey(name: 'is_shared') @Default(false) bool isShared,
+    @JsonKey(name: 'schedule_id') String? scheduleId,
+    @JsonKey(name: 'todo_id') String? todoId,
     String? title,
     String? description,
-    @JsonKey(name: 'started_at')
-    DateTime? startedAt,
-    @JsonKey(name: 'paused_at')
-    DateTime? pausedAt,
-    @JsonKey(name: 'ended_at')
-    DateTime? endedAt,
+    @JsonKey(name: 'started_at') DateTime? startedAt,
+    @JsonKey(name: 'paused_at') DateTime? pausedAt,
+    @JsonKey(name: 'ended_at') DateTime? endedAt,
     ScheduleRead? schedule,
     TodoRead? todo,
-    @JsonKey(name: 'owner_id')
-    String? ownerId,
-    @JsonKey(name: 'visibility_level')
-    VisibilityLevel? visibilityLevel,
+    @JsonKey(name: 'owner_id') String? ownerId,
+    @JsonKey(name: 'visibility_level') VisibilityLevel? visibilityLevel,
   }) = _TimerRead;
-  
-  factory TimerRead.fromJson(Map<String, Object?> json) => _$TimerReadFromJson(json);
+
+  factory TimerRead.fromJson(Map<String, Object?> json) =>
+      _$TimerReadFromJson(json);
 }

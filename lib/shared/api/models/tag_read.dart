@@ -14,14 +14,12 @@ abstract class TagRead with _$TagRead {
     required String id,
     required String name,
     required String color,
-    @JsonKey(name: 'group_id')
-    required String groupId,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @JsonKey(name: 'updated_at')
-    required DateTime updatedAt,
+    @JsonKey(name: 'group_id') required String groupId,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') required DateTime updatedAt,
     String? description,
   }) = _TagRead;
-  
-  factory TagRead.fromJson(Map<String, Object?> json) => _$TagReadFromJson(json);
+
+  factory TagRead.fromJson(Map<String, Object?> json) =>
+      _$TagReadFromJson(json);
 }

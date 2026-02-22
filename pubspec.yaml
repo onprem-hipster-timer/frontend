@@ -77,6 +77,11 @@ dev_dependencies:
   # Testing
   mocktail: ^1.0.4
 
+  # Architecture Lints
+  custom_lint:
+  momeet_lints:
+    path: packages/momeet_lints
+
 
 flutter:
   uses-material-design: true

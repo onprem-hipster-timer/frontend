@@ -54,7 +54,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       // 생성 모드: 기본값으로 초기화
       _selectedColor = TagColorPalette.defaultColor;
       _selectedGroupId = widget.defaultGroupId ??
-          (widget.availableGroups.isNotEmpty ? widget.availableGroups.first.groupId : '');
+          (widget.availableGroups.isNotEmpty
+              ? widget.availableGroups.first.groupId
+              : '');
     }
   }
 
@@ -201,16 +203,16 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 8),
-
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
+              border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(12),
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.3),
             ),
             child: Row(
               children: [
@@ -232,7 +234,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                 Expanded(
                   child: Text(
                     currentGroup.groupName,
-                    style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                    style: TextStyle(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                   ),
                 ),
 
@@ -261,9 +265,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             fontWeight: FontWeight.w600,
           ),
         ),
-
         const SizedBox(height: 8),
-
         DropdownButtonFormField<String>(
           initialValue: _selectedGroupId.isNotEmpty ? _selectedGroupId : null,
           decoration: InputDecoration(
@@ -295,7 +297,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                   if (group.tagCount > 0) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -371,13 +374,16 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                         : Colors.transparent,
                     width: 3,
                   ),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: theme.colorScheme.primary
+                                .withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: isSelected
                     ? Icon(
@@ -484,7 +490,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           color: _selectedColor.toHex(),
         );
 
-        await ref.read(tagMutationsProvider.notifier)
+        await ref
+            .read(tagMutationsProvider.notifier)
             .updateTag(widget.tag!.id, updateData);
 
         if (mounted) {

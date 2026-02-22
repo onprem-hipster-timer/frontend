@@ -35,19 +35,23 @@ class MoMeetClient {
   GraphQlClient? _graphQl;
   HealthClient? _health;
 
-  SchedulesClient get schedules => _schedules ??= SchedulesClient(_dio, baseUrl: _baseUrl);
+  SchedulesClient get schedules =>
+      _schedules ??= SchedulesClient(_dio, baseUrl: _baseUrl);
 
   TimersClient get timers => _timers ??= TimersClient(_dio, baseUrl: _baseUrl);
 
-  HolidaysClient get holidays => _holidays ??= HolidaysClient(_dio, baseUrl: _baseUrl);
+  HolidaysClient get holidays =>
+      _holidays ??= HolidaysClient(_dio, baseUrl: _baseUrl);
 
   TagsClient get tags => _tags ??= TagsClient(_dio, baseUrl: _baseUrl);
 
   TodosClient get todos => _todos ??= TodosClient(_dio, baseUrl: _baseUrl);
 
-  FriendsClient get friends => _friends ??= FriendsClient(_dio, baseUrl: _baseUrl);
+  FriendsClient get friends =>
+      _friends ??= FriendsClient(_dio, baseUrl: _baseUrl);
 
-  GraphQlClient get graphQl => _graphQl ??= GraphQlClient(_dio, baseUrl: _baseUrl);
+  GraphQlClient get graphQl =>
+      _graphQl ??= GraphQlClient(_dio, baseUrl: _baseUrl);
 
   HealthClient get health => _health ??= HealthClient(_dio, baseUrl: _baseUrl);
 }

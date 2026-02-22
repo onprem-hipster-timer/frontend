@@ -94,11 +94,11 @@ class TodoTreeTile extends ConsumerWidget {
         // 자식 노드들 (확장된 경우에만)
         if (hasChildren && isExpanded)
           ...node.children.map((childNode) => TodoTreeTile(
-            node: childNode,
-            tree: tree,
-            onTap: onTap,
-            onToggleExpand: onToggleExpand,
-          )),
+                node: childNode,
+                tree: tree,
+                onTap: onTap,
+                onToggleExpand: onToggleExpand,
+              )),
       ],
     );
   }
@@ -121,9 +121,9 @@ class TodoTreeTile extends ConsumerWidget {
         final draggedTodo = details.data;
         // 부모 변경 API 호출
         await ref.read(todoMutationsProvider.notifier).changeParent(
-          draggedTodo.id,
-          node.todo.id,
-        );
+              draggedTodo.id,
+              node.todo.id,
+            );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
@@ -249,14 +249,18 @@ class TodoTreeTile extends ConsumerWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (todo.description != null && todo.description!.isNotEmpty)
+                    if (todo.description != null &&
+                        todo.description!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           todo.description!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -266,17 +270,18 @@ class TodoTreeTile extends ConsumerWidget {
               ),
 
               // 태그 표시
-              if (todo.tags.isNotEmpty)
-                _buildTagIndicators(context, todo),
+              if (todo.tags.isNotEmpty) _buildTagIndicators(context, todo),
 
               // 자식 개수 표시
               if (hasChildren)
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -334,11 +339,12 @@ class TodoTreeTile extends ConsumerWidget {
       onChanged: (value) async {
         if (isCancelled) return; // 취소된 항목은 변경 불가
 
-        final newStatus = value == true ? TodoStatus.done : TodoStatus.unscheduled;
+        final newStatus =
+            value == true ? TodoStatus.done : TodoStatus.unscheduled;
         await ref.read(todoMutationsProvider.notifier).changeStatus(
-          todo.id,
-          newStatus,
-        );
+              todo.id,
+              newStatus,
+            );
       },
     );
   }
@@ -358,23 +364,23 @@ class TodoTreeTile extends ConsumerWidget {
         children: [
           // 태그 색상 점들
           ...tags.take(displayCount).map((tag) => Padding(
-            padding: const EdgeInsets.only(right: 3),
-            child: Tooltip(
-              message: tag.name,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: HexColor.fromHex(tag.color),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                    width: 0.5,
+                padding: const EdgeInsets.only(right: 3),
+                child: Tooltip(
+                  message: tag.name,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: HexColor.fromHex(tag.color),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                        width: 0.5,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          )),
+              )),
 
           // 첫 번째 태그 이름 (공간이 있을 때)
           if (tags.isNotEmpty)
@@ -447,9 +453,9 @@ class TodoRootDropTarget extends ConsumerWidget {
         final draggedTodo = details.data;
         // 부모를 null로 설정하여 루트로 이동
         await ref.read(todoMutationsProvider.notifier).changeParent(
-          draggedTodo.id,
-          null,
-        );
+              draggedTodo.id,
+              null,
+            );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
@@ -459,7 +465,8 @@ class TodoRootDropTarget extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isValidTarget ? kDropTargetColor : Colors.grey.withAlpha(77),
+              color:
+                  isValidTarget ? kDropTargetColor : Colors.grey.withAlpha(77),
               width: isValidTarget ? 2 : 1,
               style: BorderStyle.solid,
             ),
@@ -482,7 +489,8 @@ class TodoRootDropTarget extends ConsumerWidget {
                   '루트로 이동',
                   style: TextStyle(
                     color: isValidTarget ? kDropTargetColor : Colors.grey,
-                    fontWeight: isValidTarget ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isValidTarget ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ],

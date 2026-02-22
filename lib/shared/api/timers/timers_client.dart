@@ -60,7 +60,8 @@ abstract class TimersClient {
     @Query('scope') ResourceScope? scope = ResourceScope.mine,
     @Query('include_schedule') bool? includeSchedule = false,
     @Query('include_todo') bool? includeTodo = false,
-    @Query('tag_include_mode') TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
+    @Query('tag_include_mode')
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     @DioOptions() RequestOptions? options,
   });
 
@@ -83,7 +84,8 @@ abstract class TimersClient {
     @Query('timezone') String? timezone,
     @Query('include_schedule') bool? includeSchedule = false,
     @Query('include_todo') bool? includeTodo = false,
-    @Query('tag_include_mode') TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
+    @Query('tag_include_mode')
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     @DioOptions() RequestOptions? options,
   });
 
@@ -107,7 +109,8 @@ abstract class TimersClient {
     @Query('timezone') String? timezone,
     @Query('include_schedule') bool? includeSchedule = false,
     @Query('include_todo') bool? includeTodo = false,
-    @Query('tag_include_mode') TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
+    @Query('tag_include_mode')
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     @DioOptions() RequestOptions? options,
   });
 
@@ -129,7 +132,8 @@ abstract class TimersClient {
     @Query('timezone') String? timezone,
     @Query('include_schedule') bool? includeSchedule = false,
     @Query('include_todo') bool? includeTodo = false,
-    @Query('tag_include_mode') TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
+    @Query('tag_include_mode')
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     @DioOptions() RequestOptions? options,
   });
 

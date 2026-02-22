@@ -125,8 +125,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           ),
 
           viewHeaderStyle: ViewHeaderStyle(
-            backgroundColor: colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.5),
+            backgroundColor:
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             dayTextStyle: TextStyle(
               color: colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 12,
@@ -270,8 +270,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
             context, details);
       case CalendarViewType.day:
       case CalendarViewType.week:
-        return custom_builder.ScheduleAppointmentBuilder.buildTimeSlotAppointment(
-            context, details);
+        return custom_builder.ScheduleAppointmentBuilder
+            .buildTimeSlotAppointment(context, details);
       case CalendarViewType.agenda:
       case CalendarViewType.year:
         return custom_builder.ScheduleAppointmentBuilder.buildAgendaAppointment(
@@ -320,8 +320,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     // 해당 날짜에 일정이 있는지 확인
     final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
     final hasAppointments = scheduleDataSource?.appointments
-        ?.where((app) => _isSameDay(app.startTime, date))
-        .isNotEmpty ?? false;
+            ?.where((app) => _isSameDay(app.startTime, date))
+            .isNotEmpty ??
+        false;
 
     // 휴일인지 확인
     final holidayAsync = ref.read(currentHolidaysProvider);
@@ -432,7 +433,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           Text(
             error.toString(),
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.6),
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
@@ -513,9 +517,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                               ? Colors.red
                               : isCurrentMonth
                                   ? colorScheme.onSurface
-                                  : colorScheme.onSurface.withValues(alpha: 0.4),
+                                  : colorScheme.onSurface
+                                      .withValues(alpha: 0.4),
                           fontSize: 14,
-                          fontWeight: isRedDay ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight:
+                              isRedDay ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
               ),
@@ -550,7 +556,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   }
 
   /// 기본 월간 셀 (휴일 로딩 실패 시)
-  Widget _buildDefaultMonthCell(BuildContext context, MonthCellDetails details) {
+  Widget _buildDefaultMonthCell(
+      BuildContext context, MonthCellDetails details) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isToday = _isSameDay(details.date, DateTime.now());
@@ -596,7 +603,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                               ? colorScheme.onSurface
                               : colorScheme.onSurface.withValues(alpha: 0.4),
                       fontSize: 14,
-                      fontWeight: isWeekend ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isWeekend ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
           ),
@@ -611,23 +619,26 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     return holidayAsync.when(
       data: (holidays) {
-        return holidays.map((holiday) {
-          final holidayDate = parseHolidayDate(holiday.locdate);
-          if (holidayDate == null) return null;
+        return holidays
+            .map((holiday) {
+              final holidayDate = parseHolidayDate(holiday.locdate);
+              if (holidayDate == null) return null;
 
-          return TimeRegion(
-            startTime: holidayDate,
-            endTime: holidayDate.add(const Duration(days: 1)),
-            text: holiday.dateName,
-            color: Colors.red.withValues(alpha: 0.1),
-            enablePointerInteraction: false,
-            textStyle: const TextStyle(
-              color: Colors.red,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          );
-        }).whereType<TimeRegion>().toList();
+              return TimeRegion(
+                startTime: holidayDate,
+                endTime: holidayDate.add(const Duration(days: 1)),
+                text: holiday.dateName,
+                color: Colors.red.withValues(alpha: 0.1),
+                enablePointerInteraction: false,
+                textStyle: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            })
+            .whereType<TimeRegion>()
+            .toList();
       },
       loading: () => [],
       error: (error, stack) => [],
@@ -637,7 +648,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   /// 두 날짜가 같은 날인지 확인
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 }

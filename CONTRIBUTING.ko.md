@@ -64,6 +64,10 @@ fvm flutter pub get
 
 # 코드 생성
 fvm dart run build_runner build --delete-conflicting-outputs
+
+# Git Hooks 설치 (Lefthook)
+dart pub global activate lefthook_dart
+lefthook install
 ```
 
 ### 앱 실행
@@ -90,6 +94,53 @@ fvm flutter test test/widget_test.dart
 # 커버리지 포함
 fvm flutter test --coverage
 ```
+
+### Git Hooks (Lefthook)
+
+이 프로젝트는 [Lefthook](https://github.com/evilmartians/lefthook)으로 Git Hook을 관리합니다. 커밋/푸시 시 자동으로 품질 검사가 실행됩니다.
+
+| Hook | 명령 | 설명 |
+|------|------|------|
+| `pre-commit` | `dart format` | staged 파일 포맷 검사 및 자동 수정 |
+| `pre-commit` | `flutter analyze` | 정적 분석 |
+| `pre-commit` | `dart run custom_lint` | 아키텍처 린트 |
+| `pre-push` | `flutter test` | 전체 테스트 |
+
+> FVM이 설치되어 있으면 자동으로 `fvm` 경유, 없으면 시스템 Flutter/Dart를 사용합니다.
+
+**설치:**
+
+```bash
+dart pub global activate lefthook_dart
+lefthook install
+```
+
+**일시 비활성화** (긴급 커밋 시):
+
+```bash
+git commit --no-verify -m "hotfix: ..."
+```
+
+> `--no-verify`는 긴급 상황에서만 사용하세요. CI에서 동일한 검사가 다시 실행됩니다.
+
+### 아키텍처 린트 실행
+
+```bash
+# 아키텍처 린트 검사
+fvm dart run custom_lint
+```
+
+검출되는 규칙:
+
+| 규칙 | 설명 |
+|------|------|
+| `no_direct_supabase_auth` | `auth_provider.dart` 외부에서 Supabase 인증 API 직접 호출 금지 |
+| `auth_notifier_build_structure` | `AuthNotifier.build()`에 필수 구조 누락 감지 |
+| `auth_action_no_state_mutation` | 액션 메서드에서 `state` 직접 변경 금지 |
+| `auth_action_no_loading_state` | 액션 메서드에서 `AuthStatus.loading()` 사용 금지 |
+| `auth_catch_require_classify` | catch 블록에서 `AuthErrorType.classify` 사용 강제 |
+
+> IDE에 `custom_lint` 플러그인이 활성화되어 있으면 코드 작성 시 실시간 경고가 표시됩니다.
 
 ---
 
@@ -183,6 +234,7 @@ Closes #42
 
 - [ ] 모든 테스트 통과 (`fvm flutter test`)
 - [ ] 코드 분석 통과 (`fvm flutter analyze`)
+- [ ] 아키텍처 린트 통과 (`fvm dart run custom_lint`)
 - [ ] 새 코드에 적절한 테스트 작성
 - [ ] 코드 생성 정상 동작 (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] 필요시 문서 업데이트

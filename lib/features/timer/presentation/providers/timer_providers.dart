@@ -142,7 +142,6 @@ class TimerController extends _$TimerController {
       // ref.invalidate(timerHistoryProvider);
       //
       // return newTimer;
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -157,10 +156,10 @@ class TimerController extends _$TimerController {
 
     try {
       final activeTimer = ref.read(activeTimerProvider).when(
-        data: (timer) => timer,
-        loading: () => null,
-        error: (error, stack) => null,
-      );
+            data: (timer) => timer,
+            loading: () => null,
+            error: (error, stack) => null,
+          );
       if (activeTimer == null) {
         throw Exception('정지할 활성 타이머가 없습니다');
       }
@@ -171,9 +170,9 @@ class TimerController extends _$TimerController {
       await api.updateTimerV1TimersTimerIdPatch(
         timerId: activeTimer.id,
         body: TimerUpdate(
-          // endedAt을 설정하려고 하지만 TimerUpdate에 해당 필드가 없을 수 있음
-          // 실제 API 스펙에 맞게 조정 필요
-        ),
+            // endedAt을 설정하려고 하지만 TimerUpdate에 해당 필드가 없을 수 있음
+            // 실제 API 스펙에 맞게 조정 필요
+            ),
       );
 
       state = const AsyncValue.data(null);
@@ -181,7 +180,6 @@ class TimerController extends _$TimerController {
       // 관련 Provider들 새로고침
       ref.invalidate(activeTimerProvider);
       ref.invalidate(timerHistoryProvider);
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -196,10 +194,10 @@ class TimerController extends _$TimerController {
 
     try {
       final activeTimer = ref.read(activeTimerProvider).when(
-        data: (timer) => timer,
-        loading: () => null,
-        error: (error, stack) => null,
-      );
+            data: (timer) => timer,
+            loading: () => null,
+            error: (error, stack) => null,
+          );
       if (activeTimer == null || activeTimer.status != 'RUNNING') {
         throw Exception('일시정지할 실행 중인 타이머가 없습니다');
       }
@@ -216,7 +214,6 @@ class TimerController extends _$TimerController {
 
       // 활성 타이머 새로고침
       ref.invalidate(activeTimerProvider);
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -231,10 +228,10 @@ class TimerController extends _$TimerController {
 
     try {
       final activeTimer = ref.read(activeTimerProvider).when(
-        data: (timer) => timer,
-        loading: () => null,
-        error: (error, stack) => null,
-      );
+            data: (timer) => timer,
+            loading: () => null,
+            error: (error, stack) => null,
+          );
       if (activeTimer == null || activeTimer.status != 'PAUSED') {
         throw Exception('재개할 일시정지된 타이머가 없습니다');
       }
@@ -251,7 +248,6 @@ class TimerController extends _$TimerController {
 
       // 활성 타이머 새로고침
       ref.invalidate(activeTimerProvider);
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -270,22 +266,22 @@ String formatDuration(Duration duration) {
   final seconds = duration.inSeconds.remainder(60);
 
   return '${hours.toString().padLeft(2, '0')}:'
-         '${minutes.toString().padLeft(2, '0')}:'
-         '${seconds.toString().padLeft(2, '0')}';
+      '${minutes.toString().padLeft(2, '0')}:'
+      '${seconds.toString().padLeft(2, '0')}';
 }
 
 /// DateTime을 HH:MM 형식으로 변환 (시간 표시용)
 String formatTime(DateTime dateTime) {
   final local = dateTime.toLocal();
   return '${local.hour.toString().padLeft(2, '0')}:'
-         '${local.minute.toString().padLeft(2, '0')}';
+      '${local.minute.toString().padLeft(2, '0')}';
 }
 
 /// DateTime을 MM/DD 형식으로 변환 (날짜 표시용)
 String formatDate(DateTime dateTime) {
   final local = dateTime.toLocal();
   return '${local.month.toString().padLeft(2, '0')}/'
-         '${local.day.toString().padLeft(2, '0')}';
+      '${local.day.toString().padLeft(2, '0')}';
 }
 
 /// 두 DateTime 객체가 같은 날인지 확인
@@ -294,6 +290,6 @@ bool isSameDay(DateTime a, DateTime b) {
   final localB = b.toLocal();
 
   return localA.year == localB.year &&
-         localA.month == localB.month &&
-         localA.day == localB.day;
+      localA.month == localB.month &&
+      localA.day == localB.day;
 }

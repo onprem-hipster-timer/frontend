@@ -12,7 +12,8 @@ import '../utils/todo_tree_builder.dart';
 /// Todo 목록 조회 Provider
 ///
 /// 선택적으로 그룹 ID로 필터링할 수 있습니다.
-final todosProvider = FutureProvider.family<List<TodoRead>, String?>((ref, groupId) async {
+final todosProvider =
+    FutureProvider.family<List<TodoRead>, String?>((ref, groupId) async {
   final api = ref.watch(todosApiProvider);
 
   final response = await api.readTodosV1TodosGet(
@@ -35,7 +36,8 @@ final allTodosProvider = FutureProvider<List<TodoRead>>((ref) async {
 /// Todo 트리 구조 Provider
 ///
 /// 평면 목록을 계층형 트리로 변환합니다.
-final todoTreeProvider = FutureProvider.family<TodoTree, String?>((ref, groupId) async {
+final todoTreeProvider =
+    FutureProvider.family<TodoTree, String?>((ref, groupId) async {
   final todos = await ref.watch(todosProvider(groupId).future);
   return buildTodoTree(todos);
 });
@@ -173,7 +175,8 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
 }
 
 /// Todo 뮤테이션 Provider
-final todoMutationsProvider = NotifierProvider<TodoMutationsNotifier, AsyncValue<void>>(
+final todoMutationsProvider =
+    NotifierProvider<TodoMutationsNotifier, AsyncValue<void>>(
   TodoMutationsNotifier.new,
 );
 
@@ -214,7 +217,8 @@ class ExpandedTodoIdsNotifier extends Notifier<Set<String>> {
 }
 
 /// 확장된 노드 ID 집합 Provider
-final expandedTodoIdsProvider = NotifierProvider<ExpandedTodoIdsNotifier, Set<String>>(
+final expandedTodoIdsProvider =
+    NotifierProvider<ExpandedTodoIdsNotifier, Set<String>>(
   ExpandedTodoIdsNotifier.new,
 );
 
@@ -233,7 +237,8 @@ class SelectedTodoIdNotifier extends Notifier<String?> {
 }
 
 /// 선택된 Todo ID Provider
-final selectedTodoIdProvider = NotifierProvider<SelectedTodoIdNotifier, String?>(
+final selectedTodoIdProvider =
+    NotifierProvider<SelectedTodoIdNotifier, String?>(
   SelectedTodoIdNotifier.new,
 );
 
@@ -252,6 +257,7 @@ class DraggingTodoIdNotifier extends Notifier<String?> {
 }
 
 /// 현재 드래그 중인 Todo ID Provider
-final draggingTodoIdProvider = NotifierProvider<DraggingTodoIdNotifier, String?>(
+final draggingTodoIdProvider =
+    NotifierProvider<DraggingTodoIdNotifier, String?>(
   DraggingTodoIdNotifier.new,
 );

@@ -15,6 +15,7 @@ abstract class TagUpdate with _$TagUpdate {
     String? color,
     String? description,
   }) = _TagUpdate;
-  
-  factory TagUpdate.fromJson(Map<String, Object?> json) => _$TagUpdateFromJson(json);
+
+  factory TagUpdate.fromJson(Map<String, Object?> json) =>
+      _$TagUpdateFromJson(json);
 }

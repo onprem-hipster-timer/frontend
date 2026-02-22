@@ -32,7 +32,8 @@ class AuthInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
-      debugPrint('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
+      debugPrint(
+          '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
     }
     return handler.next(response);
   }

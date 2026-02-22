@@ -19,30 +19,22 @@ abstract class TodoRead with _$TodoRead {
   const factory TodoRead({
     required String id,
     required String title,
-    @JsonKey(name: 'tag_group_id')
-    required String tagGroupId,
+    @JsonKey(name: 'tag_group_id') required String tagGroupId,
     required TodoStatus status,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @Default([])
-    List<TagRead> tags,
-    @Default([])
-    List<ScheduleRead> schedules,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @Default([]) List<TagRead> tags,
+    @Default([]) List<ScheduleRead> schedules,
     @JsonKey(name: 'include_reason')
     @Default(TodoIncludeReason.match)
     TodoIncludeReason includeReason,
-    @JsonKey(name: 'is_shared')
-    @Default(false)
-    bool isShared,
+    @JsonKey(name: 'is_shared') @Default(false) bool isShared,
     String? description,
     DateTime? deadline,
-    @JsonKey(name: 'parent_id')
-    String? parentId,
-    @JsonKey(name: 'owner_id')
-    String? ownerId,
-    @JsonKey(name: 'visibility_level')
-    VisibilityLevel? visibilityLevel,
+    @JsonKey(name: 'parent_id') String? parentId,
+    @JsonKey(name: 'owner_id') String? ownerId,
+    @JsonKey(name: 'visibility_level') VisibilityLevel? visibilityLevel,
   }) = _TodoRead;
-  
-  factory TodoRead.fromJson(Map<String, Object?> json) => _$TodoReadFromJson(json);
+
+  factory TodoRead.fromJson(Map<String, Object?> json) =>
+      _$TodoReadFromJson(json);
 }

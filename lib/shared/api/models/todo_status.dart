@@ -15,6 +15,7 @@ enum TodoStatus {
   done('DONE'),
   @JsonValue('CANCELLED')
   cancelled('CANCELLED'),
+
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
@@ -29,6 +30,8 @@ enum TodoStatus {
 
   @override
   String toString() => json?.toString() ?? super.toString();
+
   /// Returns all defined enum values excluding the $unknown value.
-  static List<TodoStatus> get $valuesDefined => values.where((value) => value != $unknown).toList();
+  static List<TodoStatus> get $valuesDefined =>
+      values.where((value) => value != $unknown).toList();
 }

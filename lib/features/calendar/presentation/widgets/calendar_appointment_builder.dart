@@ -209,7 +209,8 @@ class ScheduleAppointmentBuilder {
                       fontSize: 14,
                     ),
                   ),
-                  if (appointment.notes != null && appointment.notes!.isNotEmpty)
+                  if (appointment.notes != null &&
+                      appointment.notes!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
@@ -231,8 +232,10 @@ class ScheduleAppointmentBuilder {
             // 화살표
             Icon(
               Icons.chevron_right,
-              color:
-                  Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.4),
             ),
           ],
         ),

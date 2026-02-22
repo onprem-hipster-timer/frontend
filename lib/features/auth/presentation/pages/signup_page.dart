@@ -107,7 +107,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     ),
               ),
               const SizedBox(height: 32),
-
               Form(
                 key: _formKey,
                 child: Column(
@@ -192,7 +191,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 ),
               ),
               const SizedBox(height: 32),
-
               AuthButton(
                 text: '회원가입',
                 onPressed: _handleSignup,
@@ -200,7 +198,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
-
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

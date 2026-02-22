@@ -52,12 +52,14 @@ class CalendarViewSelector extends ConsumerWidget {
       selected: {settings.viewType},
       onSelectionChanged: (newSelection) {
         if (newSelection.isNotEmpty) {
-          ref.read(calendarSettingsProvider.notifier)
+          ref
+              .read(calendarSettingsProvider.notifier)
               .setViewType(newSelection.first);
         }
       },
       style: ButtonStyle(
-        visualDensity: isCompact ? VisualDensity.compact : VisualDensity.standard,
+        visualDensity:
+            isCompact ? VisualDensity.compact : VisualDensity.standard,
         textStyle: WidgetStateProperty.all(
           theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w600,

@@ -14,11 +14,10 @@ abstract class TagGroupUpdate with _$TagGroupUpdate {
     String? name,
     String? color,
     String? description,
-    @JsonKey(name: 'goal_ratios')
-    Map<String, num>? goalRatios,
-    @JsonKey(name: 'is_todo_group')
-    bool? isTodoGroup,
+    @JsonKey(name: 'goal_ratios') Map<String, num>? goalRatios,
+    @JsonKey(name: 'is_todo_group') bool? isTodoGroup,
   }) = _TagGroupUpdate;
-  
-  factory TagGroupUpdate.fromJson(Map<String, Object?> json) => _$TagGroupUpdateFromJson(json);
+
+  factory TagGroupUpdate.fromJson(Map<String, Object?> json) =>
+      _$TagGroupUpdateFromJson(json);
 }

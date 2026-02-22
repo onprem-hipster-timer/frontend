@@ -16,18 +16,14 @@ abstract class TagGroupReadWithTags with _$TagGroupReadWithTags {
     required String id,
     required String name,
     required String color,
-    @JsonKey(name: 'is_todo_group')
-    required bool isTodoGroup,
-    @JsonKey(name: 'created_at')
-    required DateTime createdAt,
-    @JsonKey(name: 'updated_at')
-    required DateTime updatedAt,
-    @Default([])
-    List<TagRead> tags,
+    @JsonKey(name: 'is_todo_group') required bool isTodoGroup,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') required DateTime updatedAt,
+    @Default([]) List<TagRead> tags,
     String? description,
-    @JsonKey(name: 'goal_ratios')
-    Map<String, num>? goalRatios,
+    @JsonKey(name: 'goal_ratios') Map<String, num>? goalRatios,
   }) = _TagGroupReadWithTags;
-  
-  factory TagGroupReadWithTags.fromJson(Map<String, Object?> json) => _$TagGroupReadWithTagsFromJson(json);
+
+  factory TagGroupReadWithTags.fromJson(Map<String, Object?> json) =>
+      _$TagGroupReadWithTagsFromJson(json);
 }

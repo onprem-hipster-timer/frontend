@@ -15,18 +15,15 @@ part 'todo_create.g.dart';
 abstract class TodoCreate with _$TodoCreate {
   const factory TodoCreate({
     required String title,
-    @JsonKey(name: 'tag_group_id')
-    required String tagGroupId,
-    @Default(TodoStatus.unscheduled)
-    TodoStatus? status,
+    @JsonKey(name: 'tag_group_id') required String tagGroupId,
+    @Default(TodoStatus.unscheduled) TodoStatus? status,
     String? description,
-    @JsonKey(name: 'tag_ids')
-    List<String>? tagIds,
+    @JsonKey(name: 'tag_ids') List<String>? tagIds,
     DateTime? deadline,
-    @JsonKey(name: 'parent_id')
-    String? parentId,
+    @JsonKey(name: 'parent_id') String? parentId,
     VisibilitySettings? visibility,
   }) = _TodoCreate;
-  
-  factory TodoCreate.fromJson(Map<String, Object?> json) => _$TodoCreateFromJson(json);
+
+  factory TodoCreate.fromJson(Map<String, Object?> json) =>
+      _$TodoCreateFromJson(json);
 }

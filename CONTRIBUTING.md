@@ -64,6 +64,10 @@ fvm flutter pub get
 
 # Run code generation
 fvm dart run build_runner build --delete-conflicting-outputs
+
+# Install Git Hooks (Lefthook)
+dart pub global activate lefthook_dart
+lefthook install
 ```
 
 ### Running the App
@@ -90,6 +94,53 @@ fvm flutter test test/widget_test.dart
 # Run with coverage
 fvm flutter test --coverage
 ```
+
+### Git Hooks (Lefthook)
+
+This project uses [Lefthook](https://github.com/evilmartians/lefthook) to manage Git Hooks. Quality checks run automatically on commit and push.
+
+| Hook | Command | Description |
+|------|---------|-------------|
+| `pre-commit` | `dart format` | Format staged files and auto-fix |
+| `pre-commit` | `flutter analyze` | Static analysis |
+| `pre-commit` | `dart run custom_lint` | Architecture lints |
+| `pre-push` | `flutter test` | Full test suite |
+
+> If FVM is installed, commands run via `fvm` automatically. Otherwise, system Flutter/Dart is used.
+
+**Installation:**
+
+```bash
+dart pub global activate lefthook_dart
+lefthook install
+```
+
+**Bypass temporarily** (emergency commits only):
+
+```bash
+git commit --no-verify -m "hotfix: ..."
+```
+
+> Only use `--no-verify` in emergencies. CI runs the same checks again.
+
+### Running Architecture Lints
+
+```bash
+# Run architecture lint checks
+fvm dart run custom_lint
+```
+
+Rules enforced:
+
+| Rule | Description |
+|------|-------------|
+| `no_direct_supabase_auth` | Disallow direct Supabase auth API calls outside `auth_provider.dart` |
+| `auth_notifier_build_structure` | Detect missing required structure in `AuthNotifier.build()` |
+| `auth_action_no_state_mutation` | Disallow direct `state` mutation in action methods |
+| `auth_action_no_loading_state` | Disallow `AuthStatus.loading()` in action methods |
+| `auth_catch_require_classify` | Require `AuthErrorType.classify` in catch blocks |
+
+> If the `custom_lint` plugin is active in your IDE, warnings will appear in real-time as you write code.
 
 ---
 
@@ -212,6 +263,7 @@ Fixes #87
 
 - [ ] All tests pass (`fvm flutter test`)
 - [ ] Code follows style guidelines (`fvm flutter analyze`)
+- [ ] Architecture lints pass (`fvm dart run custom_lint`)
 - [ ] New code has appropriate tests
 - [ ] Code generation runs cleanly (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] Documentation updated if needed

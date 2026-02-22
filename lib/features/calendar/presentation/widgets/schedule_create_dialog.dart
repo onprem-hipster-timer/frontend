@@ -21,7 +21,8 @@ class ScheduleCreateDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ScheduleCreateDialog> createState() => _ScheduleCreateDialogState();
+  ConsumerState<ScheduleCreateDialog> createState() =>
+      _ScheduleCreateDialogState();
 }
 
 class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
@@ -49,7 +50,8 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
     );
 
     _startTime = widget.defaultStartTime ?? roundedNow;
-    _endTime = widget.defaultEndTime ?? _startTime.add(const Duration(hours: 1));
+    _endTime =
+        widget.defaultEndTime ?? _startTime.add(const Duration(hours: 1));
   }
 
   @override
@@ -132,7 +134,8 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
                             style: theme.textTheme.bodyLarge,
                           ),
                         ),
-                        Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurfaceVariant),
+                        Icon(Icons.arrow_drop_down,
+                            color: theme.colorScheme.onSurfaceVariant),
                       ],
                     ),
                   ),
@@ -164,14 +167,16 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
                             style: theme.textTheme.bodyLarge,
                           ),
                         ),
-                        Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurfaceVariant),
+                        Icon(Icons.arrow_drop_down,
+                            color: theme.colorScheme.onSurfaceVariant),
                       ],
                     ),
                   ),
                 ),
 
                 // 시간 유효성 검사 에러 표시
-                if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime))
+                if (_endTime.isBefore(_startTime) ||
+                    _endTime.isAtSameMomentAs(_startTime))
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
@@ -189,7 +194,8 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
       actions: [
         // 취소 버튼
         TextButton(
-          onPressed: mutations.isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed:
+              mutations.isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
 
@@ -197,19 +203,20 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
         FilledButton(
           onPressed: mutations.isLoading ? null : _handleSave,
           child: mutations.isLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text('저장'),
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('저장'),
         ),
       ],
     );
   }
 
   /// 날짜/시간 선택 다이얼로그 표시
-  Future<void> _selectDateTime(BuildContext context, {required bool isStartTime}) async {
+  Future<void> _selectDateTime(BuildContext context,
+      {required bool isStartTime}) async {
     final currentTime = isStartTime ? _startTime : _endTime;
 
     // 날짜 선택
@@ -273,7 +280,7 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
     final weekday = weekdays[dateTime.weekday];
 
     return '${dateTime.year}년 ${dateTime.month}월 ${dateTime.day}일 ($weekday) '
-           '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   /// 폼 유효성 검사 및 저장 처리
@@ -284,7 +291,8 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
     }
 
     // 시간 유효성 검사
-    if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
+    if (_endTime.isBefore(_startTime) ||
+        _endTime.isAtSameMomentAs(_startTime)) {
       _showErrorSnackBar('종료 시간은 시작 시간보다 늦어야 합니다');
       return;
     }
@@ -301,13 +309,15 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
         startTime: _startTime.toUtc(), // UTC로 변환
         endTime: _endTime.toUtc(), // UTC로 변환
         description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
+            ? null
+            : _descriptionController.text.trim(),
         // 기본값들은 API 모델에서 처리
       );
 
       // API 호출
-      await ref.read(scheduleMutationsProvider.notifier).createSchedule(scheduleCreate);
+      await ref
+          .read(scheduleMutationsProvider.notifier)
+          .createSchedule(scheduleCreate);
 
       // 성공 시 다이얼로그 닫기
       if (mounted) {
@@ -319,7 +329,6 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
           ),
         );
       }
-
     } catch (error) {
       // 에러 처리
       debugPrint('일정 생성 에러: $error');

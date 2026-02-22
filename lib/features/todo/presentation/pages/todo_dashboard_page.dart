@@ -27,7 +27,8 @@ class TodoDashboardPage extends ConsumerWidget {
       body: tagGroupsAsync.when(
         data: (tagGroups) {
           // isTodoGroup = true인 그룹들만 필터링
-          final todoGroups = tagGroups.where((group) => group.isTodoGroup).toList();
+          final todoGroups =
+              tagGroups.where((group) => group.isTodoGroup).toList();
 
           if (todoGroups.isEmpty) {
             return _buildEmptyState(context, theme);
@@ -86,7 +87,8 @@ class TodoDashboardPage extends ConsumerWidget {
                           Text(
                             '그룹을 선택해서 할 일들을 관리하세요.',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -165,7 +167,8 @@ class TodoDashboardPage extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: const Text('첫 그룹 만들기'),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -310,7 +313,8 @@ class TodoGroupCard extends StatelessWidget {
                 const Spacer(),
 
                 // 설명 (있는 경우)
-                if (group.description != null && group.description!.isNotEmpty) ...[
+                if (group.description != null &&
+                    group.description!.isNotEmpty) ...[
                   Text(
                     group.description!,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -326,7 +330,8 @@ class TodoGroupCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(12),

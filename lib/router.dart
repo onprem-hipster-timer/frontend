@@ -88,7 +88,14 @@ String? authRedirect({
 
   // 1. 인증 초기화 중이면 로딩 페이지로
   if (isAuthLoading) {
-    return AppRoute.loading.path;
+    return matchedLocation == AppRoute.loading.path
+        ? null
+        : AppRoute.loading.path;
+  }
+
+  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
+  if (matchedLocation == AppRoute.loading.path) {
+    return isAuthenticated ? AppRoute.calendar.path : AppRoute.login.path;
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
@@ -180,7 +187,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final scheduleId = state.uri.queryParameters['id'];
                       return Scaffold(
                         appBar: AppBar(title: const Text('일정 상세')),
-                        body: Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
+                        body:
+                            Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
                       );
                     },
                   ),
@@ -273,7 +281,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-
 /// 라우터 리스너 프로바이더 (네비게이션 이벤트 감지용)
 final routeObserverProvider = Provider<NavigatorObserver>((ref) {
   return GoRouterObserver();
@@ -298,8 +305,8 @@ class GoRouterObserver extends NavigatorObserver {
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     if (kDebugMode) {
-      debugPrint('🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+      debugPrint(
+          '🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
     }
   }
 }
-

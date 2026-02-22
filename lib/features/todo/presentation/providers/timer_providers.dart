@@ -83,7 +83,8 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
         final elapsedSinceStart = now.difference(timer.startedAt!).inSeconds;
         final totalElapsed = timer.elapsedTime + elapsedSinceStart;
 
-        activeStates[timer.todoId ?? timer.scheduleId ?? timer.id] = ActiveTimerState(
+        activeStates[timer.todoId ?? timer.scheduleId ?? timer.id] =
+            ActiveTimerState(
           timerId: timer.id,
           elapsedSeconds: totalElapsed,
           status: timer.status,
@@ -91,7 +92,8 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
           pausedAt: timer.pausedAt,
         );
       } else if (timer.status == 'PAUSED') {
-        activeStates[timer.todoId ?? timer.scheduleId ?? timer.id] = ActiveTimerState(
+        activeStates[timer.todoId ?? timer.scheduleId ?? timer.id] =
+            ActiveTimerState(
           timerId: timer.id,
           elapsedSeconds: timer.elapsedTime,
           status: timer.status,
@@ -167,7 +169,6 @@ class TimerMutations extends _$TimerMutations {
       ref.invalidate(timersProvider());
       ref.invalidate(activeTimersProvider);
       ref.invalidate(todoTimerAggregationsProvider);
-
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -183,10 +184,10 @@ class TimerMutations extends _$TimerMutations {
 class TodoTimerAggregation {
   final String todoId;
   final int totalElapsedSeconds; // 본인 + 하위 Todo의 총 시간
-  final int ownElapsedSeconds;   // 본인만의 시간
-  final List<TimerRead> timers;  // 연결된 타이머들
-  final bool hasActiveTimer;     // 활성 타이머 여부
-  final String? activeTimerId;   // 활성 타이머 ID
+  final int ownElapsedSeconds; // 본인만의 시간
+  final List<TimerRead> timers; // 연결된 타이머들
+  final bool hasActiveTimer; // 활성 타이머 여부
+  final String? activeTimerId; // 활성 타이머 ID
 
   const TodoTimerAggregation({
     required this.todoId,
@@ -231,7 +232,8 @@ class ActiveTimerState {
   bool get isPaused => status == 'PAUSED';
 
   /// 경과 시간을 HH:MM:SS 형태로 포맷
-  String get formattedTime => TodoTimerAggregation._formatDuration(elapsedSeconds);
+  String get formattedTime =>
+      TodoTimerAggregation._formatDuration(elapsedSeconds);
 }
 
 /// Todo별 타이머 집계 로직
@@ -249,7 +251,8 @@ Map<String, TodoTimerAggregation> _aggregateTimersByTodo(
   for (final timer in timers) {
     if (timer.todoId != null) {
       todoTimers.putIfAbsent(timer.todoId!, () => []).add(timer);
-      todoOwnTime[timer.todoId!] = (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
+      todoOwnTime[timer.todoId!] =
+          (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
 
       if (timer.status == 'RUNNING' || timer.status == 'PAUSED') {
         activeTimers[timer.todoId!] = timer.id;

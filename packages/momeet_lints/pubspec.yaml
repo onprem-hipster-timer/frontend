@@ -1,0 +1,11 @@
+name: momeet_lints
+description: Custom lint rules for momeet authentication architecture enforcement.
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  analyzer:
+  analyzer_plugin:
+  custom_lint_builder:
