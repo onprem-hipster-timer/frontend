@@ -5,7 +5,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/utils/timezone_utils.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/api/ws/models/timer_ws_error.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
