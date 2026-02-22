@@ -15,7 +15,7 @@ analyzer:
     - custom_lint
   exclude:
     - lib/core/templates/**
-    - lib/shared/api/generated/**
+    - lib/shared/api/rest/generated/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
 

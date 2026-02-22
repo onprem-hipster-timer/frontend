@@ -1,6 +1,6 @@
 swagger_parser:
   schema_path: lib/openapi/openapi.json
-  output_directory: lib/shared/api
+  output_directory: lib/shared/api/rest/rest
   language: dart
   json_serializer: freezed
 

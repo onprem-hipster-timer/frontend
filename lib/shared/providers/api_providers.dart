@@ -5,7 +5,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/dio_provider.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 // ============================================================
 // API 클라이언트 Providers

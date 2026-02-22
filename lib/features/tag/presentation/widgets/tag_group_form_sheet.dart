@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
