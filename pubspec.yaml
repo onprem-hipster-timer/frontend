@@ -53,6 +53,7 @@ dependencies:
   # Annotation
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
+  web_socket_channel: ^3.0.3
 
 
 dev_dependencies:
