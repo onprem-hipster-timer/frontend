@@ -107,38 +107,54 @@ class TimerDashboard extends ConsumerWidget {
 
   /// 타이머 시작 다이얼로그 표시
   void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('새 작업 시작'),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              decoration: InputDecoration(
+              controller: controller,
+              decoration: const InputDecoration(
                 labelText: '작업명',
                 hintText: '어떤 작업을 시작할까요?',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 16),
-            Text(
-              '타이머 생성 기능이 곧 구현됩니다.',
-              style: TextStyle(color: Colors.orange),
-            ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('타이머 생성 API가 곧 구현됩니다')),
-              );
+            onPressed: () async {
+              final title = controller.text.trim().isEmpty
+                  ? '새 작업'
+                  : controller.text.trim();
+              Navigator.of(dialogContext).pop();
+              try {
+                await ref
+                    .read(timerControllerProvider.notifier)
+                    .startTimer(title: title);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('타이머를 시작했습니다')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('타이머 시작 실패: $e'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('시작'),
           ),

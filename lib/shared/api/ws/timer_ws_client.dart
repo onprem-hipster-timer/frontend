@@ -21,14 +21,23 @@ class TimerWsClient {
     required String accessToken,
     String? timezone,
     this.maxReconnectAttempts = 5,
+    @visibleForTesting bool autoConnect = true,
   })  : _token = accessToken,
         _timezone = timezone {
-    _connect();
+    if (autoConnect) _connect();
   }
 
   final String _token;
   final String? _timezone;
   final int maxReconnectAttempts;
+
+  @visibleForTesting
+  String get token => _token;
+
+  /// Sec-WebSocket-Protocol 헤더에 사용되는 인증 서브프로토콜 목록
+  @visibleForTesting
+  static List<String> authProtocols(String token) =>
+      ['authorization.bearer.$token'];
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -67,7 +76,7 @@ class TimerWsClient {
 
     final url = wsUrl(AppConfig.apiBaseUrl, timezone: _timezone);
     final uri = Uri.parse(url);
-    final protocols = ['authorization.bearer.$_token'];
+    final protocols = authProtocols(_token);
 
     if (kDebugMode && AppConfig.enableDebugLogging) {
       debugPrint('🔌 [WS] Connecting to $url');

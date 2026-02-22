@@ -1,90 +1,41 @@
-// API 클라이언트 프로바이더들
+// 개별 API 클라이언트 프로바이더
 //
-// swagger_parser로 자동 생성된 API 클래스들을 Riverpod Provider로 감싸서 제공합니다.
-// 각 Provider는 Dio 인스턴스를 주입받아 API 클라이언트를 생성합니다.
+// [moMeetClientProvider]에서 파생합니다.
+// 단일 MoMeetClient 인스턴스가 내부적으로 lazy 초기화하므로
+// Dio 인스턴스를 중복 생성하지 않습니다.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/core/network/dio_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/providers/shared_providers.dart';
 
-// ============================================================
-// API 클라이언트 Providers
-// ============================================================
-
-/// Schedules API 클라이언트
-///
-/// 사용 예:
-/// ```dart
-/// final api = ref.watch(schedulesApiProvider);
-/// final schedules = await api.readSchedulesV1SchedulesGet();
-/// ```
 final schedulesApiProvider = Provider<SchedulesClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return SchedulesClient(dio);
+  return ref.watch(moMeetClientProvider).schedules;
 });
 
-/// Todos API 클라이언트
-///
-/// 사용 예:
-/// ```dart
-/// final api = ref.watch(todosApiProvider);
-/// final todos = await api.readTodosV1TodosGet();
-/// ```
 final todosApiProvider = Provider<TodosClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return TodosClient(dio);
+  return ref.watch(moMeetClientProvider).todos;
 });
 
-/// Tags API 클라이언트
-///
-/// 사용 예:
-/// ```dart
-/// final api = ref.watch(tagsApiProvider);
-/// final tags = await api.readTagsV1TagsGet();
-/// ```
 final tagsApiProvider = Provider<TagsClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return TagsClient(dio);
+  return ref.watch(moMeetClientProvider).tags;
 });
 
-/// Timers API 클라이언트
-///
-/// 사용 예:
-/// ```dart
-/// final api = ref.watch(timersApiProvider);
-/// final timers = await api.readTimersV1TimersGet();
-/// ```
 final timersApiProvider = Provider<TimersClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return TimersClient(dio);
+  return ref.watch(moMeetClientProvider).timers;
 });
 
-/// Holidays API 클라이언트
-///
-/// 사용 예:
-/// ```dart
-/// final api = ref.watch(holidaysApiProvider);
-/// final holidays = await api.getHolidaysV1HolidaysYearGet(year: 2024);
-/// ```
 final holidaysApiProvider = Provider<HolidaysClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return HolidaysClient(dio);
+  return ref.watch(moMeetClientProvider).holidays;
 });
 
-/// Friends API 클라이언트 (향후 소셜 기능용)
 final friendsApiProvider = Provider<FriendsClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return FriendsClient(dio);
+  return ref.watch(moMeetClientProvider).friends;
 });
 
-/// GraphQL API 클라이언트 (향후 사용 가능)
 final graphQlApiProvider = Provider<GraphQlClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return GraphQlClient(dio);
+  return ref.watch(moMeetClientProvider).graphQl;
 });
 
-/// Health Check API 클라이언트
 final healthApiProvider = Provider<HealthClient>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return HealthClient(dio);
+  return ref.watch(moMeetClientProvider).health;
 });
