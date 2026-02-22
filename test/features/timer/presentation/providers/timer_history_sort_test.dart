@@ -4,7 +4,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 void main() {
   group('sortTimerHistory', () {
-    TimerRead _timer({
+    TimerRead makeTimer({
       required String id,
       required String status,
       DateTime? startedAt,
@@ -24,9 +24,9 @@ void main() {
 
     test('활성 타이머(RUNNING/PAUSED)가 완료(COMPLETED)보다 먼저 온다', () {
       final timers = [
-        _timer(id: 'c1', status: 'COMPLETED'),
-        _timer(id: 'r1', status: 'RUNNING'),
-        _timer(id: 'p1', status: 'PAUSED'),
+        makeTimer(id: 'c1', status: 'COMPLETED'),
+        makeTimer(id: 'r1', status: 'RUNNING'),
+        makeTimer(id: 'p1', status: 'PAUSED'),
       ];
 
       final sorted = sortTimerHistory(timers);
@@ -39,12 +39,12 @@ void main() {
 
     test('같은 그룹 내에서 최신 startedAt이 먼저 온다', () {
       final timers = [
-        _timer(
+        makeTimer(
           id: 'r-old',
           status: 'RUNNING',
           startedAt: DateTime.utc(2026, 1, 1, 10, 0),
         ),
-        _timer(
+        makeTimer(
           id: 'r-new',
           status: 'RUNNING',
           startedAt: DateTime.utc(2026, 1, 1, 12, 0),
@@ -58,12 +58,12 @@ void main() {
 
     test('startedAt이 null이면 createdAt으로 대체한다', () {
       final timers = [
-        _timer(
+        makeTimer(
           id: 'no-start',
           status: 'COMPLETED',
           createdAt: DateTime.utc(2026, 1, 2),
         ),
-        _timer(
+        makeTimer(
           id: 'has-start',
           status: 'COMPLETED',
           startedAt: DateTime.utc(2026, 1, 1),
@@ -82,7 +82,7 @@ void main() {
     });
 
     test('단일 항목은 그대로 반환한다', () {
-      final timers = [_timer(id: 'solo', status: 'RUNNING')];
+      final timers = [makeTimer(id: 'solo', status: 'RUNNING')];
       final sorted = sortTimerHistory(timers);
       expect(sorted.length, 1);
       expect(sorted[0].id, 'solo');
@@ -90,17 +90,17 @@ void main() {
 
     test('PAUSED와 RUNNING이 섞여있어도 모두 활성 그룹에 속한다', () {
       final timers = [
-        _timer(
+        makeTimer(
           id: 'p1',
           status: 'PAUSED',
           startedAt: DateTime.utc(2026, 1, 1, 8, 0),
         ),
-        _timer(
+        makeTimer(
           id: 'c1',
           status: 'COMPLETED',
           startedAt: DateTime.utc(2026, 1, 1, 12, 0),
         ),
-        _timer(
+        makeTimer(
           id: 'r1',
           status: 'RUNNING',
           startedAt: DateTime.utc(2026, 1, 1, 10, 0),
@@ -116,8 +116,8 @@ void main() {
 
     test('원본 리스트를 변경하지 않는다', () {
       final timers = [
-        _timer(id: 'c1', status: 'COMPLETED'),
-        _timer(id: 'r1', status: 'RUNNING'),
+        makeTimer(id: 'c1', status: 'COMPLETED'),
+        makeTimer(id: 'r1', status: 'RUNNING'),
       ];
       final originalFirst = timers[0].id;
 
@@ -128,17 +128,17 @@ void main() {
 
     test('완료 그룹 내에서도 최신순 정렬된다', () {
       final timers = [
-        _timer(
+        makeTimer(
           id: 'c-old',
           status: 'COMPLETED',
           startedAt: DateTime.utc(2026, 1, 1),
         ),
-        _timer(
+        makeTimer(
           id: 'c-mid',
           status: 'COMPLETED',
           startedAt: DateTime.utc(2026, 1, 5),
         ),
-        _timer(
+        makeTimer(
           id: 'c-new',
           status: 'COMPLETED',
           startedAt: DateTime.utc(2026, 1, 10),
