@@ -6,6 +6,7 @@ import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 태그 관리 페이지
 ///
@@ -393,26 +394,13 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('태그 삭제'),
-        content: Text(
-          '${tag.name} 태그를 삭제하시겠습니까?\n'
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '태그 삭제',
+      content: '${tag.name} 태그를 삭제하시겠습니까?\n'
           '이 작업은 되돌릴 수 없습니다.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+      confirmText: '삭제',
+      destructive: true,
     );
 
     if (confirmed == true && context.mounted) {
