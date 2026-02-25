@@ -6,7 +6,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 export 'schedule_mutations.dart';
 
 part 'calendar_providers.g.dart';

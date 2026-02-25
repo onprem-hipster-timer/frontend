@@ -19,19 +19,19 @@ lib/features/auth/                      @gunyu1019
 
 # Calendar / Schedule
 lib/features/calendar/                  @gunyu1019
-lib/shared/api/schedules/               @gunyu1019
+lib/shared/api/rest/schedules/               @gunyu1019
 
 # Todo
 lib/features/todo/                      @gunyu1019
-lib/shared/api/todos/                   @gunyu1019
+lib/shared/api/rest/todos/                   @gunyu1019
 
 # Timer
 lib/features/timer/                     @gunyu1019
-lib/shared/api/timers/                  @gunyu1019
+lib/shared/api/rest/timers/                  @gunyu1019
 
 # Tag
 lib/features/tag/                       @gunyu1019
-lib/shared/api/tags/                    @gunyu1019
+lib/shared/api/rest/tags/                    @gunyu1019
 
 # Home
 lib/features/home/                      @gunyu1019

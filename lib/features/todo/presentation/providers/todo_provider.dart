@@ -1,7 +1,7 @@
 // Todo Feature - Providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 import '../utils/todo_tree_builder.dart';
 

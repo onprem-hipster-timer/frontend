@@ -467,16 +467,13 @@ class ScheduleMutations extends _$ScheduleMutations {
 
 ```bash
 # 코드 생성 명령
-dart run openapi_generator_cli generate \
-  -i openapi/openapi.json \
-  -g dart-dio \
-  -o lib/shared/api/generated
+fvm dart run swagger_parser
 ```
 
 생성 결과:
 
 ```
-lib/shared/api/generated/
+lib/shared/api/rest/generated/
 ├── lib/
 │   ├── api.dart                      # 진입점
 │   │
@@ -509,7 +506,7 @@ lib/shared/api/generated/
 // ⚠️ 이 코드는 참고용입니다. 직접 작성하지 마세요!
 // OpenAPI 생성기가 자동으로 만들어줍니다.
 
-// lib/shared/api/generated/lib/model/schedule_read.dart (자동 생성)
+// lib/shared/api/rest/generated/lib/model/schedule_read.dart (자동 생성)
 class ScheduleRead {
   final String id;
   final String title;
@@ -820,7 +817,7 @@ dev_dependencies:
 dart run openapi_generator_cli generate \
   -i openapi/openapi.json \
   -g dart-dio \
-  -o lib/shared/api/generated
+  -o lib/shared/api/rest/generated
 ```
 
 #### 사용 가능한 OpenAPI 생성 도구
@@ -856,7 +853,7 @@ dev_dependencies:
 
 openapi_generator:
   input_spec: openapi/openapi.json
-  output_directory: lib/shared/api/generated
+  output_directory: lib/shared/api/rest/generated
   generator_name: dart-dio
   additional_properties:
     pubName: momomeet_api
@@ -872,7 +869,7 @@ dart run build_runner build --delete-conflicting-outputs
 #### 생성되는 코드 구조
 
 ```
-lib/shared/api/generated/
+lib/shared/api/rest/generated/
 ├── lib/
 │   ├── api.dart                    # 진입점
 │   ├── api/
@@ -1025,7 +1022,7 @@ class ServerFailure extends Failure {
 | `src/components/NewScheduleCalendar/` | 캘린더 컴포넌트 (53개 파일) |
 | `src/pages/TodoList/` | 할 일 페이지 (27개 파일) |
 | `src/stores/` | Zustand 스토어 (9개) |
-| `src/shared/api/` | API 클라이언트 (자동 생성) |
+| `src/shared/api/rest/` | API 클라이언트 (자동 생성) |
 | `src/shared/utils/` | 유틸리티 함수 |
 | `openapi/openapi.json` | OpenAPI 스펙 |
 

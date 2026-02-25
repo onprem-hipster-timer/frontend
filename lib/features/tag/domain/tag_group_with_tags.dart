@@ -1,4 +1,4 @@
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// 태그 그룹과 하위 태그들을 포함한 계층형 데이터 모델
 ///

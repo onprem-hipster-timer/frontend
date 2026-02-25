@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';

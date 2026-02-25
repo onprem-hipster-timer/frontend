@@ -4,6 +4,7 @@ import 'package:momeet/features/todo/presentation/providers/timer_providers.dart
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/shared/api/models/todo_status.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/api/rest/models/todo_status.dart';
 
 /// 타이머 기능이 통합된 Todo Tree Tile
 ///

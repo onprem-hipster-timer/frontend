@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 
 /// 새로운 일정 생성 다이얼로그

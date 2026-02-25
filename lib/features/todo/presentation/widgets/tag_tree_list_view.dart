@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/tag_providers.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
