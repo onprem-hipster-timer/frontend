@@ -344,7 +344,7 @@ fvm dart run build_runner watch --delete-conflicting-outputs
 **예시:** `schedule_read.dart` 기준
 
 ```
-lib/shared/api/models/
+lib/shared/api/rest/models/
 ├── schedule_read.dart              # 소스 (직접 편집)
 ├── schedule_read.freezed.dart      # Freezed 자동 생성 (편집 금지)
 └── schedule_read.g.dart            # JSON 직렬화 자동 생성 (편집 금지)

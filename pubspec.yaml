@@ -25,7 +25,7 @@ dependencies:
   dio: ^5.9.1
   retrofit: ^4.9.2
   # momeet_api:
-  #   path: lib/shared/api/generated/
+  #   path: lib/shared/api/rest/generated/
 
   # Build Pacakge
   built_collection: ^5.1.1
@@ -53,6 +53,7 @@ dependencies:
   # Annotation
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
+  web_socket_channel: ^3.0.3
 
 
 dev_dependencies:

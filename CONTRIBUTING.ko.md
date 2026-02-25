@@ -164,13 +164,13 @@ fvm dart run custom_lint
 
 ### 파일 명명
 
-| 유형 | 패턴 | 예시 |
-|------|------|------|
-| Page | `lib/features/{feature}/presentation/pages/{name}_page.dart` | `calendar_page.dart` |
-| Widget | `lib/features/{feature}/presentation/widgets/{name}.dart` | `schedule_card.dart` |
-| Provider | `lib/features/{feature}/presentation/providers/{name}_provider.dart` | `calendar_providers.dart` |
-| Model | `lib/shared/api/models/{name}.dart` | `schedule_read.dart` |
-| API Client | `lib/shared/api/{feature}/{feature}_client.dart` | `schedules_client.dart` |
+| 유형               | 패턴 | 예시 |
+|------------------|------|------|
+| Page             | `lib/features/{feature}/presentation/pages/{name}_page.dart` | `calendar_page.dart` |
+| Widget           | `lib/features/{feature}/presentation/widgets/{name}.dart` | `schedule_card.dart` |
+| Provider         | `lib/features/{feature}/presentation/providers/{name}_provider.dart` | `calendar_providers.dart` |
+| Model(REST)      | `lib/shared/api/rest/models/{name}.dart` | `schedule_read.dart` |
+| API Client(REST) | `lib/shared/api/rest/{feature}/{feature}_client.dart` | `schedules_client.dart` |
 
 ### 생성 파일
 
