@@ -25,17 +25,14 @@ void main() async {
   // Supabase 초기화
   // ============================================================
 
-  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-  final supabaseAnonKey = dotenv.env["SUPABASE_ANON_KEY"] ?? '';
-
   if (AppConfig.enableDebugLogging) {
     debugPrint('🚀 [INIT] Initializing Supabase...');
-    debugPrint('   URL: $supabaseUrl');
+    debugPrint('   URL: ${AppConfig.supabaseUrl}');
   }
 
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
   );
 
   if (AppConfig.enableDebugLogging) {
