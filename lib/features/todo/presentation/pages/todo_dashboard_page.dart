@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// Todo 대시보드 페이지
 ///
-/// Todo 그룹들을 카드 형태로 표시하는 메인 페이지입니다.
+/// 그룹들을 카드 형태로 표시하는 메인 페이지입니다.
 /// 개별 Todo 항목은 표시하지 않고, 그룹 선택만 담당합니다.
 class TodoDashboardPage extends ConsumerWidget {
   const TodoDashboardPage({super.key});
@@ -45,12 +46,12 @@ class TodoDashboardPage extends ConsumerWidget {
         onPressed: () => _showCreateGroupDialog(context),
         icon: const Icon(Icons.create_new_folder),
         label: const Text('새 그룹 만들기'),
-        tooltip: '새 할 일 그룹 만들기',
+        tooltip: '새 그룹 만들기',
       ),
     );
   }
 
-  /// Todo 그룹 그리드 뷰
+  /// 그룹 그리드 뷰
   Widget _buildGroupGrid(
     BuildContext context,
     ThemeData theme,
@@ -78,7 +79,7 @@ class TodoDashboardPage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '할 일 그룹 관리',
+                            '그룹 관리',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -147,7 +148,7 @@ class TodoDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              '할 일 그룹이 없습니다',
+              '그룹이 없습니다',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
@@ -155,7 +156,7 @@ class TodoDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '첫 번째 할 일 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
+              '첫 번째 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -192,7 +193,7 @@ class TodoDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '할 일 그룹을 불러오지 못했습니다',
+              '그룹을 불러오지 못했습니다',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.error,
               ),
@@ -225,17 +226,8 @@ class TodoDashboardPage extends ConsumerWidget {
 
   /// 새 그룹 생성 다이얼로그
   void _showCreateGroupDialog(BuildContext context) {
-    // TODO: 그룹 생성 로직 구현
-    // 현재는 스낵바로 임시 대체
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('그룹 생성 기능이 곧 구현됩니다!'),
-        action: SnackBarAction(
-          label: '확인',
-          onPressed: () {},
-        ),
-      ),
-    );
+    // 기존 태그 그룹 생성 기능을 사용
+    showTagGroupFormSheet(context);
   }
 }
 
@@ -326,26 +318,17 @@ class TodoGroupCard extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
 
-                // 하단 정보 (Todo 개수 등)
+                // 하단 정보 (TODO: 실제 할 일 개수 표시)
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '할 일 그룹',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
                     const Spacer(),
                     // TODO: 실제 할 일 개수 표시
+                    // Text(
+                    //   'N개',
+                    //   style: theme.textTheme.labelSmall?.copyWith(
+                    //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    //   ),
+                    // ),
                     // Text(
                     //   'N개',
                     //   style: theme.textTheme.labelSmall?.copyWith(
