@@ -169,7 +169,8 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
 
           // 액션 버튼들
           OutlinedButton.icon(
-            onPressed: () => TodoTreeTileWithTimer._showEditTodoDialog(context, node.todo),
+            onPressed: () =>
+                TodoTreeTileWithTimer._showEditTodoDialog(context, node.todo),
             icon: const Icon(Icons.edit, size: 14),
             label: const Text('수정'),
             style: OutlinedButton.styleFrom(
@@ -182,7 +183,8 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
           const SizedBox(width: 4),
 
           OutlinedButton.icon(
-            onPressed: () => TodoTreeTileWithTimer._showDeleteTodoDialog(context, ref, node.todo, node),
+            onPressed: () => TodoTreeTileWithTimer._showDeleteTodoDialog(
+                context, ref, node.todo, node),
             icon: const Icon(Icons.delete_outline, size: 14),
             label: const Text('삭제'),
             style: OutlinedButton.styleFrom(
@@ -255,9 +257,8 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
     TodoTreeNode node,
   ) async {
     final hasChildren = node.children.isNotEmpty;
-    final childWarning = hasChildren
-        ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.'
-        : '';
+    final childWarning =
+        hasChildren ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.' : '';
 
     final confirmed = await showConfirmDialog(
       context,
@@ -270,7 +271,8 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        final success = await ref.read(todoMutationsProvider.notifier).delete(todo.id);
+        final success =
+            await ref.read(todoMutationsProvider.notifier).delete(todo.id);
 
         if (success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

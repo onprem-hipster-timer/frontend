@@ -301,11 +301,13 @@ class TodoTreeTile extends ConsumerWidget {
                 children: [
                   // 수정 버튼
                   OutlinedButton.icon(
-                    onPressed: () => TodoTreeTile._showEditTodoDialog(context, todo),
+                    onPressed: () =>
+                        TodoTreeTile._showEditTodoDialog(context, todo),
                     icon: const Icon(Icons.edit, size: 16),
                     label: const Text('수정'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -315,13 +317,16 @@ class TodoTreeTile extends ConsumerWidget {
 
                   // 삭제 버튼
                   OutlinedButton.icon(
-                    onPressed: () => TodoTreeTile._showDeleteTodoDialog(context, ref, todo, node),
+                    onPressed: () => TodoTreeTile._showDeleteTodoDialog(
+                        context, ref, todo, node),
                     icon: const Icon(Icons.delete_outline, size: 16),
                     label: const Text('삭제'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(color: Theme.of(context).colorScheme.error),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      side: BorderSide(
+                          color: Theme.of(context).colorScheme.error),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -489,9 +494,8 @@ class TodoTreeTile extends ConsumerWidget {
     TodoTreeNode node,
   ) async {
     final hasChildren = node.children.isNotEmpty;
-    final childWarning = hasChildren
-        ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.'
-        : '';
+    final childWarning =
+        hasChildren ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.' : '';
 
     final confirmed = await showConfirmDialog(
       context,
@@ -504,7 +508,8 @@ class TodoTreeTile extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        final success = await ref.read(todoMutationsProvider.notifier).delete(todo.id);
+        final success =
+            await ref.read(todoMutationsProvider.notifier).delete(todo.id);
 
         if (success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

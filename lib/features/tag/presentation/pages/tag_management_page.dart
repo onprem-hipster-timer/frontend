@@ -157,7 +157,8 @@ class TagManagementPage extends ConsumerWidget {
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('태그 추가'),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -169,7 +170,8 @@ class TagManagementPage extends ConsumerWidget {
                     icon: const Icon(Icons.edit, size: 16),
                     label: const Text('그룹 수정'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -177,13 +179,15 @@ class TagManagementPage extends ConsumerWidget {
 
                   // 그룹 삭제 버튼
                   OutlinedButton.icon(
-                    onPressed: () => _showDeleteGroupDialog(context, ref, tagGroup),
+                    onPressed: () =>
+                        _showDeleteGroupDialog(context, ref, tagGroup),
                     icon: const Icon(Icons.delete_outline, size: 16),
                     label: const Text('그룹 삭제'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                       side: BorderSide(color: theme.colorScheme.error),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -248,7 +252,8 @@ class TagManagementPage extends ConsumerWidget {
               icon: const Icon(Icons.edit, size: 16),
               label: const Text('수정'),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 minimumSize: const Size(0, 32),
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -264,7 +269,8 @@ class TagManagementPage extends ConsumerWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
                 side: BorderSide(color: theme.colorScheme.error),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 minimumSize: const Size(0, 32),
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -424,7 +430,9 @@ class TagManagementPage extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await ref.read(tagMutationsProvider.notifier).deleteGroup(tagGroup.groupId);
+        await ref
+            .read(tagMutationsProvider.notifier)
+            .deleteGroup(tagGroup.groupId);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

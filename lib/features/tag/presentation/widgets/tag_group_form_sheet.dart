@@ -256,7 +256,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     );
   }
 
-
   /// 버튼 영역
   Widget _buildButtonBar(bool isEditMode, bool isLoading) {
     return Row(
@@ -333,13 +332,13 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text('그룹이 수정되었습니다'),
-                  ],
-                ),
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('그룹이 수정되었습니다'),
+                ],
+              ),
               backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
             ),
@@ -362,13 +361,13 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 12),
-                    Text('그룹이 생성되었습니다'),
-                  ],
-                ),
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('그룹이 생성되었습니다'),
+                ],
+              ),
               backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
             ),
