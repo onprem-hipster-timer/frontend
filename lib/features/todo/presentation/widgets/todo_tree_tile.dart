@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 import '../providers/todo_provider.dart';
 import '../utils/todo_tree_builder.dart';
+import 'todo_form_sheet.dart';
 
 /// 들여쓰기 단위 (깊이당 픽셀)
 const double kIndentWidth = 24.0;
@@ -290,6 +292,42 @@ class TodoTreeTile extends ConsumerWidget {
                     ),
                   ),
                 ),
+
+              const SizedBox(width: 8),
+
+              // 액션 버튼들
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 수정 버튼
+                  OutlinedButton.icon(
+                    onPressed: () => TodoTreeTile._showEditTodoDialog(context, todo),
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('수정'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // 삭제 버튼
+                  OutlinedButton.icon(
+                    onPressed: () => TodoTreeTile._showDeleteTodoDialog(context, ref, todo, node),
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: const Text('삭제'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -432,6 +470,61 @@ class TodoTreeTile extends ConsumerWidget {
         return Theme.of(context).colorScheme.error.withAlpha(128);
       default:
         return null;
+    }
+  }
+
+  /// 할 일 수정 다이얼로그 표시
+  static void _showEditTodoDialog(BuildContext context, TodoRead todo) {
+    showTodoFormSheet(
+      context,
+      todo: todo,
+    );
+  }
+
+  /// 할 일 삭제 확인 다이얼로그 표시
+  static Future<void> _showDeleteTodoDialog(
+    BuildContext context,
+    WidgetRef ref,
+    TodoRead todo,
+    TodoTreeNode node,
+  ) async {
+    final hasChildren = node.children.isNotEmpty;
+    final childWarning = hasChildren
+        ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.'
+        : '';
+
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '할 일 삭제',
+      content: '${todo.title}을(를) 삭제하시겠습니까?$childWarning\n'
+          '이 작업은 되돌릴 수 없습니다.',
+      confirmText: '삭제',
+      destructive: true,
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final success = await ref.read(todoMutationsProvider.notifier).delete(todo.id);
+
+        if (success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${todo.title}이(가) 삭제되었습니다'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('할 일 삭제에 실패했습니다: $error'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 }
