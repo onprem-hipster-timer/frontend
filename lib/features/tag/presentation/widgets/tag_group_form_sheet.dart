@@ -58,22 +58,31 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     final isLoading = mutations.isLoading;
     final isEditMode = widget.tagGroup != null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+    // [Fix] viewInsets 패딩을 가장 바깥 Padding에만 적용한다.
+    // ─ 이전 구조: Container > Padding(viewInsets) > SingleChildScrollView
+    //   → Padding이 키보드 높이만큼 늘어나면서 SingleChildScrollView에
+    //     unbounded height가 전달되어 "RenderBox was not laid out" 에러 발생.
+    // ─ 수정 구조: Padding(viewInsets) > Container(maxHeight 제한) > SingleChildScrollView
+    return Padding(
+      // 키보드 패딩은 가장 바깥에서만 처리
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+      child: Container(
+        // 최대 높이를 명시해 SingleChildScrollView에 bounded constraint 전달
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
             child: Column(

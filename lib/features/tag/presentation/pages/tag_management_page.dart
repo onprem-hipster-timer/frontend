@@ -55,7 +55,7 @@ class TagManagementPage extends ConsumerWidget {
         SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) =>
-                _buildTagGroupItem(context, ref, tagGroups[index]),
+                _buildTagGroupItem(context, ref, tagGroups[index], tagGroups),
             childCount: tagGroups.length,
           ),
         ),
@@ -73,6 +73,7 @@ class TagManagementPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     TagGroupWithTags tagGroup,
+    List<TagGroupWithTags> allGroups,
   ) {
     final theme = Theme.of(context);
 
@@ -144,7 +145,8 @@ class TagManagementPage extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.add, size: 20),
                 tooltip: '태그 추가',
-                onPressed: () => _showCreateTagSheet(context, ref, tagGroup),
+                onPressed: () =>
+                    _showCreateTagSheet(context, ref, tagGroup, allGroups),
                 visualDensity: VisualDensity.compact,
               ),
 
@@ -163,7 +165,8 @@ class TagManagementPage extends ConsumerWidget {
 
           // 하위 태그 목록
           children: tagGroup.tags
-              .map((tag) => _buildTagItem(context, ref, tag, tagGroup))
+              .map((tag) =>
+                  _buildTagItem(context, ref, tag, tagGroup, allGroups))
               .toList(),
         ),
       ),
@@ -176,6 +179,7 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
     TagGroupWithTags parentGroup,
+    List<TagGroupWithTags> allGroups,
   ) {
     final theme = Theme.of(context);
 
@@ -207,12 +211,14 @@ class TagManagementPage extends ConsumerWidget {
         trailing: IconButton(
           icon: const Icon(Icons.edit, size: 18),
           tooltip: '태그 수정',
-          onPressed: () => _showEditTagSheet(context, ref, tag, parentGroup),
+          onPressed: () =>
+              _showEditTagSheet(context, ref, tag, parentGroup, allGroups),
           visualDensity: VisualDensity.compact,
         ),
 
         // Interaction: 탭하면 수정 폼, 길게 누르면 삭제
-        onTap: () => _showEditTagSheet(context, ref, tag, parentGroup),
+        onTap: () =>
+            _showEditTagSheet(context, ref, tag, parentGroup, allGroups),
         onLongPress: () => _showDeleteTagDialog(context, ref, tag),
 
         shape: RoundedRectangleBorder(
@@ -350,6 +356,7 @@ class TagManagementPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     TagGroupWithTags parentGroup,
+    List<TagGroupWithTags> allGroups,
   ) {
     final tagGroupsAsync = ref.read(tagTreeProvider);
 
@@ -372,6 +379,7 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
     TagGroupWithTags parentGroup,
+    List<TagGroupWithTags> allGroups,
   ) {
     final tagGroupsAsync = ref.read(tagTreeProvider);
 
