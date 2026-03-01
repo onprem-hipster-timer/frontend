@@ -7,6 +7,10 @@ import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
 
+import '../../../../core/providers/timezone_provider.dart';
+import '../../../settings/presentation/widgets/password_change_sheet.dart';
+import '../../../settings/presentation/widgets/timezone_selection_sheet.dart';
+
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
 
@@ -621,8 +625,12 @@ class _MyPageState extends ConsumerState<MyPage> {
                   color: theme.colorScheme.onSurface,
                 ),
                 title: const Text('비밀번호 변경'),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 onTap: () {
-                  // TODO: 비밀번호 변경 화면으로 이동
+                  showPasswordChangeSheet(context);
                 },
               ),
               const Divider(height: 1),

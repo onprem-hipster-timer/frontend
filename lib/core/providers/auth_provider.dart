@@ -231,6 +231,38 @@ class AuthNotifier extends _$AuthNotifier {
       );
     }
   }
+
+  /// 비밀번호 변경 (현재 비밀번호 확인 후 변경)
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      final currentUser = supabase.auth.currentUser;
+
+      if (currentUser?.email == null) {
+        throw AuthException(
+          message: '로그인 상태가 아닙니다.',
+          originalError: null,
+        );
+      }
+
+      // 현재 비밀번호 확인을 위해 재로그인 시도
+      await supabase.auth.signInWithPassword(
+        email: currentUser!.email!,
+        password: currentPassword,
+      );
+
+      // 현재 비밀번호가 맞으면 새 비밀번호로 업데이트
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
 }
 
 // ============================================================
