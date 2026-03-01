@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/theme/theme_provider.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -13,7 +14,6 @@ class MyPage extends ConsumerStatefulWidget {
 
 class _MyPageState extends ConsumerState<MyPage> {
   String? _errorMessage;
-  bool _isDarkMode = false;
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +306,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                   color: theme.colorScheme.onSurface,
                 ),
                 title: const Text('다크 모드'),
-                value: ref.watch(themeProvider.notifier).isDarkMode,
+                value: ref.watch(themeProvider) == ThemeMode.dark,
                 onChanged: (value) {
                   ref.read(themeProvider.notifier).toggleTheme();
                 },
