@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
+import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -17,7 +19,9 @@ class _MyPageState extends ConsumerState<MyPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final todoStatsAsync = ref.watch(todoStatisticsProvider);
+    final tagStatsAsync = ref.watch(tagUsageStatisticsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -34,17 +38,17 @@ class _MyPageState extends ConsumerState<MyPage> {
           ),
 
           // 1. 내 프로필 섹션
-          _buildProfile(context, user?.email ?? 'gunyu1019@gmail.com'),
+          _buildProfile(context, userProfileAsync),
 
           const SizedBox(height: 32),
 
           // 2. 활동 통계 섹션
-          _buildActivityStats(context),
+          _buildActivityStats(context, todoStatsAsync),
 
           const SizedBox(height: 32),
 
           // 3. 태그 사용 통계 섹션
-          _buildTagStats(context),
+          _buildTagStats(context, tagStatsAsync),
 
           const SizedBox(height: 32),
 
@@ -55,7 +59,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildProfile(BuildContext context, String email) {
+  Widget _buildProfile(BuildContext context, AsyncValue<UserProfile?> profileAsync) {
     final theme = Theme.of(context);
 
     return Card(
@@ -78,23 +82,107 @@ class _MyPageState extends ConsumerState<MyPage> {
             ),
             const SizedBox(width: 20),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    email,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+              child: profileAsync.when(
+                data: (profile) => profile != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            profile.email,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '가입일: ${DateFormat('yyyy년 M월 d일', 'ko').format(profile.createdAt)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '사용자 정보 없음',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '로그인이 필요합니다',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                loading: () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '가입일: 2026년 2월 1일',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 80,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                error: (error, stack) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.error,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '데이터를 불러올 수 없습니다',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: () => ref.invalidate(userProfileProvider),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.refresh,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '다시 시도',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -103,7 +191,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildActivityStats(BuildContext context) {
+  Widget _buildActivityStats(BuildContext context, AsyncValue<TodoStatistics> statsAsync) {
     final theme = Theme.of(context);
 
     return Column(
@@ -123,48 +211,156 @@ class _MyPageState extends ConsumerState<MyPage> {
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 전체 진행률
-                Text(
-                  '전체 진행률 (3개 완료 / 12개 전체)',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+            child: statsAsync.when(
+              data: (stats) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 전체 진행률
+                  Text(
+                    '전체 진행률 (${stats.doneCount}개 완료 / ${stats.totalCount}개 전체)',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: 3 / 12,
-                    minHeight: 10,
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    color: theme.colorScheme.primary,
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: stats.completionRate,
+                      minHeight: 10,
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // 할 일 목록 통계
-                Text(
-                  '할 일 상태별 현황',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  // 할 일 목록 통계
+                  Text(
+                    '할 일 상태별 현황',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildStatusCard(context, '전체', '12', theme.colorScheme.primary)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildStatusCard(context, '미지정', '5', theme.colorScheme.secondary)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildStatusCard(context, '예정', '4', theme.colorScheme.tertiary)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildStatusCard(context, '완료', '3', Colors.green)),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildStatusCard(context, '전체', '${stats.totalCount}', theme.colorScheme.primary)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildStatusCard(context, '미지정', '${stats.unscheduledCount}', theme.colorScheme.secondary)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildStatusCard(context, '예정', '${stats.scheduledCount}', theme.colorScheme.tertiary)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildStatusCard(context, '완료', '${stats.doneCount}', Colors.green)),
+                    ],
+                  ),
+                ],
+              ),
+              loading: () => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 로딩 스켈레톤
+                  Container(
+                    width: 200,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: 150,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              error: (error, stack) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: theme.colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '통계 데이터를 불러올 수 없습니다',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => ref.invalidate(todoStatisticsProvider),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('다시 시도'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -203,7 +399,7 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildTagStats(BuildContext context) {
+  Widget _buildTagStats(BuildContext context, AsyncValue<TagUsageStatistics> tagStatsAsync) {
     final theme = Theme.of(context);
 
     return Column(
@@ -224,15 +420,81 @@ class _MyPageState extends ConsumerState<MyPage> {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildTagChip(context, '업무', 8, Colors.blue),
-                _buildTagChip(context, '개인', 5, Colors.purple),
-                _buildTagChip(context, '운동', 3, Colors.orange),
-                _buildTagChip(context, '공부', 7, Colors.green),
-              ],
+            child: tagStatsAsync.when(
+              data: (tagStats) {
+                final topTags = tagStats.getTopTags(8); // 상위 8개만 표시
+
+                if (topTags.isEmpty) {
+                  return Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.label_off_outlined,
+                          size: 48,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '아직 태그를 사용하지 않았습니다',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: topTags.map((tagItem) => _buildTagChip(
+                    context,
+                    tagItem.tagName,
+                    tagItem.count,
+                    _getTagColor(tagItem.tagId),
+                  )).toList(),
+                );
+              },
+              loading: () => Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: List.generate(4, (index) => Container(
+                  width: 80 + (index % 3) * 20.0,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                )),
+              ),
+              error: (error, stack) => Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: theme.colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '태그 통계를 불러올 수 없습니다',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: () => ref.invalidate(tagUsageStatisticsProvider),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('다시 시도'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -278,6 +540,26 @@ class _MyPageState extends ConsumerState<MyPage> {
         ],
       ),
     );
+  }
+
+  /// 태그 ID 기반으로 색상 생성
+  Color _getTagColor(String tagId) {
+    final colors = [
+      Colors.blue,
+      Colors.purple,
+      Colors.orange,
+      Colors.green,
+      Colors.red,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber,
+      Colors.cyan,
+    ];
+
+    // 태그 ID의 해시값을 이용해 일관된 색상 선택
+    final index = tagId.hashCode.abs() % colors.length;
+    return colors[index];
   }
 
   Widget _buildSettings(BuildContext context) {
