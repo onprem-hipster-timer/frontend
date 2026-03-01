@@ -600,14 +600,18 @@ class _MyPageState extends ConsumerState<MyPage> {
                   color: theme.colorScheme.onSurface,
                 ),
                 title: const Text('타임존 설정'),
-                trailing: Text(
-                  'Asia/Seoul',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                subtitle: Text(
+                  getTimezoneDisplayName(ref.watch(timezoneProvider)),
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 onTap: () {
-                  // TODO: 타임존 설정 화면으로 이동
+                  showTimezoneSelectionSheet(context);
                 },
               ),
               const Divider(height: 1),
