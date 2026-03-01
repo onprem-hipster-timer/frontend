@@ -275,7 +275,8 @@ class ScheduleAppointmentBuilder {
   // ============================================================
 
   /// 배경색 대비 글자색 결정
-  static Color _getContrastColor(Color backgroundColor, [BuildContext? context]) {
+  static Color _getContrastColor(Color backgroundColor,
+      [BuildContext? context]) {
     // 상대 휘도 계산
     final luminance = backgroundColor.computeLuminance();
     if (context != null) {

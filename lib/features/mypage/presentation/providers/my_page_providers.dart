@@ -9,7 +9,6 @@ import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 
-
 // ============================================================
 // 사용자 프로필 모델
 // ============================================================
@@ -180,7 +179,8 @@ Future<TodoStatistics> _calculateTodoStatisticsFromList(Ref ref) async {
 /// 태그 사용 통계 데이터 프로바이더
 ///
 /// 백엔드 통계가 있다면 사용하고, 없다면 클라이언트 측에서 계산합니다.
-final tagUsageStatisticsProvider = FutureProvider<TagUsageStatistics>((ref) async {
+final tagUsageStatisticsProvider =
+    FutureProvider<TagUsageStatistics>((ref) async {
   try {
     // 백엔드 통계 API 시도
     final api = ref.watch(todosApiProvider);

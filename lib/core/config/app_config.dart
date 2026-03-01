@@ -14,12 +14,10 @@ class AppConfig {
   // ==========================================
 
   /// 앱 이름
-  static String get appName =>
-      dotenv.env['APP_NAME'] ?? 'MoMeet';
+  static String get appName => dotenv.env['APP_NAME'] ?? 'MoMeet';
 
   /// 앱 버전
-  static String get appVersion =>
-      dotenv.env['APP_VERSION'] ?? '1.0.0';
+  static String get appVersion => dotenv.env['APP_VERSION'] ?? '1.0.0';
 
   // ==========================================
   // API Configuration
@@ -31,13 +29,15 @@ class AppConfig {
 
   /// HTTP 연결 타임아웃
   static Duration get connectTimeout {
-    final seconds = int.tryParse(dotenv.env['CONNECT_TIMEOUT_SECONDS'] ?? '10') ?? 10;
+    final seconds =
+        int.tryParse(dotenv.env['CONNECT_TIMEOUT_SECONDS'] ?? '10') ?? 10;
     return Duration(seconds: seconds);
   }
 
   /// HTTP 응답 수신 타임아웃
   static Duration get receiveTimeout {
-    final seconds = int.tryParse(dotenv.env['RECEIVE_TIMEOUT_SECONDS'] ?? '10') ?? 10;
+    final seconds =
+        int.tryParse(dotenv.env['RECEIVE_TIMEOUT_SECONDS'] ?? '10') ?? 10;
     return Duration(seconds: seconds);
   }
 

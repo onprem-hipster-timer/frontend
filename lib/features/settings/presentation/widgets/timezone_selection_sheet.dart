@@ -81,7 +81,8 @@ class TimezoneSelectionSheet extends ConsumerWidget {
                   title: Text(
                     displayName,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurface,
@@ -102,7 +103,9 @@ class TimezoneSelectionSheet extends ConsumerWidget {
                       : null,
                   onTap: () async {
                     // 타임존 업데이트
-                    await ref.read(timezoneProvider.notifier).updateTimezone(timezone);
+                    await ref
+                        .read(timezoneProvider.notifier)
+                        .updateTimezone(timezone);
 
                     // 시트 닫기
                     if (context.mounted) {

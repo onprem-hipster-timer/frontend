@@ -484,13 +484,17 @@ class TodoRootDropTarget extends ConsumerWidget {
                 Icon(
                   Icons.arrow_upward,
                   size: 16,
-                  color: isValidTarget ? kDropTargetColor : theme.colorScheme.onSurfaceVariant,
+                  color: isValidTarget
+                      ? kDropTargetColor
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '루트로 이동',
                   style: TextStyle(
-                    color: isValidTarget ? kDropTargetColor : theme.colorScheme.onSurfaceVariant,
+                    color: isValidTarget
+                        ? kDropTargetColor
+                        : theme.colorScheme.onSurfaceVariant,
                     fontWeight:
                         isValidTarget ? FontWeight.bold : FontWeight.normal,
                   ),

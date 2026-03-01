@@ -399,7 +399,7 @@ class DraggableTagTile extends StatelessWidget {
       }
       return Color(int.parse(hex, radix: 16));
     } catch (e) {
-      return Colors.grey;  // 여기는 정적 함수이므로 유지
+      return Colors.grey; // 여기는 정적 함수이므로 유지
     }
   }
 

@@ -391,4 +391,3 @@ Color getScheduleColor(ScheduleRead schedule) {
       return Colors.teal;
   }
 }
-

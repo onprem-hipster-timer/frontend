@@ -199,8 +199,8 @@ class ScheduleDetailSheet extends ConsumerWidget {
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color:
-                  _getStatusColor(context, schedule.state.name).withValues(alpha: 0.1),
+              color: _getStatusColor(context, schedule.state.name)
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -244,7 +244,8 @@ class ScheduleDetailSheet extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.label, size: 20, color: theme.colorScheme.onSurfaceVariant),
+            Icon(Icons.label,
+                size: 20, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Text(
               '태그',

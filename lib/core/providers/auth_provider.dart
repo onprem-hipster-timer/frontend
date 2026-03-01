@@ -233,7 +233,8 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   /// 비밀번호 변경 (현재 비밀번호 확인 후 변경)
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
       final currentUser = supabase.auth.currentUser;
@@ -255,7 +256,6 @@ class AuthNotifier extends _$AuthNotifier {
       await supabase.auth.updateUser(
         UserAttributes(password: newPassword),
       );
-
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,

@@ -216,7 +216,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             ),
             child: Row(
               children: [
-                Icon(Icons.folder_outlined, color: theme.colorScheme.onSurfaceVariant),
+                Icon(Icons.folder_outlined,
+                    color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 12),
 
                 // 그룹 색상 점

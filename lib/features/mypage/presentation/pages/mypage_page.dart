@@ -63,7 +63,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildProfile(BuildContext context, AsyncValue<UserProfile?> profileAsync) {
+  Widget _buildProfile(
+      BuildContext context, AsyncValue<UserProfile?> profileAsync) {
     final theme = Theme.of(context);
 
     return Card(
@@ -195,7 +196,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildActivityStats(BuildContext context, AsyncValue<TodoStatistics> statsAsync) {
+  Widget _buildActivityStats(
+      BuildContext context, AsyncValue<TodoStatistics> statsAsync) {
     final theme = Theme.of(context);
 
     return Column(
@@ -232,7 +234,8 @@ class _MyPageState extends ConsumerState<MyPage> {
                     child: LinearProgressIndicator(
                       value: stats.completionRate,
                       minHeight: 10,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       color: theme.colorScheme.primary,
                     ),
                   ),
@@ -248,13 +251,33 @@ class _MyPageState extends ConsumerState<MyPage> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildStatusCard(context, '전체', '${stats.totalCount}', theme.colorScheme.primary)),
+                      Expanded(
+                          child: _buildStatusCard(
+                              context,
+                              '전체',
+                              '${stats.totalCount}',
+                              theme.colorScheme.primary)),
                       const SizedBox(width: 8),
-                      Expanded(child: _buildStatusCard(context, '미지정', '${stats.unscheduledCount}', theme.colorScheme.secondary)),
+                      Expanded(
+                          child: _buildStatusCard(
+                              context,
+                              '미지정',
+                              '${stats.unscheduledCount}',
+                              theme.colorScheme.secondary)),
                       const SizedBox(width: 8),
-                      Expanded(child: _buildStatusCard(context, '예정', '${stats.scheduledCount}', theme.colorScheme.tertiary)),
+                      Expanded(
+                          child: _buildStatusCard(
+                              context,
+                              '예정',
+                              '${stats.scheduledCount}',
+                              theme.colorScheme.tertiary)),
                       const SizedBox(width: 8),
-                      Expanded(child: _buildStatusCard(context, '완료', '${stats.doneCount}', theme.colorScheme.tertiaryContainer)),
+                      Expanded(
+                          child: _buildStatusCard(
+                              context,
+                              '완료',
+                              '${stats.doneCount}',
+                              theme.colorScheme.tertiaryContainer)),
                     ],
                   ),
                 ],
@@ -372,7 +395,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildStatusCard(BuildContext context, String label, String count, Color color) {
+  Widget _buildStatusCard(
+      BuildContext context, String label, String count, Color color) {
     final theme = Theme.of(context);
 
     return Container(
@@ -403,7 +427,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildTagStats(BuildContext context, AsyncValue<TagUsageStatistics> tagStatsAsync) {
+  Widget _buildTagStats(
+      BuildContext context, AsyncValue<TagUsageStatistics> tagStatsAsync) {
     final theme = Theme.of(context);
 
     return Column(
@@ -452,25 +477,29 @@ class _MyPageState extends ConsumerState<MyPage> {
                 return Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: topTags.map((tagItem) => _buildTagChip(
-                    context,
-                    tagItem.tagName,
-                    tagItem.count,
-                    _getTagColor(tagItem.tagId),
-                  )).toList(),
+                  children: topTags
+                      .map((tagItem) => _buildTagChip(
+                            context,
+                            tagItem.tagName,
+                            tagItem.count,
+                            _getTagColor(tagItem.tagId),
+                          ))
+                      .toList(),
                 );
               },
               loading: () => Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: List.generate(4, (index) => Container(
-                  width: 80 + (index % 3) * 20.0,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                )),
+                children: List.generate(
+                    4,
+                    (index) => Container(
+                          width: 80 + (index % 3) * 20.0,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        )),
               ),
               error: (error, stack) => Column(
                 children: [
@@ -506,7 +535,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     );
   }
 
-  Widget _buildTagChip(BuildContext context, String tagName, int count, Color color) {
+  Widget _buildTagChip(
+      BuildContext context, String tagName, int count, Color color) {
     final theme = Theme.of(context);
 
     return Container(

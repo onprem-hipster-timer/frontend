@@ -14,7 +14,8 @@ class PasswordChangeSheet extends ConsumerStatefulWidget {
   const PasswordChangeSheet({super.key});
 
   @override
-  ConsumerState<PasswordChangeSheet> createState() => _PasswordChangeSheetState();
+  ConsumerState<PasswordChangeSheet> createState() =>
+      _PasswordChangeSheetState();
 }
 
 class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
@@ -79,9 +80,9 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
 
     try {
       await ref.read(authProvider.notifier).changePassword(
-        _currentPasswordController.text.trim(),
-        _newPasswordController.text.trim(),
-      );
+            _currentPasswordController.text.trim(),
+            _newPasswordController.text.trim(),
+          );
 
       if (mounted) {
         // 성공 시 시트 닫기
@@ -150,7 +151,8 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -195,7 +197,8 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _isCurrentPasswordVisible = !_isCurrentPasswordVisible;
+                            _isCurrentPasswordVisible =
+                                !_isCurrentPasswordVisible;
                           });
                         },
                       ),
@@ -249,7 +252,8 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                            _isConfirmPasswordVisible =
+                                !_isConfirmPasswordVisible;
                           });
                         },
                       ),
@@ -357,5 +361,3 @@ Future<void> showPasswordChangeSheet(BuildContext context) {
     builder: (context) => const PasswordChangeSheet(),
   );
 }
-
-

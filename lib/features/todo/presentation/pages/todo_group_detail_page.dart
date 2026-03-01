@@ -56,7 +56,8 @@ class TodoGroupDetailPage extends ConsumerWidget {
           // 로딩 오버레이 (뮤테이션 중)
           if (mutationState.isLoading)
             Container(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
+              color:
+                  Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
