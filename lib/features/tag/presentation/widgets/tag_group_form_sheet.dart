@@ -276,6 +276,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
   /// 버튼 영역
   Widget _buildButtonBar(bool isEditMode, bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // 취소 버튼
@@ -306,12 +308,12 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(isEditMode ? '수정' : '생성'),
@@ -329,6 +331,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     try {
       if (widget.tagGroup != null) {
@@ -350,11 +353,11 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('태그 그룹이 수정되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그 그룹이 수정되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -379,11 +382,11 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('태그 그룹이 생성되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그 그룹이 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -398,7 +401,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

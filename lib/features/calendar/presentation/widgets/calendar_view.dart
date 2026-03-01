@@ -9,6 +9,12 @@ import 'package:momeet/features/calendar/presentation/widgets/calendar_appointme
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
+
+/// 빈 CalendarDataSource (로딩용)
+class _EmptyDataSource extends ScheduleCalendarDataSource {
+  _EmptyDataSource() : super.empty();
+}
 
 /// SfCalendar 위젯을 래핑한 캘린더 뷰
 ///
@@ -61,7 +67,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       loading: () => _buildCalendar(
         context,
         settings,
-        ScheduleOnlyDataSource([]),
+        _EmptyDataSource(),
         isLoading: true,
       ),
       error: (error, stack) => _buildErrorView(context, error),
@@ -71,7 +77,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   Widget _buildCalendar(
     BuildContext context,
     CalendarSettingsState settings,
-    ScheduleOnlyDataSource dataSource, {
+    ScheduleCalendarDataSource dataSource, {
     bool isLoading = false,
   }) {
     final theme = Theme.of(context);

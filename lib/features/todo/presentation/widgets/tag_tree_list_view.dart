@@ -143,8 +143,8 @@ class TagGroupExpansionTile extends ConsumerWidget {
               radius: 12,
               child: Text(
                 group.tags.length.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -231,7 +231,7 @@ class TagGroupExpansionTile extends ConsumerWidget {
       }
       return Color(int.parse(hex, radix: 16));
     } catch (e) {
-      return Colors.grey;
+      return Colors.grey; // 정적 fallback 색상
     }
   }
 
@@ -399,7 +399,7 @@ class DraggableTagTile extends StatelessWidget {
       }
       return Color(int.parse(hex, radix: 16));
     } catch (e) {
-      return Colors.grey;
+      return Colors.grey;  // 여기는 정적 함수이므로 유지
     }
   }
 

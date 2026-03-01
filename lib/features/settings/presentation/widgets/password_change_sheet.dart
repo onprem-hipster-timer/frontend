@@ -269,7 +269,7 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       ),
                     ),
                     child: _isLoading
-                        ? const Row(
+                        ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(
@@ -277,11 +277,11 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: theme.colorScheme.onPrimary,
                                 ),
                               ),
-                              SizedBox(width: 12),
-                              Text('변경 중...'),
+                              const SizedBox(width: 12),
+                              const Text('변경 중...'),
                             ],
                           )
                         : const Text(
@@ -357,3 +357,5 @@ Future<void> showPasswordChangeSheet(BuildContext context) {
     builder: (context) => const PasswordChangeSheet(),
   );
 }
+
+

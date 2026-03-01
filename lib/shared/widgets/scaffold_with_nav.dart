@@ -47,20 +47,19 @@ class ScaffoldWithNavBar extends StatelessWidget {
   /// 떠있는 알약 모양 네비게이션 바 위젯
   Widget _buildFloatingNavBar(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
 
     return Container(
       // 화면 양쪽과 하단에서 여백을 두어 "떠있는" 효과 연출
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       decoration: BoxDecoration(
-        // 라이트/다크 모드에 따른 배경색
-        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        // 테마에 맞는 표면 색상 사용
+        color: theme.colorScheme.surfaceContainer,
         // 완벽한 알약(Pill) 모양을 위한 둥근 모서리
         borderRadius: BorderRadius.circular(30),
         // 입체감을 주는 그림자 효과
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.12),
             blurRadius: 15,
             offset: const Offset(0, 5),
             spreadRadius: 0,
@@ -90,7 +89,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
           // 아이콘 색상 설정
           // ============================================================
           selectedItemColor: theme.primaryColor,
-          unselectedItemColor: Colors.grey,
+          unselectedItemColor: theme.colorScheme.onSurfaceVariant,
 
           // ============================================================
           // 5개 탭 아이템 정의

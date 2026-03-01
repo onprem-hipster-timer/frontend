@@ -216,7 +216,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.folder_outlined, color: Colors.grey),
+                Icon(Icons.folder_outlined, color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 12),
 
                 // 그룹 색상 점
@@ -428,6 +428,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 
   /// 버튼 영역 (취소/저장)
   Widget _buildButtonBar(bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // 취소 버튼
@@ -458,12 +460,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(_isEditMode ? '수정' : '생성'),
@@ -481,6 +483,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     try {
       if (_isEditMode) {
@@ -498,11 +501,11 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('태그가 수정되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그가 수정되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -524,11 +527,11 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('태그가 생성되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그가 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -543,7 +546,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

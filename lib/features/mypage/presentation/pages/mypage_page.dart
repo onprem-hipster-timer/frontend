@@ -254,7 +254,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                       const SizedBox(width: 8),
                       Expanded(child: _buildStatusCard(context, '예정', '${stats.scheduledCount}', theme.colorScheme.tertiary)),
                       const SizedBox(width: 8),
-                      Expanded(child: _buildStatusCard(context, '완료', '${stats.doneCount}', Colors.green)),
+                      Expanded(child: _buildStatusCard(context, '완료', '${stats.doneCount}', theme.colorScheme.tertiaryContainer)),
                     ],
                   ),
                 ],
@@ -536,7 +536,7 @@ class _MyPageState extends ConsumerState<MyPage> {
             child: Text(
               '$count',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white,
+                color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -635,13 +635,13 @@ class _MyPageState extends ConsumerState<MyPage> {
               ),
               const Divider(height: 1),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.logout,
-                  color: Colors.red,
+                  color: theme.colorScheme.error,
                 ),
-                title: const Text(
+                title: Text(
                   '로그아웃',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: theme.colorScheme.error),
                 ),
                 onTap: _confirmSignOut,
               ),

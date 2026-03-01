@@ -322,9 +322,9 @@ Future<List<Appointment>> calendarAppointments(Ref ref) async {
 /// 휴일을 제외한 사용자 일정만으로 DataSource를 생성합니다.
 /// 휴일은 UI에서 별도로 표시됩니다.
 @riverpod
-Future<ScheduleOnlyDataSource> scheduleOnlyDataSource(Ref ref) async {
-  final appointments = await ref.watch(calendarAppointmentsProvider.future);
-  return ScheduleOnlyDataSource(appointments);
+Future<ScheduleCalendarDataSource> scheduleOnlyDataSource(Ref ref) async {
+  final schedules = await ref.watch(filteredSchedulesProvider.future);
+  return ScheduleCalendarDataSource(schedules);
 }
 
 /// ScheduleRead를 Appointment로 변환하는 헬퍼 함수
@@ -354,25 +354,6 @@ bool _isAllDayEvent(ScheduleRead schedule) {
   return isStartMidnight && isEndMidnight && duration.inHours >= 24;
 }
 
-/// 일정의 색상 결정 헬퍼 함수
-Color _getScheduleColor(ScheduleRead schedule) {
-  final tags = schedule.tags.toList();
-  if (tags.isNotEmpty) {
-    return _parseColor(tags.first.color);
-  }
-
-  // 상태에 따른 기본 색상
-  switch (schedule.state.name) {
-    case 'CONFIRMED':
-      return Colors.blue;
-    case 'CANCELLED':
-      return Colors.grey;
-    case 'PLANNED':
-    default:
-      return Colors.teal;
-  }
-}
-
 /// Hex 색상 문자열을 Color로 변환 헬퍼 함수
 Color _parseColor(String colorString) {
   try {
@@ -386,11 +367,28 @@ Color _parseColor(String colorString) {
   }
 }
 
-/// 일정 전용 CalendarDataSource (휴일 제외)
+/// 일정의 색상 결정 헬퍼 함수
+Color _getScheduleColor(ScheduleRead schedule) {
+  final tags = schedule.tags.toList();
+  if (tags.isNotEmpty) {
+    return _parseColor(tags.first.color);
+  }
+  return getScheduleColor(schedule);
+}
+
+/// 일정 상태에 따른 색상 반환 (전역 함수)
 ///
-/// 사용자의 실제 일정만을 포함하며, 휴일은 별도의 UI 요소로 표시됩니다.
-class ScheduleOnlyDataSource extends CalendarDataSource {
-  ScheduleOnlyDataSource(List<Appointment> appointments) {
-    this.appointments = appointments;
+/// 주의: BuildContext가 없는 전역 함수로 Theme 접근 불가
+/// TODO: 향후 테마 기반 색상으로 리팩토링 고려
+Color getScheduleColor(ScheduleRead schedule) {
+  switch (schedule.state.name) {
+    case 'CONFIRMED':
+      return Colors.blue;
+    case 'CANCELLED':
+      return Colors.grey; // 다크모드 호환성 제한
+    case 'PLANNED':
+    default:
+      return Colors.teal;
   }
 }
+
