@@ -177,6 +177,7 @@ class CalendarPage extends ConsumerWidget {
   void _showFilterSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.5,

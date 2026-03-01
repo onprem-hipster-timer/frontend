@@ -136,6 +136,7 @@ Future<void> showHolidayDetailSheet(
 ) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => HolidayDetailSheet(holiday: holiday),

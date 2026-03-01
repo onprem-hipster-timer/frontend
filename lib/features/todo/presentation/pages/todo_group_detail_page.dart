@@ -360,6 +360,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
     // TODO: 그룹 설정 (수정/삭제) 구현
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(

@@ -66,6 +66,7 @@ Future<bool> showConfirmDialog(
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
+    useRootNavigator: true,
     builder: (context) => ConfirmDialog(
       title: title,
       content: content,

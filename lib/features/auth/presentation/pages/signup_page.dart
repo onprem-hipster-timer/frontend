@@ -46,6 +46,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
       if (mounted) {
         showDialog(
           context: context,
+          useRootNavigator: true,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: const Text('회원가입 성공'),

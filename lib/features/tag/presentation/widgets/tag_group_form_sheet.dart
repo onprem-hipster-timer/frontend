@@ -409,6 +409,7 @@ Future<void> showTagGroupFormSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => TagGroupFormSheet(tagGroup: tagGroup),
