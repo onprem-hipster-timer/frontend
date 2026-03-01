@@ -306,11 +306,9 @@ class _MyPageState extends ConsumerState<MyPage> {
                   color: theme.colorScheme.onSurface,
                 ),
                 title: const Text('다크 모드'),
-                value: _isDarkMode,
+                value: ref.watch(themeProvider.notifier).isDarkMode,
                 onChanged: (value) {
-                  setState(() {
-                    _isDarkMode = value;
-                  });
+                  ref.read(themeProvider.notifier).toggleTheme();
                 },
               ),
               const Divider(height: 1),
