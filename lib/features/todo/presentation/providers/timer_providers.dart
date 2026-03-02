@@ -42,7 +42,11 @@ Future<List<TimerRead>> timers(
 /// 활성 타이머만 조회 (RUNNING, PAUSED 상태)
 @riverpod
 Future<List<TimerRead>> activeTimers(Ref ref) async {
-  return ref.watch(timersProvider(status: ['RUNNING', 'PAUSED']).future);
+  return ref.watch(
+    timersProvider(
+      status: [TimerStatus.running.json!, TimerStatus.paused.json!],
+    ).future,
+  );
 }
 
 /// Todo별 타이머 집계 데이터
@@ -79,21 +83,23 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
     final activeStates = <String, ActiveTimerState>{};
 
     for (final timer in activeTimers) {
-      if (timer.status == 'RUNNING' && timer.startedAt != null) {
+      if (timer.status == TimerStatus.running && timer.startedAt != null) {
         final elapsedSinceStart = now.difference(timer.startedAt!).inSeconds;
         final totalElapsed = timer.elapsedTime + elapsedSinceStart;
 
-        activeStates[timer.todoId ?? timer.scheduleId ?? timer.id] =
-            ActiveTimerState(
+        activeStates[timer.todoId ??
+            timer.scheduleId ??
+            timer.id] = ActiveTimerState(
           timerId: timer.id,
           elapsedSeconds: totalElapsed,
           status: timer.status,
           startedAt: timer.startedAt,
           pausedAt: timer.pausedAt,
         );
-      } else if (timer.status == 'PAUSED') {
-        activeStates[timer.todoId ?? timer.scheduleId ?? timer.id] =
-            ActiveTimerState(
+      } else if (timer.status == TimerStatus.paused) {
+        activeStates[timer.todoId ??
+            timer.scheduleId ??
+            timer.id] = ActiveTimerState(
           timerId: timer.id,
           elapsedSeconds: timer.elapsedTime,
           status: timer.status,
@@ -216,7 +222,7 @@ class TodoTimerAggregation {
 class ActiveTimerState {
   final String timerId;
   final int elapsedSeconds;
-  final String status;
+  final TimerStatus status;
   final DateTime? startedAt;
   final DateTime? pausedAt;
 
@@ -228,8 +234,8 @@ class ActiveTimerState {
     this.pausedAt,
   });
 
-  bool get isRunning => status == 'RUNNING';
-  bool get isPaused => status == 'PAUSED';
+  bool get isRunning => status == TimerStatus.running;
+  bool get isPaused => status == TimerStatus.paused;
 
   /// 경과 시간을 HH:MM:SS 형태로 포맷
   String get formattedTime =>
@@ -254,7 +260,8 @@ Map<String, TodoTimerAggregation> _aggregateTimersByTodo(
       todoOwnTime[timer.todoId!] =
           (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
 
-      if (timer.status == 'RUNNING' || timer.status == 'PAUSED') {
+      if (timer.status == TimerStatus.running ||
+          timer.status == TimerStatus.paused) {
         activeTimers[timer.todoId!] = timer.id;
       }
     }

@@ -30,18 +30,12 @@ class TimerPage extends ConsumerWidget {
                   ref.read(timerWsLastErrorProvider.notifier).setError(null),
             ),
           ),
-          const Expanded(
-            flex: 2,
-            child: TimerDashboard(),
-          ),
+          const Expanded(flex: 2, child: TimerDashboard()),
 
           // 구분선
           const Divider(height: 1),
 
-          const Expanded(
-            flex: 3,
-            child: TimerHistoryList(),
-          ),
+          const Expanded(flex: 3, child: TimerHistoryList()),
         ],
       ),
     );
@@ -143,9 +137,9 @@ class TimerDashboard extends ConsumerWidget {
                     .read(timerControllerProvider.notifier)
                     .startTimer(title: title);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('타이머를 시작했습니다')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('타이머를 시작했습니다')));
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -170,9 +164,9 @@ class TimerDashboard extends ConsumerWidget {
     try {
       await ref.read(timerControllerProvider.notifier).stopTimer();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('타이머가 정지되었습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('타이머가 정지되었습니다')));
       }
     } catch (error) {
       if (context.mounted) {
@@ -192,9 +186,9 @@ class TimerDashboard extends ConsumerWidget {
       await ref.read(timerControllerProvider.notifier).pauseTimer();
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('일시정지 실패: ${error.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('일시정지 실패: ${error.toString()}')));
       }
     }
   }
@@ -205,9 +199,9 @@ class TimerDashboard extends ConsumerWidget {
       await ref.read(timerControllerProvider.notifier).resumeTimer();
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('재개 실패: ${error.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('재개 실패: ${error.toString()}')));
       }
     }
   }
@@ -219,10 +213,7 @@ class TimerDashboard extends ConsumerWidget {
 class DigitalClock extends StatelessWidget {
   final Duration duration;
 
-  const DigitalClock({
-    super.key,
-    required this.duration,
-  });
+  const DigitalClock({super.key, required this.duration});
 
   @override
   Widget build(BuildContext context) {
@@ -248,10 +239,7 @@ class DigitalClock extends StatelessWidget {
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
 
-  const CurrentTaskDisplay({
-    super.key,
-    required this.timer,
-  });
+  const CurrentTaskDisplay({super.key, required this.timer});
 
   @override
   Widget build(BuildContext context) {
@@ -266,13 +254,14 @@ class CurrentTaskDisplay extends StatelessWidget {
       );
     }
 
-    final taskName = timer!.title ??
+    final taskName =
+        timer!.title ??
         timer!.todo?.title ??
         timer!.schedule?.title ??
         '알 수 없는 작업';
 
-    final statusText = timer!.status == 'RUNNING' ? '실행 중' : '일시정지';
-    final statusColor = timer!.status == 'RUNNING'
+    final statusText = timer!.status == TimerStatus.running ? '실행 중' : '일시정지';
+    final statusColor = timer!.status == TimerStatus.running
         ? theme.colorScheme.primary
         : theme.colorScheme.error;
 
@@ -358,7 +347,7 @@ class TimerControlButton extends StatelessWidget {
           color: theme.colorScheme.onPrimary,
         ),
       );
-    } else if (activeTimer!.status == 'RUNNING') {
+    } else if (activeTimer!.status == TimerStatus.running) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -442,16 +431,13 @@ class TimerHistoryList extends ConsumerWidget {
             color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
-          Text(
-            '타이머가 없습니다',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          Text('타이머가 없습니다', style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 8),
           Text(
             '새 작업을 시작해보세요',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
         ],
       ),
@@ -507,9 +493,9 @@ class TimerHistoryList extends ConsumerWidget {
               child: Text(
                 date,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             // 해당 날짜의 타이머들
@@ -527,23 +513,21 @@ class TimerHistoryList extends ConsumerWidget {
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
-  const TimerHistoryItem({
-    super.key,
-    required this.timer,
-  });
+  const TimerHistoryItem({super.key, required this.timer});
 
   ({IconData icon, Color bg, Color fg, String label}) _statusStyle(
-      BuildContext context) {
+    BuildContext context,
+  ) {
     final cs = Theme.of(context).colorScheme;
     switch (timer.status) {
-      case 'RUNNING':
+      case TimerStatus.running:
         return (
           icon: Icons.play_arrow,
           bg: Colors.green.shade100,
           fg: Colors.green.shade800,
           label: '진행 중',
         );
-      case 'PAUSED':
+      case TimerStatus.paused:
         return (
           icon: Icons.pause,
           bg: Colors.orange.shade100,
@@ -564,26 +548,27 @@ class TimerHistoryItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final style = _statusStyle(context);
-    final activeTimer = ref.watch(activeTimerProvider).when(
-          data: (t) => t,
-          loading: () => null,
-          error: (_, __) => null,
-        );
+    final activeTimer = ref
+        .watch(activeTimerProvider)
+        .when(data: (t) => t, loading: () => null, error: (_, __) => null);
     final tickerAsync = ref.watch(timerTickerProvider);
     final controllerLoading = ref.watch(timerControllerProvider).isLoading;
 
-    final taskName = timer.title ??
+    final taskName =
+        timer.title ??
         timer.todo?.title ??
         timer.schedule?.title ??
         '알 수 없는 작업';
 
-    final startTime =
-        timer.startedAt != null ? formatTime(timer.startedAt!) : '--:--';
-    final endTime =
-        timer.endedAt != null ? formatTime(timer.endedAt!) : '--:--';
+    final startTime = timer.startedAt != null
+        ? formatTime(timer.startedAt!)
+        : '--:--';
+    final endTime = timer.endedAt != null
+        ? formatTime(timer.endedAt!)
+        : '--:--';
 
     final bool useLiveTicker =
-        timer.status == 'RUNNING' && timer.id == activeTimer?.id;
+        timer.status == TimerStatus.running && timer.id == activeTimer?.id;
     final Duration duration = useLiveTicker
         ? tickerAsync.when(
             data: (d) => d,
@@ -592,7 +577,9 @@ class TimerHistoryItem extends ConsumerWidget {
           )
         : Duration(seconds: timer.elapsedTime);
 
-    final isActive = timer.status == 'RUNNING' || timer.status == 'PAUSED';
+    final isActive =
+        timer.status == TimerStatus.running ||
+        timer.status == TimerStatus.paused;
     final isThisLoading = controllerLoading;
 
     return Card(
@@ -652,7 +639,7 @@ class TimerHistoryItem extends ConsumerWidget {
                   ),
                 )
               else ...[
-                if (timer.status == 'RUNNING')
+                if (timer.status == TimerStatus.running)
                   IconButton(
                     icon: const Icon(Icons.pause),
                     onPressed: () => ref
@@ -663,7 +650,7 @@ class TimerHistoryItem extends ConsumerWidget {
                       foregroundColor: theme.colorScheme.secondary,
                     ),
                   ),
-                if (timer.status == 'PAUSED')
+                if (timer.status == TimerStatus.paused)
                   IconButton(
                     icon: const Icon(Icons.play_arrow),
                     onPressed: () => ref

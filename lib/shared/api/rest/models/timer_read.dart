@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'schedule_read.dart';
 import 'tag_read.dart';
+import 'timer_status.dart';
 import 'todo_read.dart';
 import 'visibility_level.dart';
 
@@ -19,7 +20,7 @@ abstract class TimerRead with _$TimerRead {
     required String id,
     @JsonKey(name: 'allocated_duration') required int allocatedDuration,
     @JsonKey(name: 'elapsed_time') required int elapsedTime,
-    required String status,
+    required TimerStatus status,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @JsonKey(name: 'updated_at') required DateTime updatedAt,
     @JsonKey(name: 'pause_history') @Default([]) List<dynamic> pauseHistory,
