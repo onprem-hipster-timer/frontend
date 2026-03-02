@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
@@ -44,6 +45,10 @@ void main() {
   late MockSession mockSession;
   late StreamController<supa.AuthState> authStreamController;
 
+  setUpAll(() async {
+    await initializeDateFormatting('ko');
+  });
+
   setUp(() {
     mockSupabase = MockSupabaseClient();
     mockGoTrue = MockGoTrueClient();
@@ -57,6 +62,7 @@ void main() {
 
     when(() => mockUser.email).thenReturn('user@example.com');
     when(() => mockUser.id).thenReturn('test-uid');
+    when(() => mockUser.createdAt).thenReturn('2024-01-01T00:00:00.000Z');
     when(() => mockSession.user).thenReturn(mockUser);
     when(() => mockSession.accessToken).thenReturn('test-token');
     when(() => mockSession.refreshToken).thenReturn('test-refresh');
