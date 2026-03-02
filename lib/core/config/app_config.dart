@@ -4,7 +4,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
 
   // API Configuration
-  static const String apiBaseUrl = 'https://api.momeet.com';
+  static const String apiBaseUrl = 'https://api.momeet.date';
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 10);
 

@@ -6,7 +6,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 export 'schedule_mutations.dart';
 
 part 'calendar_providers.g.dart';
@@ -166,7 +166,8 @@ Future<List<ScheduleRead>> currentSchedules(Ref ref) async {
 
   switch (settings.viewType) {
     case CalendarViewType.day:
-      startDate = DateTime(displayDate.year, displayDate.month, displayDate.day);
+      startDate =
+          DateTime(displayDate.year, displayDate.month, displayDate.day);
       endDate = startDate.add(const Duration(days: 1));
     case CalendarViewType.week:
       // 주의 시작일 계산 (월요일 기준)
@@ -239,7 +240,8 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
 
   switch (settings.viewType) {
     case CalendarViewType.day:
-      startDate = DateTime(displayDate.year, displayDate.month, displayDate.day);
+      startDate =
+          DateTime(displayDate.year, displayDate.month, displayDate.day);
       endDate = startDate.add(const Duration(days: 1));
     case CalendarViewType.week:
       final weekday = displayDate.weekday;
@@ -279,8 +281,8 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   return allHolidays.where((holiday) {
     final holidayDate = parseHolidayDate(holiday.locdate);
     return holidayDate != null &&
-           holidayDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
-           holidayDate.isBefore(endDate);
+        holidayDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+        holidayDate.isBefore(endDate);
   }).toList();
 }
 
@@ -392,4 +394,3 @@ class ScheduleOnlyDataSource extends CalendarDataSource {
     this.appointments = appointments;
   }
 }
-

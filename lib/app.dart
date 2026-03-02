@@ -21,9 +21,9 @@ class MoMeetApp extends ConsumerWidget {
     return MaterialApp.router(
       title: AppConfig.appName,
       localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,   // Material 위젯 내부 텍스트 번역
-        GlobalWidgetsLocalizations.delegate,    // 기본 위젯의 텍스트 방향 등 설정
-        GlobalCupertinoLocalizations.delegate,   // iOS 스타일 위젯 번역
+        GlobalMaterialLocalizations.delegate, // Material 위젯 내부 텍스트 번역
+        GlobalWidgetsLocalizations.delegate, // 기본 위젯의 텍스트 방향 등 설정
+        GlobalCupertinoLocalizations.delegate, // iOS 스타일 위젯 번역
       ],
       supportedLocales: const [
         Locale('ko', 'KR'),

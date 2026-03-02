@@ -1,7 +1,7 @@
 // Todo 트리 구조 빌더
 //
 // Flat한 Todo 리스트를 parent-child 관계로 트리 구조로 변환합니다.
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// 트리 노드 - Todo와 자식들을 포함
 class TodoTreeNode {
@@ -143,7 +143,8 @@ bool isDescendantOf(TodoTree tree, String nodeId, String potentialAncestorId) {
   final node = tree.getNode(nodeId);
   if (node == null) return false;
 
-  return node.pathIds.contains(potentialAncestorId) && nodeId != potentialAncestorId;
+  return node.pathIds.contains(potentialAncestorId) &&
+      nodeId != potentialAncestorId;
 }
 
 /// 노드가 다른 노드의 조상인지 확인

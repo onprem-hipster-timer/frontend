@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// 휴일 상세 정보를 보여주는 Bottom Sheet
 ///

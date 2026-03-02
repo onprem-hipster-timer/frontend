@@ -1,0 +1,49 @@
+pre-commit:
+  commands:
+    format:
+      glob: "*.dart"
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm dart format {staged_files}
+        else
+          dart format {staged_files}
+        fi
+      stage_fixed: true
+
+    analyze:
+      glob: "*.dart"
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm dart analyze {staged_files}
+        else
+          dart analyze {staged_files}
+        fi
+
+    architecture-lint:
+      glob: "**/auth_provider.dart"
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm dart run custom_lint
+        else
+          dart run custom_lint
+        fi
+
+post-merge:
+  commands:
+    codegen:
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm dart run build_runner build --delete-conflicting-outputs
+        else
+          dart run build_runner build --delete-conflicting-outputs
+        fi
+
+pre-push:
+  commands:
+    test:
+      run: |
+        if command -v fvm &> /dev/null; then
+          fvm flutter test
+        else
+          flutter test
+        fi

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// ScheduleRead를 Syncfusion Calendar의 Appointment로 매핑하는 DataSource
 ///
@@ -28,8 +28,7 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
       isAllDay: _isAllDayEvent(schedule),
       color: _getScheduleColor(schedule),
       recurrenceRule: schedule.recurrenceRule,
-      recurrenceExceptionDates:
-          null, // TODO: 반복 예외 날짜 처리 (백엔드 지원 필요)
+      recurrenceExceptionDates: null, // TODO: 반복 예외 날짜 처리 (백엔드 지원 필요)
     );
   }
 

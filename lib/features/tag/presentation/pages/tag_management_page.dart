@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 태그 관리 페이지
 ///
@@ -53,7 +54,8 @@ class TagManagementPage extends ConsumerWidget {
         // 각 태그 그룹을 SliverList로 렌더링
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildTagGroupItem(context, ref, tagGroups[index]),
+            (context, index) =>
+                _buildTagGroupItem(context, ref, tagGroups[index]),
             childCount: tagGroups.length,
           ),
         ),
@@ -110,7 +112,8 @@ class TagManagementPage extends ConsumerWidget {
               // Todo 그룹 배지
               if (tagGroup.isTodoGroup) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -159,9 +162,9 @@ class TagManagementPage extends ConsumerWidget {
           ),
 
           // 하위 태그 목록
-          children: tagGroup.tags.map((tag) =>
-            _buildTagItem(context, ref, tag, tagGroup)
-          ).toList(),
+          children: tagGroup.tags
+              .map((tag) => _buildTagItem(context, ref, tag, tagGroup))
+              .toList(),
         ),
       ),
     );
@@ -197,9 +200,8 @@ class TagManagementPage extends ConsumerWidget {
           style: theme.textTheme.bodyLarge,
         ),
 
-        subtitle: tag.description?.isNotEmpty == true
-            ? Text(tag.description!)
-            : null,
+        subtitle:
+            tag.description?.isNotEmpty == true ? Text(tag.description!) : null,
 
         // 우측: 수정 버튼
         trailing: IconButton(
@@ -392,26 +394,13 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('태그 삭제'),
-        content: Text(
-          '${tag.name} 태그를 삭제하시겠습니까?\n'
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '태그 삭제',
+      content: '${tag.name} 태그를 삭제하시겠습니까?\n'
           '이 작업은 되돌릴 수 없습니다.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+      confirmText: '삭제',
+      destructive: true,
     );
 
     if (confirmed == true && context.mounted) {

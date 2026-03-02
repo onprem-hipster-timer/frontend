@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
-import 'package:momeet/shared/api/export.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/widgets/error_banner.dart';
 
 /// 타이머 대시보드 페이지
 ///
@@ -11,25 +12,33 @@ class TimerPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lastError = ref.watch(timerWsLastErrorProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('타이머'),
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: const Column(
+      body: Column(
         children: [
-          // 상단: 디지털 시계 및 제어 버튼
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: ErrorBanner(
+              message: lastError?.message,
+              onDismiss: () =>
+                  ref.read(timerWsLastErrorProvider.notifier).setError(null),
+            ),
+          ),
+          const Expanded(
             flex: 2,
             child: TimerDashboard(),
           ),
 
           // 구분선
-          Divider(height: 1),
+          const Divider(height: 1),
 
-          // 하단: 히스토리 목록
-          Expanded(
+          const Expanded(
             flex: 3,
             child: TimerHistoryList(),
           ),
@@ -54,7 +63,7 @@ class TimerDashboard extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -68,25 +77,19 @@ class TimerDashboard extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 디지털 시계
           timerTicker.when(
             data: (duration) => DigitalClock(duration: duration),
             loading: () => const DigitalClock(duration: Duration.zero),
-            error: (error, stack) => const DigitalClock(duration: Duration.zero),
+            error: (error, stack) =>
+                const DigitalClock(duration: Duration.zero),
           ),
-
-          const SizedBox(height: 32),
-
-          // 현재 작업 표시
+          const SizedBox(height: 12),
           activeTimerAsync.when(
             data: (activeTimer) => CurrentTaskDisplay(timer: activeTimer),
             loading: () => const CurrentTaskDisplay(timer: null),
             error: (error, stack) => const CurrentTaskDisplay(timer: null),
           ),
-
-          const SizedBox(height: 40),
-
-          // 제어 버튼
+          const SizedBox(height: 16),
           TimerControlButton(
             activeTimer: activeTimerAsync.when(
               data: (timer) => timer,
@@ -106,38 +109,54 @@ class TimerDashboard extends ConsumerWidget {
 
   /// 타이머 시작 다이얼로그 표시
   void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('새 작업 시작'),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              decoration: InputDecoration(
+              controller: controller,
+              decoration: const InputDecoration(
                 labelText: '작업명',
                 hintText: '어떤 작업을 시작할까요?',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 16),
-            Text(
-              '타이머 생성 기능이 곧 구현됩니다.',
-              style: TextStyle(color: Colors.orange),
-            ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('타이머 생성 API가 곧 구현됩니다')),
-              );
+            onPressed: () async {
+              final title = controller.text.trim().isEmpty
+                  ? '새 작업'
+                  : controller.text.trim();
+              Navigator.of(dialogContext).pop();
+              try {
+                await ref
+                    .read(timerControllerProvider.notifier)
+                    .startTimer(title: title);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('타이머를 시작했습니다')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('타이머 시작 실패: $e'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('시작'),
           ),
@@ -248,9 +267,9 @@ class CurrentTaskDisplay extends StatelessWidget {
     }
 
     final taskName = timer!.title ??
-                     timer!.todo?.title ??
-                     timer!.schedule?.title ??
-                     '알 수 없는 작업';
+        timer!.todo?.title ??
+        timer!.schedule?.title ??
+        '알 수 없는 작업';
 
     final statusText = timer!.status == 'RUNNING' ? '실행 중' : '일시정지';
     final statusColor = timer!.status == 'RUNNING'
@@ -330,63 +349,46 @@ class TimerControlButton extends StatelessWidget {
     }
 
     if (activeTimer == null) {
-      // 활성 타이머 없음: 시작 버튼
-      return FloatingActionButton.large(
+      return FloatingActionButton(
         onPressed: onStart,
         backgroundColor: theme.colorScheme.primary,
         child: Icon(
           Icons.play_arrow,
-          size: 48,
+          size: 32,
           color: theme.colorScheme.onPrimary,
         ),
       );
     } else if (activeTimer!.status == 'RUNNING') {
-      // 실행 중: 일시정지 및 정지 버튼
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FloatingActionButton(
+          FloatingActionButton.small(
             onPressed: onPause,
             backgroundColor: theme.colorScheme.secondary,
-            child: Icon(
-              Icons.pause,
-              color: theme.colorScheme.onSecondary,
-            ),
+            child: Icon(Icons.pause, color: theme.colorScheme.onSecondary),
           ),
           const SizedBox(width: 24),
-          FloatingActionButton.large(
+          FloatingActionButton(
             onPressed: onStop,
             backgroundColor: theme.colorScheme.error,
-            child: Icon(
-              Icons.stop,
-              size: 32,
-              color: theme.colorScheme.onError,
-            ),
+            child: Icon(Icons.stop, color: theme.colorScheme.onError),
           ),
         ],
       );
     } else {
-      // 일시정지 중: 재개 및 정지 버튼
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FloatingActionButton(
+          FloatingActionButton.small(
             onPressed: onResume,
             backgroundColor: theme.colorScheme.primary,
-            child: Icon(
-              Icons.play_arrow,
-              color: theme.colorScheme.onPrimary,
-            ),
+            child: Icon(Icons.play_arrow, color: theme.colorScheme.onPrimary),
           ),
           const SizedBox(width: 24),
-          FloatingActionButton.large(
+          FloatingActionButton(
             onPressed: onStop,
             backgroundColor: theme.colorScheme.error,
-            child: Icon(
-              Icons.stop,
-              size: 32,
-              color: theme.colorScheme.onError,
-            ),
+            child: Icon(Icons.stop, color: theme.colorScheme.onError),
           ),
         ],
       );
@@ -409,7 +411,7 @@ class TimerHistoryList extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '최근 기록',
+            '타이머 목록',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -441,15 +443,15 @@ class TimerHistoryList extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            '완료된 타이머가 없습니다',
+            '타이머가 없습니다',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 8),
           Text(
             '새 작업을 시작해보세요',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
+                  color: Theme.of(context).colorScheme.outline,
+                ),
           ),
         ],
       ),
@@ -505,9 +507,9 @@ class TimerHistoryList extends ConsumerWidget {
               child: Text(
                 date,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
             // 해당 날짜의 타이머들
@@ -520,7 +522,9 @@ class TimerHistoryList extends ConsumerWidget {
 }
 
 /// 타이머 히스토리 항목
-class TimerHistoryItem extends StatelessWidget {
+///
+/// RUNNING/PAUSED일 때 실시간 경과 시간을 표시하고, 일시정지·재개·정지 버튼을 제공합니다.
+class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
   const TimerHistoryItem({
@@ -528,41 +532,158 @@ class TimerHistoryItem extends StatelessWidget {
     required this.timer,
   });
 
+  ({IconData icon, Color bg, Color fg, String label}) _statusStyle(
+      BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    switch (timer.status) {
+      case 'RUNNING':
+        return (
+          icon: Icons.play_arrow,
+          bg: Colors.green.shade100,
+          fg: Colors.green.shade800,
+          label: '진행 중',
+        );
+      case 'PAUSED':
+        return (
+          icon: Icons.pause,
+          bg: Colors.orange.shade100,
+          fg: Colors.orange.shade800,
+          label: '일시정지',
+        );
+      default:
+        return (
+          icon: Icons.check_circle_outline,
+          bg: cs.primaryContainer,
+          fg: cs.onPrimaryContainer,
+          label: '완료',
+        );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final style = _statusStyle(context);
+    final activeTimer = ref.watch(activeTimerProvider).when(
+          data: (t) => t,
+          loading: () => null,
+          error: (_, __) => null,
+        );
+    final tickerAsync = ref.watch(timerTickerProvider);
+    final controllerLoading = ref.watch(timerControllerProvider).isLoading;
 
     final taskName = timer.title ??
-                     timer.todo?.title ??
-                     timer.schedule?.title ??
-                     '알 수 없는 작업';
+        timer.todo?.title ??
+        timer.schedule?.title ??
+        '알 수 없는 작업';
 
-    final startTime = timer.startedAt != null ? formatTime(timer.startedAt!) : '--:--';
-    final endTime = timer.endedAt != null ? formatTime(timer.endedAt!) : '--:--';
-    final duration = Duration(seconds: timer.elapsedTime);
+    final startTime =
+        timer.startedAt != null ? formatTime(timer.startedAt!) : '--:--';
+    final endTime =
+        timer.endedAt != null ? formatTime(timer.endedAt!) : '--:--';
+
+    final bool useLiveTicker =
+        timer.status == 'RUNNING' && timer.id == activeTimer?.id;
+    final Duration duration = useLiveTicker
+        ? tickerAsync.when(
+            data: (d) => d,
+            loading: () => Duration(seconds: timer.elapsedTime),
+            error: (_, __) => Duration(seconds: timer.elapsedTime),
+          )
+        : Duration(seconds: timer.elapsedTime);
+
+    final isActive = timer.status == 'RUNNING' || timer.status == 'PAUSED';
+    final isThisLoading = controllerLoading;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Icon(
-            Icons.timer,
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
+          backgroundColor: style.bg,
+          child: Icon(style.icon, color: style.fg),
         ),
         title: Text(
           taskName,
           style: const TextStyle(fontWeight: FontWeight.w500),
         ),
-        subtitle: Text('$startTime - $endTime'),
-        trailing: Text(
-          formatDuration(duration),
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontFamily: 'monospace',
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.primary,
-          ),
+        subtitle: Row(
+          children: [
+            if (isActive) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: style.bg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  style.label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: style.fg,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text('$startTime - $endTime'),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              formatDuration(duration),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w600,
+                color: isActive ? style.fg : theme.colorScheme.primary,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(width: 4),
+              if (isThisLoading)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: theme.colorScheme.primary,
+                  ),
+                )
+              else ...[
+                if (timer.status == 'RUNNING')
+                  IconButton(
+                    icon: const Icon(Icons.pause),
+                    onPressed: () => ref
+                        .read(timerControllerProvider.notifier)
+                        .pauseTimer(timerId: timer.id),
+                    tooltip: '일시정지',
+                    style: IconButton.styleFrom(
+                      foregroundColor: theme.colorScheme.secondary,
+                    ),
+                  ),
+                if (timer.status == 'PAUSED')
+                  IconButton(
+                    icon: const Icon(Icons.play_arrow),
+                    onPressed: () => ref
+                        .read(timerControllerProvider.notifier)
+                        .resumeTimer(timerId: timer.id),
+                    tooltip: '재개',
+                    style: IconButton.styleFrom(
+                      foregroundColor: theme.colorScheme.primary,
+                    ),
+                  ),
+                IconButton(
+                  icon: Icon(Icons.stop, color: theme.colorScheme.error),
+                  onPressed: () => ref
+                      .read(timerControllerProvider.notifier)
+                      .stopTimer(timerId: timer.id),
+                  tooltip: '정지',
+                ),
+              ],
+            ],
+          ],
         ),
       ),
     );

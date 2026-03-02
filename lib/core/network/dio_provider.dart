@@ -1,8 +1,9 @@
-// Dio HTTP 클라이언트 프로바이더 with AuthInterceptor
+// Dio HTTP 클라이언트 프로바이더 with AuthInterceptor, TimezoneInterceptor
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/config/app_config.dart';
+import 'package:momeet/core/network/timezone_interceptor.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 
 /// JWT 토큰을 요청 헤더에 추가하는 Interceptor
@@ -32,7 +33,8 @@ class AuthInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
-      debugPrint('✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
+      debugPrint(
+          '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
     }
     return handler.next(response);
   }
@@ -70,11 +72,12 @@ final dioClientProvider = Provider<Dio>((ref) {
       headers: {
         'Accept': 'application/json',
       },
+      // AuthInterceptor 추가 (JWT 토큰 자동 추가)
     ),
   );
 
-  // AuthInterceptor 추가 (JWT 토큰 자동 추가)
   dio.interceptors.add(AuthInterceptor(ref));
+  dio.interceptors.add(TimezoneInterceptor());
 
   return dio;
 });

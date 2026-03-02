@@ -13,6 +13,8 @@ import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/todo/todo.dart';
 import 'package:momeet/features/tag/tag.dart';
+import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
+import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
 // ============================================================
@@ -34,6 +36,7 @@ enum AppRoute {
   signup(path: '/signup', requiresAuth: false),
   forgotPassword(path: '/forgot-password', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
+  securityWarning(path: '/security-warning', requiresAuth: false),
 
   // 인증 필요 (보호된 페이지)
   calendar(path: '/'),
@@ -58,6 +61,23 @@ enum AppRoute {
     for (final route in values)
       if (!route.requiresAuth) route.path,
   };
+
+  /// 보호된 라우트의 경로 패턴 (RegExp) 목록
+  ///
+  /// `:param` 세그먼트를 `[^/]+` 정규식으로 변환하여
+  /// `/todo/abc-123` 같은 동적 경로도 매칭합니다.
+  static final _protectedPatterns = [
+    for (final route in values)
+      if (route.requiresAuth)
+        RegExp(
+          '^${route.path.replaceAllMapped(RegExp(r':(\w+)'), (_) => r'[^/]+')}\$',
+        ),
+  ];
+
+  /// 주어진 경로가 등록된 보호 라우트와 매칭되는지 확인
+  static bool isKnownProtectedPath(String path) {
+    return _protectedPatterns.any((pattern) => pattern.hasMatch(path));
+  }
 }
 
 // ============================================================
@@ -76,6 +96,23 @@ class _AuthChangeNotifier extends ChangeNotifier {
   }
 }
 
+/// redirect 경로가 안전한 내부 경로인지 검증 (Open Redirect 방지)
+///
+/// 허용 조건:
+/// - `/`로 시작하는 상대 경로
+/// - `//`로 시작하지 않음 (프로토콜 상대 URL 차단)
+/// - `://` 포함하지 않음 (절대 URL 차단)
+/// - AppRoute enum에 등록된 보호 경로와 매칭 (화이트리스트)
+@visibleForTesting
+bool isValidRedirectPath(String path) {
+  if (path.isEmpty) return false;
+  if (!path.startsWith('/')) return false;
+  if (path.startsWith('//')) return false;
+  if (path.contains('://')) return false;
+  if (!AppRoute.isKnownProtectedPath(path)) return false;
+  return true;
+}
+
 /// 인증 상태에 따른 리다이렉트 로직 (순수 함수 — 테스트 가능)
 ///
 /// 반환값이 null이면 리다이렉트 없음.
@@ -83,12 +120,20 @@ String? authRedirect({
   required bool isAuthenticated,
   required bool isAuthLoading,
   required String matchedLocation,
+  String? redirectAfterLogin,
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
   // 1. 인증 초기화 중이면 로딩 페이지로
   if (isAuthLoading) {
-    return AppRoute.loading.path;
+    return matchedLocation == AppRoute.loading.path
+        ? null
+        : AppRoute.loading.path;
+  }
+
+  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
+  if (matchedLocation == AppRoute.loading.path) {
+    return isAuthenticated ? AppRoute.calendar.path : AppRoute.login.path;
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
@@ -96,8 +141,16 @@ String? authRedirect({
     return '${AppRoute.login.path}?redirect=$matchedLocation';
   }
 
-  // 3. 인증된 사용자가 공개 페이지에 있으면 메인 앱으로
+  // 3. 인증된 사용자가 공개 페이지에 있으면 원래 목적지 또는 메인 앱으로
   if (isAuthenticated && isPublicRoute) {
+    if (redirectAfterLogin != null && redirectAfterLogin.isNotEmpty) {
+      if (isValidRedirectPath(redirectAfterLogin)) {
+        return redirectAfterLogin;
+      }
+      if (!AppRoute.publicPaths.contains(redirectAfterLogin)) {
+        return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(redirectAfterLogin)}';
+      }
+    }
     return AppRoute.calendar.path;
   }
 
@@ -119,6 +172,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         isAuthenticated: ref.read(isAuthenticatedProvider),
         isAuthLoading: ref.read(isAuthLoadingProvider),
         matchedLocation: state.matchedLocation,
+        redirectAfterLogin: state.uri.queryParameters['redirect'],
       );
     },
 
@@ -158,6 +212,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ============================================================
+      // 보안 경고 페이지
+      // ============================================================
+      GoRoute(
+        path: AppRoute.securityWarning.path,
+        name: AppRoute.securityWarning.name,
+        builder: (context, state) => SecurityWarningPage(
+          attemptedUrl: state.uri.queryParameters['blocked'],
+        ),
+      ),
+
+      // ============================================================
       // 메인 앱 (Floating Navigation 포함)
       // ============================================================
       StatefulShellRoute.indexedStack(
@@ -180,7 +245,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final scheduleId = state.uri.queryParameters['id'];
                       return Scaffold(
                         appBar: AppBar(title: const Text('일정 상세')),
-                        body: Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
+                        body:
+                            Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
                       );
                     },
                   ),
@@ -251,12 +317,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.mypage.path,
                 name: AppRoute.mypage.name,
-                builder: (context, state) {
-                  return Scaffold(
-                    appBar: AppBar(title: const Text('마이페이지')),
-                    body: const Center(child: Text('마이페이지')),
-                  );
-                },
+                builder: (context, state) => const MyPage(),
               ),
             ],
           ),
@@ -272,7 +333,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
-
 
 /// 라우터 리스너 프로바이더 (네비게이션 이벤트 감지용)
 final routeObserverProvider = Provider<NavigatorObserver>((ref) {
@@ -298,8 +358,8 @@ class GoRouterObserver extends NavigatorObserver {
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     if (kDebugMode) {
-      debugPrint('🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+      debugPrint(
+          '🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
     }
   }
 }
-

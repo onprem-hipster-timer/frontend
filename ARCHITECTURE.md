@@ -110,7 +110,7 @@ GoRoute(
 
 ### 1. API 생성 (OpenAPI Generator)
 ```bash
-openapi_generator_cli generate -i api.yaml -g dart-dio -o lib/shared/api/generated
+fvm dart run swagger_parser
 ```
 
 ### 2. Feature 생성
