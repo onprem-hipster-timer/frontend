@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
+import 'package:momeet/shared/widgets/error_banner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
 // ============================================================
@@ -36,6 +37,15 @@ Widget buildMyPage({
       home: MyPage(),
     ),
   );
+}
+
+Future<void> scrollToLogoutButton(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.text('로그아웃'),
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -101,6 +111,7 @@ void main() {
     testWidgets('로그아웃 버튼이 표시된다', (tester) async {
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+      await scrollToLogoutButton(tester);
 
       expect(find.text('로그아웃'), findsOneWidget);
     });
@@ -113,6 +124,7 @@ void main() {
     testWidgets('로그아웃 버튼을 누르면 확인 다이얼로그가 표시된다', (tester) async {
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -123,6 +135,7 @@ void main() {
     testWidgets('확인 다이얼로그에서 취소하면 로그아웃되지 않는다', (tester) async {
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -136,6 +149,7 @@ void main() {
     testWidgets('확인 다이얼로그 바깥을 탭하면 로그아웃되지 않는다', (tester) async {
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -154,6 +168,7 @@ void main() {
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -172,6 +187,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('user@example.com'), findsOneWidget);
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -194,11 +210,15 @@ void main() {
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+        await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(ListView), const Offset(0, 1200));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
@@ -210,6 +230,7 @@ void main() {
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+        await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -217,9 +238,19 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
+      await tester.drag(find.byType(ListView), const Offset(0, 1200));
+      await tester.pumpAndSettle();
+
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      final closeButton = find.descendant(
+        of: find.byType(ErrorBanner),
+        matching: find.byIcon(Icons.close_rounded),
+      );
+      expect(closeButton, findsOneWidget);
+
+      final banner = tester.widget<ErrorBanner>(find.byType(ErrorBanner));
+      banner.onDismiss?.call();
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.error_outline_rounded), findsNothing);
@@ -236,15 +267,20 @@ void main() {
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
+      await tester.drag(find.byType(ListView), const Offset(0, 1200));
+      await tester.pumpAndSettle();
+
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, '로그아웃').first);
+      await scrollToLogoutButton(tester);
+      await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
