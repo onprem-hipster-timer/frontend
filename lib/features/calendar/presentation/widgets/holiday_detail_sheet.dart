@@ -7,10 +7,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 class HolidayDetailSheet extends StatelessWidget {
   final HolidayItem holiday;
 
-  const HolidayDetailSheet({
-    super.key,
-    required this.holiday,
-  });
+  const HolidayDetailSheet({super.key, required this.holiday});
 
   @override
   Widget build(BuildContext context) {
@@ -130,10 +127,7 @@ class HolidayDetailSheet extends StatelessWidget {
 /// ```dart
 /// showHolidayDetailSheet(context, holiday);
 /// ```
-Future<void> showHolidayDetailSheet(
-  BuildContext context,
-  HolidayItem holiday,
-) {
+Future<void> showHolidayDetailSheet(BuildContext context, HolidayItem holiday) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,

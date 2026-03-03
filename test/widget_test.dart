@@ -14,11 +14,7 @@ import 'package:momeet/app.dart';
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MoMeetApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: MoMeetApp()));
 
     // Verify that app renders without error
     expect(find.byType(MaterialApp), findsOneWidget);

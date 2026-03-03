@@ -35,6 +35,7 @@ export 'models/tag_read.dart';
 export 'models/tag_stat.dart';
 export 'models/tag_update.dart';
 export 'models/timer_read.dart';
+export 'models/timer_status.dart';
 export 'models/timer_update.dart';
 export 'models/todo_create.dart';
 export 'models/todo_include_reason.dart';

@@ -62,11 +62,7 @@ class SecurityWarningPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.shield_outlined,
-                  size: 80,
-                  color: colorScheme.error,
-                ),
+                Icon(Icons.shield_outlined, size: 80, color: colorScheme.error),
                 const SizedBox(height: 24),
                 Text(
                   '보안 경고',
@@ -98,8 +94,9 @@ class SecurityWarningPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colorScheme.errorContainer.withAlpha(77),
                       borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: colorScheme.error.withAlpha(77)),
+                      border: Border.all(
+                        color: colorScheme.error.withAlpha(77),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

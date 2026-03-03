@@ -34,7 +34,8 @@ class AuthInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
       debugPrint(
-          '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
+        '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}',
+      );
     }
     return handler.next(response);
   }
@@ -69,9 +70,7 @@ final dioClientProvider = Provider<Dio>((ref) {
       connectTimeout: AppConfig.connectTimeout,
       receiveTimeout: AppConfig.receiveTimeout,
       contentType: 'application/json',
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: {'Accept': 'application/json'},
       // AuthInterceptor 추가 (JWT 토큰 자동 추가)
     ),
   );

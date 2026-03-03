@@ -10,10 +10,7 @@ class TagGroupFormSheet extends ConsumerStatefulWidget {
   /// 수정할 태그 그룹 (null인 경우 생성 모드)
   final TagGroupReadWithTags? tagGroup;
 
-  const TagGroupFormSheet({
-    super.key,
-    this.tagGroup,
-  });
+  const TagGroupFormSheet({super.key, this.tagGroup});
 
   @override
   ConsumerState<TagGroupFormSheet> createState() => _TagGroupFormSheetState();
@@ -150,9 +147,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       decoration: InputDecoration(
         labelText: '그룹 이름',
         hintText: '태그 그룹 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -183,9 +178,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       decoration: InputDecoration(
         labelText: '설명 (선택사항)',
         hintText: '그룹에 대한 간단한 설명을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: const Icon(Icons.notes),
         alignLabelWithHint: true,
       ),

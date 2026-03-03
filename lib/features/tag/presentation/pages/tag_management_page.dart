@@ -61,9 +61,7 @@ class TagManagementPage extends ConsumerWidget {
         ),
 
         // 하단 여백 (FloatingActionButton 공간 확보)
-        const SliverPadding(
-          padding: EdgeInsets.only(bottom: 80),
-        ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
       ],
     );
   }
@@ -80,9 +78,7 @@ class TagManagementPage extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ExpansionTile(
           initiallyExpanded: true,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -112,8 +108,10 @@ class TagManagementPage extends ConsumerWidget {
               // Todo 그룹 배지
               if (tagGroup.isTodoGroup) ...[
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -195,13 +193,11 @@ class TagManagementPage extends ConsumerWidget {
         ),
 
         // 중앙: 태그 이름
-        title: Text(
-          tag.name,
-          style: theme.textTheme.bodyLarge,
-        ),
+        title: Text(tag.name, style: theme.textTheme.bodyLarge),
 
-        subtitle:
-            tag.description?.isNotEmpty == true ? Text(tag.description!) : null,
+        subtitle: tag.description?.isNotEmpty == true
+            ? Text(tag.description!)
+            : null,
 
         // 우측: 수정 버튼
         trailing: IconButton(
@@ -215,9 +211,7 @@ class TagManagementPage extends ConsumerWidget {
         onTap: () => _showEditTagSheet(context, ref, tag, parentGroup),
         onLongPress: () => _showDeleteTagDialog(context, ref, tag),
 
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         tileColor: theme.colorScheme.surface,
         hoverColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
       ),
@@ -248,11 +242,7 @@ class TagManagementPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               '태그를 불러올 수 없습니다',
@@ -326,10 +316,7 @@ class TagManagementPage extends ConsumerWidget {
   }
 
   /// 태그 그룹 수정 시트 표시
-  void _showEditGroupSheet(
-    BuildContext context,
-    TagGroupWithTags tagGroup,
-  ) {
+  void _showEditGroupSheet(BuildContext context, TagGroupWithTags tagGroup) {
     // TagGroupReadWithTags를 생성하여 전달
     final groupWithTags = TagGroupReadWithTags(
       id: tagGroup.groupId,
@@ -377,11 +364,7 @@ class TagManagementPage extends ConsumerWidget {
 
     tagGroupsAsync.when(
       data: (allGroups) {
-        showTagFormSheet(
-          context,
-          tag: tag,
-          availableGroups: allGroups,
-        );
+        showTagFormSheet(context, tag: tag, availableGroups: allGroups);
       },
       loading: () {},
       error: (error, stack) {},
@@ -397,7 +380,8 @@ class TagManagementPage extends ConsumerWidget {
     final confirmed = await showConfirmDialog(
       context,
       title: '태그 삭제',
-      content: '${tag.name} 태그를 삭제하시겠습니까?\n'
+      content:
+          '${tag.name} 태그를 삭제하시겠습니까?\n'
           '이 작업은 되돌릴 수 없습니다.',
       confirmText: '삭제',
       destructive: true,
