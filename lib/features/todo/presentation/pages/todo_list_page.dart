@@ -15,10 +15,7 @@ class TodoListPage extends ConsumerWidget {
   /// 필터링할 그룹 ID (선택사항)
   final String? groupId;
 
-  const TodoListPage({
-    super.key,
-    this.groupId,
-  });
+  const TodoListPage({super.key, this.groupId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,9 +50,7 @@ class TodoListPage extends ConsumerWidget {
         children: [
           todoTreeAsync.when(
             data: (tree) => _buildTreeView(context, ref, tree),
-            loading: () => const Center(
-              child: CircularProgressIndicator(),
-            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -86,9 +81,7 @@ class TodoListPage extends ConsumerWidget {
           if (mutationState.isLoading)
             Container(
               color: Colors.black.withAlpha(77),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
         ],
       ),
@@ -116,15 +109,15 @@ class TodoListPage extends ConsumerWidget {
             Text(
               '할 일이 없습니다',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               '+ 버튼을 눌러 새 할 일을 추가하세요',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
           ],
         ),
@@ -143,14 +136,16 @@ class TodoListPage extends ConsumerWidget {
           const TodoRootDropTarget(),
 
           // 트리 노드들
-          ...tree.roots.map((node) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: TodoTreeTile(
-                  node: node,
-                  tree: tree,
-                  onTap: (todo) => _showTodoDetail(context, todo),
-                ),
-              )),
+          ...tree.roots.map(
+            (node) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: TodoTreeTile(
+                node: node,
+                tree: tree,
+                onTap: (todo) => _showTodoDetail(context, todo),
+              ),
+            ),
+          ),
 
           // 하단 여백 (FAB 가리지 않도록)
           const SizedBox(height: 80),
@@ -182,15 +177,15 @@ class TodoListPage extends ConsumerWidget {
 
   /// 할 일 생성 다이얼로그
   Future<void> _showCreateTodoDialog(
-      BuildContext context, WidgetRef ref) async {
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     String? selectedTagGroupId = groupId;
 
     // 태그 그룹이 선택되지 않은 경우 선택 페이지를 먼저 띄움
     if (selectedTagGroupId == null) {
       final selectedGroup = await Navigator.of(context).push<TagGroupRead>(
-        MaterialPageRoute(
-          builder: (context) => const TagGroupSelectorPage(),
-        ),
+        MaterialPageRoute(builder: (context) => const TagGroupSelectorPage()),
       );
 
       // 사용자가 그룹을 선택하지 않고 돌아온 경우 중단
@@ -203,9 +198,6 @@ class TodoListPage extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    showTodoFormSheet(
-      context,
-      defaultTagGroupId: selectedTagGroupId,
-    );
+    showTodoFormSheet(context, defaultTagGroupId: selectedTagGroupId);
   }
 }

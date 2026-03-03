@@ -55,11 +55,7 @@ class TodoTree {
   });
 
   /// 빈 트리
-  static const empty = TodoTree(
-    roots: [],
-    nodeMap: {},
-    flatOrder: [],
-  );
+  static const empty = TodoTree(roots: [], nodeMap: {}, flatOrder: []);
 
   /// 노드 조회
   TodoTreeNode? getNode(String id) => nodeMap[id];
@@ -131,11 +127,7 @@ TodoTree buildTodoTree(List<TodoRead> todos) {
     rootNodes.add(buildNode(rootTodo, 0, []));
   }
 
-  return TodoTree(
-    roots: rootNodes,
-    nodeMap: nodeMap,
-    flatOrder: flatOrder,
-  );
+  return TodoTree(roots: rootNodes, nodeMap: nodeMap, flatOrder: flatOrder);
 }
 
 /// 노드가 다른 노드의 자손인지 확인

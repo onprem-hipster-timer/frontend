@@ -69,7 +69,10 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       // 새 일정 생성 모드
       final now = DateTime.now();
       final roundedNow = DateTime(
-        now.year, now.month, now.day, now.hour,
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
         (now.minute ~/ 15) * 15, // 15분 단위로 반올림
       );
 
@@ -122,8 +125,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.4),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.4,
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -176,10 +180,18 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                     if (_isAllDay) {
                       // 종일로 설정하면 시간을 00:00과 23:59로 조정
                       final startDate = DateTime(
-                          _startTime.year, _startTime.month, _startTime.day);
+                        _startTime.year,
+                        _startTime.month,
+                        _startTime.day,
+                      );
                       _startTime = startDate;
                       _endTime = DateTime(
-                          _endTime.year, _endTime.month, _endTime.day, 23, 59);
+                        _endTime.year,
+                        _endTime.month,
+                        _endTime.day,
+                        23,
+                        59,
+                      );
                     }
                   });
                 },
@@ -361,8 +373,10 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   }
 
   /// 날짜/시간 선택 다이얼로그 표시
-  Future<void> _selectDateTime(BuildContext context,
-      {required bool isStartTime}) async {
+  Future<void> _selectDateTime(
+    BuildContext context, {
+    required bool isStartTime,
+  }) async {
     final currentTime = isStartTime ? _startTime : _endTime;
 
     // 날짜 선택
@@ -386,9 +400,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
         initialTime: TimeOfDay.fromDateTime(currentTime),
         builder: (context, child) {
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              alwaysUse24HourFormat: true,
-            ),
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: child!,
           );
         },
@@ -406,11 +418,19 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     } else {
       // 종일인 경우 시작은 00:00, 종료는 23:59
       if (isStartTime) {
-        newDateTime =
-            DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+        newDateTime = DateTime(
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day,
+        );
       } else {
         newDateTime = DateTime(
-            selectedDate.year, selectedDate.month, selectedDate.day, 23, 59);
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day,
+          23,
+          59,
+        );
       }
     }
 
@@ -422,7 +442,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           if (_startTime.isAfter(_endTime)) {
             if (_isAllDay) {
               _endTime = DateTime(
-                  _startTime.year, _startTime.month, _startTime.day, 23, 59);
+                _startTime.year,
+                _startTime.month,
+                _startTime.day,
+                23,
+                59,
+              );
             } else {
               _endTime = _startTime.add(const Duration(hours: 1));
             }
@@ -432,8 +457,11 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           // 종료 시간이 시작 시간보다 빠르면 시작 시간을 조정
           if (_endTime.isBefore(_startTime)) {
             if (_isAllDay) {
-              _startTime =
-                  DateTime(_endTime.year, _endTime.month, _endTime.day);
+              _startTime = DateTime(
+                _endTime.year,
+                _endTime.month,
+                _endTime.day,
+              );
             } else {
               _startTime = _endTime.subtract(const Duration(hours: 1));
             }
@@ -594,7 +622,12 @@ Future<void> showScheduleFormSheet(
     // 클릭한 날짜에 현재 시간의 다음 정각으로 설정
     final nextHour = now.hour < 23 ? now.hour + 1 : now.hour;
     defaultStartTime = DateTime(
-        targetDate.year, targetDate.month, targetDate.day, nextHour, 0);
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+      nextHour,
+      0,
+    );
     defaultEndTime = defaultStartTime.add(const Duration(hours: 1));
   }
 
@@ -642,9 +675,7 @@ Future<void> showScheduleEditSheet(
           topRight: Radius.circular(20),
         ),
       ),
-      child: ScheduleFormSheet(
-        existingSchedule: existingSchedule,
-      ),
+      child: ScheduleFormSheet(existingSchedule: existingSchedule),
     ),
   );
 }

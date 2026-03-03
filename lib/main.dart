@@ -33,18 +33,11 @@ void main() async {
     debugPrint('   URL: $supabaseUrl');
   }
 
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
   if (AppConfig.enableDebugLogging) {
     debugPrint('✅ [INIT] Supabase initialized');
   }
 
-  runApp(
-    const ProviderScope(
-      child: MoMeetApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MoMeetApp()));
 }

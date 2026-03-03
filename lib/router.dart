@@ -206,9 +206,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.loading.path,
         name: AppRoute.loading.name,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
 
       // ============================================================
@@ -245,8 +244,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final scheduleId = state.uri.queryParameters['id'];
                       return Scaffold(
                         appBar: AppBar(title: const Text('일정 상세')),
-                        body:
-                            Center(child: Text('일정 상세 페이지 (ID: $scheduleId)')),
+                        body: Center(
+                          child: Text('일정 상세 페이지 (ID: $scheduleId)'),
+                        ),
                       );
                     },
                   ),
@@ -327,9 +327,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('오류')),
-      body: Center(
-        child: Text('페이지를 찾을 수 없습니다: ${state.error}'),
-      ),
+      body: Center(child: Text('페이지를 찾을 수 없습니다: ${state.error}')),
     ),
   );
 });
@@ -359,7 +357,8 @@ class GoRouterObserver extends NavigatorObserver {
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     if (kDebugMode) {
       debugPrint(
-          '🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}');
+        '🔀 [ROUTE] Replaced: ${oldRoute?.settings.name} → ${newRoute?.settings.name}',
+      );
     }
   }
 }

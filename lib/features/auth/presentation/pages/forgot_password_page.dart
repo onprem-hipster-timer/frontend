@@ -30,9 +30,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
 
     try {
-      await ref.read(authProvider.notifier).resetPassword(
-            _emailController.text.trim(),
-          );
+      await ref
+          .read(authProvider.notifier)
+          .resetPassword(_emailController.text.trim());
 
       if (mounted) {
         showDialog(
@@ -70,9 +70,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('비밀번호 재설정'),
-      ),
+      appBar: AppBar(title: const Text('비밀번호 재설정')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
