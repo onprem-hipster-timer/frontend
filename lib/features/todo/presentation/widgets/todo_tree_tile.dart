@@ -93,14 +93,12 @@ class TodoTreeTile extends ConsumerWidget {
 
         // 자식 노드들 (확장된 경우에만)
         if (hasChildren && isExpanded)
-          ...node.children.map(
-            (childNode) => TodoTreeTile(
-              node: childNode,
-              tree: tree,
-              onTap: onTap,
-              onToggleExpand: onToggleExpand,
-            ),
-          ),
+          ...node.children.map((childNode) => TodoTreeTile(
+                node: childNode,
+                tree: tree,
+                onTap: onTap,
+                onToggleExpand: onToggleExpand,
+              )),
       ],
     );
   }
@@ -122,9 +120,10 @@ class TodoTreeTile extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final draggedTodo = details.data;
         // 부모 변경 API 호출
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeParent(draggedTodo.id, node.todo.id);
+        await ref.read(todoMutationsProvider.notifier).changeParent(
+              draggedTodo.id,
+              node.todo.id,
+            );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
@@ -135,8 +134,8 @@ class TodoTreeTile extends ConsumerWidget {
             border: isValidTarget
                 ? Border.all(color: kDropTargetColor, width: 2)
                 : isInvalidTarget
-                ? Border.all(color: kInvalidDropColor, width: 2)
-                : null,
+                    ? Border.all(color: kInvalidDropColor, width: 2)
+                    : null,
             borderRadius: BorderRadius.circular(4),
           ),
           child: child,
@@ -181,7 +180,10 @@ class TodoTreeTile extends ConsumerWidget {
           ),
         ),
       ),
-      childWhenDragging: Opacity(opacity: kDraggingOpacity, child: child),
+      childWhenDragging: Opacity(
+        opacity: kDraggingOpacity,
+        child: child,
+      ),
       child: child,
     );
   }
@@ -225,6 +227,7 @@ class TodoTreeTile extends ConsumerWidget {
                 _buildExpandButton(context, ref, isExpanded, todo.id)
               else
                 const SizedBox(width: 24), // 정렬용 공간
+
               // 체크박스 (상태 표시)
               _buildStatusCheckbox(context, ref, todo),
 
@@ -252,12 +255,12 @@ class TodoTreeTile extends ConsumerWidget {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           todo.description!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -274,14 +277,11 @@ class TodoTreeTile extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -316,7 +316,10 @@ class TodoTreeTile extends ConsumerWidget {
       child: AnimatedRotation(
         turns: isExpanded ? 0.25 : 0, // 90도 회전
         duration: const Duration(milliseconds: 200),
-        child: const Icon(Icons.chevron_right, size: 24),
+        child: const Icon(
+          Icons.chevron_right,
+          size: 24,
+        ),
       ),
     );
   }
@@ -336,12 +339,12 @@ class TodoTreeTile extends ConsumerWidget {
       onChanged: (value) async {
         if (isCancelled) return; // 취소된 항목은 변경 불가
 
-        final newStatus = value == true
-            ? TodoStatus.done
-            : TodoStatus.unscheduled;
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeStatus(todo.id, newStatus);
+        final newStatus =
+            value == true ? TodoStatus.done : TodoStatus.unscheduled;
+        await ref.read(todoMutationsProvider.notifier).changeStatus(
+              todo.id,
+              newStatus,
+            );
       },
     );
   }
@@ -360,30 +363,24 @@ class TodoTreeTile extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // 태그 색상 점들
-          ...tags
-              .take(displayCount)
-              .map(
-                (tag) => Padding(
-                  padding: const EdgeInsets.only(right: 3),
-                  child: Tooltip(
-                    message: tag.name,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: HexColor.fromHex(tag.color),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withValues(
-                            alpha: 0.3,
-                          ),
-                          width: 0.5,
-                        ),
+          ...tags.take(displayCount).map((tag) => Padding(
+                padding: const EdgeInsets.only(right: 3),
+                child: Tooltip(
+                  message: tag.name,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: HexColor.fromHex(tag.color),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                        width: 0.5,
                       ),
                     ),
                   ),
                 ),
-              ),
+              )),
 
           // 첫 번째 태그 이름 (공간이 있을 때)
           if (tags.isNotEmpty)
@@ -455,9 +452,10 @@ class TodoRootDropTarget extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final draggedTodo = details.data;
         // 부모를 null로 설정하여 루트로 이동
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeParent(draggedTodo.id, null);
+        await ref.read(todoMutationsProvider.notifier).changeParent(
+              draggedTodo.id,
+              null,
+            );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
@@ -467,9 +465,8 @@ class TodoRootDropTarget extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isValidTarget
-                  ? kDropTargetColor
-                  : Colors.grey.withAlpha(77),
+              color:
+                  isValidTarget ? kDropTargetColor : Colors.grey.withAlpha(77),
               width: isValidTarget ? 2 : 1,
               style: BorderStyle.solid,
             ),
@@ -492,9 +489,8 @@ class TodoRootDropTarget extends ConsumerWidget {
                   '루트로 이동',
                   style: TextStyle(
                     color: isValidTarget ? kDropTargetColor : Colors.grey,
-                    fontWeight: isValidTarget
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    fontWeight:
+                        isValidTarget ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ],

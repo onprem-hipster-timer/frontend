@@ -97,8 +97,7 @@ class AuthNotifier extends _$AuthNotifier {
 
         if (AppConfig.enableDebugLogging) {
           debugPrint(
-            '🔀 [AUTH] ${data.event.name}, user: ${session?.user.email}',
-          );
+              '🔀 [AUTH] ${data.event.name}, user: ${session?.user.email}');
         }
 
         switch (data.event) {
@@ -158,7 +157,10 @@ class AuthNotifier extends _$AuthNotifier {
   }) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signInWithPassword(email: email, password: password);
+      await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -177,7 +179,10 @@ class AuthNotifier extends _$AuthNotifier {
   }) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signUp(email: email, password: password);
+      await supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -216,7 +221,9 @@ class AuthNotifier extends _$AuthNotifier {
   Future<void> updatePassword(String newPassword) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.updateUser(UserAttributes(password: newPassword));
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -241,17 +248,17 @@ class AuthNotifier extends _$AuthNotifier {
 /// ```
 @riverpod
 User? currentUser(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .whenOrNull(authenticated: (user, token, refreshToken) => user);
+  return ref.watch(authProvider).whenOrNull(
+        authenticated: (user, token, refreshToken) => user,
+      );
 }
 
 /// 현재 액세스 토큰 제공자
 @riverpod
 String? accessToken(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .whenOrNull(authenticated: (user, token, refreshToken) => token);
+  return ref.watch(authProvider).whenOrNull(
+        authenticated: (user, token, refreshToken) => token,
+      );
 }
 
 /// 인증 여부 확인
@@ -262,9 +269,7 @@ String? accessToken(Ref ref) {
 /// ```
 @riverpod
 bool isAuthenticated(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .maybeWhen(
+  return ref.watch(authProvider).maybeWhen(
         authenticated: (user, token, refreshToken) => true,
         orElse: () => false,
       );
@@ -273,15 +278,17 @@ bool isAuthenticated(Ref ref) {
 /// 인증 로딩 여부 확인
 @riverpod
 bool isAuthLoading(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .maybeWhen(loading: () => true, orElse: () => false);
+  return ref.watch(authProvider).maybeWhen(
+        loading: () => true,
+        orElse: () => false,
+      );
 }
 
 /// 인증 에러 메시지 제공자
 @riverpod
 String? authError(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .maybeWhen(error: (message, _) => message, orElse: () => null);
+  return ref.watch(authProvider).maybeWhen(
+        error: (message, _) => message,
+        orElse: () => null,
+      );
 }

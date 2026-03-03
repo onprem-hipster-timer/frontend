@@ -4,7 +4,13 @@ import 'package:syncfusion_flutter_calendar/calendar.dart' as sf;
 part 'calendar_state.freezed.dart';
 
 /// 캘린더 뷰 타입
-enum CalendarViewType { day, week, month, year, agenda }
+enum CalendarViewType {
+  day,
+  week,
+  month,
+  year,
+  agenda,
+}
 
 /// CalendarViewType을 SfCalendar의 CalendarView로 변환
 extension CalendarViewTypeExtension on CalendarViewType {

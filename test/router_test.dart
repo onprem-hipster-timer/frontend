@@ -223,10 +223,8 @@ void main() {
           isAuthLoading: false,
           matchedLocation: AppRoute.calendar.path,
         );
-        expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}',
-        );
+        expect(result,
+            '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}');
       });
 
       test('미인증 사용자가 /todo에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
@@ -245,9 +243,7 @@ void main() {
           matchedLocation: AppRoute.mypage.path,
         );
         expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
-        );
+            result, '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}');
       });
 
       test('미인증 사용자가 /tags에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
@@ -266,9 +262,7 @@ void main() {
           matchedLocation: AppRoute.timer.path,
         );
         expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.timer.path}',
-        );
+            result, '${AppRoute.login.path}?redirect=${AppRoute.timer.path}');
       });
 
       test('미인증 사용자가 /login에 있으면 리다이렉트하지 않는다', () {
@@ -447,9 +441,7 @@ void main() {
           matchedLocation: AppRoute.mypage.path,
         );
         expect(
-          step2,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
-        );
+            step2, '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}');
 
         // 3. 로그인 성공 → redirect 파라미터로 /mypage 복원
         final step3 = authRedirect(
@@ -618,10 +610,8 @@ void main() {
           isAuthLoading: false,
           matchedLocation: AppRoute.mypage.path,
         );
-        expect(
-          afterLogout,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
-        );
+        expect(afterLogout,
+            '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}');
       });
 
       test('인증된 사용자가 로그아웃하면 모든 보호된 경로에서 /login으로 리다이렉트된다', () {
@@ -633,11 +623,8 @@ void main() {
             isAuthLoading: false,
             matchedLocation: route.path,
           );
-          expect(
-            result,
-            '${AppRoute.login.path}?redirect=${route.path}',
-            reason: '${route.name} 경로에서 리다이렉트 실패',
-          );
+          expect(result, '${AppRoute.login.path}?redirect=${route.path}',
+              reason: '${route.name} 경로에서 리다이렉트 실패');
         }
       });
     });

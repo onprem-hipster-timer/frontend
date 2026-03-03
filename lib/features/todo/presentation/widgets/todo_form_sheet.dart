@@ -175,7 +175,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       decoration: InputDecoration(
         labelText: '할 일 제목',
         hintText: '할 일을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         prefixIcon: const Icon(Icons.task_alt),
       ),
       validator: (value) {
@@ -198,7 +200,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       decoration: InputDecoration(
         labelText: '설명 (선택사항)',
         hintText: '상세 설명을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         prefixIcon: const Icon(Icons.notes),
         alignLabelWithHint: true,
       ),
@@ -281,8 +285,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.5),
-              ),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -358,10 +361,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                   label: const Text('새 태그'),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   ),
                 ),
               ],
@@ -383,9 +384,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
             // 태그 그룹별로 태그 표시
             if (tagGroups.isNotEmpty)
-              ...tagGroups.map(
-                (tagGroup) => _buildTagGroupSection(theme, tagGroup),
-              )
+              ...tagGroups
+                  .map((tagGroup) => _buildTagGroupSection(theme, tagGroup))
             else
               _buildEmptyTagState(theme),
           ],
@@ -458,9 +458,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   /// 선택된 태그 그룹 표시 (생성 모드에서만)
   Widget _buildSelectedTagGroup(
-    ThemeData theme,
-    List<TagGroupWithTags> tagGroups,
-  ) {
+      ThemeData theme, List<TagGroupWithTags> tagGroups) {
     // 현재 선택된 태그 그룹 찾기
     final selectedGroup = tagGroups.firstWhere(
       (group) => group.group.id == _selectedTagGroupId,
@@ -476,7 +474,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       decoration: BoxDecoration(
         color: groupColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: groupColor.withValues(alpha: 0.3), width: 1),
+        border: Border.all(
+          color: groupColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -542,7 +543,11 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
               label: Text(tag.name),
               backgroundColor: tagColor.withValues(alpha: 0.2),
               side: BorderSide(color: tagColor, width: 1),
-              deleteIcon: Icon(Icons.close, size: 16, color: tagColor),
+              deleteIcon: Icon(
+                Icons.close,
+                size: 16,
+                color: tagColor,
+              ),
               onDeleted: () {
                 setState(() {
                   _selectedTagIds.remove(tag.id);
@@ -639,17 +644,17 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 ),
                 // 이 그룹에 새 태그 추가 버튼
                 TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(context, [
-                    tagGroup,
-                  ], defaultGroupId: tagGroup.group.id),
+                  onPressed: () => _showCreateTagDialog(
+                    context,
+                    [tagGroup],
+                    defaultGroupId: tagGroup.group.id,
+                  ),
                   icon: const Icon(Icons.add, size: 14),
                   label: const Text('추가'),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     textStyle: theme.textTheme.labelSmall,
                   ),
                 ),
@@ -691,18 +696,14 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                         width: isSelected ? 1.5 : 0.8,
                       ),
                       labelStyle: TextStyle(
-                        color: isSelected
-                            ? tagColor
-                            : theme.colorScheme.onSurface,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        color:
+                            isSelected ? tagColor : theme.colorScheme.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                         fontSize: 13,
                       ),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                          horizontal: 8, vertical: 4),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   );
@@ -724,19 +725,19 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                         fontSize: 12,
                       ),
                     ),
-                    onPressed: () => _showCreateTagDialog(context, [
-                      tagGroup,
-                    ], defaultGroupId: tagGroup.group.id),
+                    onPressed: () => _showCreateTagDialog(
+                      context,
+                      [tagGroup],
+                      defaultGroupId: tagGroup.group.id,
+                    ),
                     backgroundColor: theme.colorScheme.primaryContainer
                         .withValues(alpha: 0.3),
                     side: BorderSide(
                       color: theme.colorScheme.primary.withValues(alpha: 0.5),
                       width: 1,
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
@@ -836,8 +837,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     await showTagFormSheet(
       context,
       availableGroups: availableGroups,
-      defaultGroupId:
-          defaultGroupId ??
+      defaultGroupId: defaultGroupId ??
           (availableGroups.isNotEmpty ? availableGroups.first.group.id : null),
     );
 
@@ -882,9 +882,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
               .createGroup(defaultGroup);
 
           // 생성 후 다시 태그 그룹 데이터 가져오기
-          final updatedAsync = await ref.refresh(
-            tag_providers.tagTreeProvider.future,
-          );
+          final updatedAsync =
+              await ref.refresh(tag_providers.tagTreeProvider.future);
           tagGroups = updatedAsync;
 
           if (tagGroups.isNotEmpty) {

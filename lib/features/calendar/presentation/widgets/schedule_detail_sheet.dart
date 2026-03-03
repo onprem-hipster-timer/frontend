@@ -19,12 +19,16 @@ class ScheduleDetailSheet extends ConsumerWidget {
   final HolidayItem? holiday;
 
   /// 일반 일정용 생성자
-  const ScheduleDetailSheet.schedule({super.key, required this.schedule})
-    : holiday = null;
+  const ScheduleDetailSheet.schedule({
+    super.key,
+    required this.schedule,
+  }) : holiday = null;
 
   /// 휴일용 생성자
-  const ScheduleDetailSheet.holiday({super.key, required this.holiday})
-    : schedule = null;
+  const ScheduleDetailSheet.holiday({
+    super.key,
+    required this.holiday,
+  }) : schedule = null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,9 +57,8 @@ class ScheduleDetailSheet extends ConsumerWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -81,9 +84,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
                   if (isHoliday)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -141,11 +142,19 @@ class ScheduleDetailSheet extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // 종류
-        _InfoRow(icon: Icons.category, label: '종류', value: holiday.dateKind),
+        _InfoRow(
+          icon: Icons.category,
+          label: '종류',
+          value: holiday.dateKind,
+        ),
 
         if (holiday.isHoliday) ...[
           const SizedBox(height: 16),
-          _InfoRow(icon: Icons.info, label: '구분', value: '법정공휴일'),
+          _InfoRow(
+            icon: Icons.info,
+            label: '구분',
+            value: '법정공휴일',
+          ),
         ],
       ],
     );
@@ -190,17 +199,16 @@ class ScheduleDetailSheet extends ConsumerWidget {
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _getStatusColor(
-                schedule.state.name,
-              ).withValues(alpha: 0.1),
+              color:
+                  _getStatusColor(schedule.state.name).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               _getStatusText(schedule.state.name),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _getStatusColor(schedule.state.name),
-                fontWeight: FontWeight.w500,
-              ),
+                    color: _getStatusColor(schedule.state.name),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
         ),
@@ -220,9 +228,8 @@ class ScheduleDetailSheet extends ConsumerWidget {
         _InfoRow(
           icon: Icons.schedule,
           label: '생성',
-          value: DateFormat(
-            'yyyy.MM.dd HH:mm',
-          ).format(schedule.createdAt.toLocal()),
+          value: DateFormat('yyyy.MM.dd HH:mm')
+              .format(schedule.createdAt.toLocal()),
         ),
       ],
     );
@@ -240,9 +247,9 @@ class ScheduleDetailSheet extends ConsumerWidget {
             Text(
               '태그',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ],
         ),
@@ -270,19 +277,16 @@ class ScheduleDetailSheet extends ConsumerWidget {
       child: Text(
         tag.name,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
       ),
     );
   }
 
   /// 액션 버튼들 (수정/삭제)
   Widget _buildActionButtons(
-    BuildContext context,
-    WidgetRef ref,
-    ScheduleRead schedule,
-  ) {
+      BuildContext context, WidgetRef ref, ScheduleRead schedule) {
     final mutations = ref.watch(scheduleMutationsProvider);
 
     return Row(
@@ -344,10 +348,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
 
   /// 삭제 버튼 핸들러
   Future<void> _handleDelete(
-    BuildContext context,
-    WidgetRef ref,
-    ScheduleRead schedule,
-  ) async {
+      BuildContext context, WidgetRef ref, ScheduleRead schedule) async {
     // 삭제 확인 다이얼로그
     final confirmed = await showConfirmDialog(
       context,
@@ -393,7 +394,9 @@ class ScheduleDetailSheet extends ConsumerWidget {
               children: [
                 const Icon(Icons.error, color: Colors.white),
                 const SizedBox(width: 12),
-                Expanded(child: Text('삭제에 실패했습니다: ${error.toString()}')),
+                Expanded(
+                  child: Text('삭제에 실패했습니다: ${error.toString()}'),
+                ),
               ],
             ),
             backgroundColor: Colors.red,
@@ -541,8 +544,11 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child:
-                valueWidget ?? Text(value, style: theme.textTheme.bodyMedium),
+            child: valueWidget ??
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium,
+                ),
           ),
         ],
       );
@@ -565,7 +571,11 @@ class _InfoRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: valueWidget ?? Text(value, style: theme.textTheme.bodyMedium),
+          child: valueWidget ??
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium,
+              ),
         ),
       ],
     );

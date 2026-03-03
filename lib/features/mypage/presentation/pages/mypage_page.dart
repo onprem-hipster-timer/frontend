@@ -42,7 +42,10 @@ class _MyPageState extends ConsumerState<MyPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(user?.email ?? '', style: theme.textTheme.titleMedium),
+                Text(
+                  user?.email ?? '',
+                  style: theme.textTheme.titleMedium,
+                ),
               ],
             ),
           ),

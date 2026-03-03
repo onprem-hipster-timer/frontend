@@ -34,9 +34,8 @@ void main() {
     authStreamController = StreamController<supa.AuthState>.broadcast();
 
     when(() => mockSupabase.auth).thenReturn(mockGoTrue);
-    when(
-      () => mockGoTrue.onAuthStateChange,
-    ).thenAnswer((_) => authStreamController.stream);
+    when(() => mockGoTrue.onAuthStateChange)
+        .thenAnswer((_) => authStreamController.stream);
 
     when(() => mockUser.email).thenReturn('user@example.com');
     when(() => mockUser.id).thenReturn('test-uid');
@@ -46,7 +45,9 @@ void main() {
     when(() => mockGoTrue.currentSession).thenReturn(mockSession);
 
     container = ProviderContainer(
-      overrides: [supabaseClientProvider.overrideWithValue(mockSupabase)],
+      overrides: [
+        supabaseClientProvider.overrideWithValue(mockSupabase),
+      ],
     );
   });
 
@@ -82,9 +83,10 @@ void main() {
     test('signedOut 이벤트 후 accessToken이 null이 된다', () async {
       expect(container.read(accessTokenProvider), 'test-access-token');
 
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), isNull);
@@ -93,9 +95,10 @@ void main() {
     test('signedOut 이벤트 후 currentUser가 null이 된다', () async {
       expect(container.read(currentUserProvider), isNotNull);
 
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(currentUserProvider), isNull);
@@ -104,23 +107,31 @@ void main() {
     test('signedOut 이벤트 후 isAuthenticated가 false가 된다', () async {
       expect(container.read(isAuthenticatedProvider), isTrue);
 
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(isAuthenticatedProvider), isFalse);
     });
 
     test('signedOut 이벤트 후 authStatus가 unauthenticated이다', () async {
-      expect(container.read(authProvider), isA<AuthAuthenticated>());
-
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
+      expect(
+        container.read(authProvider),
+        isA<AuthAuthenticated>(),
       );
+
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
-      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      expect(
+        container.read(authProvider),
+        isA<AuthUnauthenticated>(),
+      );
     });
 
     test('signOut 호출 후 스트림이 signedOut을 발행하면 모든 토큰이 정리된다', () async {
@@ -128,9 +139,10 @@ void main() {
 
       await container.read(authProvider.notifier).signOut();
 
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), isNull);
@@ -149,9 +161,10 @@ void main() {
     test('signedOut 후 signedIn 이벤트가 오면 토큰이 복원된다', () async {
       expect(container.read(accessTokenProvider), 'test-access-token');
 
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), isNull);
@@ -164,9 +177,10 @@ void main() {
       when(() => newSession.accessToken).thenReturn('new-access-token');
       when(() => newSession.refreshToken).thenReturn('new-refresh-token');
 
-      authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedIn, newSession),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedIn,
+        newSession,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), 'new-access-token');

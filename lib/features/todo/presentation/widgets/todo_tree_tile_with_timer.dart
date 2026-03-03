@@ -49,8 +49,13 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
         child: aggregationAsync.when(
           loading: () => _buildTileLoading(context, theme),
           error: (error, stack) => _buildTileError(context, theme, error),
-          data: (aggregation) =>
-              _buildTile(context, theme, ref, aggregation, activeTimerState),
+          data: (aggregation) => _buildTile(
+            context,
+            theme,
+            ref,
+            aggregation,
+            activeTimerState,
+          ),
         ),
       ),
     );
@@ -245,7 +250,10 @@ class TimerControlButtons extends ConsumerWidget {
               padding: EdgeInsets.zero,
             ),
             IconButton(
-              icon: Icon(Icons.stop, color: theme.colorScheme.outline),
+              icon: Icon(
+                Icons.stop,
+                color: theme.colorScheme.outline,
+              ),
               onPressed: () =>
                   _handleTimerStop(context, ref, activeTimerState!),
               tooltip: '정지',
@@ -255,7 +263,10 @@ class TimerControlButtons extends ConsumerWidget {
           ] else ...[
             // 활성 타이머가 없는 경우: 시작 버튼
             IconButton(
-              icon: Icon(Icons.play_arrow, color: theme.colorScheme.primary),
+              icon: Icon(
+                Icons.play_arrow,
+                color: theme.colorScheme.primary,
+              ),
               onPressed: () => _handleTimerStart(context, ref),
               tooltip: '타이머 시작',
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -272,9 +283,9 @@ class TimerControlButtons extends ConsumerWidget {
   Future<void> _handleTimerStart(BuildContext context, WidgetRef ref) async {
     try {
       // 현재는 타이머 생성 API가 없으므로 placeholder 구현
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('타이머 기능이 곧 구현됩니다')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('타이머 기능이 곧 구현됩니다')),
+      );
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,9 +300,7 @@ class TimerControlButtons extends ConsumerWidget {
 
   /// 타이머 일시정지/재개 토글
   Future<void> _handleTimerToggle(
-    WidgetRef ref,
-    ActiveTimerState timerState,
-  ) async {
+      WidgetRef ref, ActiveTimerState timerState) async {
     try {
       // 현재는 타이머 제어 API가 없으므로 placeholder 구현
       debugPrint('타이머 토글: ${timerState.timerId}');
@@ -320,9 +329,9 @@ class TimerControlButtons extends ConsumerWidget {
         debugPrint('타이머 정지: ${timerState.timerId}');
 
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('타이머 정지 기능이 곧 구현됩니다')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('타이머 정지 기능이 곧 구현됩니다')),
+          );
         }
       } catch (error) {
         if (context.mounted) {

@@ -27,9 +27,8 @@ class TodoDashboardPage extends ConsumerWidget {
       body: tagGroupsAsync.when(
         data: (tagGroups) {
           // isTodoGroup = true인 그룹들만 필터링
-          final todoGroups = tagGroups
-              .where((group) => group.isTodoGroup)
-              .toList();
+          final todoGroups =
+              tagGroups.where((group) => group.isTodoGroup).toList();
 
           if (todoGroups.isEmpty) {
             return _buildEmptyState(context, theme);
@@ -37,7 +36,9 @@ class TodoDashboardPage extends ConsumerWidget {
 
           return _buildGroupGrid(context, theme, todoGroups);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
         error: (error, stack) => _buildErrorState(context, theme, error),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -86,9 +87,8 @@ class TodoDashboardPage extends ConsumerWidget {
                           Text(
                             '그룹을 선택해서 할 일들을 관리하세요.',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.7,
-                              ),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -111,18 +111,23 @@ class TodoDashboardPage extends ConsumerWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 1.1,
             ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final group = todoGroups[index];
-              return TodoGroupCard(
-                group: group,
-                onTap: () => context.go('${AppRoute.todo.path}/${group.id}'),
-              );
-            }, childCount: todoGroups.length),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final group = todoGroups[index];
+                return TodoGroupCard(
+                  group: group,
+                  onTap: () => context.go('${AppRoute.todo.path}/${group.id}'),
+                );
+              },
+              childCount: todoGroups.length,
+            ),
           ),
         ),
 
         // 하단 여백 (FAB 가리지 않도록)
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: 80),
+        ),
       ],
     );
   }
@@ -162,10 +167,8 @@ class TodoDashboardPage extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: const Text('첫 그룹 만들기'),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -182,7 +185,11 @@ class TodoDashboardPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text(
               '할 일 그룹을 불러오지 못했습니다',
@@ -223,7 +230,10 @@ class TodoDashboardPage extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('그룹 생성 기능이 곧 구현됩니다!'),
-        action: SnackBarAction(label: '확인', onPressed: () {}),
+        action: SnackBarAction(
+          label: '확인',
+          onPressed: () {},
+        ),
       ),
     );
   }
@@ -234,7 +244,11 @@ class TodoGroupCard extends StatelessWidget {
   final TagGroupRead group;
   final VoidCallback onTap;
 
-  const TodoGroupCard({super.key, required this.group, required this.onTap});
+  const TodoGroupCard({
+    super.key,
+    required this.group,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -317,9 +331,7 @@ class TodoGroupCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(12),

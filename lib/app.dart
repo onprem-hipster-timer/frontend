@@ -25,11 +25,16 @@ class MoMeetApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate, // 기본 위젯의 텍스트 방향 등 설정
         GlobalCupertinoLocalizations.delegate, // iOS 스타일 위젯 번역
       ],
-      supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
+      supportedLocales: const [
+        Locale('ko', 'KR'),
+        Locale('en', 'US'),
+      ],
       locale: const Locale('ko', 'KR'),
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+        ),
       ),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
