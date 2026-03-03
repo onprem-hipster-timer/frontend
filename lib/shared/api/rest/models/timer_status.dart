@@ -4,22 +4,24 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// 타이머 태그 포함 모드
+/// 타이머 상태
 @JsonEnum()
-enum TagIncludeMode {
-  @JsonValue('none')
-  none('none'),
-  @JsonValue('timer_only')
-  timerOnly('timer_only'),
-  @JsonValue('inherit_from_schedule')
-  inheritFromSchedule('inherit_from_schedule'),
+enum TimerStatus {
+  @JsonValue('RUNNING')
+  running('RUNNING'),
+  @JsonValue('PAUSED')
+  paused('PAUSED'),
+  @JsonValue('COMPLETED')
+  completed('COMPLETED'),
+  @JsonValue('CANCELLED')
+  cancelled('CANCELLED'),
 
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
-  const TagIncludeMode(this.json);
+  const TimerStatus(this.json);
 
-  factory TagIncludeMode.fromJson(String json) =>
+  factory TimerStatus.fromJson(String json) =>
       values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
@@ -28,6 +30,6 @@ enum TagIncludeMode {
   String toString() => json?.toString() ?? super.toString();
 
   /// Returns all defined enum values excluding the $unknown value.
-  static List<TagIncludeMode> get $valuesDefined =>
+  static List<TimerStatus> get $valuesDefined =>
       values.where((value) => value != $unknown).toList();
 }

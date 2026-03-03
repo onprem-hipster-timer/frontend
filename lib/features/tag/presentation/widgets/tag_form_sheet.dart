@@ -43,7 +43,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       _selectedGroupId = tag.groupId;
     } else {
       _selectedColor = TagColorPalette.defaultColor;
-      _selectedGroupId = widget.defaultGroupId ??
+      _selectedGroupId =
+          widget.defaultGroupId ??
           (widget.availableGroups.isNotEmpty
               ? widget.availableGroups.first.groupId
               : '');
@@ -134,9 +135,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       decoration: InputDecoration(
         labelText: '태그 이름',
         hintText: '태그 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -182,10 +181,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.5)),
+                color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              ),
               borderRadius: BorderRadius.circular(12),
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
             ),
             child: Row(
               children: [
@@ -204,8 +205,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                   child: Text(
                     currentGroup.groupName,
                     style: TextStyle(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ),
                 Text(
@@ -237,9 +238,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           isExpanded: true,
           initialValue: _selectedGroupId.isNotEmpty ? _selectedGroupId : null,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.folder_outlined),
           ),
           items: widget.availableGroups.map((group) {
@@ -267,7 +266,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -341,8 +342,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),

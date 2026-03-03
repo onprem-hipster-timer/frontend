@@ -22,8 +22,8 @@ class TimerWsClient {
     String? timezone,
     this.maxReconnectAttempts = 5,
     @visibleForTesting bool autoConnect = true,
-  })  : _token = accessToken,
-        _timezone = timezone {
+  }) : _token = accessToken,
+       _timezone = timezone {
     if (autoConnect) _connect();
   }
 
@@ -36,8 +36,9 @@ class TimerWsClient {
 
   /// Sec-WebSocket-Protocol 헤더에 사용되는 인증 서브프로토콜 목록
   @visibleForTesting
-  static List<String> authProtocols(String token) =>
-      ['authorization.bearer.$token'];
+  static List<String> authProtocols(String token) => [
+    'authorization.bearer.$token',
+  ];
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -116,10 +117,9 @@ class TimerWsClient {
       if (stackTrace != null) debugPrint('$stackTrace');
     }
     if (!_messageController.isClosed) {
-      _messageController.add(TimerWsError(
-        code: 'CONNECTION_ERROR',
-        message: error.toString(),
-      ));
+      _messageController.add(
+        TimerWsError(code: 'CONNECTION_ERROR', message: error.toString()),
+      );
     }
   }
 
@@ -137,7 +137,8 @@ class TimerWsClient {
           : (1000 * (1 << _reconnectAttempts)).clamp(1000, 60000);
       if (kDebugMode && AppConfig.enableDebugLogging) {
         debugPrint(
-            '🔌 [WS] Reconnecting in ${delay}ms (attempt ${_reconnectAttempts + 1}/$maxReconnectAttempts)');
+          '🔌 [WS] Reconnecting in ${delay}ms (attempt ${_reconnectAttempts + 1}/$maxReconnectAttempts)',
+        );
       }
       Future.delayed(Duration(milliseconds: delay), () {
         _reconnectAttempts++;

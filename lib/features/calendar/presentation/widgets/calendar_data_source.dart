@@ -137,9 +137,8 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   /// ID로 ScheduleRead의 원본 Appointment 찾기
   Appointment? getAppointmentById(String id) {
     try {
-      return appointments?.firstWhere(
-        (apt) => (apt as Appointment).id == id,
-      ) as Appointment?;
+      return appointments?.firstWhere((apt) => (apt as Appointment).id == id)
+          as Appointment?;
     } catch (e) {
       return null;
     }

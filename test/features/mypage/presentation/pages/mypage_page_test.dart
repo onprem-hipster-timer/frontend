@@ -24,16 +24,10 @@ class MockSession extends Mock implements supa.Session {}
 // 테스트 헬퍼
 // ============================================================
 
-Widget buildMyPage({
-  required MockSupabaseClient mockSupabase,
-}) {
+Widget buildMyPage({required MockSupabaseClient mockSupabase}) {
   return ProviderScope(
-    overrides: [
-      supabaseClientProvider.overrideWithValue(mockSupabase),
-    ],
-    child: const MaterialApp(
-      home: MyPage(),
-    ),
+    overrides: [supabaseClientProvider.overrideWithValue(mockSupabase)],
+    child: const MaterialApp(home: MyPage()),
   );
 }
 
@@ -52,8 +46,9 @@ void main() {
     authStreamController = StreamController<supa.AuthState>.broadcast();
 
     when(() => mockSupabase.auth).thenReturn(mockGoTrue);
-    when(() => mockGoTrue.onAuthStateChange)
-        .thenAnswer((_) => authStreamController.stream);
+    when(
+      () => mockGoTrue.onAuthStateChange,
+    ).thenAnswer((_) => authStreamController.stream);
 
     when(() => mockUser.email).thenReturn('user@example.com');
     when(() => mockUser.id).thenReturn('test-uid');
@@ -158,8 +153,9 @@ void main() {
       verify(() => mockGoTrue.signOut()).called(1);
     });
 
-    testWidgets('signOut 성공 시 스트림이 signedOut을 발행하면 미인증 상태로 전환된다',
-        (tester) async {
+    testWidgets('signOut 성공 시 스트림이 signedOut을 발행하면 미인증 상태로 전환된다', (
+      tester,
+    ) async {
       when(() => mockGoTrue.signOut()).thenAnswer((_) async {});
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
@@ -173,18 +169,18 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      authStreamController.add(supa.AuthState(
-        supa.AuthChangeEvent.signedOut,
-        null,
-      ));
+      authStreamController.add(
+        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('user@example.com'), findsNothing);
     });
 
     testWidgets('signOut 실패 시 에러 배너가 표시된다', (tester) async {
-      when(() => mockGoTrue.signOut())
-          .thenThrow(supa.AuthException('Network error'));
+      when(
+        () => mockGoTrue.signOut(),
+      ).thenThrow(supa.AuthException('Network error'));
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
@@ -199,8 +195,9 @@ void main() {
     });
 
     testWidgets('에러 배너의 X 버튼을 누르면 에러가 사라진다', (tester) async {
-      when(() => mockGoTrue.signOut())
-          .thenThrow(supa.AuthException('Network error'));
+      when(
+        () => mockGoTrue.signOut(),
+      ).thenThrow(supa.AuthException('Network error'));
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();

@@ -15,11 +15,7 @@ import 'health/health_client.dart';
 
 /// onperm-hipster-timer-backend `v1.0.0`
 class MoMeetClient {
-  MoMeetClient(
-    Dio dio, {
-    String? baseUrl,
-  })  : _dio = dio,
-        _baseUrl = baseUrl;
+  MoMeetClient(Dio dio, {String? baseUrl}) : _dio = dio, _baseUrl = baseUrl;
 
   final Dio _dio;
   final String? _baseUrl;

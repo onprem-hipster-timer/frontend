@@ -10,10 +10,7 @@ class CalendarViewSelector extends ConsumerWidget {
   /// AppBar에 사용할지 여부 (컴팩트 사이즈)
   final bool isCompact;
 
-  const CalendarViewSelector({
-    super.key,
-    this.isCompact = false,
-  });
+  const CalendarViewSelector({super.key, this.isCompact = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,8 +55,9 @@ class CalendarViewSelector extends ConsumerWidget {
         }
       },
       style: ButtonStyle(
-        visualDensity:
-            isCompact ? VisualDensity.compact : VisualDensity.standard,
+        visualDensity: isCompact
+            ? VisualDensity.compact
+            : VisualDensity.standard,
         textStyle: WidgetStateProperty.all(
           theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w600,

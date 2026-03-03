@@ -25,14 +25,12 @@ Future<List<TagGroupReadWithTags>> tagGroups(Ref ref) async {
 
 /// 특정 태그 그룹 조회 (태그 포함)
 @riverpod
-Future<TagGroupReadWithTags> tagGroup(
-  Ref ref,
-  String groupId,
-) async {
+Future<TagGroupReadWithTags> tagGroup(Ref ref, String groupId) async {
   final api = ref.watch(tagsApiProvider);
   try {
-    final response =
-        await api.readTagGroupV1TagsGroupsGroupIdGet(groupId: groupId);
+    final response = await api.readTagGroupV1TagsGroupsGroupIdGet(
+      groupId: groupId,
+    );
     return response;
   } catch (error) {
     throw Exception('태그 그룹 조회 실패: $error');
@@ -71,7 +69,9 @@ class TagMutations extends _$TagMutations {
 
   /// 태그 그룹 수정
   Future<TagGroupRead> updateTagGroup(
-      String groupId, TagGroupUpdate data) async {
+    String groupId,
+    TagGroupUpdate data,
+  ) async {
     state = const AsyncValue.loading();
 
     try {
@@ -187,25 +187,17 @@ class TagTreeExpansion extends _$TagTreeExpansion {
 
   /// 그룹 확장/축소 토글
   void toggleGroup(String groupId) {
-    state = {
-      ...state,
-      groupId: !(state[groupId] ?? false),
-    };
+    state = {...state, groupId: !(state[groupId] ?? false)};
   }
 
   /// 그룹 확장 상태 설정
   void setGroupExpanded(String groupId, bool expanded) {
-    state = {
-      ...state,
-      groupId: expanded,
-    };
+    state = {...state, groupId: expanded};
   }
 
   /// 모든 그룹 확장
   void expandAll(List<String> groupIds) {
-    state = {
-      for (final groupId in groupIds) groupId: true,
-    };
+    state = {for (final groupId in groupIds) groupId: true};
   }
 
   /// 모든 그룹 축소

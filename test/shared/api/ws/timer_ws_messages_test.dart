@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/shared/api/rest/models/timer_status.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 
 void main() {
@@ -42,10 +43,7 @@ void main() {
       });
 
       test('user_id와 from_user 모두 없으면 빈 문자열이 된다', () {
-        final raw = jsonEncode({
-          'type': 'connected',
-          'payload': {},
-        });
+        final raw = jsonEncode({'type': 'connected', 'payload': {}});
         final event = parseTimerWsMessage(raw) as TimerWsConnected;
         expect(event.userId, '');
       });
@@ -55,10 +53,7 @@ void main() {
       test('timer와 action을 파싱한다', () {
         final raw = jsonEncode({
           'type': 'timer.created',
-          'payload': {
-            'timer': _fullTimerJson('timer-1'),
-            'action': 'start',
-          },
+          'payload': {'timer': _fullTimerJson('timer-1'), 'action': 'start'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerCreated;
         expect(event.timer.id, 'timer-1');
@@ -77,9 +72,7 @@ void main() {
       test('timer의 optional 필드를 파싱한다', () {
         final raw = jsonEncode({
           'type': 'timer.created',
-          'payload': {
-            'timer': _fullTimerJson('timer-full'),
-          },
+          'payload': {'timer': _fullTimerJson('timer-full')},
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerCreated;
         expect(event.timer.title, '작업 타이머');
@@ -103,17 +96,14 @@ void main() {
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
         expect(event.timer.id, 't2');
-        expect(event.timer.status, 'PAUSED');
+        expect(event.timer.status, TimerStatus.paused);
         expect(event.action, 'pause');
       });
 
       test('resume action으로 파싱한다', () {
         final raw = jsonEncode({
           'type': 'timer.updated',
-          'payload': {
-            'timer': _minimalTimerJson('t3'),
-            'action': 'resume',
-          },
+          'payload': {'timer': _minimalTimerJson('t3'), 'action': 'resume'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
         expect(event.action, 'resume');
@@ -122,10 +112,7 @@ void main() {
       test('sync action으로 파싱한다', () {
         final raw = jsonEncode({
           'type': 'timer.updated',
-          'payload': {
-            'timer': _minimalTimerJson('t4'),
-            'action': 'sync',
-          },
+          'payload': {'timer': _minimalTimerJson('t4'), 'action': 'sync'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
         expect(event.action, 'sync');
@@ -136,13 +123,11 @@ void main() {
       test('완료된 타이머를 파싱한다', () {
         final raw = jsonEncode({
           'type': 'timer.completed',
-          'payload': {
-            'timer': _minimalTimerJson('t5', status: 'COMPLETED'),
-          },
+          'payload': {'timer': _minimalTimerJson('t5', status: 'COMPLETED')},
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerCompleted;
         expect(event.timer.id, 't5');
-        expect(event.timer.status, 'COMPLETED');
+        expect(event.timer.status, TimerStatus.completed);
       });
     });
 
@@ -161,7 +146,7 @@ void main() {
         final event = parseTimerWsMessage(raw) as TimerWsSyncResult;
         expect(event.timers.length, 2);
         expect(event.timers[0].id, 't1');
-        expect(event.timers[1].status, 'PAUSED');
+        expect(event.timers[1].status, TimerStatus.paused);
         expect(event.count, 2);
       });
 
@@ -210,11 +195,7 @@ void main() {
       test('timer_title이 없으면 null이다', () {
         final raw = jsonEncode({
           'type': 'timer.friend_activity',
-          'payload': {
-            'friend_id': 'f1',
-            'action': 'stop',
-            'timer_id': 't1',
-          },
+          'payload': {'friend_id': 'f1', 'action': 'stop', 'timer_id': 't1'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsFriendActivity;
         expect(event.timerTitle, isNull);
@@ -225,10 +206,7 @@ void main() {
       test('code와 message를 파싱한다', () {
         final raw = jsonEncode({
           'type': 'error',
-          'payload': {
-            'code': 'TIMER_NOT_FOUND',
-            'message': '타이머를 찾을 수 없습니다',
-          },
+          'payload': {'code': 'TIMER_NOT_FOUND', 'message': '타이머를 찾을 수 없습니다'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsError;
         expect(event.code, 'TIMER_NOT_FOUND');
@@ -298,7 +276,7 @@ void main() {
 
       test('type이 없으면 TimerWsUnknown을 반환한다', () {
         final raw = jsonEncode({
-          'payload': {'foo': 'bar'}
+          'payload': {'foo': 'bar'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsUnknown;
         expect(event.rawType, '');
@@ -422,10 +400,7 @@ void main() {
     });
 
     test('fromJson으로 역직렬화한다', () {
-      final p = TimerSyncPayload.fromJson({
-        'scope': 'all',
-        'timer_id': 'x',
-      });
+      final p = TimerSyncPayload.fromJson({'scope': 'all', 'timer_id': 'x'});
       expect(p.scope, 'all');
       expect(p.timerId, 'x');
     });
@@ -461,17 +436,27 @@ void main() {
 
     test('TimerWsFriendActivity는 동일 값이면 같다', () {
       const a = TimerWsFriendActivity(
-          friendId: 'f', action: 'a', timerId: 't', timerTitle: 'tt');
+        friendId: 'f',
+        action: 'a',
+        timerId: 't',
+        timerTitle: 'tt',
+      );
       const b = TimerWsFriendActivity(
-          friendId: 'f', action: 'a', timerId: 't', timerTitle: 'tt');
+        friendId: 'f',
+        action: 'a',
+        timerId: 't',
+        timerTitle: 'tt',
+      );
       expect(a, b);
     });
   });
 
   group('이벤트 모델 fromJson → toJson 라운드트립', () {
     test('TimerWsConnected', () {
-      final original =
-          TimerWsConnected.fromJson({'user_id': 'u1', 'message': 'hi'});
+      final original = TimerWsConnected.fromJson({
+        'user_id': 'u1',
+        'message': 'hi',
+      });
       final restored = TimerWsConnected.fromJson(original.toJson());
       expect(restored, original);
     });

@@ -45,7 +45,10 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
     // 기본 시간 설정 (현재 시간 + 1시간 간격)
     final now = DateTime.now();
     final roundedNow = DateTime(
-      now.year, now.month, now.day, now.hour,
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
       (now.minute ~/ 15) * 15, // 15분 단위로 반올림
     );
 
@@ -111,10 +114,7 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
                 const SizedBox(height: 16),
 
                 // 시작 시간
-                Text(
-                  '시작 시간',
-                  style: theme.textTheme.titleSmall,
-                ),
+                Text('시작 시간', style: theme.textTheme.titleSmall),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: () => _selectDateTime(context, isStartTime: true),
@@ -134,8 +134,10 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
                             style: theme.textTheme.bodyLarge,
                           ),
                         ),
-                        Icon(Icons.arrow_drop_down,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ],
                     ),
                   ),
@@ -144,10 +146,7 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
                 const SizedBox(height: 16),
 
                 // 종료 시간
-                Text(
-                  '종료 시간',
-                  style: theme.textTheme.titleSmall,
-                ),
+                Text('종료 시간', style: theme.textTheme.titleSmall),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: () => _selectDateTime(context, isStartTime: false),
@@ -167,8 +166,10 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
                             style: theme.textTheme.bodyLarge,
                           ),
                         ),
-                        Icon(Icons.arrow_drop_down,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ],
                     ),
                   ),
@@ -194,8 +195,9 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
       actions: [
         // 취소 버튼
         TextButton(
-          onPressed:
-              mutations.isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: mutations.isLoading
+              ? null
+              : () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
 
@@ -215,8 +217,10 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
   }
 
   /// 날짜/시간 선택 다이얼로그 표시
-  Future<void> _selectDateTime(BuildContext context,
-      {required bool isStartTime}) async {
+  Future<void> _selectDateTime(
+    BuildContext context, {
+    required bool isStartTime,
+  }) async {
     final currentTime = isStartTime ? _startTime : _endTime;
 
     // 날짜 선택
