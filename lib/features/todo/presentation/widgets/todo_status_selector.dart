@@ -26,31 +26,31 @@ class TodoStatusSelector extends ConsumerWidget {
       initialValue: todo.status,
       onSelected: (TodoStatus newStatus) async {
         if (newStatus != todo.status) {
-          await ref.read(todoMutationsProvider.notifier).changeStatus(
-                todo.id,
-                newStatus,
-              );
+          await ref
+              .read(todoMutationsProvider.notifier)
+              .changeStatus(todo.id, newStatus);
         }
       },
       itemBuilder: (BuildContext context) {
         return TodoStatus.values
             .where((status) => status != TodoStatus.$unknown)
             .map((TodoStatus status) {
-          return PopupMenuItem<TodoStatus>(
-            value: status,
-            child: Row(
-              children: [
-                Icon(
-                  _getStatusIcon(status),
-                  color: _getStatusColor(context, status),
-                  size: 20,
+              return PopupMenuItem<TodoStatus>(
+                value: status,
+                child: Row(
+                  children: [
+                    Icon(
+                      _getStatusIcon(status),
+                      color: _getStatusColor(context, status),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(_getStatusLabel(status)),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Text(_getStatusLabel(status)),
-              ],
-            ),
-          );
-        }).toList();
+              );
+            })
+            .toList();
       },
       child: Icon(
         _getStatusIcon(todo.status),

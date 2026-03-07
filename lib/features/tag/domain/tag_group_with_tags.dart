@@ -31,7 +31,6 @@ class TagGroupWithTags {
   /// 그룹 설명 (편의 getter)
   String? get groupDescription => group.description;
 
-
   /// 생성일 (편의 getter)
   DateTime get createdAt => group.createdAt;
 

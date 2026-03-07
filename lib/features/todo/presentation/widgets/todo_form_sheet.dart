@@ -481,11 +481,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.folder_rounded,
-            size: 16,
-            color: groupColor,
-          ),
+          Icon(Icons.folder_rounded, size: 16, color: groupColor),
           const SizedBox(width: 6),
           Text(
             '${selectedGroup.group.name} 그룹',

@@ -352,8 +352,11 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                       : null,
                 ),
                 child: isSelected
-                    ? Icon(Icons.check,
-                        color: theme.colorScheme.primary, size: 24)
+                    ? Icon(
+                        Icons.check,
+                        color: theme.colorScheme.primary,
+                        size: 24,
+                      )
                     : null,
               ),
             );
@@ -394,7 +397,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : Text(_isEditMode ? '수정' : '생성'),
           ),
@@ -438,8 +443,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content:
-                Text(_isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error'),
+            content: Text(
+              _isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error',
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),

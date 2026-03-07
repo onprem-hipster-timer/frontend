@@ -133,7 +133,9 @@ class TagManagementPage extends ConsumerWidget {
                     label: const Text('태그 추가'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -146,7 +148,9 @@ class TagManagementPage extends ConsumerWidget {
                     label: const Text('그룹 수정'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -162,7 +166,9 @@ class TagManagementPage extends ConsumerWidget {
                       foregroundColor: theme.colorScheme.error,
                       side: BorderSide(color: theme.colorScheme.error),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -174,8 +180,9 @@ class TagManagementPage extends ConsumerWidget {
 
           // 하위 태그 목록
           children: tagGroup.tags
-              .map((tag) =>
-                  _buildTagItem(context, ref, tag, tagGroup, allGroups))
+              .map(
+                (tag) => _buildTagItem(context, ref, tag, tagGroup, allGroups),
+              )
               .toList(),
         ),
       ),
@@ -225,8 +232,10 @@ class TagManagementPage extends ConsumerWidget {
               icon: const Icon(Icons.edit, size: 16),
               label: const Text('수정'),
               style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 minimumSize: const Size(0, 32),
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -242,8 +251,10 @@ class TagManagementPage extends ConsumerWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
                 side: BorderSide(color: theme.colorScheme.error),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 minimumSize: const Size(0, 32),
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -384,7 +395,8 @@ class TagManagementPage extends ConsumerWidget {
     final confirmed = await showConfirmDialog(
       context,
       title: '그룹 삭제',
-      content: '${tagGroup.groupName} 그룹을 삭제하시겠습니까?\n'
+      content:
+          '${tagGroup.groupName} 그룹을 삭제하시겠습니까?\n'
           '이 작업은 되돌릴 수 없습니다.\n'
           '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
       confirmText: '삭제',
