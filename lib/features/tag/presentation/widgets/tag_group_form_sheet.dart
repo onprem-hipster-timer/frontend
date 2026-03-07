@@ -22,7 +22,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
   final _descriptionController = TextEditingController();
 
   late Color _selectedColor;
-  bool _isTodoGroup = false;
 
   @override
   void initState() {
@@ -33,11 +32,9 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       _nameController.text = widget.tagGroup!.name;
       _descriptionController.text = widget.tagGroup!.description ?? '';
       _selectedColor = HexColor.fromHex(widget.tagGroup!.color);
-      _isTodoGroup = widget.tagGroup!.isTodoGroup;
     } else {
       // 생성 모드인 경우 기본값 설정
       _selectedColor = TagColorPalette.defaultColor;
-      _isTodoGroup = false;
     }
   }
 
@@ -95,10 +92,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
                 // 색상 선택
                 _buildColorPicker(theme),
 
-                const SizedBox(height: 24),
-
-                // Todo 그룹 여부
-                _buildTodoGroupSwitch(theme),
 
                 const SizedBox(height: 32),
 
@@ -248,24 +241,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     );
   }
 
-  /// Todo 그룹 여부 스위치
-  Widget _buildTodoGroupSwitch(ThemeData theme) {
-    return SwitchListTile(
-      title: const Text('할 일 그룹'),
-      subtitle: const Text('이 그룹의 태그를 할 일에도 사용합니다'),
-      value: _isTodoGroup,
-      onChanged: (value) {
-        setState(() {
-          _isTodoGroup = value;
-        });
-      },
-      contentPadding: EdgeInsets.zero,
-      secondary: Icon(
-        _isTodoGroup ? Icons.check_box : Icons.label,
-        color: theme.colorScheme.primary,
-      ),
-    );
-  }
 
   /// 버튼 영역
   Widget _buildButtonBar(bool isEditMode, bool isLoading) {
@@ -329,7 +304,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: _isTodoGroup,
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -360,7 +334,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final createData = TagGroupCreate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: _isTodoGroup,
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
