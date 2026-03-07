@@ -4,7 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'visibility_settings.dart';
+import 'app_domain_schedule_schema_dto_visibility_settings.dart';
 
 part 'timer_update.freezed.dart';
 part 'timer_update.g.dart';
@@ -25,7 +25,7 @@ abstract class TimerUpdate with _$TimerUpdate {
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
     @JsonKey(name: 'todo_id') String? todoId,
     @JsonKey(name: 'schedule_id') String? scheduleId,
-    VisibilitySettings? visibility,
+    AppDomainScheduleSchemaDtoVisibilitySettings? visibility,
   }) = _TimerUpdate;
 
   factory TimerUpdate.fromJson(Map<String, Object?> json) =>
