@@ -19,7 +19,7 @@ void main() async {
   await initializeDateFormatting('ko_KR', null);
   await initializeDateFormatting('en_US', null);
 
-  await dotenv.load(fileName: "assets/.env");
+  await dotenv.load(fileName: ".env");
 
   // ============================================================
   // Supabase 초기화
