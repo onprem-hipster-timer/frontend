@@ -482,9 +482,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            selectedGroup.group.isTodoGroup
-                ? Icons.task_alt_rounded
-                : Icons.label_outline_rounded,
+            Icons.folder_rounded,
             size: 16,
             color: groupColor,
           ),
@@ -873,7 +871,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           final defaultGroup = TagGroupCreate(
             name: '기본 그룹',
             color: '#2196F3', // 파란색
-            isTodoGroup: true,
             description: '할 일을 위한 기본 태그 그룹입니다.',
           );
 

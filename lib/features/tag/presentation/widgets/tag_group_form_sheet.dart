@@ -147,10 +147,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       autofocus: true,
       decoration: InputDecoration(
         labelText: '그룹 이름',
-        hintText: '그룹 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        hintText: '태그 그룹 이름을 입력하세요',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -251,6 +249,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     );
   }
 
+
   /// 버튼 영역
   Widget _buildButtonBar(bool isEditMode, bool isLoading) {
     return Row(
@@ -313,7 +312,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: true, // 모든 그룹은 이제 통합되어 todo 그룹으로 설정
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -344,7 +342,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final createData = TagGroupCreate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: true, // 모든 그룹은 이제 통합되어 todo 그룹으로 설정
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -360,7 +357,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 12),
-                  Text('그룹이 생성되었습니다'),
+                  Text('태그 그룹이 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -380,8 +377,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
                 Expanded(
                   child: Text(
                     widget.tagGroup != null
-                        ? '그룹 수정에 실패했습니다: $error'
-                        : '그룹 생성에 실패했습니다: $error',
+                        ? '태그 그룹 수정에 실패했습니다: $error'
+                        : '태그 그룹 생성에 실패했습니다: $error',
                   ),
                 ),
               ],

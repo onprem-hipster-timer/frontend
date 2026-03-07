@@ -31,8 +31,6 @@ class TagGroupWithTags {
   /// 그룹 설명 (편의 getter)
   String? get groupDescription => group.description;
 
-  /// Todo 그룹 여부 (편의 getter)
-  bool get isTodoGroup => group.isTodoGroup;
 
   /// 생성일 (편의 getter)
   DateTime get createdAt => group.createdAt;

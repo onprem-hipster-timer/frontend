@@ -105,29 +105,6 @@ class TagManagementPage extends ConsumerWidget {
                   ),
                 ),
               ),
-
-              // Todo 그룹 배지
-              if (tagGroup.isTodoGroup) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'TODO',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
             ],
           ),
 
@@ -389,7 +366,6 @@ class TagManagementPage extends ConsumerWidget {
       id: tagGroup.groupId,
       name: tagGroup.groupName,
       color: tagGroup.groupColor,
-      isTodoGroup: tagGroup.isTodoGroup,
       createdAt: tagGroup.createdAt,
       updatedAt: tagGroup.updatedAt,
       description: tagGroup.groupDescription,
