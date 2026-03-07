@@ -148,9 +148,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       decoration: InputDecoration(
         labelText: '그룹 이름',
         hintText: '그룹 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -313,7 +311,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: true, // 모든 그룹은 이제 통합되어 todo 그룹으로 설정
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -344,7 +341,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final createData = TagGroupCreate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: true, // 모든 그룹은 이제 통합되어 todo 그룹으로 설정
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),

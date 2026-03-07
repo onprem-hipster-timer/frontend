@@ -27,7 +27,6 @@ Future<List<TagGroupRead>> tagGroups(Ref ref) async {
             id: groupWithTags.id,
             name: groupWithTags.name,
             color: groupWithTags.color,
-            isTodoGroup: groupWithTags.isTodoGroup,
             createdAt: groupWithTags.createdAt,
             updatedAt: groupWithTags.updatedAt,
             description: groupWithTags.description,

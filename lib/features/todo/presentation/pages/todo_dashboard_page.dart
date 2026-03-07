@@ -27,10 +27,8 @@ class TodoDashboardPage extends ConsumerWidget {
       ),
       body: tagGroupsAsync.when(
         data: (tagGroups) {
-          // isTodoGroup = true인 그룹들만 필터링
-          final todoGroups = tagGroups
-              .where((group) => group.isTodoGroup)
-              .toList();
+          // 모든 태그 그룹을 Todo 그룹으로 사용 가능하도록 변경
+          final todoGroups = tagGroups;
 
           if (todoGroups.isEmpty) {
             return _buildEmptyState(context, theme);

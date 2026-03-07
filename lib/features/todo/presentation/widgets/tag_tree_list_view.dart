@@ -150,36 +150,11 @@ class TagGroupExpansionTile extends ConsumerWidget {
                 ),
               ),
             ),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    group.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (group.isTodoGroup)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'TODO',
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
+            title: Text(
+              group.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             subtitle: group.description != null
                 ? Text(
