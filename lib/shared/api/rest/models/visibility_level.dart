@@ -13,6 +13,8 @@ enum VisibilityLevel {
   friends('friends'),
   @JsonValue('selected')
   selected('selected'),
+  @JsonValue('allowed_emails')
+  allowedEmails('allowed_emails'),
   @JsonValue('public')
   public('public'),
 

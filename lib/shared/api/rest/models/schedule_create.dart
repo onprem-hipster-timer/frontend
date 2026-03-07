@@ -4,9 +4,9 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'app_domain_schedule_schema_dto_visibility_settings.dart';
 import 'create_todo_options.dart';
 import 'schedule_state.dart';
-import 'visibility_settings.dart';
 
 part 'schedule_create.freezed.dart';
 part 'schedule_create.g.dart';
@@ -26,7 +26,7 @@ abstract class ScheduleCreate with _$ScheduleCreate {
     @JsonKey(name: 'tag_group_id') String? tagGroupId,
     @JsonKey(name: 'source_todo_id') String? sourceTodoId,
     @JsonKey(name: 'create_todo_options') CreateTodoOptions? createTodoOptions,
-    VisibilitySettings? visibility,
+    AppDomainScheduleSchemaDtoVisibilitySettings? visibility,
   }) = _ScheduleCreate;
 
   factory ScheduleCreate.fromJson(Map<String, Object?> json) =>
