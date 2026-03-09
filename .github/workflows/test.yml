@@ -51,10 +51,13 @@ jobs:
           restore-keys: |
             codegen-${{ runner.os }}-
 
-      - name: Create dummy .env for analysis
+      - name: Create .env for analysis
         run: |
           mkdir -p assets
-          touch assets/.env
+          cat <<EOF > assets/.env
+          SUPABASE_URL=${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
+          EOF
 
       - name: Run code generation
         if: steps.codegen-cache.outputs.cache-hit != 'true'

@@ -1,0 +1,21 @@
+{
+  "buildCommand": null,
+  "outputDirectory": "build/web",
+  "framework": null,
+  "installCommand": null,
+  "routes": [
+    {
+      "src": "/flutter_service_worker.js",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
