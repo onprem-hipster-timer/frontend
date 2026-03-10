@@ -266,7 +266,6 @@ class TodoGroupCard extends StatelessWidget {
                         size: 24,
                       ),
                     ),
-                    const Spacer(),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
