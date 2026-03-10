@@ -356,7 +356,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 12),
-                  Text('그룹이 생성되었습니다'),
+                  Text('태그 그룹이 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -376,8 +376,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
                 Expanded(
                   child: Text(
                     widget.tagGroup != null
-                        ? '그룹 수정에 실패했습니다: $error'
-                        : '그룹 생성에 실패했습니다: $error',
+                        ? '태그 그룹 수정에 실패했습니다: $error'
+                        : '태그 그룹 생성에 실패했습니다: $error',
                   ),
                 ),
               ],
