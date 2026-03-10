@@ -5,6 +5,7 @@ import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/api/rest/models/todo_status.dart';
+import 'package:momeet/shared/api/rest/models/todo_read.dart';
 import 'todo_form_sheet.dart';
 
 /// 타이머 기능이 통합된 Todo Tree Tile
@@ -241,7 +242,7 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
   }
 
   /// 할 일 수정 다이얼로그 표시
-  static void _showEditTodoDialog(BuildContext context, todo) {
+  static void _showEditTodoDialog(BuildContext context, TodoRead todo) {
     showTodoFormSheet(context, todo: todo);
   }
 
@@ -249,7 +250,7 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
   static Future<void> _showDeleteTodoDialog(
     BuildContext context,
     WidgetRef ref,
-    todo,
+    TodoRead todo,
     TodoTreeNode node,
   ) async {
     final hasChildren = node.children.isNotEmpty;
