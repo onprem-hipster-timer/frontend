@@ -130,6 +130,7 @@ class HolidayDetailSheet extends StatelessWidget {
 Future<void> showHolidayDetailSheet(BuildContext context, HolidayItem holiday) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => HolidayDetailSheet(holiday: holiday),

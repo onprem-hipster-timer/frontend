@@ -374,6 +374,7 @@ Future<void> showScheduleCreateDialog(
 }) {
   return showDialog(
     context: context,
+    useRootNavigator: true,
     builder: (context) => ScheduleCreateDialog(
       defaultStartTime: defaultStartTime,
       defaultEndTime: defaultEndTime,

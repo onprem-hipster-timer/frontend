@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
 import 'package:momeet/shared/api/rest/models/todo_status.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 타이머 기능이 통합된 Todo Tree Tile
 ///
@@ -148,10 +149,51 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
             ),
         ],
       ),
-      trailing: TimerControlButtons(
-        todoId: node.id,
-        aggregation: aggregation,
-        activeTimerState: activeTimerState,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 타이머 컨트롤 버튼들
+          TimerControlButtons(
+            todoId: node.id,
+            aggregation: aggregation,
+            activeTimerState: activeTimerState,
+          ),
+
+          const SizedBox(width: 8),
+
+          // 액션 버튼들
+          OutlinedButton.icon(
+            onPressed: () =>
+                TodoActions.showEditTodoDialog(context, node.todo),
+            icon: const Icon(Icons.edit, size: 14),
+            label: const Text('수정'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 28),
+              textStyle: const TextStyle(fontSize: 10),
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          OutlinedButton.icon(
+            onPressed: () => TodoActions.showDeleteTodoDialog(
+              context,
+              ref,
+              node.todo,
+              node,
+            ),
+            icon: const Icon(Icons.delete_outline, size: 14),
+            label: const Text('삭제'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+              side: BorderSide(color: theme.colorScheme.error),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 28),
+              textStyle: const TextStyle(fontSize: 10),
+            ),
+          ),
+        ],
       ),
       onTap: onTap,
     );
@@ -193,7 +235,7 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
       case TodoStatus.cancelled:
         return '취소됨';
       default:
-        return status.toString();
+        return '알 수 없음';
     }
   }
 }

@@ -9,6 +9,8 @@ import 'package:momeet/core/utils/color_utils.dart';
 
 import '../providers/todo_provider.dart';
 import '../utils/todo_tree_builder.dart';
+import '../utils/todo_actions.dart';
+import 'todo_status_selector.dart';
 
 /// 들여쓰기 단위 (깊이당 픽셀)
 const double kIndentWidth = 24.0;
@@ -225,8 +227,8 @@ class TodoTreeTile extends ConsumerWidget {
                 _buildExpandButton(context, ref, isExpanded, todo.id)
               else
                 const SizedBox(width: 24), // 정렬용 공간
-              // 체크박스 (상태 표시)
-              _buildStatusCheckbox(context, ref, todo),
+              // 상태 선택기 (기존 체크박스 대체)
+              TodoStatusSelector(todo: todo),
 
               const SizedBox(width: 8),
 
@@ -290,6 +292,56 @@ class TodoTreeTile extends ConsumerWidget {
                     ),
                   ),
                 ),
+
+              const SizedBox(width: 8),
+
+              // 액션 버튼들
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 수정 버튼
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        TodoActions.showEditTodoDialog(context, todo),
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('수정'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      minimumSize: const Size(0, 32),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // 삭제 버튼
+                  OutlinedButton.icon(
+                    onPressed: () => TodoActions.showDeleteTodoDialog(
+                      context,
+                      ref,
+                      todo,
+                      node,
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: const Text('삭제'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      minimumSize: const Size(0, 32),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -318,31 +370,6 @@ class TodoTreeTile extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         child: const Icon(Icons.chevron_right, size: 24),
       ),
-    );
-  }
-
-  /// 상태 체크박스
-  Widget _buildStatusCheckbox(
-    BuildContext context,
-    WidgetRef ref,
-    TodoRead todo,
-  ) {
-    final isDone = todo.status == TodoStatus.done;
-    final isCancelled = todo.status == TodoStatus.cancelled;
-
-    return Checkbox(
-      value: isDone,
-      tristate: false,
-      onChanged: (value) async {
-        if (isCancelled) return; // 취소된 항목은 변경 불가
-
-        final newStatus = value == true
-            ? TodoStatus.done
-            : TodoStatus.unscheduled;
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeStatus(todo.id, newStatus);
-      },
     );
   }
 

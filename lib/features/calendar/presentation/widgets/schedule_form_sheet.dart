@@ -633,6 +633,7 @@ Future<void> showScheduleFormSheet(
 
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true, // 키보드가 올라와도 전체 크기 유지
     backgroundColor: Colors.transparent,
     builder: (context) => Container(
@@ -665,6 +666,7 @@ Future<void> showScheduleEditSheet(
 ) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => Container(

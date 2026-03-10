@@ -37,6 +37,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       if (mounted) {
         showDialog(
           context: context,
+          useRootNavigator: true,
           builder: (context) => AlertDialog(
             title: const Text('이메일 전송 완료'),
             content: const Text('비밀번호 재설정 링크가 이메일로 전송되었습니다.'),

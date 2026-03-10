@@ -106,6 +106,7 @@ class TimerDashboard extends ConsumerWidget {
     final controller = TextEditingController();
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         title: const Text('새 작업 시작'),
         content: Column(

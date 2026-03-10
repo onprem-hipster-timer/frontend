@@ -579,6 +579,7 @@ Future<void> showScheduleDetailSheet(
 ) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => ScheduleDetailSheet.schedule(schedule: schedule),
