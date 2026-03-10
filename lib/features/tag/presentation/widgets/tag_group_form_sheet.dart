@@ -147,7 +147,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       autofocus: true,
       decoration: InputDecoration(
         labelText: '그룹 이름',
-        hintText: '그룹 이름을 입력하세요',
+        hintText: '태그 그룹 이름을 입력하세요',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
