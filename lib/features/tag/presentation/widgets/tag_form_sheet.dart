@@ -9,13 +9,11 @@ import 'package:momeet/core/utils/color_utils.dart';
 /// 태그 생성/수정 폼 시트
 class TagFormSheet extends ConsumerStatefulWidget {
   final TagRead? tag;
-  final List<TagGroupWithTags> availableGroups;
   final String? defaultGroupId;
 
   const TagFormSheet({
     super.key,
     this.tag,
-    required this.availableGroups,
     this.defaultGroupId,
   });
 
@@ -43,11 +41,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       _selectedGroupId = tag.groupId;
     } else {
       _selectedColor = TagColorPalette.defaultColor;
-      _selectedGroupId =
-          widget.defaultGroupId ??
-          (widget.availableGroups.isNotEmpty
-              ? widget.availableGroups.first.groupId
-              : '');
+      _selectedGroupId = widget.defaultGroupId ?? '';
     }
   }
 
@@ -62,6 +56,33 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     final theme = Theme.of(context);
     final mutations = ref.watch(tagMutationsProvider);
     final isLoading = mutations.isLoading;
+    final availableGroupsAsync = ref.watch(tagTreeProvider);
+
+    return availableGroupsAsync.when(
+      loading: () => const SafeArea(
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => SafeArea(
+        child: Center(
+          child: Text('태그 그룹을 불러올 수 없습니다: $error'),
+        ),
+      ),
+      data: (availableGroups) => _buildFormSheet(context, theme, isLoading, availableGroups),
+    );
+  }
+
+  Widget _buildFormSheet(
+    BuildContext context,
+    ThemeData theme,
+    bool isLoading,
+    List<TagGroupWithTags> availableGroups,
+  ) {
+    // 첫 로드 시 기본 그룹 ID 설정
+    if (_selectedGroupId.isEmpty && availableGroups.isNotEmpty) {
+      _selectedGroupId = widget.defaultGroupId ?? availableGroups.first.groupId;
+    }
 
     // [안전한 바텀 시트 레이아웃 구조]
     // SafeArea로 가장 바깥을 감싸고, padding으로 키보드 높이를 처리합니다.
@@ -90,7 +111,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                   const SizedBox(height: 24),
                   _buildNameField(),
                   const SizedBox(height: 20),
-                  _buildGroupSelector(theme),
+                  _buildGroupSelector(theme, availableGroups),
                   const SizedBox(height: 24),
                   _buildColorPicker(theme),
                   const SizedBox(height: 32),
@@ -159,11 +180,11 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     );
   }
 
-  Widget _buildGroupSelector(ThemeData theme) {
+  Widget _buildGroupSelector(ThemeData theme, List<TagGroupWithTags> availableGroups) {
     if (_isEditMode) {
-      final currentGroup = widget.availableGroups.firstWhere(
+      final currentGroup = availableGroups.firstWhere(
         (group) => group.groupId == _selectedGroupId,
-        orElse: () => widget.availableGroups.first,
+        orElse: () => availableGroups.first,
       );
 
       return Column(
@@ -241,7 +262,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.folder_outlined),
           ),
-          items: widget.availableGroups.map((group) {
+          items: availableGroups.map((group) {
             return DropdownMenuItem<String>(
               value: group.groupId,
               child: Row(
@@ -477,14 +498,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 /// ```dart
 /// showTagFormSheet(
 ///   context,
-///   availableGroups: groups,
 ///   defaultGroupId: groupId,
 /// );
 /// ```
 Future<void> showTagFormSheet(
   BuildContext context, {
   TagRead? tag,
-  required List<TagGroupWithTags> availableGroups,
   String? defaultGroupId,
 }) {
   return showModalBottomSheet<void>(
@@ -494,7 +513,6 @@ Future<void> showTagFormSheet(
     backgroundColor: Colors.transparent,
     builder: (context) => TagFormSheet(
       tag: tag,
-      availableGroups: availableGroups,
       defaultGroupId: defaultGroupId,
     ),
   );

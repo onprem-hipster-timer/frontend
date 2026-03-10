@@ -353,7 +353,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(context, tagGroups),
+                  onPressed: () => _showCreateTagDialog(context),
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('새 태그'),
                   style: TextButton.styleFrom(
@@ -422,7 +422,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => _showCreateTagDialog(context, []),
+                onPressed: () => _showCreateTagDialog(context),
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('새 태그'),
                 style: TextButton.styleFrom(
@@ -588,7 +588,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: () => _showCreateTagDialog(context, []),
+            onPressed: () => _showCreateTagDialog(context),
             icon: const Icon(Icons.add, size: 16),
             label: const Text('첫 태그 만들기'),
             style: FilledButton.styleFrom(
@@ -633,9 +633,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 ),
                 // 이 그룹에 새 태그 추가 버튼
                 TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(context, [
-                    tagGroup,
-                  ], defaultGroupId: tagGroup.group.id),
+                  onPressed: () => _showCreateTagDialog(
+                    context,
+                    defaultGroupId: tagGroup.group.id,
+                  ),
                   icon: const Icon(Icons.add, size: 14),
                   label: const Text('추가'),
                   style: TextButton.styleFrom(
@@ -718,9 +719,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                         fontSize: 12,
                       ),
                     ),
-                    onPressed: () => _showCreateTagDialog(context, [
-                      tagGroup,
-                    ], defaultGroupId: tagGroup.group.id),
+                    onPressed: () => _showCreateTagDialog(
+                      context,
+                      defaultGroupId: tagGroup.group.id,
+                    ),
                     backgroundColor: theme.colorScheme.primaryContainer
                         .withValues(alpha: 0.3),
                     side: BorderSide(
@@ -811,10 +813,17 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   /// 새 태그 생성 다이얼로그 표시
   Future<void> _showCreateTagDialog(
-    BuildContext context,
-    List<TagGroupWithTags> availableGroups, {
+    BuildContext context, {
     String? defaultGroupId,
   }) async {
+    // Provider에서 태그 그룹 데이터 가져오기
+    final tagGroupsAsync = ref.read(tag_providers.tagTreeProvider);
+    final availableGroups = tagGroupsAsync.when(
+      data: (groups) => groups,
+      loading: () => <TagGroupWithTags>[],
+      error: (_, __) => <TagGroupWithTags>[],
+    );
+
     if (availableGroups.isEmpty) {
       // 태그 그룹이 없는 경우 안내
       ScaffoldMessenger.of(context).showSnackBar(
@@ -829,7 +838,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     // 태그 생성 폼 시트 표시
     await showTagFormSheet(
       context,
-      availableGroups: availableGroups,
       defaultGroupId:
           defaultGroupId ??
           (availableGroups.isNotEmpty ? availableGroups.first.group.id : null),
