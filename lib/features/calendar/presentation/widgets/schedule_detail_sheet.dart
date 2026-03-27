@@ -57,8 +57,9 @@ class ScheduleDetailSheet extends ConsumerWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.4),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.4,
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -84,7 +85,9 @@ class ScheduleDetailSheet extends ConsumerWidget {
                   if (isHoliday)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -199,16 +202,17 @@ class ScheduleDetailSheet extends ConsumerWidget {
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _getStatusColor(context, schedule.state.name)
-                  .withValues(alpha: 0.1),
+              color: _getStatusColor(
+                schedule.state.name,
+              ).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               _getStatusText(schedule.state.name),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: _getStatusColor(context, schedule.state.name),
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: _getStatusColor(schedule.state.name),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -228,8 +232,9 @@ class ScheduleDetailSheet extends ConsumerWidget {
         _InfoRow(
           icon: Icons.schedule,
           label: '생성',
-          value: DateFormat('yyyy.MM.dd HH:mm')
-              .format(schedule.createdAt.toLocal()),
+          value: DateFormat(
+            'yyyy.MM.dd HH:mm',
+          ).format(schedule.createdAt.toLocal()),
         ),
       ],
     );
@@ -280,16 +285,19 @@ class ScheduleDetailSheet extends ConsumerWidget {
       child: Text(
         tag.name,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 
   /// 액션 버튼들 (수정/삭제)
   Widget _buildActionButtons(
-      BuildContext context, WidgetRef ref, ScheduleRead schedule) {
+    BuildContext context,
+    WidgetRef ref,
+    ScheduleRead schedule,
+  ) {
     final mutations = ref.watch(scheduleMutationsProvider);
     final theme = Theme.of(context);
 
@@ -596,6 +604,7 @@ Future<void> showScheduleDetailSheet(
 ) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => ScheduleDetailSheet.schedule(schedule: schedule),

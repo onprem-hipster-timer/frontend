@@ -105,10 +105,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
               group?.name ?? '할 일 그룹',
-              style: TextStyle(
-                color: groupColor,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: groupColor, fontWeight: FontWeight.w600),
             ),
             background: Container(
               decoration: BoxDecoration(
@@ -361,6 +358,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
     // TODO: 그룹 설정 (수정/삭제) 구현
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(

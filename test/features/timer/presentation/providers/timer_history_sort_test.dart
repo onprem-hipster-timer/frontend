@@ -6,7 +6,7 @@ void main() {
   group('sortTimerHistory', () {
     TimerRead makeTimer({
       required String id,
-      required String status,
+      required TimerStatus status,
       DateTime? startedAt,
       DateTime? createdAt,
     }) {
@@ -24,29 +24,29 @@ void main() {
 
     test('활성 타이머(RUNNING/PAUSED)가 완료(COMPLETED)보다 먼저 온다', () {
       final timers = [
-        makeTimer(id: 'c1', status: 'COMPLETED'),
-        makeTimer(id: 'r1', status: 'RUNNING'),
-        makeTimer(id: 'p1', status: 'PAUSED'),
+        makeTimer(id: 'c1', status: TimerStatus.completed),
+        makeTimer(id: 'r1', status: TimerStatus.running),
+        makeTimer(id: 'p1', status: TimerStatus.paused),
       ];
 
       final sorted = sortTimerHistory(timers);
 
       // RUNNING/PAUSED가 먼저
-      expect(sorted[0].status, anyOf('RUNNING', 'PAUSED'));
-      expect(sorted[1].status, anyOf('RUNNING', 'PAUSED'));
-      expect(sorted[2].status, 'COMPLETED');
+      expect(sorted[0].status, anyOf(TimerStatus.running, TimerStatus.paused));
+      expect(sorted[1].status, anyOf(TimerStatus.running, TimerStatus.paused));
+      expect(sorted[2].status, TimerStatus.completed);
     });
 
     test('같은 그룹 내에서 최신 startedAt이 먼저 온다', () {
       final timers = [
         makeTimer(
           id: 'r-old',
-          status: 'RUNNING',
+          status: TimerStatus.running,
           startedAt: DateTime.utc(2026, 1, 1, 10, 0),
         ),
         makeTimer(
           id: 'r-new',
-          status: 'RUNNING',
+          status: TimerStatus.running,
           startedAt: DateTime.utc(2026, 1, 1, 12, 0),
         ),
       ];
@@ -60,12 +60,12 @@ void main() {
       final timers = [
         makeTimer(
           id: 'no-start',
-          status: 'COMPLETED',
+          status: TimerStatus.completed,
           createdAt: DateTime.utc(2026, 1, 2),
         ),
         makeTimer(
           id: 'has-start',
-          status: 'COMPLETED',
+          status: TimerStatus.completed,
           startedAt: DateTime.utc(2026, 1, 1),
           createdAt: DateTime.utc(2025, 12, 31),
         ),
@@ -82,7 +82,7 @@ void main() {
     });
 
     test('단일 항목은 그대로 반환한다', () {
-      final timers = [makeTimer(id: 'solo', status: 'RUNNING')];
+      final timers = [makeTimer(id: 'solo', status: TimerStatus.running)];
       final sorted = sortTimerHistory(timers);
       expect(sorted.length, 1);
       expect(sorted[0].id, 'solo');
@@ -92,17 +92,17 @@ void main() {
       final timers = [
         makeTimer(
           id: 'p1',
-          status: 'PAUSED',
+          status: TimerStatus.paused,
           startedAt: DateTime.utc(2026, 1, 1, 8, 0),
         ),
         makeTimer(
           id: 'c1',
-          status: 'COMPLETED',
+          status: TimerStatus.completed,
           startedAt: DateTime.utc(2026, 1, 1, 12, 0),
         ),
         makeTimer(
           id: 'r1',
-          status: 'RUNNING',
+          status: TimerStatus.running,
           startedAt: DateTime.utc(2026, 1, 1, 10, 0),
         ),
       ];
@@ -116,8 +116,8 @@ void main() {
 
     test('원본 리스트를 변경하지 않는다', () {
       final timers = [
-        makeTimer(id: 'c1', status: 'COMPLETED'),
-        makeTimer(id: 'r1', status: 'RUNNING'),
+        makeTimer(id: 'c1', status: TimerStatus.completed),
+        makeTimer(id: 'r1', status: TimerStatus.running),
       ];
       final originalFirst = timers[0].id;
 
@@ -130,17 +130,17 @@ void main() {
       final timers = [
         makeTimer(
           id: 'c-old',
-          status: 'COMPLETED',
+          status: TimerStatus.completed,
           startedAt: DateTime.utc(2026, 1, 1),
         ),
         makeTimer(
           id: 'c-mid',
-          status: 'COMPLETED',
+          status: TimerStatus.completed,
           startedAt: DateTime.utc(2026, 1, 5),
         ),
         makeTimer(
           id: 'c-new',
-          status: 'COMPLETED',
+          status: TimerStatus.completed,
           startedAt: DateTime.utc(2026, 1, 10),
         ),
       ];

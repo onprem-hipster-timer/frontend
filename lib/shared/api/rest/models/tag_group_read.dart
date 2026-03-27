@@ -14,7 +14,6 @@ abstract class TagGroupRead with _$TagGroupRead {
     required String id,
     required String name,
     required String color,
-    @JsonKey(name: 'is_todo_group') required bool isTodoGroup,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @JsonKey(name: 'updated_at') required DateTime updatedAt,
     String? description,

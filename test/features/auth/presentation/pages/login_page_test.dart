@@ -24,16 +24,10 @@ class MockGoTrueClient extends Mock implements supa.GoTrueClient {}
 ///
 /// GoRouter 없이 MaterialApp으로 감싸서 테스트합니다.
 /// (비밀번호 찾기 / 회원가입 네비게이션은 테스트 범위 밖)
-Widget buildLoginPage({
-  required MockSupabaseClient mockSupabase,
-}) {
+Widget buildLoginPage({required MockSupabaseClient mockSupabase}) {
   return ProviderScope(
-    overrides: [
-      supabaseClientProvider.overrideWithValue(mockSupabase),
-    ],
-    child: const MaterialApp(
-      home: LoginPage(),
-    ),
+    overrides: [supabaseClientProvider.overrideWithValue(mockSupabase)],
+    child: const MaterialApp(home: LoginPage()),
   );
 }
 
@@ -48,8 +42,9 @@ void main() {
     authStreamController = StreamController<supa.AuthState>.broadcast();
 
     when(() => mockSupabase.auth).thenReturn(mockGoTrue);
-    when(() => mockGoTrue.onAuthStateChange)
-        .thenAnswer((_) => authStreamController.stream);
+    when(
+      () => mockGoTrue.onAuthStateChange,
+    ).thenAnswer((_) => authStreamController.stream);
     when(() => mockGoTrue.currentSession).thenReturn(null);
   });
 
@@ -74,10 +69,12 @@ void main() {
   // ============================================================
   group('로그인 실패 시 에러 배너', () {
     testWidgets('잘못된 비밀번호 입력 시 에러 배너가 표시된다', (tester) async {
-      when(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(supa.AuthException('Invalid login credentials'));
+      when(
+        () => mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenThrow(supa.AuthException('Invalid login credentials'));
 
       await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
@@ -88,10 +85,12 @@ void main() {
     });
 
     testWidgets('이메일 미인증 에러 시 에러 배너가 표시된다', (tester) async {
-      when(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(supa.AuthException('Email not confirmed'));
+      when(
+        () => mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenThrow(supa.AuthException('Email not confirmed'));
 
       await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
@@ -107,10 +106,12 @@ void main() {
   // ============================================================
   group('에러 해제', () {
     setUp(() {
-      when(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(supa.AuthException('Invalid login credentials'));
+      when(
+        () => mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenThrow(supa.AuthException('Invalid login credentials'));
     });
 
     testWidgets('이메일 필드 수정 시 에러가 사라진다', (tester) async {
@@ -166,10 +167,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('이메일을 입력해주세요'), findsOneWidget);
-      verifyNever(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          ));
+      verifyNever(
+        () => mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      );
     });
 
     testWidgets('@ 없는 이메일로 로그인 시 형식 에러가 표시된다', (tester) async {

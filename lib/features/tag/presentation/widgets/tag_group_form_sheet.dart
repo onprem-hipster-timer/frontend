@@ -10,10 +10,7 @@ class TagGroupFormSheet extends ConsumerStatefulWidget {
   /// 수정할 태그 그룹 (null인 경우 생성 모드)
   final TagGroupReadWithTags? tagGroup;
 
-  const TagGroupFormSheet({
-    super.key,
-    this.tagGroup,
-  });
+  const TagGroupFormSheet({super.key, this.tagGroup});
 
   @override
   ConsumerState<TagGroupFormSheet> createState() => _TagGroupFormSheetState();
@@ -25,7 +22,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
   final _descriptionController = TextEditingController();
 
   late Color _selectedColor;
-  bool _isTodoGroup = false;
 
   @override
   void initState() {
@@ -36,11 +32,9 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       _nameController.text = widget.tagGroup!.name;
       _descriptionController.text = widget.tagGroup!.description ?? '';
       _selectedColor = HexColor.fromHex(widget.tagGroup!.color);
-      _isTodoGroup = widget.tagGroup!.isTodoGroup;
     } else {
       // 생성 모드인 경우 기본값 설정
       _selectedColor = TagColorPalette.defaultColor;
-      _isTodoGroup = false;
     }
   }
 
@@ -58,22 +52,31 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     final isLoading = mutations.isLoading;
     final isEditMode = widget.tagGroup != null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+    // [Fix] viewInsets 패딩을 가장 바깥 Padding에만 적용한다.
+    // ─ 이전 구조: Container > Padding(viewInsets) > SingleChildScrollView
+    //   → Padding이 키보드 높이만큼 늘어나면서 SingleChildScrollView에
+    //     unbounded height가 전달되어 "RenderBox was not laid out" 에러 발생.
+    // ─ 수정 구조: Padding(viewInsets) > Container(maxHeight 제한) > SingleChildScrollView
+    return Padding(
+      // 키보드 패딩은 가장 바깥에서만 처리
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+      child: Container(
+        // 최대 높이를 명시해 SingleChildScrollView에 bounded constraint 전달
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
             child: Column(
@@ -97,11 +100,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
                 // 색상 선택
                 _buildColorPicker(theme),
-
-                const SizedBox(height: 24),
-
-                // Todo 그룹 여부
-                _buildTodoGroupSwitch(theme),
 
                 const SizedBox(height: 32),
 
@@ -133,7 +131,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
         // 제목
         Text(
-          isEditMode ? '태그 그룹 수정' : '새 태그 그룹 만들기',
+          isEditMode ? '그룹 수정' : '새 그룹 만들기',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -150,9 +148,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       decoration: InputDecoration(
         labelText: '그룹 이름',
         hintText: '태그 그룹 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -183,9 +179,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       decoration: InputDecoration(
         labelText: '설명 (선택사항)',
         hintText: '그룹에 대한 간단한 설명을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: const Icon(Icons.notes),
         alignLabelWithHint: true,
       ),
@@ -255,25 +249,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     );
   }
 
-  /// Todo 그룹 여부 스위치
-  Widget _buildTodoGroupSwitch(ThemeData theme) {
-    return SwitchListTile(
-      title: const Text('할 일 그룹'),
-      subtitle: const Text('이 그룹의 태그를 할 일에도 사용합니다'),
-      value: _isTodoGroup,
-      onChanged: (value) {
-        setState(() {
-          _isTodoGroup = value;
-        });
-      },
-      contentPadding: EdgeInsets.zero,
-      secondary: Icon(
-        _isTodoGroup ? Icons.check_box : Icons.label,
-        color: theme.colorScheme.primary,
-      ),
-    );
-  }
-
   /// 버튼 영역
   Widget _buildButtonBar(bool isEditMode, bool isLoading) {
     final theme = Theme.of(context);
@@ -339,7 +314,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: _isTodoGroup,
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -370,7 +344,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final createData = TagGroupCreate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: _isTodoGroup,
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -429,6 +402,7 @@ Future<void> showTagGroupFormSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => TagGroupFormSheet(tagGroup: tagGroup),

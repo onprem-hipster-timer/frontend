@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
 import 'package:momeet/shared/api/rest/models/todo_status.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 타이머 기능이 통합된 Todo Tree Tile
 ///
@@ -49,13 +50,8 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
         child: aggregationAsync.when(
           loading: () => _buildTileLoading(context, theme),
           error: (error, stack) => _buildTileError(context, theme, error),
-          data: (aggregation) => _buildTile(
-            context,
-            theme,
-            ref,
-            aggregation,
-            activeTimerState,
-          ),
+          data: (aggregation) =>
+              _buildTile(context, theme, ref, aggregation, activeTimerState),
         ),
       ),
     );
@@ -153,10 +149,51 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
             ),
         ],
       ),
-      trailing: TimerControlButtons(
-        todoId: node.id,
-        aggregation: aggregation,
-        activeTimerState: activeTimerState,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 타이머 컨트롤 버튼들
+          TimerControlButtons(
+            todoId: node.id,
+            aggregation: aggregation,
+            activeTimerState: activeTimerState,
+          ),
+
+          const SizedBox(width: 8),
+
+          // 액션 버튼들
+          OutlinedButton.icon(
+            onPressed: () =>
+                TodoActions.showEditTodoDialog(context, node.todo),
+            icon: const Icon(Icons.edit, size: 14),
+            label: const Text('수정'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 28),
+              textStyle: const TextStyle(fontSize: 10),
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          OutlinedButton.icon(
+            onPressed: () => TodoActions.showDeleteTodoDialog(
+              context,
+              ref,
+              node.todo,
+              node,
+            ),
+            icon: const Icon(Icons.delete_outline, size: 14),
+            label: const Text('삭제'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+              side: BorderSide(color: theme.colorScheme.error),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 28),
+              textStyle: const TextStyle(fontSize: 10),
+            ),
+          ),
+        ],
       ),
       onTap: onTap,
     );
@@ -198,7 +235,7 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
       case TodoStatus.cancelled:
         return '취소됨';
       default:
-        return status.toString();
+        return '알 수 없음';
     }
   }
 }
@@ -250,10 +287,7 @@ class TimerControlButtons extends ConsumerWidget {
               padding: EdgeInsets.zero,
             ),
             IconButton(
-              icon: Icon(
-                Icons.stop,
-                color: theme.colorScheme.outline,
-              ),
+              icon: Icon(Icons.stop, color: theme.colorScheme.outline),
               onPressed: () =>
                   _handleTimerStop(context, ref, activeTimerState!),
               tooltip: '정지',
@@ -263,10 +297,7 @@ class TimerControlButtons extends ConsumerWidget {
           ] else ...[
             // 활성 타이머가 없는 경우: 시작 버튼
             IconButton(
-              icon: Icon(
-                Icons.play_arrow,
-                color: theme.colorScheme.primary,
-              ),
+              icon: Icon(Icons.play_arrow, color: theme.colorScheme.primary),
               onPressed: () => _handleTimerStart(context, ref),
               tooltip: '타이머 시작',
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -283,9 +314,9 @@ class TimerControlButtons extends ConsumerWidget {
   Future<void> _handleTimerStart(BuildContext context, WidgetRef ref) async {
     try {
       // 현재는 타이머 생성 API가 없으므로 placeholder 구현
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('타이머 기능이 곧 구현됩니다')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('타이머 기능이 곧 구현됩니다')));
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -300,7 +331,9 @@ class TimerControlButtons extends ConsumerWidget {
 
   /// 타이머 일시정지/재개 토글
   Future<void> _handleTimerToggle(
-      WidgetRef ref, ActiveTimerState timerState) async {
+    WidgetRef ref,
+    ActiveTimerState timerState,
+  ) async {
     try {
       // 현재는 타이머 제어 API가 없으므로 placeholder 구현
       debugPrint('타이머 토글: ${timerState.timerId}');
@@ -329,9 +362,9 @@ class TimerControlButtons extends ConsumerWidget {
         debugPrint('타이머 정지: ${timerState.timerId}');
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('타이머 정지 기능이 곧 구현됩니다')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('타이머 정지 기능이 곧 구현됩니다')));
         }
       } catch (error) {
         if (context.mounted) {

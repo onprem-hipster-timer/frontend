@@ -9,10 +9,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
   /// 네비게이션 쉘 (페이지 컨텐츠)
   final StatefulNavigationShell navigationShell;
 
-  const ScaffoldWithNavBar({
-    super.key,
-    required this.navigationShell,
-  });
+  const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +75,6 @@ class ScaffoldWithNavBar extends StatelessWidget {
           type: BottomNavigationBarType.fixed, // 5개 아이템 고정 배치
           elevation: 0, // 컨테이너의 그림자를 사용하므로 기본 elevation 제거
           backgroundColor: Colors.transparent, // 투명하게 설정 (컨테이너 색상 사용)
-
           // ============================================================
           // 레이블 숨김 설정 (아이콘만 표시)
           // ============================================================

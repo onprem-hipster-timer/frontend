@@ -12,10 +12,7 @@ import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 class TodoTreeWithTimerListView extends ConsumerStatefulWidget {
   final String? groupId;
 
-  const TodoTreeWithTimerListView({
-    super.key,
-    this.groupId,
-  });
+  const TodoTreeWithTimerListView({super.key, this.groupId});
 
   @override
   ConsumerState<TodoTreeWithTimerListView> createState() =>
@@ -90,8 +87,9 @@ class _TodoTreeWithTimerListViewState
               node: node,
               isExpanded: _expandedIds.contains(node.id),
               onTap: () => _handleNodeTap(node),
-              onExpand:
-                  node.hasChildren ? () => _toggleExpansion(node.id) : null,
+              onExpand: node.hasChildren
+                  ? () => _toggleExpansion(node.id)
+                  : null,
             );
           },
         );
@@ -102,9 +100,9 @@ class _TodoTreeWithTimerListViewState
   /// 노드 탭 핸들러
   void _handleNodeTap(TodoTreeNode node) {
     // TODO: Todo 상세 보기 또는 편집 화면으로 이동
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Todo 탭: ${node.todo.title}')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Todo 탭: ${node.todo.title}')));
   }
 
   /// 확장/축소 토글
@@ -182,17 +180,15 @@ class TodoWithTimerPage extends ConsumerWidget {
           ActiveTimerStatusBar(),
 
           // Todo Tree with Timer (메인 컨텐츠)
-          Expanded(
-            child: TodoTreeWithTimerListView(),
-          ),
+          Expanded(child: TodoTreeWithTimerListView()),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // TODO: Todo 생성 화면으로 이동
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Todo 생성 기능이 곧 구현됩니다')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Todo 생성 기능이 곧 구현됩니다')));
         },
         child: const Icon(Icons.add),
       ),
@@ -216,8 +212,9 @@ class ActiveTimerStatusBar extends ConsumerWidget {
           return const SizedBox();
         }
 
-        final runningTimers =
-            activeStates.values.where((state) => state.isRunning).toList();
+        final runningTimers = activeStates.values
+            .where((state) => state.isRunning)
+            .toList();
 
         if (runningTimers.isEmpty) {
           return const SizedBox();
