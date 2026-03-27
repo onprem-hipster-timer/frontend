@@ -1,7 +1,7 @@
 // Password Change Bottom Sheet
 //
-// 사용자가 비밀번호를 변경할 수 있는 보안 폼 시트
-// 현재 비밀번호 확인 후 새 비밀번호로 변경하는 UI 제공
+// Supabase reauthenticate()로 이메일(또는 SMS) OTP를 발송한 뒤,
+// updateUser(password + nonce)로만 비밀번호를 변경합니다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,30 +20,32 @@ class PasswordChangeSheet extends ConsumerStatefulWidget {
 
 class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _currentPasswordController = TextEditingController();
+  final _nonceController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // 비밀번호 가시성 상태
-  bool _isCurrentPasswordVisible = false;
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isNonceVisible = false;
 
-  // 로딩 상태
-  bool _isLoading = false;
+  bool _reauthCodeSent = false;
+  bool _isSendingCode = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
-    _currentPasswordController.dispose();
+    _nonceController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  /// 폼 검증
-  String? _validateCurrentPassword(String? value) {
+  String? _validateNonce(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '현재 비밀번호를 입력해주세요';
+      return '인증 코드를 입력해주세요';
+    }
+    if (value.trim().length < 6) {
+      return '인증 코드 형식이 올바르지 않습니다';
     }
     return null;
   }
@@ -68,27 +70,82 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
     return null;
   }
 
-  /// 비밀번호 변경 처리
+  bool _validateNewPasswordFieldsOnly() {
+    final newPwdError = _validateNewPassword(_newPasswordController.text);
+    final confirmError =
+        _validateConfirmPassword(_confirmPasswordController.text);
+    if (newPwdError != null || confirmError != null) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _requestReauthenticationCode() async {
+    if (!_validateNewPasswordFieldsOnly()) {
+      _formKey.currentState?.validate();
+      return;
+    }
+
+    setState(() => _isSendingCode = true);
+
+    try {
+      await ref.read(authProvider.notifier).requestPasswordChangeReauthentication();
+
+      if (!mounted) return;
+
+      setState(() => _reauthCodeSent = true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('인증 코드를 이메일(또는 등록된 휴대전화)로 보냈습니다.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final message = e is AuthException
+          ? e.message
+          : '인증 코드를 보내지 못했습니다';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSendingCode = false);
+      }
+    }
+  }
+
   Future<void> _handlePasswordChange() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (!_reauthCodeSent) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('먼저 「인증 코드 받기」를 눌러 재인증을 진행해주세요.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
 
     try {
-      await ref.read(authProvider.notifier).changePassword(
-            _currentPasswordController.text.trim(),
-            _newPasswordController.text.trim(),
+      await ref.read(authProvider.notifier).updatePasswordWithReauthNonce(
+            newPassword: _newPasswordController.text.trim(),
+            nonce: _nonceController.text.trim(),
           );
 
       if (mounted) {
-        // 성공 시 시트 닫기
         context.pop();
 
-        // 성공 메시지 표시
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('비밀번호가 성공적으로 변경되었습니다'),
@@ -113,9 +170,7 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -123,6 +178,7 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final userEmail = ref.watch(currentUserProvider)?.email;
 
     return SafeArea(
       child: Padding(
@@ -144,7 +200,6 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 핸들 바
                   Center(
                     child: Container(
                       width: 40,
@@ -157,8 +212,6 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       ),
                     ),
                   ),
-
-                  // 헤더
                   Row(
                     children: [
                       Text(
@@ -177,38 +230,15 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // 현재 비밀번호 입력
-                  TextFormField(
-                    controller: _currentPasswordController,
-                    obscureText: !_isCurrentPasswordVisible,
-                    validator: _validateCurrentPassword,
-                    decoration: InputDecoration(
-                      labelText: '현재 비밀번호',
-                      hintText: '기존 비밀번호를 입력하세요',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isCurrentPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isCurrentPasswordVisible =
-                                !_isCurrentPasswordVisible;
-                          });
-                        },
+                  if (userEmail != null && userEmail.isNotEmpty) ...[
+                    Text(
+                      '인증 코드는 $userEmail (또는 계정에 등록된 휴대전화)로 발송됩니다.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      border: const OutlineInputBorder(),
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 새 비밀번호 입력
+                    const SizedBox(height: 16),
+                  ],
                   TextFormField(
                     controller: _newPasswordController,
                     obscureText: !_isNewPasswordVisible,
@@ -232,10 +262,7 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       border: const OutlineInputBorder(),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // 새 비밀번호 확인
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: !_isConfirmPasswordVisible,
@@ -260,19 +287,63 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       border: const OutlineInputBorder(),
                     ),
                   ),
-
-                  const SizedBox(height: 32),
-
-                  // 변경 버튼
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _nonceController,
+                    obscureText: !_isNonceVisible,
+                    validator: _validateNonce,
+                    autocorrect: false,
+                    keyboardType: TextInputType.text,
+                    decoration: InputDecoration(
+                      labelText: '인증 코드',
+                      hintText: '메일(또는 SMS)로 받은 코드를 입력하세요',
+                      prefixIcon: const Icon(Icons.pin_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isNonceVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isNonceVisible = !_isNonceVisible;
+                          });
+                        },
+                      ),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed:
+                          _isSendingCode ? null : _requestReauthenticationCode,
+                      icon: _isSendingCode
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.primary,
+                              ),
+                            )
+                          : const Icon(Icons.mark_email_read_outlined),
+                      label: Text(_reauthCodeSent ? '인증 코드 다시 받기' : '인증 코드 받기'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: _isLoading ? null : _handlePasswordChange,
+                    onPressed: (_isSubmitting || _isSendingCode)
+                        ? null
+                        : _handlePasswordChange,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: _isLoading
+                    child: _isSubmitting
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -296,10 +367,7 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                             ),
                           ),
                   ),
-
                   const SizedBox(height: 16),
-
-                  // 보안 안내
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -328,7 +396,9 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '• 새 비밀번호는 8자 이상이어야 합니다\n• 숫자, 문자, 특수문자를 조합하시기를 권장합니다\n• 다른 사이트에서 사용하지 않는 비밀번호를 사용하세요',
+                          '• Supabase 재인증: 「인증 코드 받기」로 서버에서 코드를 발송합니다.\n'
+                          '• 코드를 입력한 뒤에만 비밀번호가 서버에 반영됩니다.\n'
+                          '• 새 비밀번호는 8자 이상이어야 하며, 다른 서비스와 다른 비밀번호를 쓰는 것을 권장합니다.',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -336,7 +406,6 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 16),
                 ],
               ),
@@ -349,15 +418,12 @@ class _PasswordChangeSheetState extends ConsumerState<PasswordChangeSheet> {
 }
 
 /// 비밀번호 변경 시트를 표시하는 헬퍼 함수
-///
-/// useRootNavigator: true와 isScrollControlled: true 옵션을 사용하여
-/// 네비게이션 바 딤 이슈를 방지하고 키보드와 함께 올바르게 작동합니다.
 Future<void> showPasswordChangeSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    useRootNavigator: true, // 중요: 네비게이션 바 딤 이슈 방지
+    useRootNavigator: true,
     builder: (context) => const PasswordChangeSheet(),
   );
 }

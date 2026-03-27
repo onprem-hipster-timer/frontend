@@ -598,6 +598,13 @@ class _MyPageState extends ConsumerState<MyPage> {
 
   Widget _buildSettings(BuildContext context) {
     final theme = Theme.of(context);
+    final themeModeAsync = ref.watch(themeProvider);
+    final currentThemeMode = themeModeAsync.value ?? ThemeMode.system;
+    final isDarkMode = currentThemeMode == ThemeMode.system
+        ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
+        : currentThemeMode == ThemeMode.dark;
+    final timezoneAsync = ref.watch(timezoneProvider);
+    final currentTimezone = timezoneAsync.value ?? defaultTimezone;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,10 +629,15 @@ class _MyPageState extends ConsumerState<MyPage> {
                   color: theme.colorScheme.onSurface,
                 ),
                 title: const Text('다크 모드'),
-                value: ref.watch(themeProvider) == ThemeMode.dark,
-                onChanged: (value) {
-                  ref.read(themeProvider.notifier).toggleTheme();
-                },
+                value: isDarkMode,
+                onChanged: themeModeAsync.isLoading
+                    ? null
+                    : (value) {
+                        ref.read(themeProvider.notifier).toggleTheme(value);
+                      },
+                subtitle: currentThemeMode == ThemeMode.system
+                    ? const Text('현재 시스템 설정을 따릅니다')
+                    : null,
               ),
               const Divider(height: 1),
               ListTile(
@@ -635,7 +647,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                 ),
                 title: const Text('타임존 설정'),
                 subtitle: Text(
-                  getTimezoneDisplayName(ref.watch(timezoneProvider)),
+                  getTimezoneDisplayName(currentTimezone),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

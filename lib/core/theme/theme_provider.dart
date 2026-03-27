@@ -2,37 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String _themeKey = 'isDarkMode';
+const String _themeModeKey = 'themeMode';
 
-class ThemeNotifier extends Notifier<ThemeMode> {
+class ThemeNotifier extends AsyncNotifier<ThemeMode> {
   @override
-  ThemeMode build() {
-    _loadTheme();
-    return ThemeMode.system; // 기본값은 시스템 설정
-  }
-
-  Future<void> _loadTheme() async {
+  Future<ThemeMode> build() async {
     final prefs = await SharedPreferences.getInstance();
-    final isDarkMode = prefs.getBool(_themeKey);
+    final savedThemeMode = prefs.getString(_themeModeKey);
 
-    if (isDarkMode != null) {
-      state = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    switch (savedThemeMode) {
+      case 'dark':
+        return ThemeMode.dark;
+      case 'light':
+        return ThemeMode.light;
+      case 'system':
+      default:
+        return ThemeMode.system;
     }
   }
 
-  Future<void> toggleTheme() async {
+  Future<void> setThemeMode(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
-    final newThemeMode =
-        state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    final isDarkMode = newThemeMode == ThemeMode.dark;
+    final themeModeString = switch (mode) {
+      ThemeMode.dark => 'dark',
+      ThemeMode.light => 'light',
+      ThemeMode.system => 'system',
+    };
 
-    await prefs.setBool(_themeKey, isDarkMode);
-    state = newThemeMode;
+    await prefs.setString(_themeModeKey, themeModeString);
+    state = AsyncData(mode);
   }
 
-  bool get isDarkMode => state == ThemeMode.dark;
+  Future<void> toggleTheme(bool isDarkMode) async {
+    await setThemeMode(isDarkMode ? ThemeMode.dark : ThemeMode.light);
+  }
 }
 
-final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(
+final themeProvider = AsyncNotifierProvider<ThemeNotifier, ThemeMode>(
   () => ThemeNotifier(),
 );

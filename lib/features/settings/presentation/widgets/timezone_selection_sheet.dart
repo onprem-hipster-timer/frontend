@@ -14,7 +14,8 @@ class TimezoneSelectionSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTimezone = ref.watch(timezoneProvider);
+    final timezoneAsync = ref.watch(timezoneProvider);
+    final currentTimezone = timezoneAsync.value ?? defaultTimezone;
     final theme = Theme.of(context);
 
     return Container(

@@ -14,33 +14,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 const String _timezoneKey = 'user_timezone';
 
 /// 기본 타임존
-const String _defaultTimezone = 'Asia/Seoul';
+const String defaultTimezone = 'Asia/Seoul';
 
 // ============================================================
 // Timezone Provider
 // ============================================================
 
 /// 타임존 상태 관리 Notifier
-class TimezoneNotifier extends Notifier<String> {
+class TimezoneNotifier extends AsyncNotifier<String> {
   @override
-  String build() {
-    // 초기화 시 SharedPreferences에서 값 로드
-    _loadTimezone();
-    return _defaultTimezone;
-  }
-
-  /// SharedPreferences에서 타임존 값 로드
-  Future<void> _loadTimezone() async {
+  Future<String> build() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedTimezone = prefs.getString(_timezoneKey);
 
       if (savedTimezone != null) {
-        state = savedTimezone;
+        return savedTimezone;
       }
+
+      return defaultTimezone;
     } catch (e) {
       // SharedPreferences 로드 실패 시 기본값 유지
-      state = _defaultTimezone;
+      return defaultTimezone;
     }
   }
 
@@ -51,21 +46,21 @@ class TimezoneNotifier extends Notifier<String> {
       await prefs.setString(_timezoneKey, newTimezone);
 
       // 상태 업데이트
-      state = newTimezone;
+      state = AsyncData(newTimezone);
     } catch (e) {
       // 저장 실패 시 상태만 업데이트 (메모리에서는 변경됨)
-      state = newTimezone;
+      state = AsyncData(newTimezone);
     }
   }
 
   /// 타임존 리셋 (기본값으로 복원)
   Future<void> resetTimezone() async {
-    await updateTimezone(_defaultTimezone);
+    await updateTimezone(defaultTimezone);
   }
 }
 
 /// 타임존 상태 Provider
-final timezoneProvider = NotifierProvider<TimezoneNotifier, String>(
+final timezoneProvider = AsyncNotifierProvider<TimezoneNotifier, String>(
   TimezoneNotifier.new,
 );
 

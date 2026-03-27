@@ -119,23 +119,13 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
 
 /// 할 일 통계 데이터 프로바이더
 ///
-/// 백엔드에 통계 API가 있다면 이를 사용하고,
-/// 없다면 모든 할 일 목록을 가져와서 클라이언트 측에서 계산합니다.
+/// 통계 API 호출이 성공한 경우에만 할 일 목록을 불러와 상태별 집계를 계산합니다.
+/// (`TodoStats`에는 아직 상태별 카운트가 없어 화면용 분해 통계는 클라이언트에서 계산합니다.)
+/// API가 실패하면 예외가 그대로 전파되어 [AsyncValue]의 error 상태로 표시됩니다.
 final todoStatisticsProvider = FutureProvider<TodoStatistics>((ref) async {
-  try {
-    // 백엔드 통계 API를 먼저 시도
-    final api = ref.watch(todosApiProvider);
-    await api.getTodoStatsV1TodosStatsGet(); // 통계 API 호출 시도
-
-    // API 응답을 우리 모델로 변환
-    // 현재 TodoStats 모델에는 상태별 개수가 없으므로
-    // 전체 할 일을 가져와서 클라이언트 측에서 계산
-    // 백엔드 통계가 확장되면 이 부분을 수정할 수 있습니다.
-    return _calculateTodoStatisticsFromList(ref);
-  } catch (e) {
-    // 통계 API가 실패하면 전체 목록을 가져와서 계산
-    return _calculateTodoStatisticsFromList(ref);
-  }
+  final api = ref.watch(todosApiProvider);
+  await api.getTodoStatsV1TodosStatsGet();
+  return _calculateTodoStatisticsFromList(ref);
 });
 
 /// 클라이언트 측에서 할 일 통계 계산

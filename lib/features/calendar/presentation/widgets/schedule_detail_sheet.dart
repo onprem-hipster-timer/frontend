@@ -203,6 +203,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: _getStatusColor(
+                context,
                 schedule.state.name,
               ).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
@@ -210,7 +211,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
             child: Text(
               _getStatusText(schedule.state.name),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _getStatusColor(schedule.state.name),
+                color: _getStatusColor(context, schedule.state.name),
                 fontWeight: FontWeight.w500,
               ),
             ),
