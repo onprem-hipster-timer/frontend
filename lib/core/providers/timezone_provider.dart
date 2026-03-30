@@ -4,7 +4,7 @@
 // Riverpod으로 전역 상태를 관리합니다.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
 // ============================================================
 // Constants
@@ -21,36 +21,18 @@ const String defaultTimezone = 'Asia/Seoul';
 // ============================================================
 
 /// 타임존 상태 관리 Notifier
-class TimezoneNotifier extends AsyncNotifier<String> {
+class TimezoneNotifier extends Notifier<String> {
   @override
-  Future<String> build() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedTimezone = prefs.getString(_timezoneKey);
-
-      if (savedTimezone != null) {
-        return savedTimezone;
-      }
-
-      return defaultTimezone;
-    } catch (e) {
-      // SharedPreferences 로드 실패 시 기본값 유지
-      return defaultTimezone;
-    }
+  String build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    return prefs.getString(_timezoneKey) ?? defaultTimezone;
   }
 
   /// 타임존 업데이트 (상태 + 영구 저장)
   Future<void> updateTimezone(String newTimezone) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_timezoneKey, newTimezone);
-
-      // 상태 업데이트
-      state = AsyncData(newTimezone);
-    } catch (e) {
-      // 저장 실패 시 상태만 업데이트 (메모리에서는 변경됨)
-      state = AsyncData(newTimezone);
-    }
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_timezoneKey, newTimezone);
+    state = newTimezone;
   }
 
   /// 타임존 리셋 (기본값으로 복원)
@@ -60,7 +42,7 @@ class TimezoneNotifier extends AsyncNotifier<String> {
 }
 
 /// 타임존 상태 Provider
-final timezoneProvider = AsyncNotifierProvider<TimezoneNotifier, String>(
+final timezoneProvider = NotifierProvider<TimezoneNotifier, String>(
   TimezoneNotifier.new,
 );
 

@@ -19,8 +19,7 @@ class MoMeetApp extends ConsumerWidget {
     // GoRouter 인스턴스 가져오기
     // (routerProvider 내부에서 authProvider를 listen하여 redirect를 자동 재평가)
     final router = ref.watch(routerProvider);
-    final themeModeAsync = ref.watch(themeProvider);
-    final themeMode = themeModeAsync.value ?? ThemeMode.system;
+    final themeMode = ref.watch(themeProvider);
 
     return MaterialApp.router(
       title: AppConfig.appName,

@@ -64,14 +64,14 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Widget _buildProfile(
-      BuildContext context, AsyncValue<UserProfile?> profileAsync) {
+    BuildContext context,
+    AsyncValue<UserProfile?> profileAsync,
+  ) {
     final theme = Theme.of(context);
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
@@ -197,7 +197,9 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Widget _buildActivityStats(
-      BuildContext context, AsyncValue<TodoStatistics> statsAsync) {
+    BuildContext context,
+    AsyncValue<TodoStatistics> statsAsync,
+  ) {
     final theme = Theme.of(context);
 
     return Column(
@@ -252,32 +254,40 @@ class _MyPageState extends ConsumerState<MyPage> {
                   Row(
                     children: [
                       Expanded(
-                          child: _buildStatusCard(
-                              context,
-                              '전체',
-                              '${stats.totalCount}',
-                              theme.colorScheme.primary)),
+                        child: _buildStatusCard(
+                          context,
+                          '전체',
+                          '${stats.totalCount}',
+                          theme.colorScheme.primary,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: _buildStatusCard(
-                              context,
-                              '미지정',
-                              '${stats.unscheduledCount}',
-                              theme.colorScheme.secondary)),
+                        child: _buildStatusCard(
+                          context,
+                          '미지정',
+                          '${stats.unscheduledCount}',
+                          theme.colorScheme.secondary,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: _buildStatusCard(
-                              context,
-                              '예정',
-                              '${stats.scheduledCount}',
-                              theme.colorScheme.tertiary)),
+                        child: _buildStatusCard(
+                          context,
+                          '예정',
+                          '${stats.scheduledCount}',
+                          theme.colorScheme.tertiary,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                          child: _buildStatusCard(
-                              context,
-                              '완료',
-                              '${stats.doneCount}',
-                              theme.colorScheme.tertiaryContainer)),
+                        child: _buildStatusCard(
+                          context,
+                          '완료',
+                          '${stats.doneCount}',
+                          theme.colorScheme.tertiaryContainer,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -396,7 +406,11 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Widget _buildStatusCard(
-      BuildContext context, String label, String count, Color color) {
+    BuildContext context,
+    String label,
+    String count,
+    Color color,
+  ) {
     final theme = Theme.of(context);
 
     return Container(
@@ -428,7 +442,9 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Widget _buildTagStats(
-      BuildContext context, AsyncValue<TagUsageStatistics> tagStatsAsync) {
+    BuildContext context,
+    AsyncValue<TagUsageStatistics> tagStatsAsync,
+  ) {
     final theme = Theme.of(context);
 
     return Column(
@@ -478,12 +494,14 @@ class _MyPageState extends ConsumerState<MyPage> {
                   spacing: 12,
                   runSpacing: 12,
                   children: topTags
-                      .map((tagItem) => _buildTagChip(
-                            context,
-                            tagItem.tagName,
-                            tagItem.count,
-                            _getTagColor(tagItem.tagId),
-                          ))
+                      .map(
+                        (tagItem) => _buildTagChip(
+                          context,
+                          tagItem.tagName,
+                          tagItem.count,
+                          _getTagColor(tagItem.tagId),
+                        ),
+                      )
                       .toList(),
                 );
               },
@@ -491,15 +509,16 @@ class _MyPageState extends ConsumerState<MyPage> {
                 spacing: 12,
                 runSpacing: 12,
                 children: List.generate(
-                    4,
-                    (index) => Container(
-                          width: 80 + (index % 3) * 20.0,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        )),
+                  4,
+                  (index) => Container(
+                    width: 80 + (index % 3) * 20.0,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
               ),
               error: (error, stack) => Column(
                 children: [
@@ -536,7 +555,11 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Widget _buildTagChip(
-      BuildContext context, String tagName, int count, Color color) {
+    BuildContext context,
+    String tagName,
+    int count,
+    Color color,
+  ) {
     final theme = Theme.of(context);
 
     return Container(
@@ -598,13 +621,11 @@ class _MyPageState extends ConsumerState<MyPage> {
 
   Widget _buildSettings(BuildContext context) {
     final theme = Theme.of(context);
-    final themeModeAsync = ref.watch(themeProvider);
-    final currentThemeMode = themeModeAsync.value ?? ThemeMode.system;
+    final currentThemeMode = ref.watch(themeProvider);
     final isDarkMode = currentThemeMode == ThemeMode.system
         ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
         : currentThemeMode == ThemeMode.dark;
-    final timezoneAsync = ref.watch(timezoneProvider);
-    final currentTimezone = timezoneAsync.value ?? defaultTimezone;
+    final currentTimezone = ref.watch(timezoneProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,11 +651,9 @@ class _MyPageState extends ConsumerState<MyPage> {
                 ),
                 title: const Text('다크 모드'),
                 value: isDarkMode,
-                onChanged: themeModeAsync.isLoading
-                    ? null
-                    : (value) {
-                        ref.read(themeProvider.notifier).toggleTheme(value);
-                      },
+                onChanged: (value) {
+                  ref.read(themeProvider.notifier).toggleTheme(value);
+                },
                 subtitle: currentThemeMode == ThemeMode.system
                     ? const Text('현재 시스템 설정을 따릅니다')
                     : null,
@@ -677,10 +696,7 @@ class _MyPageState extends ConsumerState<MyPage> {
               ),
               const Divider(height: 1),
               ListTile(
-                leading: Icon(
-                  Icons.logout,
-                  color: theme.colorScheme.error,
-                ),
+                leading: Icon(Icons.logout, color: theme.colorScheme.error),
                 title: Text(
                   '로그아웃',
                   style: TextStyle(color: theme.colorScheme.error),

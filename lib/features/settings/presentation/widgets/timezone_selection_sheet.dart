@@ -14,17 +14,14 @@ class TimezoneSelectionSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timezoneAsync = ref.watch(timezoneProvider);
-    final currentTimezone = timezoneAsync.value ?? defaultTimezone;
+    final currentTimezone = ref.watch(timezoneProvider);
     final theme = Theme.of(context);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -82,8 +79,9 @@ class TimezoneSelectionSheet extends ConsumerWidget {
                   title: Text(
                     displayName,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: isSelected
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurface,
@@ -119,9 +117,7 @@ class TimezoneSelectionSheet extends ConsumerWidget {
           ),
 
           // 하단 여백 (안전 영역)
-          SizedBox(
-            height: MediaQuery.of(context).padding.bottom,
-          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
         ],
       ),
     );
