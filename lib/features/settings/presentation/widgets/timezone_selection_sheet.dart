@@ -1,7 +1,7 @@
 // Timezone Selection Bottom Sheet
 //
 // 사용자가 타임존을 선택할 수 있는 모달 바텀 시트
-// 전 세계 주요 타임존을 리스트로 제공하고 현재 선택된 값을 하이라이트 표시
+// IANA 타임존 DB에서 전체 목록을 표시하며 검색 필터를 제공합니다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,11 +9,48 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
 
 /// 타임존 선택 바텀 시트
-class TimezoneSelectionSheet extends ConsumerWidget {
+class TimezoneSelectionSheet extends ConsumerStatefulWidget {
   const TimezoneSelectionSheet({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimezoneSelectionSheet> createState() =>
+      _TimezoneSelectionSheetState();
+}
+
+class _TimezoneSelectionSheetState
+    extends ConsumerState<TimezoneSelectionSheet> {
+  final _searchController = TextEditingController();
+  late List<String> _allTimezones;
+  List<String> _filteredTimezones = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _allTimezones = getAllTimezones();
+    _filteredTimezones = _allTimezones;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredTimezones = _allTimezones;
+      } else {
+        final lowerQuery = query.toLowerCase();
+        _filteredTimezones = _allTimezones
+            .where((tz) => tz.toLowerCase().contains(lowerQuery))
+            .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentTimezone = ref.watch(timezoneProvider);
     final theme = Theme.of(context);
 
@@ -59,15 +96,45 @@ class TimezoneSelectionSheet extends ConsumerWidget {
             ),
           ),
 
+          // 검색 필드
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                hintText: '도시 또는 타임존 검색',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _onSearchChanged('');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
           const Divider(height: 1),
 
           // 타임존 리스트
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: supportedTimezones.length,
+              itemCount: _filteredTimezones.length,
               itemBuilder: (context, index) {
-                final timezone = supportedTimezones[index];
+                final timezone = _filteredTimezones[index];
                 final displayName = getTimezoneDisplayName(timezone);
                 final isSelected = timezone == currentTimezone;
 
@@ -101,12 +168,10 @@ class TimezoneSelectionSheet extends ConsumerWidget {
                         )
                       : null,
                   onTap: () async {
-                    // 타임존 업데이트
                     await ref
                         .read(timezoneProvider.notifier)
                         .updateTimezone(timezone);
 
-                    // 시트 닫기
                     if (context.mounted) {
                       context.pop();
                     }
