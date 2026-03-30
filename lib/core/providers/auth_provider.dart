@@ -233,14 +233,7 @@ class AuthNotifier extends _$AuthNotifier {
   Future<void> requestPasswordChangeReauthentication() async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-
-      if (supabase.auth.currentUser == null) {
-        throw AuthException(
-          message: '로그인 상태가 아닙니다.',
-          originalError: null,
-        );
-      }
-
+      // currentUser null 체크는 router guard가 보장하므로 생략
       await supabase.auth.reauthenticate();
     } catch (e) {
       throw AuthException(
@@ -259,19 +252,9 @@ class AuthNotifier extends _$AuthNotifier {
   }) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-
-      if (supabase.auth.currentUser == null) {
-        throw AuthException(
-          message: '로그인 상태가 아닙니다.',
-          originalError: null,
-        );
-      }
-
+      // currentUser null 체크는 router guard가 보장하므로 생략
       await supabase.auth.updateUser(
-        UserAttributes(
-          password: newPassword,
-          nonce: nonce.trim(),
-        ),
+        UserAttributes(password: newPassword, nonce: nonce.trim()),
       );
     } catch (e) {
       throw AuthException(
