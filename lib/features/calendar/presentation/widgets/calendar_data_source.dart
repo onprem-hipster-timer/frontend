@@ -57,15 +57,11 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
     }
 
     // 상태에 따른 기본 색상
-    switch (schedule.state.name) {
-      case 'CONFIRMED':
-        return Colors.blue;
-      case 'CANCELLED':
-        return Colors.grey;
-      case 'PLANNED':
-      default:
-        return Colors.teal;
-    }
+    return switch (schedule.state) {
+      ScheduleState.confirmed => Colors.blue,
+      ScheduleState.cancelled => Colors.grey,
+      ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
+    };
   }
 
   /// Hex 색상 문자열을 Color로 변환
