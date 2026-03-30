@@ -9,13 +9,18 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
-import 'package:momeet/features/calendar/calendar.dart';
-import 'package:momeet/features/timer/timer.dart';
-import 'package:momeet/features/todo/todo.dart';
-import 'package:momeet/features/tag/tag.dart';
-import 'package:momeet/features/mypage/mypage.dart';
+import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart'
+    deferred as calendar;
+import 'package:momeet/features/timer/presentation/pages/timer_page.dart'
+    deferred as timer;
+import 'package:momeet/features/todo/todo.dart' deferred as todo;
+import 'package:momeet/features/tag/tag.dart' deferred as tag;
+import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
+    deferred as mypage;
+import 'package:momeet/shared/widgets/deferred_widget.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
+
 
 // ============================================================
 // 라우트 정의
@@ -235,7 +240,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.calendar.path,
                 name: AppRoute.calendar.name,
-                builder: (context, state) => const CalendarPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: calendar.loadLibrary,
+                  builder: (_) => calendar.CalendarPage(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'schedule/detail',
@@ -261,14 +269,21 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.todo.path,
                 name: AppRoute.todo.name,
-                builder: (context, state) => const TodoDashboardPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: todo.loadLibrary,
+                  builder: (_) => todo.TodoDashboardPage(),
+                ),
                 routes: [
                   GoRoute(
                     path: '/:groupId',
                     name: AppRoute.todoGroupDetail.name,
                     builder: (context, state) {
                       final groupId = state.pathParameters['groupId']!;
-                      return TodoGroupDetailPage(groupId: groupId);
+                      return DeferredWidget(
+                        loader: todo.loadLibrary,
+                        builder: (_) =>
+                            todo.TodoGroupDetailPage(groupId: groupId),
+                      );
                     },
                   ),
                 ],
@@ -282,7 +297,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.timer.path,
                 name: AppRoute.timer.name,
-                builder: (context, state) => const TimerPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: timer.loadLibrary,
+                  builder: (_) => timer.TimerPage(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'detail',
@@ -306,7 +324,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.tags.path,
                 name: AppRoute.tags.name,
-                builder: (context, state) => const TagManagementPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: tag.loadLibrary,
+                  builder: (_) => tag.TagManagementPage(),
+                ),
               ),
             ],
           ),
@@ -317,7 +338,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.mypage.path,
                 name: AppRoute.mypage.name,
-                builder: (context, state) => const MyPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: mypage.loadLibrary,
+                  builder: (_) => mypage.MyPage(),
+                ),
               ),
             ],
           ),
