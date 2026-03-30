@@ -220,7 +220,7 @@ Future<List<ScheduleRead>> filteredSchedules(Ref ref) async {
     }
 
     // 취소된 일정 필터
-    if (!filter.showCancelled && schedule.state.name == 'CANCELLED') {
+    if (!filter.showCancelled && schedule.state == ScheduleState.cancelled) {
       return false;
     }
 
@@ -387,13 +387,9 @@ Color _getScheduleColor(ScheduleRead schedule) {
 /// 주의: BuildContext가 없는 전역 함수로 Theme 접근 불가
 /// TODO: 향후 테마 기반 색상으로 리팩토링 고려
 Color getScheduleColor(ScheduleRead schedule) {
-  switch (schedule.state.name) {
-    case 'CONFIRMED':
-      return Colors.blue;
-    case 'CANCELLED':
-      return Colors.grey; // 다크모드 호환성 제한
-    case 'PLANNED':
-    default:
-      return Colors.teal;
-  }
+  return switch (schedule.state) {
+    ScheduleState.confirmed => Colors.blue,
+    ScheduleState.cancelled => Colors.grey, // 다크모드 호환성 제한
+    ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
+  };
 }

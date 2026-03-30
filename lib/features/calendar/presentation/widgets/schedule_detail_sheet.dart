@@ -19,16 +19,12 @@ class ScheduleDetailSheet extends ConsumerWidget {
   final HolidayItem? holiday;
 
   /// 일반 일정용 생성자
-  const ScheduleDetailSheet.schedule({
-    super.key,
-    required this.schedule,
-  }) : holiday = null;
+  const ScheduleDetailSheet.schedule({super.key, required this.schedule})
+    : holiday = null;
 
   /// 휴일용 생성자
-  const ScheduleDetailSheet.holiday({
-    super.key,
-    required this.holiday,
-  }) : schedule = null;
+  const ScheduleDetailSheet.holiday({super.key, required this.holiday})
+    : schedule = null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -145,19 +141,11 @@ class ScheduleDetailSheet extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // 종류
-        _InfoRow(
-          icon: Icons.category,
-          label: '종류',
-          value: holiday.dateKind,
-        ),
+        _InfoRow(icon: Icons.category, label: '종류', value: holiday.dateKind),
 
         if (holiday.isHoliday) ...[
           const SizedBox(height: 16),
-          _InfoRow(
-            icon: Icons.info,
-            label: '구분',
-            value: '법정공휴일',
-          ),
+          _InfoRow(icon: Icons.info, label: '구분', value: '법정공휴일'),
         ],
       ],
     );
@@ -198,20 +186,20 @@ class ScheduleDetailSheet extends ConsumerWidget {
         _InfoRow(
           icon: Icons.flag,
           label: '상태',
-          value: _getStatusText(schedule.state.name),
+          value: _getStatusText(schedule.state),
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: _getStatusColor(
                 context,
-                schedule.state.name,
+                schedule.state,
               ).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              _getStatusText(schedule.state.name),
+              _getStatusText(schedule.state),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _getStatusColor(context, schedule.state.name),
+                color: _getStatusColor(context, schedule.state),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -250,15 +238,18 @@ class ScheduleDetailSheet extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.label,
-                size: 20, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.label,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Text(
               '태그',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -361,7 +352,10 @@ class ScheduleDetailSheet extends ConsumerWidget {
 
   /// 삭제 버튼 핸들러
   Future<void> _handleDelete(
-      BuildContext context, WidgetRef ref, ScheduleRead schedule) async {
+    BuildContext context,
+    WidgetRef ref,
+    ScheduleRead schedule,
+  ) async {
     final theme = Theme.of(context);
 
     // 삭제 확인 다이얼로그
@@ -409,9 +403,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
               children: [
                 Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text('삭제에 실패했습니다: ${error.toString()}'),
-                ),
+                Expanded(child: Text('삭제에 실패했습니다: ${error.toString()}')),
               ],
             ),
             backgroundColor: Colors.red,
@@ -463,32 +455,24 @@ class ScheduleDetailSheet extends ConsumerWidget {
   }
 
   /// 상태 텍스트 변환
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'PLANNED':
-        return '계획됨';
-      case 'CONFIRMED':
-        return '확정됨';
-      case 'CANCELLED':
-        return '취소됨';
-      default:
-        return status;
-    }
+  String _getStatusText(ScheduleState state) {
+    return switch (state) {
+      ScheduleState.planned => '계획됨',
+      ScheduleState.confirmed => '확정됨',
+      ScheduleState.cancelled => '취소됨',
+      ScheduleState.$unknown => state.toString(),
+    };
   }
 
   /// 상태별 색상 반환
-  Color _getStatusColor(BuildContext context, String status) {
+  Color _getStatusColor(BuildContext context, ScheduleState state) {
     final theme = Theme.of(context);
-    switch (status) {
-      case 'SCHEDULED':
-        return theme.colorScheme.primary;
-      case 'DONE':
-        return theme.colorScheme.tertiary;
-      case 'CANCELLED':
-        return theme.colorScheme.error;
-      default:
-        return theme.colorScheme.onSurfaceVariant;
-    }
+    return switch (state) {
+      ScheduleState.planned => theme.colorScheme.primary,
+      ScheduleState.confirmed => theme.colorScheme.tertiary,
+      ScheduleState.cancelled => theme.colorScheme.error,
+      ScheduleState.$unknown => theme.colorScheme.onSurfaceVariant,
+    };
   }
 
   /// Hex 색상 파싱
@@ -560,11 +544,8 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child: valueWidget ??
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium,
-                ),
+            child:
+                valueWidget ?? Text(value, style: theme.textTheme.bodyMedium),
           ),
         ],
       );
@@ -587,11 +568,7 @@ class _InfoRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: valueWidget ??
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium,
-              ),
+          child: valueWidget ?? Text(value, style: theme.textTheme.bodyMedium),
         ),
       ],
     );
