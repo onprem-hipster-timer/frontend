@@ -1,10 +1,11 @@
 // Timezone Provider - 앱 전체 타임존 상태 관리
 //
-// SharedPreferences를 사용하여 사용자가 선택한 타임존을 저장하고
-// Riverpod으로 전역 상태를 관리합니다.
+// timezone 패키지(IANA DB)를 사용하여 타임존을 관리하고
+// SharedPreferences에 사용자 선택을 영속합니다.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
 // ============================================================
 // Constants
@@ -20,37 +21,27 @@ const String defaultTimezone = 'Asia/Seoul';
 // Timezone Provider
 // ============================================================
 
-/// 타임존 상태 관리 Notifier
-class TimezoneNotifier extends AsyncNotifier<String> {
+/// 타임존 상태 관리 Notifier (IANA timezone ID를 상태로 관리)
+class TimezoneNotifier extends Notifier<String> {
   @override
-  Future<String> build() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedTimezone = prefs.getString(_timezoneKey);
-
-      if (savedTimezone != null) {
-        return savedTimezone;
-      }
-
-      return defaultTimezone;
-    } catch (e) {
-      // SharedPreferences 로드 실패 시 기본값 유지
-      return defaultTimezone;
+  String build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final saved = prefs.getString(_timezoneKey);
+    // 저장된 값이 IANA DB에 존재하는지 확인
+    if (saved != null && tz.timeZoneDatabase.locations.containsKey(saved)) {
+      return saved;
     }
+    return defaultTimezone;
   }
 
   /// 타임존 업데이트 (상태 + 영구 저장)
   Future<void> updateTimezone(String newTimezone) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_timezoneKey, newTimezone);
-
-      // 상태 업데이트
-      state = AsyncData(newTimezone);
-    } catch (e) {
-      // 저장 실패 시 상태만 업데이트 (메모리에서는 변경됨)
-      state = AsyncData(newTimezone);
+    if (!tz.timeZoneDatabase.locations.containsKey(newTimezone)) {
+      return;
     }
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_timezoneKey, newTimezone);
+    state = newTimezone;
   }
 
   /// 타임존 리셋 (기본값으로 복원)
@@ -60,7 +51,7 @@ class TimezoneNotifier extends AsyncNotifier<String> {
 }
 
 /// 타임존 상태 Provider
-final timezoneProvider = AsyncNotifierProvider<TimezoneNotifier, String>(
+final timezoneProvider = NotifierProvider<TimezoneNotifier, String>(
   TimezoneNotifier.new,
 );
 
@@ -68,59 +59,59 @@ final timezoneProvider = AsyncNotifierProvider<TimezoneNotifier, String>(
 // Helper Functions
 // ============================================================
 
-/// 타임존을 사용자 친화적인 이름으로 변환
-String getTimezoneDisplayName(String timezone) {
-  switch (timezone) {
-    case 'Asia/Seoul':
-      return '서울 (KST)';
-    case 'Asia/Tokyo':
-      return '도쿄 (JST)';
-    case 'Asia/Shanghai':
-      return '상하이 (CST)';
-    case 'Asia/Hong_Kong':
-      return '홍콩 (HKT)';
-    case 'Asia/Singapore':
-      return '싱가포르 (SGT)';
-    case 'Europe/London':
-      return '런던 (GMT/BST)';
-    case 'Europe/Paris':
-      return '파리 (CET/CEST)';
-    case 'Europe/Berlin':
-      return '베를린 (CET/CEST)';
-    case 'America/New_York':
-      return '뉴욕 (EST/EDT)';
-    case 'America/Los_Angeles':
-      return '로스앤젤레스 (PST/PDT)';
-    case 'America/Chicago':
-      return '시카고 (CST/CDT)';
-    case 'America/Toronto':
-      return '토론토 (EST/EDT)';
-    case 'Australia/Sydney':
-      return '시드니 (AEST/AEDT)';
-    case 'Pacific/Auckland':
-      return '오클랜드 (NZST/NZDT)';
-    case 'UTC':
-      return 'UTC (협정세계시)';
-    default:
-      return timezone;
-  }
+/// IANA 타임존 ID에서 도시 이름을 추출합니다.
+///
+/// 예: 'Asia/Seoul' → 'Seoul', 'America/New_York' → 'New York'
+String _extractCity(String timezoneId) {
+  final parts = timezoneId.split('/');
+  final city = parts.length > 1 ? parts.last : timezoneId;
+  return city.replaceAll('_', ' ');
 }
 
-/// 지원되는 타임존 목록
-const List<String> supportedTimezones = [
-  'Asia/Seoul',
-  'Asia/Tokyo',
-  'Asia/Shanghai',
-  'Asia/Hong_Kong',
-  'Asia/Singapore',
-  'Europe/London',
-  'Europe/Paris',
-  'Europe/Berlin',
-  'America/New_York',
-  'America/Los_Angeles',
-  'America/Chicago',
-  'America/Toronto',
-  'Australia/Sydney',
-  'Pacific/Auckland',
-  'UTC',
-];
+/// 현재 시각 기준 UTC offset 문자열을 반환합니다.
+///
+/// 예: '+09:00', '-05:00', '+05:30'
+String _formatOffset(tz.Location location) {
+  final now = tz.TZDateTime.now(location);
+  final offset = now.timeZoneOffset;
+  final totalMinutes = offset.inMinutes;
+  final hours = totalMinutes ~/ 60;
+  final minutes = totalMinutes.remainder(60).abs();
+  final sign = totalMinutes >= 0 ? '+' : '-';
+  return '$sign${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+}
+
+/// 타임존을 사용자 친화적인 이름으로 변환합니다.
+///
+/// 예: 'Asia/Seoul' → 'Seoul (UTC+09:00)'
+String getTimezoneDisplayName(String timezoneId) {
+  final locations = tz.timeZoneDatabase.locations;
+  if (!locations.containsKey(timezoneId)) return timezoneId;
+
+  final location = locations[timezoneId]!;
+  final city = _extractCity(timezoneId);
+  final offset = _formatOffset(location);
+  return '$city (UTC$offset)';
+}
+
+/// IANA 타임존 목록을 반환합니다 (UTC offset → 이름 순 정렬).
+///
+/// offset을 사전에 한 번만 계산하여 정렬 중 TZDateTime 재생성을 방지합니다.
+/// DST 전환 시점에도 정렬 일관성을 보장합니다.
+List<String> getAllTimezones() {
+  final locations = tz.timeZoneDatabase.locations.keys.toList();
+
+  final offsets = <String, Duration>{
+    for (final id in locations)
+      id: tz.TZDateTime.now(tz.getLocation(id)).timeZoneOffset,
+  };
+
+  locations.sort((a, b) {
+    final offsetA = offsets[a]!;
+    final offsetB = offsets[b]!;
+    final cmp = offsetA.compareTo(offsetB);
+    if (cmp != 0) return cmp;
+    return a.compareTo(b);
+  });
+  return locations;
+}

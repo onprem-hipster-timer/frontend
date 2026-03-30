@@ -6,9 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:momeet/app.dart';
 import 'package:momeet/core/config/app_config.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +23,16 @@ void main() async {
   await initializeDateFormatting('en_US', null);
 
   await dotenv.load(fileName: "assets/.env");
+
+  // ============================================================
+  // SharedPreferences 프리로드
+  // ============================================================
+  final prefs = await SharedPreferences.getInstance();
+
+  // ============================================================
+  // IANA Timezone DB 초기화
+  // ============================================================
+  tz.initializeTimeZones();
 
   // ============================================================
   // Supabase 초기화
@@ -40,8 +53,9 @@ void main() async {
   }
 
   runApp(
-    const ProviderScope(
-      child: MoMeetApp(),
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MoMeetApp(),
     ),
   );
 }
