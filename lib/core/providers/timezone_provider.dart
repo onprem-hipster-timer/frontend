@@ -36,6 +36,9 @@ class TimezoneNotifier extends Notifier<String> {
 
   /// 타임존 업데이트 (상태 + 영구 저장)
   Future<void> updateTimezone(String newTimezone) async {
+    if (!tz.timeZoneDatabase.locations.containsKey(newTimezone)) {
+      return;
+    }
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_timezoneKey, newTimezone);
     state = newTimezone;
@@ -91,12 +94,21 @@ String getTimezoneDisplayName(String timezoneId) {
   return '$city (UTC$offset)';
 }
 
-/// IANA 타임존 목록을 반환합니다 (도시 이름 기준 정렬).
+/// IANA 타임존 목록을 반환합니다 (UTC offset → 이름 순 정렬).
+///
+/// offset을 사전에 한 번만 계산하여 정렬 중 TZDateTime 재생성을 방지합니다.
+/// DST 전환 시점에도 정렬 일관성을 보장합니다.
 List<String> getAllTimezones() {
   final locations = tz.timeZoneDatabase.locations.keys.toList();
+
+  final offsets = <String, Duration>{
+    for (final id in locations)
+      id: tz.TZDateTime.now(tz.getLocation(id)).timeZoneOffset,
+  };
+
   locations.sort((a, b) {
-    final offsetA = tz.TZDateTime.now(tz.getLocation(a)).timeZoneOffset;
-    final offsetB = tz.TZDateTime.now(tz.getLocation(b)).timeZoneOffset;
+    final offsetA = offsets[a]!;
+    final offsetB = offsets[b]!;
     final cmp = offsetA.compareTo(offsetB);
     if (cmp != 0) return cmp;
     return a.compareTo(b);
