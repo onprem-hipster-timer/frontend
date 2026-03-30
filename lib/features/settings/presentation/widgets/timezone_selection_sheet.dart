@@ -51,7 +51,8 @@ class _TimezoneSelectionSheetState
 
   @override
   Widget build(BuildContext context) {
-    final currentTimezone = ref.watch(timezoneProvider);
+    final currentTimezone =
+        ref.watch(timezoneProvider).value ?? defaultTimezone;
     final theme = Theme.of(context);
 
     return Container(
