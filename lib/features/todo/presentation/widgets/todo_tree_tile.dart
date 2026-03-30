@@ -368,7 +368,10 @@ class TodoTreeTile extends ConsumerWidget {
       child: AnimatedRotation(
         turns: isExpanded ? 0.25 : 0, // 90도 회전
         duration: const Duration(milliseconds: 200),
-        child: const Icon(Icons.chevron_right, size: 24),
+        child: const Icon(
+          Icons.chevron_right,
+          size: 24,
+        ),
       ),
     );
   }
@@ -482,12 +485,14 @@ class TodoRootDropTarget extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final draggedTodo = details.data;
         // 부모를 null로 설정하여 루트로 이동
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeParent(draggedTodo.id, null);
+        await ref.read(todoMutationsProvider.notifier).changeParent(
+              draggedTodo.id,
+              null,
+            );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
+        final theme = Theme.of(context);
 
         return Container(
           height: 40,
@@ -496,13 +501,13 @@ class TodoRootDropTarget extends ConsumerWidget {
             border: Border.all(
               color: isValidTarget
                   ? kDropTargetColor
-                  : Colors.grey.withAlpha(77),
+                  : theme.colorScheme.outline.withValues(alpha: 0.3),
               width: isValidTarget ? 2 : 1,
               style: BorderStyle.solid,
             ),
             borderRadius: BorderRadius.circular(8),
             color: isValidTarget
-                ? kDropTargetColor.withAlpha(26)
+                ? kDropTargetColor.withValues(alpha: 0.1)
                 : Colors.transparent,
           ),
           child: Center(
@@ -512,16 +517,19 @@ class TodoRootDropTarget extends ConsumerWidget {
                 Icon(
                   Icons.arrow_upward,
                   size: 16,
-                  color: isValidTarget ? kDropTargetColor : Colors.grey,
+                  color: isValidTarget
+                      ? kDropTargetColor
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '루트로 이동',
                   style: TextStyle(
-                    color: isValidTarget ? kDropTargetColor : Colors.grey,
-                    fontWeight: isValidTarget
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    color: isValidTarget
+                        ? kDropTargetColor
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight:
+                        isValidTarget ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ],

@@ -60,14 +60,18 @@ class _TodoTreeWithTimerListViewState
       ),
       data: (todoTree) {
         if (todoTree.totalCount == 0) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.checklist, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('Todo가 없습니다'),
-                Text('새로운 Todo를 추가해보세요'),
+                Icon(
+                  Icons.checklist,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 16),
+                const Text('Todo가 없습니다'),
+                const Text('새로운 Todo를 추가해보세요'),
               ],
             ),
           );

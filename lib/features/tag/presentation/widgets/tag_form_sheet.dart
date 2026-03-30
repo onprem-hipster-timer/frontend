@@ -211,7 +211,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.folder_outlined, color: Colors.grey),
+                Icon(Icons.folder_outlined,
+                    color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 12),
                 Container(
                   width: 12,
@@ -388,6 +389,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
   }
 
   Widget _buildButtonBar(bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         Expanded(
@@ -414,12 +417,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(_isEditMode ? '수정' : '생성'),
@@ -434,6 +437,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     try {
       if (_isEditMode) {
@@ -446,7 +450,19 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             .updateTag(widget.tag!.id, updateData);
         if (mounted) {
           navigator.pop();
-          _showSuccess(scaffoldMessenger, '태그가 수정되었습니다');
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그가 수정되었습니다'),
+                ],
+              ),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       } else {
         final createData = TagCreate(

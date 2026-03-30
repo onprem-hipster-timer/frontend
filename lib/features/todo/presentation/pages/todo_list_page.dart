@@ -15,7 +15,10 @@ class TodoListPage extends ConsumerWidget {
   /// 필터링할 그룹 ID (선택사항)
   final String? groupId;
 
-  const TodoListPage({super.key, this.groupId});
+  const TodoListPage({
+    super.key,
+    this.groupId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +53,9 @@ class TodoListPage extends ConsumerWidget {
         children: [
           todoTreeAsync.when(
             data: (tree) => _buildTreeView(context, ref, tree),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(
+              child: CircularProgressIndicator(),
+            ),
             error: (error, stack) => Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -80,8 +85,11 @@ class TodoListPage extends ConsumerWidget {
           // 로딩 오버레이 (뮤테이션 중)
           if (mutationState.isLoading)
             Container(
-              color: Colors.black.withAlpha(77),
-              child: const Center(child: CircularProgressIndicator()),
+              color:
+                  Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
         ],
       ),

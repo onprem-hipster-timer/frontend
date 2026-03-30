@@ -224,6 +224,45 @@ class AuthNotifier extends _$AuthNotifier {
       );
     }
   }
+
+  /// 비밀번호 변경 전 재인증용 일회용 코드를 이메일(또는 확인된 휴대전화)로 발송합니다.
+  ///
+  /// [공식 문서](https://supabase.com/docs/reference/dart/auth-reauthentication)의
+  /// `reauthenticate()`에 해당합니다. 이후 `updatePasswordWithReauthNonce`로
+  /// 수신한 코드와 새 비밀번호를 함께 제출해야 합니다.
+  Future<void> requestPasswordChangeReauthentication() async {
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      // currentUser null 체크는 router guard가 보장하므로 생략
+      await supabase.auth.reauthenticate();
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 재인증 nonce(이메일/SMS로 수신)와 함께 비밀번호를 변경합니다.
+  ///
+  /// 반드시 [requestPasswordChangeReauthentication] 성공 후 호출하세요.
+  Future<void> updatePasswordWithReauthNonce({
+    required String newPassword,
+    required String nonce,
+  }) async {
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      // currentUser null 체크는 router guard가 보장하므로 생략
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword, nonce: nonce.trim()),
+      );
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
 }
 
 // ============================================================

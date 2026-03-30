@@ -349,12 +349,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                         ),
                       ),
                       child: mutations.isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: theme.colorScheme.onPrimary,
                               ),
                             )
                           : Text(widget.existingSchedule != null ? '수정' : '저장'),

@@ -2,26 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
+import '../../../../helpers/timer_fixtures.dart';
+
 void main() {
   group('sortTimerHistory', () {
-    TimerRead makeTimer({
-      required String id,
-      required TimerStatus status,
-      DateTime? startedAt,
-      DateTime? createdAt,
-    }) {
-      final ca = createdAt ?? DateTime.utc(2026, 1, 1);
-      return TimerRead(
-        id: id,
-        allocatedDuration: 3600,
-        elapsedTime: 0,
-        status: status,
-        createdAt: ca,
-        updatedAt: ca,
-        startedAt: startedAt,
-      );
-    }
-
     test('활성 타이머(RUNNING/PAUSED)가 완료(COMPLETED)보다 먼저 온다', () {
       final timers = [
         makeTimer(id: 'c1', status: TimerStatus.completed),

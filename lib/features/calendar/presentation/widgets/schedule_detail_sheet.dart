@@ -186,19 +186,20 @@ class ScheduleDetailSheet extends ConsumerWidget {
         _InfoRow(
           icon: Icons.flag,
           label: '상태',
-          value: _getStatusText(schedule.state.name),
+          value: _getStatusText(schedule.state),
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: _getStatusColor(
-                schedule.state.name,
+                context,
+                schedule.state,
               ).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              _getStatusText(schedule.state.name),
+              _getStatusText(schedule.state),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _getStatusColor(schedule.state.name),
+                color: _getStatusColor(context, schedule.state),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -230,17 +231,23 @@ class ScheduleDetailSheet extends ConsumerWidget {
 
   /// 태그 섹션 위젯
   Widget _buildTagsSection(BuildContext context, List<TagRead> tags) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.label, size: 20, color: Colors.grey[600]),
+            Icon(
+              Icons.label,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Text(
               '태그',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -284,6 +291,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
     ScheduleRead schedule,
   ) {
     final mutations = ref.watch(scheduleMutationsProvider);
+    final theme = Theme.of(context);
 
     return Row(
       children: [
@@ -321,8 +329,8 @@ class ScheduleDetailSheet extends ConsumerWidget {
                 : const Icon(Icons.delete),
             label: Text(mutations.isLoading ? '삭제 중...' : '삭제'),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -348,6 +356,8 @@ class ScheduleDetailSheet extends ConsumerWidget {
     WidgetRef ref,
     ScheduleRead schedule,
   ) async {
+    final theme = Theme.of(context);
+
     // 삭제 확인 다이얼로그
     final confirmed = await showConfirmDialog(
       context,
@@ -372,14 +382,14 @@ class ScheduleDetailSheet extends ConsumerWidget {
         // 성공 메시지 표시
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('일정이 삭제되었습니다'),
+                Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                const SizedBox(width: 12),
+                const Text('일정이 삭제되었습니다'),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: theme.colorScheme.primary,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -391,7 +401,7 @@ class ScheduleDetailSheet extends ConsumerWidget {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(child: Text('삭제에 실패했습니다: ${error.toString()}')),
               ],
@@ -445,31 +455,24 @@ class ScheduleDetailSheet extends ConsumerWidget {
   }
 
   /// 상태 텍스트 변환
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'PLANNED':
-        return '계획됨';
-      case 'CONFIRMED':
-        return '확정됨';
-      case 'CANCELLED':
-        return '취소됨';
-      default:
-        return status;
-    }
+  String _getStatusText(ScheduleState state) {
+    return switch (state) {
+      ScheduleState.planned => '계획됨',
+      ScheduleState.confirmed => '확정됨',
+      ScheduleState.cancelled => '취소됨',
+      ScheduleState.$unknown => state.toString(),
+    };
   }
 
-  /// 상태 색상 반환
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'PLANNED':
-        return Colors.orange;
-      case 'CONFIRMED':
-        return Colors.green;
-      case 'CANCELLED':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+  /// 상태별 색상 반환
+  Color _getStatusColor(BuildContext context, ScheduleState state) {
+    final theme = Theme.of(context);
+    return switch (state) {
+      ScheduleState.planned => theme.colorScheme.primary,
+      ScheduleState.confirmed => theme.colorScheme.tertiary,
+      ScheduleState.cancelled => theme.colorScheme.error,
+      ScheduleState.$unknown => theme.colorScheme.onSurfaceVariant,
+    };
   }
 
   /// Hex 색상 파싱

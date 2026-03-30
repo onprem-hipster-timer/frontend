@@ -746,6 +746,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   /// 버튼 영역 (취소/저장)
   Widget _buildButtonBar(bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // 취소 버튼
@@ -776,12 +778,12 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(_isEditMode ? '수정' : '생성'),
@@ -858,6 +860,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     // 생성 모드에서 tagGroupId 검증 및 기본 그룹 생성
     if (!_isEditMode) {
@@ -931,11 +934,11 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('할 일이 수정되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('할 일이 수정되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -963,11 +966,11 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('할 일이 생성되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('할 일이 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -982,7 +985,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -1037,17 +1040,18 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   }
 
   Color _getStatusColor(TodoStatus status) {
+    final theme = Theme.of(context);
     switch (status) {
       case TodoStatus.unscheduled:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
       case TodoStatus.scheduled:
-        return Colors.blue;
+        return theme.colorScheme.primary;
       case TodoStatus.done:
-        return Colors.green;
+        return theme.colorScheme.tertiary;
       case TodoStatus.cancelled:
-        return Colors.red;
+        return theme.colorScheme.error;
       case TodoStatus.$unknown:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
     }
   }
 }
