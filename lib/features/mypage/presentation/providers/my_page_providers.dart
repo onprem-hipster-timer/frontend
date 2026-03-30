@@ -18,10 +18,7 @@ class UserProfile {
   final String email;
   final DateTime createdAt;
 
-  const UserProfile({
-    required this.email,
-    required this.createdAt,
-  });
+  const UserProfile({required this.email, required this.createdAt});
 }
 
 // ============================================================
@@ -111,20 +108,14 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
   // user.createdAt은 String이므로 DateTime.parse()를 사용
   final createdAt = DateTime.parse(user.createdAt);
 
-  return UserProfile(
-    email: user.email ?? '',
-    createdAt: createdAt,
-  );
+  return UserProfile(email: user.email ?? '', createdAt: createdAt);
 });
 
 /// 할 일 통계 데이터 프로바이더
 ///
-/// 통계 API 호출이 성공한 경우에만 할 일 목록을 불러와 상태별 집계를 계산합니다.
-/// (`TodoStats`에는 아직 상태별 카운트가 없어 화면용 분해 통계는 클라이언트에서 계산합니다.)
-/// API가 실패하면 예외가 그대로 전파되어 [AsyncValue]의 error 상태로 표시됩니다.
+/// 전체 할 일 목록을 불러와 상태별 집계를 클라이언트에서 계산합니다.
+/// (`TodoStats`에는 아직 상태별 카운트가 없어 클라이언트 계산이 필요합니다.)
 final todoStatisticsProvider = FutureProvider<TodoStatistics>((ref) async {
-  final api = ref.watch(todosApiProvider);
-  await api.getTodoStatsV1TodosStatsGet();
   return _calculateTodoStatisticsFromList(ref);
 });
 
@@ -168,76 +159,23 @@ Future<TodoStatistics> _calculateTodoStatisticsFromList(Ref ref) async {
 
 /// 태그 사용 통계 데이터 프로바이더
 ///
-/// 백엔드 통계가 있다면 사용하고, 없다면 클라이언트 측에서 계산합니다.
-final tagUsageStatisticsProvider =
-    FutureProvider<TagUsageStatistics>((ref) async {
-  try {
-    // 백엔드 통계 API 시도
-    final api = ref.watch(todosApiProvider);
-    final stats = await api.getTodoStatsV1TodosStatsGet();
+/// 백엔드 통계 API에서 태그별 사용 통계를 가져옵니다.
+/// API 실패 시 [AsyncValue.error]로 전파됩니다.
+final tagUsageStatisticsProvider = FutureProvider<TagUsageStatistics>((
+  ref,
+) async {
+  final api = ref.watch(todosApiProvider);
+  final stats = await api.getTodoStatsV1TodosStatsGet();
 
-    // API 응답의 byTag를 우리 모델로 변환
-    final tagUsageMap = <String, TagUsageItem>{};
+  final tagUsageMap = <String, TagUsageItem>{};
 
-    for (final tagStat in stats.byTag) {
-      tagUsageMap[tagStat.tagId] = TagUsageItem(
-        tagId: tagStat.tagId,
-        tagName: tagStat.tagName,
-        count: tagStat.count,
-      );
-    }
-
-    return TagUsageStatistics(tagUsageMap: tagUsageMap);
-  } catch (e) {
-    // 통계 API가 실패하면 클라이언트 측에서 계산
-    return _calculateTagUsageFromTodos(ref);
+  for (final tagStat in stats.byTag) {
+    tagUsageMap[tagStat.tagId] = TagUsageItem(
+      tagId: tagStat.tagId,
+      tagName: tagStat.tagName,
+      count: tagStat.count,
+    );
   }
+
+  return TagUsageStatistics(tagUsageMap: tagUsageMap);
 });
-
-/// 클라이언트 측에서 태그 사용 통계 계산
-Future<TagUsageStatistics> _calculateTagUsageFromTodos(Ref ref) async {
-  final todos = await ref.watch(allTodosProvider.future);
-
-  // 태그 그룹을 TagGroupReadWithTags 타입으로 가져오기
-  try {
-    final api = ref.watch(tagsApiProvider);
-    final tagGroups = await api.readTagGroupsV1TagsGroupsGet();
-
-    // 태그 ID -> 사용 횟수 맵
-    final tagCountMap = <String, int>{};
-
-    // 모든 할 일을 순회하며 태그 사용 횟수 계산
-    for (final todo in todos) {
-      for (final tag in todo.tags) {
-        tagCountMap[tag.id] = (tagCountMap[tag.id] ?? 0) + 1;
-      }
-    }
-
-    // 태그 ID -> 태그 이름 맵 생성
-    final tagNameMap = <String, String>{};
-    for (final group in tagGroups) {
-      for (final tag in group.tags) {
-        tagNameMap[tag.id] = tag.name;
-      }
-    }
-
-    // 최종 결과 맵 생성
-    final tagUsageMap = <String, TagUsageItem>{};
-    for (final entry in tagCountMap.entries) {
-      final tagId = entry.key;
-      final count = entry.value;
-      final tagName = tagNameMap[tagId] ?? 'Unknown Tag';
-
-      tagUsageMap[tagId] = TagUsageItem(
-        tagId: tagId,
-        tagName: tagName,
-        count: count,
-      );
-    }
-
-    return TagUsageStatistics(tagUsageMap: tagUsageMap);
-  } catch (e) {
-    // API 호출 실패 시 빈 통계 반환
-    return const TagUsageStatistics(tagUsageMap: {});
-  }
-}
