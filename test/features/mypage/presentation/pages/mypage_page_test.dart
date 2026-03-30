@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
@@ -26,9 +28,14 @@ class MockSession extends Mock implements supa.Session {}
 // 테스트 헬퍼
 // ============================================================
 
+late SharedPreferences _testPrefs;
+
 Widget buildMyPage({required MockSupabaseClient mockSupabase}) {
   return ProviderScope(
-    overrides: [supabaseClientProvider.overrideWithValue(mockSupabase)],
+    overrides: [
+      supabaseClientProvider.overrideWithValue(mockSupabase),
+      sharedPreferencesProvider.overrideWithValue(_testPrefs),
+    ],
     child: const MaterialApp(home: MyPage()),
   );
 }
@@ -51,6 +58,8 @@ void main() {
 
   setUpAll(() async {
     await initializeDateFormatting('ko');
+    SharedPreferences.setMockInitialValues({});
+    _testPrefs = await SharedPreferences.getInstance();
   });
 
   setUp(() {
@@ -206,7 +215,7 @@ void main() {
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
-        await scrollToLogoutButton(tester);
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
@@ -227,7 +236,7 @@ void main() {
 
       await tester.pumpWidget(buildMyPage(mockSupabase: mockSupabase));
       await tester.pumpAndSettle();
-        await scrollToLogoutButton(tester);
+      await scrollToLogoutButton(tester);
 
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
