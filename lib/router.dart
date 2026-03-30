@@ -9,11 +9,11 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
-import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
-import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
+import 'package:momeet/features/calendar/calendar.dart';
+import 'package:momeet/features/timer/timer.dart';
 import 'package:momeet/features/todo/todo.dart';
 import 'package:momeet/features/tag/tag.dart';
-import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
+import 'package:momeet/features/mypage/mypage.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 

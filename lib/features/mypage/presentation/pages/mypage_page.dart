@@ -5,11 +5,9 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
-import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
-
-import '../../../../core/providers/timezone_provider.dart';
-import '../../../settings/presentation/widgets/password_change_sheet.dart';
-import '../../../settings/presentation/widgets/timezone_selection_sheet.dart';
+import 'package:momeet/core/providers/timezone_provider.dart';
+import 'package:momeet/features/mypage/mypage.dart';
+import 'package:momeet/features/settings/settings.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
