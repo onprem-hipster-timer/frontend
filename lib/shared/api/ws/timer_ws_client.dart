@@ -22,8 +22,8 @@ class TimerWsClient {
     String? timezone,
     this.maxReconnectAttempts = 5,
     @visibleForTesting bool autoConnect = true,
-  })  : _token = accessToken,
-        _timezone = timezone {
+  }) : _token = accessToken,
+       _timezone = timezone {
     if (autoConnect) _connect();
   }
 
@@ -36,8 +36,9 @@ class TimerWsClient {
 
   /// Sec-WebSocket-Protocol 헤더에 사용되는 인증 서브프로토콜 목록
   @visibleForTesting
-  static List<String> authProtocols(String token) =>
-      ['authorization.bearer.$token'];
+  static List<String> authProtocols(String token) => [
+    'authorization.bearer.$token',
+  ];
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -116,28 +117,52 @@ class TimerWsClient {
       if (stackTrace != null) debugPrint('$stackTrace');
     }
     if (!_messageController.isClosed) {
-      _messageController.add(TimerWsError(
-        code: 'CONNECTION_ERROR',
-        message: error.toString(),
-      ));
+      _messageController.add(
+        TimerWsError(code: 'CONNECTION_ERROR', message: error.toString()),
+      );
     }
   }
 
   void _onDone() {
+    final closeCode = _channel?.closeCode;
+
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
 
     if (_disposed || _manualClose) return;
 
-    // Rate limit 4029 등으로 닫힌 경우 재연결
+    // Close code별 재연결 정책 (백엔드 스펙 기준)
+    // - 1008: 인증 실패 → 재연결 금지, 토큰 갱신 후 재시도 필요
+    // - 1011: 서버 내부 오류 → 지수 백오프 후 재시도
+    // - 4029: Rate Limit 초과 → 지수 백오프 후 재시도
+    // - 1000: 정상 종료 → 재연결 안 함
+    if (closeCode == 1008) {
+      if (kDebugMode && AppConfig.enableDebugLogging) {
+        debugPrint('🔒 [WS] Authentication failed (1008), not reconnecting');
+      }
+      if (!_messageController.isClosed) {
+        _messageController.add(
+          TimerWsError(
+            code: 'AUTH_FAILED',
+            message: 'Authentication failed - token refresh required',
+          ),
+        );
+      }
+      return;
+    }
+
+    if (closeCode == 1000) return;
+
+    // 1011, 4029 등: 지수 백오프 후 재연결
     if (_reconnectAttempts < maxReconnectAttempts) {
       final delay = _reconnectAttempts == 0
           ? 1000
           : (1000 * (1 << _reconnectAttempts)).clamp(1000, 60000);
       if (kDebugMode && AppConfig.enableDebugLogging) {
         debugPrint(
-            '🔌 [WS] Reconnecting in ${delay}ms (attempt ${_reconnectAttempts + 1}/$maxReconnectAttempts)');
+          '🔌 [WS] Reconnecting in ${delay}ms (close code: $closeCode, attempt ${_reconnectAttempts + 1}/$maxReconnectAttempts)',
+        );
       }
       Future.delayed(Duration(milliseconds: delay), () {
         _reconnectAttempts++;

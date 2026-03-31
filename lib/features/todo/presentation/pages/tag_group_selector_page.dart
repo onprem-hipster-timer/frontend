@@ -31,9 +31,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
 
           return _buildTagGroupGrid(context, theme, tagGroups);
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildErrorState(context, theme, error),
       ),
     );
@@ -66,8 +64,9 @@ class TagGroupSelectorPage extends ConsumerWidget {
                     child: Text(
                       '새로 만들 투두들이 속할 그룹을 선택해주세요.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.8,
+                        ),
                       ),
                     ),
                   ),
@@ -137,9 +136,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    tagGroup.isTodoGroup
-                        ? Icons.task_alt_rounded
-                        : Icons.label_outline_rounded,
+                    Icons.folder_rounded,
                     color: groupColor,
                     size: 24,
                   ),
@@ -177,23 +174,24 @@ class TagGroupSelectorPage extends ConsumerWidget {
 
                 const Spacer(),
 
-                // Todo 그룹 배지 (있는 경우)
-                if (tagGroup.isTodoGroup)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '할 일 그룹',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                // 태그 그룹 배지
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '태그 그룹',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -241,10 +239,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: const Text('태그 관리 페이지에서 그룹을 먼저 만들어주세요.'),
-                    action: SnackBarAction(
-                      label: '확인',
-                      onPressed: () {},
-                    ),
+                    action: SnackBarAction(label: '확인', onPressed: () {}),
                     duration: const Duration(seconds: 4),
                   ),
                 );
@@ -270,11 +265,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               '태그 그룹을 불러오지 못했습니다',

@@ -1,61 +1,32 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
-// ============================================================
-// Mock 클래스
-// ============================================================
-
-class MockSupabaseClient extends Mock implements supa.SupabaseClient {}
-
-class MockGoTrueClient extends Mock implements supa.GoTrueClient {}
-
-// ============================================================
-// 테스트 헬퍼
-// ============================================================
-
-/// LoginPage 테스트용 위젯 트리 생성
-///
-/// GoRouter 없이 MaterialApp으로 감싸서 테스트합니다.
-/// (비밀번호 찾기 / 회원가입 네비게이션은 테스트 범위 밖)
-Widget buildLoginPage({
-  required MockSupabaseClient mockSupabase,
-}) {
-  return ProviderScope(
-    overrides: [
-      supabaseClientProvider.overrideWithValue(mockSupabase),
-    ],
-    child: const MaterialApp(
-      home: LoginPage(),
-    ),
-  );
-}
+import '../../../../helpers/pump_app.dart';
+import '../../../../helpers/supabase_mocks.dart';
 
 void main() {
-  late MockSupabaseClient mockSupabase;
-  late MockGoTrueClient mockGoTrue;
-  late StreamController<supa.AuthState> authStreamController;
+  late SupabaseTestHarness harness;
 
   setUp(() {
-    mockSupabase = MockSupabaseClient();
-    mockGoTrue = MockGoTrueClient();
-    authStreamController = StreamController<supa.AuthState>.broadcast();
-
-    when(() => mockSupabase.auth).thenReturn(mockGoTrue);
-    when(() => mockGoTrue.onAuthStateChange)
-        .thenAnswer((_) => authStreamController.stream);
-    when(() => mockGoTrue.currentSession).thenReturn(null);
+    harness = SupabaseTestHarness()..init(authenticated: false);
   });
 
   tearDown(() {
-    authStreamController.close();
+    harness.dispose();
   });
+
+  Widget buildLoginPage() {
+    return pumpApp(
+      const LoginPage(),
+      overrides: [
+        supabaseClientProvider.overrideWithValue(harness.mockSupabase),
+      ],
+    );
+  }
 
   /// 이메일 + 비밀번호를 입력하고 로그인 버튼을 누르는 헬퍼
   Future<void> enterCredentialsAndLogin(
@@ -74,12 +45,14 @@ void main() {
   // ============================================================
   group('로그인 실패 시 에러 배너', () {
     testWidgets('잘못된 비밀번호 입력 시 에러 배너가 표시된다', (tester) async {
-      when(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(supa.AuthException('Invalid login credentials'));
+      when(
+        () => harness.mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenThrow(supa.AuthException('Invalid login credentials'));
 
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await enterCredentialsAndLogin(tester);
@@ -88,12 +61,14 @@ void main() {
     });
 
     testWidgets('이메일 미인증 에러 시 에러 배너가 표시된다', (tester) async {
-      when(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(supa.AuthException('Email not confirmed'));
+      when(
+        () => harness.mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenThrow(supa.AuthException('Email not confirmed'));
 
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await enterCredentialsAndLogin(tester);
@@ -107,14 +82,16 @@ void main() {
   // ============================================================
   group('에러 해제', () {
     setUp(() {
-      when(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(supa.AuthException('Invalid login credentials'));
+      when(
+        () => harness.mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenThrow(supa.AuthException('Invalid login credentials'));
     });
 
     testWidgets('이메일 필드 수정 시 에러가 사라진다', (tester) async {
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await enterCredentialsAndLogin(tester);
@@ -127,7 +104,7 @@ void main() {
     });
 
     testWidgets('비밀번호 필드 수정 시 에러가 사라진다', (tester) async {
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await enterCredentialsAndLogin(tester);
@@ -140,7 +117,7 @@ void main() {
     });
 
     testWidgets('X 버튼을 누르면 에러가 사라진다', (tester) async {
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await enterCredentialsAndLogin(tester);
@@ -158,7 +135,7 @@ void main() {
   // ============================================================
   group('폼 유효성 검증', () {
     testWidgets('빈 이메일로 로그인 시 유효성 에러가 표시된다', (tester) async {
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField).at(1), 'password');
@@ -166,14 +143,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('이메일을 입력해주세요'), findsOneWidget);
-      verifyNever(() => mockGoTrue.signInWithPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          ));
+      verifyNever(
+        () => harness.mockGoTrue.signInWithPassword(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      );
     });
 
     testWidgets('@ 없는 이메일로 로그인 시 형식 에러가 표시된다', (tester) async {
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField).at(0), 'invalid');
@@ -185,7 +164,7 @@ void main() {
     });
 
     testWidgets('빈 비밀번호로 로그인 시 유효성 에러가 표시된다', (tester) async {
-      await tester.pumpWidget(buildLoginPage(mockSupabase: mockSupabase));
+      await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField).at(0), 'a@b.com');

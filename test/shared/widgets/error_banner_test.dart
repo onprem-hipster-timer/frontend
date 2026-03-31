@@ -3,10 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 void main() {
-  Widget buildTestWidget({
-    required String? message,
-    VoidCallback? onDismiss,
-  }) {
+  Widget buildTestWidget({required String? message, VoidCallback? onDismiss}) {
     return MaterialApp(
       home: Scaffold(
         body: ErrorBanner(message: message, onDismiss: onDismiss),
@@ -52,18 +49,14 @@ void main() {
   // ============================================================
   group('닫기 버튼', () {
     testWidgets('onDismiss가 있으면 X 버튼이 표시된다', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(message: '에러', onDismiss: () {}),
-      );
+      await tester.pumpWidget(buildTestWidget(message: '에러', onDismiss: () {}));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
     testWidgets('onDismiss가 null이면 X 버튼이 표시되지 않는다', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(message: '에러', onDismiss: null),
-      );
+      await tester.pumpWidget(buildTestWidget(message: '에러', onDismiss: null));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.close_rounded), findsNothing);
@@ -72,10 +65,7 @@ void main() {
     testWidgets('X 버튼을 누르면 onDismiss가 호출된다', (tester) async {
       var dismissed = false;
       await tester.pumpWidget(
-        buildTestWidget(
-          message: '에러',
-          onDismiss: () => dismissed = true,
-        ),
+        buildTestWidget(message: '에러', onDismiss: () => dismissed = true),
       );
       await tester.pumpAndSettle();
 
