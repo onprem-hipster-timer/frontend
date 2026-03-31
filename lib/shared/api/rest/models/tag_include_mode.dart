@@ -19,10 +19,8 @@ enum TagIncludeMode {
 
   const TagIncludeMode(this.json);
 
-  factory TagIncludeMode.fromJson(String json) => values.firstWhere(
-        (e) => e.json == json,
-        orElse: () => $unknown,
-      );
+  factory TagIncludeMode.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

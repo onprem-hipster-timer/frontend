@@ -38,7 +38,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     });
 
     try {
-      await ref.read(authProvider.notifier).signUpWithEmail(
+      await ref
+          .read(authProvider.notifier)
+          .signUpWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -46,6 +48,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
       if (mounted) {
         showDialog(
           context: context,
+          useRootNavigator: true,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: const Text('회원가입 성공'),
@@ -95,16 +98,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 '회원가입',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'momeet과 함께 하루를 시작하세요',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 32),
               Form(

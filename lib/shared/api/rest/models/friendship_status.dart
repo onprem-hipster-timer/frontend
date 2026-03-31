@@ -19,10 +19,8 @@ enum FriendshipStatus {
 
   const FriendshipStatus(this.json);
 
-  factory FriendshipStatus.fromJson(String json) => values.firstWhere(
-        (e) => e.json == json,
-        orElse: () => $unknown,
-      );
+  factory FriendshipStatus.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

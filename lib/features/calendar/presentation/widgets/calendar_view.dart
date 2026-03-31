@@ -9,6 +9,12 @@ import 'package:momeet/features/calendar/presentation/widgets/calendar_appointme
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
+
+/// 빈 CalendarDataSource (로딩용)
+class _EmptyDataSource extends ScheduleCalendarDataSource {
+  _EmptyDataSource() : super.empty();
+}
 
 /// SfCalendar 위젯을 래핑한 캘린더 뷰
 ///
@@ -61,7 +67,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       loading: () => _buildCalendar(
         context,
         settings,
-        ScheduleOnlyDataSource([]),
+        _EmptyDataSource(),
         isLoading: true,
       ),
       error: (error, stack) => _buildErrorView(context, error),
@@ -71,7 +77,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   Widget _buildCalendar(
     BuildContext context,
     CalendarSettingsState settings,
-    ScheduleOnlyDataSource dataSource, {
+    ScheduleCalendarDataSource dataSource, {
     bool isLoading = false,
   }) {
     final theme = Theme.of(context);
@@ -94,14 +100,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           // ============================================================
           // 휴일 표시 설정
           // ============================================================
-
           monthCellBuilder: _buildMonthCell, // 월간 뷰 휴일 표시
           specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
-
           // ============================================================
           // 콜백 설정
           // ============================================================
-
           onViewChanged: _onViewChanged,
           onTap: _onCalendarTap,
           onLongPress: _onCalendarLongPress,
@@ -111,7 +114,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           // ============================================================
           // 스타일 설정
           // ============================================================
-
           backgroundColor: colorScheme.surface,
           cellBorderColor: colorScheme.outlineVariant.withValues(alpha: 0.3),
           todayHighlightColor: colorScheme.primary,
@@ -125,8 +127,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           ),
 
           viewHeaderStyle: ViewHeaderStyle(
-            backgroundColor:
-                colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.5,
+            ),
             dayTextStyle: TextStyle(
               color: colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 12,
@@ -141,26 +144,19 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
           selectionDecoration: BoxDecoration(
             color: colorScheme.primary.withValues(alpha: 0.1),
-            border: Border.all(
-              color: colorScheme.primary,
-              width: 1.5,
-            ),
+            border: Border.all(color: colorScheme.primary, width: 1.5),
             borderRadius: BorderRadius.circular(4),
           ),
 
           // ============================================================
           // 월간 뷰 설정
           // ============================================================
-
           monthViewSettings: MonthViewSettings(
             showAgenda: false,
             appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
             appointmentDisplayCount: 3,
             monthCellStyle: MonthCellStyle(
-              textStyle: TextStyle(
-                color: colorScheme.onSurface,
-                fontSize: 14,
-              ),
+              textStyle: TextStyle(color: colorScheme.onSurface, fontSize: 14),
               trailingDatesTextStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.4),
                 fontSize: 14,
@@ -178,7 +174,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           // ============================================================
           // 타임슬롯 설정 (Day/Week 뷰)
           // ============================================================
-
           timeSlotViewSettings: TimeSlotViewSettings(
             startHour: 0,
             endHour: 24,
@@ -196,7 +191,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           // ============================================================
           // 스케줄 뷰 설정 (Agenda)
           // ============================================================
-
           scheduleViewSettings: ScheduleViewSettings(
             appointmentTextStyle: TextStyle(
               color: colorScheme.onPrimary,
@@ -220,8 +214,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               startDateFormat: 'MMM d',
               endDateFormat: 'MMM d, yyyy',
               textAlign: TextAlign.center,
-              backgroundColor:
-                  colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
             ),
             monthHeaderSettings: MonthHeaderSettings(
               monthFormat: 'MMMM yyyy',
@@ -239,7 +234,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           // ============================================================
           // 일정 빌더
           // ============================================================
-
           appointmentBuilder: _appointmentBuilder,
         ),
 
@@ -248,9 +242,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           Positioned.fill(
             child: Container(
               color: colorScheme.surface.withValues(alpha: 0.5),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           ),
       ],
@@ -267,15 +259,22 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     switch (settings.viewType) {
       case CalendarViewType.month:
         return custom_builder.ScheduleAppointmentBuilder.buildMonthAppointment(
-            context, details);
+          context,
+          details,
+        );
       case CalendarViewType.day:
       case CalendarViewType.week:
-        return custom_builder.ScheduleAppointmentBuilder
-            .buildTimeSlotAppointment(context, details);
+        return custom_builder
+            .ScheduleAppointmentBuilder.buildTimeSlotAppointment(
+          context,
+          details,
+        );
       case CalendarViewType.agenda:
       case CalendarViewType.year:
         return custom_builder.ScheduleAppointmentBuilder.buildAgendaAppointment(
-            context, details);
+          context,
+          details,
+        );
     }
   }
 
@@ -319,7 +318,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     // 해당 날짜에 일정이 있는지 확인
     final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
-    final hasAppointments = scheduleDataSource?.appointments
+    final hasAppointments =
+        scheduleDataSource?.appointments
             ?.where((app) => _isSameDay(app.startTime, date))
             .isNotEmpty ??
         false;
@@ -387,7 +387,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final newEndTime = newStartTime.add(duration);
 
     // API 호출로 일정 이동
-    ref.read(scheduleMutationsProvider.notifier).moveSchedule(
+    ref
+        .read(scheduleMutationsProvider.notifier)
+        .moveSchedule(
           appointmentId,
           newStartTime: newStartTime,
           newEndTime: newEndTime,
@@ -403,7 +405,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     if (appointmentId == null) return; // 일정만 리사이즈 가능
 
     // API 호출로 일정 리사이즈
-    ref.read(scheduleMutationsProvider.notifier).resizeSchedule(
+    ref
+        .read(scheduleMutationsProvider.notifier)
+        .resizeSchedule(
           appointmentId,
           newStartTime: details.startTime,
           newEndTime: details.endTime!,
@@ -433,10 +437,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           Text(
             error.toString(),
             style: TextStyle(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
@@ -463,7 +466,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isToday = _isSameDay(details.date, DateTime.now());
-    final isCurrentMonth = details.date.month ==
+    final isCurrentMonth =
+        details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
     final isWeekend = details.date.weekday == DateTime.sunday;
 
@@ -516,12 +520,12 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                           color: isRedDay
                               ? Colors.red
                               : isCurrentMonth
-                                  ? colorScheme.onSurface
-                                  : colorScheme.onSurface
-                                      .withValues(alpha: 0.4),
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
                           fontSize: 14,
-                          fontWeight:
-                              isRedDay ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: isRedDay
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
               ),
@@ -557,11 +561,14 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
   /// 기본 월간 셀 (휴일 로딩 실패 시)
   Widget _buildDefaultMonthCell(
-      BuildContext context, MonthCellDetails details) {
+    BuildContext context,
+    MonthCellDetails details,
+  ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isToday = _isSameDay(details.date, DateTime.now());
-    final isCurrentMonth = details.date.month ==
+    final isCurrentMonth =
+        details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
     final isWeekend = details.date.weekday == DateTime.sunday;
 
@@ -600,11 +607,12 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                       color: isWeekend
                           ? Colors.red
                           : isCurrentMonth
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurface.withValues(alpha: 0.4),
                       fontSize: 14,
-                      fontWeight:
-                          isWeekend ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isWeekend
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
           ),

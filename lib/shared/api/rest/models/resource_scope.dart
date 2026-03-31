@@ -19,10 +19,8 @@ enum ResourceScope {
 
   const ResourceScope(this.json);
 
-  factory ResourceScope.fromJson(String json) => values.firstWhere(
-        (e) => e.json == json,
-        orElse: () => $unknown,
-      );
+  factory ResourceScope.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

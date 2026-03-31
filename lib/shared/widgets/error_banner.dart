@@ -14,11 +14,7 @@ class ErrorBanner extends StatelessWidget {
   final String? message;
   final VoidCallback? onDismiss;
 
-  const ErrorBanner({
-    super.key,
-    required this.message,
-    this.onDismiss,
-  });
+  const ErrorBanner({super.key, required this.message, this.onDismiss});
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +28,10 @@ class ErrorBanner extends StatelessWidget {
           ? Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.errorContainer,
                   borderRadius: BorderRadius.circular(12),
