@@ -11,7 +11,14 @@ part 'health_client.g.dart';
 abstract class HealthClient {
   factory HealthClient(Dio dio, {String? baseUrl}) = _HealthClient;
 
-  /// Health Check
+  /// Health Check.
+  ///
+  /// 애플리케이션 상태 확인.
+  ///
+  /// 로드밸런서, Kubernetes, ECS 등에서 사용하는 health check 엔드포인트.
+  /// 인증 없이 접근 가능합니다.
   @GET('/health')
-  Future<void> healthCheckHealthGet({@DioOptions() RequestOptions? options});
+  Future<void> healthCheckHealthGet({
+    @DioOptions() RequestOptions? options,
+  });
 }

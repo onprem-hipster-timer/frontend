@@ -57,11 +57,15 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
     }
 
     // 상태에 따른 기본 색상
-    return switch (schedule.state) {
-      ScheduleState.confirmed => Colors.blue,
-      ScheduleState.cancelled => Colors.grey,
-      ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
-    };
+    switch (schedule.state.name) {
+      case 'CONFIRMED':
+        return Colors.blue;
+      case 'CANCELLED':
+        return Colors.grey;
+      case 'PLANNED':
+      default:
+        return Colors.teal;
+    }
   }
 
   /// Hex 색상 문자열을 Color로 변환
@@ -133,8 +137,9 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   /// ID로 ScheduleRead의 원본 Appointment 찾기
   Appointment? getAppointmentById(String id) {
     try {
-      return appointments?.firstWhere((apt) => (apt as Appointment).id == id)
-          as Appointment?;
+      return appointments?.firstWhere(
+        (apt) => (apt as Appointment).id == id,
+      ) as Appointment?;
     } catch (e) {
       return null;
     }

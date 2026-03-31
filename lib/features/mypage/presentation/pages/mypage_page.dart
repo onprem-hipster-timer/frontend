@@ -3,10 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
-import 'package:momeet/features/mypage/presentation/widgets/profile_section.dart';
-import 'package:momeet/features/mypage/presentation/widgets/activity_stats_section.dart';
-import 'package:momeet/features/mypage/presentation/widgets/tag_stats_section.dart';
-import 'package:momeet/features/mypage/presentation/widgets/settings_section.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -20,6 +16,9 @@ class _MyPageState extends ConsumerState<MyPage> {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('마이페이지'),
@@ -29,28 +28,48 @@ class _MyPageState extends ConsumerState<MyPage> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         children: [
+          // 프로필 섹션
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Icon(
+                    Icons.person,
+                    size: 40,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  user?.email ?? '',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
           ErrorBanner(
             message: _errorMessage,
             onDismiss: () => setState(() => _errorMessage = null),
           ),
 
-          // 1. 내 프로필 섹션
-          const ProfileSection(),
-
-          const SizedBox(height: 32),
-
-          // 2. 활동 통계 섹션
-          const ActivityStatsSection(),
-
-          const SizedBox(height: 32),
-
-          // 3. 태그 사용 통계 섹션
-          const TagStatsSection(),
-
-          const SizedBox(height: 32),
-
-          // 4. 설정 섹션
-          SettingsSection(onSignOut: _confirmSignOut),
+          // 로그아웃 버튼
+          FilledButton.tonal(
+            onPressed: _confirmSignOut,
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.errorContainer,
+              foregroundColor: theme.colorScheme.onErrorContainer,
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('로그아웃'),
+          ),
         ],
       ),
     );

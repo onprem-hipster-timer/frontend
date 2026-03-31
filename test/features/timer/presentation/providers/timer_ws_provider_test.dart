@@ -26,9 +26,7 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             return TimerWsClient(
-              accessToken: 'my-access-token',
-              autoConnect: false,
-            );
+                accessToken: 'my-access-token', autoConnect: false);
           }),
         ],
       );
@@ -43,9 +41,7 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             return TimerWsClient(
-              accessToken: 'eyJhbG.payload.sig',
-              autoConnect: false,
-            );
+                accessToken: 'eyJhbG.payload.sig', autoConnect: false);
           }),
         ],
       );
@@ -63,7 +59,9 @@ void main() {
   group('토큰 없으면 클라이언트 미생성', () {
     test('토큰이 null이면 클라이언트가 null이다', () {
       final container = ProviderContainer(
-        overrides: [timerWsClientProvider.overrideWith((ref) => null)],
+        overrides: [
+          timerWsClientProvider.overrideWith((ref) => null),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -98,10 +96,8 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             if (token == null || token.isEmpty) return null;
-            final client = TimerWsClient(
-              accessToken: token,
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: token, autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -125,10 +121,8 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             if (token == null || token.isEmpty) return null;
-            final client = TimerWsClient(
-              accessToken: token,
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: token, autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -139,7 +133,10 @@ void main() {
       final client = container.read(timerWsClientProvider)!;
 
       bool streamClosed = false;
-      client.messageStream.listen((_) {}, onDone: () => streamClosed = true);
+      client.messageStream.listen(
+        (_) {},
+        onDone: () => streamClosed = true,
+      );
 
       token = null;
       container.invalidate(timerWsClientProvider);
@@ -155,10 +152,8 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             if (token == null || token.isEmpty) return null;
-            final client = TimerWsClient(
-              accessToken: token,
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: token, autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -169,7 +164,10 @@ void main() {
       final client = container.read(timerWsClientProvider)!;
 
       bool streamClosed = false;
-      client.messageStream.listen((_) {}, onDone: () => streamClosed = true);
+      client.messageStream.listen(
+        (_) {},
+        onDone: () => streamClosed = true,
+      );
 
       token = '';
       container.invalidate(timerWsClientProvider);
@@ -191,10 +189,8 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             if (token.isEmpty) return null;
-            final client = TimerWsClient(
-              accessToken: token,
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: token, autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -221,10 +217,8 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             if (token.isEmpty) return null;
-            final client = TimerWsClient(
-              accessToken: token,
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: token, autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -254,10 +248,8 @@ void main() {
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
             if (token.isEmpty) return null;
-            final client = TimerWsClient(
-              accessToken: token,
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: token, autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -290,10 +282,8 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           timerWsClientProvider.overrideWith((ref) {
-            final client = TimerWsClient(
-              accessToken: 'active-token',
-              autoConnect: false,
-            );
+            final client =
+                TimerWsClient(accessToken: 'active-token', autoConnect: false);
             ref.onDispose(() => client.dispose());
             return client;
           }),
@@ -303,7 +293,10 @@ void main() {
       final client = container.read(timerWsClientProvider)!;
 
       bool streamClosed = false;
-      client.messageStream.listen((_) {}, onDone: () => streamClosed = true);
+      client.messageStream.listen(
+        (_) {},
+        onDone: () => streamClosed = true,
+      );
 
       container.dispose();
       await Future.delayed(Duration.zero);

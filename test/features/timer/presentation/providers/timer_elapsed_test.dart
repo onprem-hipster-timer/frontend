@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
-import 'package:momeet/shared/api/rest/models/timer_status.dart';
 
 void main() {
   group('calculateElapsed', () {
@@ -9,13 +8,16 @@ void main() {
     // ============================================================
     group('비활성 상태', () {
       test('status가 null이면 Duration.zero를 반환한다', () {
-        final result = calculateElapsed(status: null, elapsedTime: 120);
+        final result = calculateElapsed(
+          status: null,
+          elapsedTime: 120,
+        );
         expect(result, Duration.zero);
       });
 
       test('PAUSED 상태면 elapsedTime을 그대로 반환한다', () {
         final result = calculateElapsed(
-          status: TimerStatus.paused,
+          status: 'PAUSED',
           elapsedTime: 300,
         );
         expect(result, const Duration(seconds: 300));
@@ -23,7 +25,7 @@ void main() {
 
       test('COMPLETED 상태면 elapsedTime을 그대로 반환한다', () {
         final result = calculateElapsed(
-          status: TimerStatus.completed,
+          status: 'COMPLETED',
           elapsedTime: 3600,
         );
         expect(result, const Duration(seconds: 3600));
@@ -31,7 +33,7 @@ void main() {
 
       test('CANCELLED 상태면 elapsedTime을 그대로 반환한다', () {
         final result = calculateElapsed(
-          status: TimerStatus.cancelled,
+          status: 'CANCELLED',
           elapsedTime: 100,
         );
         expect(result, const Duration(seconds: 100));
@@ -39,7 +41,7 @@ void main() {
 
       test('PAUSED 상태에서 elapsedTime=0이면 Duration.zero를 반환한다', () {
         final result = calculateElapsed(
-          status: TimerStatus.paused,
+          status: 'PAUSED',
           elapsedTime: 0,
         );
         expect(result, Duration.zero);
@@ -55,7 +57,7 @@ void main() {
         final now = DateTime.utc(2026, 2, 22, 10, 0, 30);
 
         final result = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 100,
           startedAt: startedAt,
           now: now,
@@ -71,7 +73,7 @@ void main() {
         final now = DateTime.utc(2026, 2, 22, 10, 5, 20);
 
         final result = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 300,
           startedAt: startedAt,
           pausedAt: pausedAt,
@@ -84,7 +86,7 @@ void main() {
 
       test('startedAt과 pausedAt 모두 null이면 elapsedTime만 반환한다', () {
         final result = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 60,
           now: DateTime.utc(2026, 2, 22, 10, 0, 0),
         );
@@ -97,7 +99,7 @@ void main() {
         final now = DateTime.utc(2026, 2, 22, 10, 0, 5);
 
         final result = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 0,
           startedAt: startedAt,
           now: now,
@@ -111,7 +113,7 @@ void main() {
         final now = DateTime.utc(2026, 2, 22, 9, 59, 50);
 
         final result = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 0,
           startedAt: startedAt,
           now: now,
@@ -122,12 +124,11 @@ void main() {
       });
 
       test('now 파라미터 생략 시 실제 현재 시간을 사용한다', () {
-        final startedAt = DateTime.now().toUtc().subtract(
-          const Duration(seconds: 10),
-        );
+        final startedAt =
+            DateTime.now().toUtc().subtract(const Duration(seconds: 10));
 
         final result = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 0,
           startedAt: startedAt,
         );
@@ -144,7 +145,7 @@ void main() {
     group('일시정지 → 재개 시나리오', () {
       test('일시정지 시 elapsedTime 유지, 0이 되지 않는다', () {
         final pauseResult = calculateElapsed(
-          status: TimerStatus.paused,
+          status: 'PAUSED',
           elapsedTime: 120,
           startedAt: DateTime.utc(2026, 2, 22, 10, 0, 0),
           pausedAt: DateTime.utc(2026, 2, 22, 10, 2, 0),
@@ -155,7 +156,7 @@ void main() {
 
       test('재개 후 RUNNING이면 누적 + 현재 구간이다', () {
         final resumeResult = calculateElapsed(
-          status: TimerStatus.running,
+          status: 'RUNNING',
           elapsedTime: 120,
           startedAt: DateTime.utc(2026, 2, 22, 10, 0, 0),
           pausedAt: DateTime.utc(2026, 2, 22, 10, 3, 0),

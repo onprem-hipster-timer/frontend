@@ -10,24 +10,31 @@ class TagColorPalette {
     // 파스텔 레드 계열
     Color(0xFFFFB3B3), // 연한 빨강
     Color(0xFFFFCCCB), // 연한 핑크레드
+
     // 파스텔 오렌지 계열
     Color(0xFFFFD4B3), // 연한 오렌지
     Color(0xFFFFE4B3), // 연한 피치
+
     // 파스텔 옐로우 계열
     Color(0xFFFFF4B3), // 연한 노랑
     Color(0xFFFFFFB3), // 연한 크림
+
     // 파스텔 그린 계열
     Color(0xFFD4FFB3), // 연한 라임
     Color(0xFFB3FFCC), // 연한 민트
+
     // 파스텔 블루 계열
     Color(0xFFB3E4FF), // 연한 하늘
     Color(0xFFB3D4FF), // 연한 파랑
+
     // 파스텔 퍼플 계열
     Color(0xFFCCB3FF), // 연한 보라
     Color(0xFFE4B3FF), // 연한 라벤더
+
     // 파스텔 핑크 계열
     Color(0xFFFFB3E4), // 연한 핑크
     Color(0xFFFFB3D4), // 연한 로즈
+
     // 파스텔 그레이 계열
     Color(0xFFE6E6E6), // 연한 회색
     Color(0xFFDDDDDD), // 중간 회색

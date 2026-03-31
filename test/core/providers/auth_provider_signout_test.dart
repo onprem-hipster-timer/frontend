@@ -1,28 +1,59 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
-import '../../helpers/supabase_mocks.dart';
+// ============================================================
+// Mock 클래스
+// ============================================================
+
+class MockSupabaseClient extends Mock implements supa.SupabaseClient {}
+
+class MockGoTrueClient extends Mock implements supa.GoTrueClient {}
+
+class MockUser extends Mock implements supa.User {}
+
+class MockSession extends Mock implements supa.Session {}
 
 void main() {
-  late SupabaseTestHarness harness;
+  late MockSupabaseClient mockSupabase;
+  late MockGoTrueClient mockGoTrue;
+  late MockUser mockUser;
+  late MockSession mockSession;
+  late StreamController<supa.AuthState> authStreamController;
   late ProviderContainer container;
 
   setUp(() {
-    harness = SupabaseTestHarness()..init();
+    mockSupabase = MockSupabaseClient();
+    mockGoTrue = MockGoTrueClient();
+    mockUser = MockUser();
+    mockSession = MockSession();
+    authStreamController = StreamController<supa.AuthState>.broadcast();
+
+    when(() => mockSupabase.auth).thenReturn(mockGoTrue);
+    when(() => mockGoTrue.onAuthStateChange)
+        .thenAnswer((_) => authStreamController.stream);
+
+    when(() => mockUser.email).thenReturn('user@example.com');
+    when(() => mockUser.id).thenReturn('test-uid');
+    when(() => mockSession.user).thenReturn(mockUser);
+    when(() => mockSession.accessToken).thenReturn('test-access-token');
+    when(() => mockSession.refreshToken).thenReturn('test-refresh-token');
+    when(() => mockGoTrue.currentSession).thenReturn(mockSession);
 
     container = ProviderContainer(
       overrides: [
-        supabaseClientProvider.overrideWithValue(harness.mockSupabase),
+        supabaseClientProvider.overrideWithValue(mockSupabase),
       ],
     );
   });
 
   tearDown(() {
     container.dispose();
-    harness.dispose();
+    authStreamController.close();
   });
 
   // ============================================================
@@ -52,9 +83,10 @@ void main() {
     test('signedOut 이벤트 후 accessToken이 null이 된다', () async {
       expect(container.read(accessTokenProvider), 'test-access-token');
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), isNull);
@@ -63,9 +95,10 @@ void main() {
     test('signedOut 이벤트 후 currentUser가 null이 된다', () async {
       expect(container.read(currentUserProvider), isNotNull);
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(currentUserProvider), isNull);
@@ -74,33 +107,42 @@ void main() {
     test('signedOut 이벤트 후 isAuthenticated가 false가 된다', () async {
       expect(container.read(isAuthenticatedProvider), isTrue);
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(isAuthenticatedProvider), isFalse);
     });
 
     test('signedOut 이벤트 후 authStatus가 unauthenticated이다', () async {
-      expect(container.read(authProvider), isA<AuthAuthenticated>());
-
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
+      expect(
+        container.read(authProvider),
+        isA<AuthAuthenticated>(),
       );
+
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
-      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      expect(
+        container.read(authProvider),
+        isA<AuthUnauthenticated>(),
+      );
     });
 
     test('signOut 호출 후 스트림이 signedOut을 발행하면 모든 토큰이 정리된다', () async {
-      when(() => harness.mockGoTrue.signOut()).thenAnswer((_) async {});
+      when(() => mockGoTrue.signOut()).thenAnswer((_) async {});
 
       await container.read(authProvider.notifier).signOut();
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), isNull);
@@ -108,7 +150,7 @@ void main() {
       expect(container.read(isAuthenticatedProvider), isFalse);
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
 
-      verify(() => harness.mockGoTrue.signOut()).called(1);
+      verify(() => mockGoTrue.signOut()).called(1);
     });
   });
 
@@ -119,9 +161,10 @@ void main() {
     test('signedOut 후 signedIn 이벤트가 오면 토큰이 복원된다', () async {
       expect(container.read(accessTokenProvider), 'test-access-token');
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedOut,
+        null,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), isNull);
@@ -134,9 +177,10 @@ void main() {
       when(() => newSession.accessToken).thenReturn('new-access-token');
       when(() => newSession.refreshToken).thenReturn('new-refresh-token');
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedIn, newSession),
-      );
+      authStreamController.add(supa.AuthState(
+        supa.AuthChangeEvent.signedIn,
+        newSession,
+      ));
       await Future<void>.delayed(Duration.zero);
 
       expect(container.read(accessTokenProvider), 'new-access-token');

@@ -13,8 +13,6 @@ enum VisibilityLevel {
   friends('friends'),
   @JsonValue('selected')
   selected('selected'),
-  @JsonValue('allowed_emails')
-  allowedEmails('allowed_emails'),
   @JsonValue('public')
   public('public'),
 
@@ -23,8 +21,10 @@ enum VisibilityLevel {
 
   const VisibilityLevel(this.json);
 
-  factory VisibilityLevel.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory VisibilityLevel.fromJson(String json) => values.firstWhere(
+        (e) => e.json == json,
+        orElse: () => $unknown,
+      );
 
   final String? json;
 

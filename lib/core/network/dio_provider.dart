@@ -6,11 +6,8 @@ import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/core/network/timezone_interceptor.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 
-/// JWT 토큰 추가 및 401 시 세션 갱신 후 재시도하는 Interceptor
-///
-/// QueuedInterceptorsWrapper를 사용하여 동시 401 응답이 여러 건 발생해도
-/// 세션 갱신은 한 번만 수행되고 나머지 요청은 큐에서 대기합니다.
-class AuthInterceptor extends QueuedInterceptorsWrapper {
+/// JWT 토큰을 요청 헤더에 추가하는 Interceptor
+class AuthInterceptor extends Interceptor {
   final Ref ref;
 
   AuthInterceptor(this.ref);
@@ -37,40 +34,22 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
       debugPrint(
-        '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}',
-      );
+          '✅ [HTTP] ${response.statusCode} ${response.requestOptions.path}');
     }
     return handler.next(response);
   }
 
   @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
+  void onError(DioException err, ErrorInterceptorHandler handler) {
     if (AppConfig.enableDebugLogging) {
       debugPrint('❌ [HTTP] Error: ${err.message}');
       debugPrint('   Status: ${err.response?.statusCode}');
     }
 
+    // 401 Unauthorized 처리 (토큰 만료 등)
     if (err.response?.statusCode == 401) {
-      // Supabase 세션 갱신 시도 → 성공 시 새 토큰으로 요청 재시도
-      try {
-        debugPrint('🔄 [AUTH] 401 received - refreshing session');
-        final supabase = ref.read(supabaseClientProvider);
-        await supabase.auth.refreshSession();
-
-        final newToken = ref.read(accessTokenProvider);
-        if (newToken != null && newToken.isNotEmpty) {
-          final opts = err.requestOptions;
-          opts.headers['Authorization'] = 'Bearer $newToken';
-          final response = await Dio().fetch(opts);
-          return handler.resolve(response);
-        }
-      } catch (_) {
-        debugPrint('⚠️ [AUTH] Session refresh failed - signing out');
-        ref.read(authProvider.notifier).signOut();
-      }
+      debugPrint('⚠️ [AUTH] Unauthorized - Token may have expired');
+      // TODO: 토큰 갱신 또는 로그아웃 로직 추가
     }
 
     return handler.next(err);
@@ -90,7 +69,9 @@ final dioClientProvider = Provider<Dio>((ref) {
       connectTimeout: AppConfig.connectTimeout,
       receiveTimeout: AppConfig.receiveTimeout,
       contentType: 'application/json',
-      headers: {'Accept': 'application/json'},
+      headers: {
+        'Accept': 'application/json',
+      },
       // AuthInterceptor 추가 (JWT 토큰 자동 추가)
     ),
   );

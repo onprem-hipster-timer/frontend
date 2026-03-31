@@ -43,11 +43,6 @@ lib/features/home/                      @gunyu1019
 # Core (config, network, auth, exceptions)
 lib/core/                               @gunyu1019
 
-# Security-critical files (auth, network, config)
-lib/core/providers/auth_provider.dart   @jjh4450 @gunyu1019
-lib/core/network/dio_provider.dart      @jjh4450 @gunyu1019
-lib/core/config/app_config.dart         @jjh4450 @gunyu1019
-
 # Shared (API models, providers, widgets)
 lib/shared/                             @gunyu1019
 

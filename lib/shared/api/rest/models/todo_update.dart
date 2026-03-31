@@ -4,8 +4,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'app_domain_schedule_schema_dto_visibility_settings.dart';
 import 'todo_status.dart';
+import 'visibility_settings.dart';
 
 part 'todo_update.freezed.dart';
 part 'todo_update.g.dart';
@@ -21,7 +21,7 @@ abstract class TodoUpdate with _$TodoUpdate {
     DateTime? deadline,
     @JsonKey(name: 'parent_id') String? parentId,
     TodoStatus? status,
-    AppDomainScheduleSchemaDtoVisibilitySettings? visibility,
+    VisibilitySettings? visibility,
   }) = _TodoUpdate;
 
   factory TodoUpdate.fromJson(Map<String, Object?> json) =>

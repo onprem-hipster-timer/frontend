@@ -43,7 +43,7 @@ abstract class FriendsClient {
   /// 대기 중인 친구 요청만 반환합니다.
   @GET('/v1/friends/requests/received')
   Future<List<PendingRequestRead>>
-  listReceivedRequestsV1FriendsRequestsReceivedGet({
+      listReceivedRequestsV1FriendsRequestsReceivedGet({
     @DioOptions() RequestOptions? options,
   });
 
@@ -77,7 +77,7 @@ abstract class FriendsClient {
   /// 요청 수신자만 수락할 수 있습니다.
   @POST('/v1/friends/requests/{friendship_id}/accept')
   Future<FriendshipRead>
-  acceptFriendRequestV1FriendsRequestsFriendshipIdAcceptPost({
+      acceptFriendRequestV1FriendsRequestsFriendshipIdAcceptPost({
     @Path('friendship_id') required String friendshipId,
     @DioOptions() RequestOptions? options,
   });

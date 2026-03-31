@@ -10,8 +10,11 @@ part 'tag_update.g.dart';
 /// 태그 업데이트 DTO
 @Freezed()
 abstract class TagUpdate with _$TagUpdate {
-  const factory TagUpdate({String? name, String? color, String? description}) =
-      _TagUpdate;
+  const factory TagUpdate({
+    String? name,
+    String? color,
+    String? description,
+  }) = _TagUpdate;
 
   factory TagUpdate.fromJson(Map<String, Object?> json) =>
       _$TagUpdateFromJson(json);

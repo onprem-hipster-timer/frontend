@@ -55,24 +55,25 @@ enum AuthErrorType {
   }
 
   String get _ko => switch (this) {
-    invalidCredentials => '이메일 또는 비밀번호가 올바르지 않습니다',
-    emailNotConfirmed => '이메일 인증이 완료되지 않았습니다.\n메일함을 확인해주세요',
-    userNotFound => '등록되지 않은 이메일입니다',
-    userAlreadyRegistered => '이미 가입된 이메일입니다',
-    tooManyRequests => '요청이 너무 많습니다.\n잠시 후 다시 시도해주세요',
-    weakPassword => '비밀번호가 너무 짧습니다.\n6자 이상 입력해주세요',
-    networkError => '네트워크 연결을 확인해주세요',
-    unknown => '오류가 발생했습니다. 잠시 후 다시 시도해주세요',
-  };
+        invalidCredentials => '이메일 또는 비밀번호가 올바르지 않습니다',
+        emailNotConfirmed => '이메일 인증이 완료되지 않았습니다.\n메일함을 확인해주세요',
+        userNotFound => '등록되지 않은 이메일입니다',
+        userAlreadyRegistered => '이미 가입된 이메일입니다',
+        tooManyRequests => '요청이 너무 많습니다.\n잠시 후 다시 시도해주세요',
+        weakPassword => '비밀번호가 너무 짧습니다.\n6자 이상 입력해주세요',
+        networkError => '네트워크 연결을 확인해주세요',
+        unknown => '오류가 발생했습니다. 잠시 후 다시 시도해주세요',
+      };
 
   String get _en => switch (this) {
-    invalidCredentials => 'Invalid email or password',
-    emailNotConfirmed => 'Email not confirmed.\nPlease check your inbox',
-    userNotFound => 'No account found with this email',
-    userAlreadyRegistered => 'This email is already registered',
-    tooManyRequests => 'Too many requests.\nPlease try again later',
-    weakPassword => 'Password is too short.\nPlease use at least 6 characters',
-    networkError => 'Please check your network connection',
-    unknown => 'An error occurred. Please try again later',
-  };
+        invalidCredentials => 'Invalid email or password',
+        emailNotConfirmed => 'Email not confirmed.\nPlease check your inbox',
+        userNotFound => 'No account found with this email',
+        userAlreadyRegistered => 'This email is already registered',
+        tooManyRequests => 'Too many requests.\nPlease try again later',
+        weakPassword =>
+          'Password is too short.\nPlease use at least 6 characters',
+        networkError => 'Please check your network connection',
+        unknown => 'An error occurred. Please try again later',
+      };
 }

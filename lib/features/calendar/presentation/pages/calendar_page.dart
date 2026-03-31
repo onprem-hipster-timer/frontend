@@ -19,10 +19,10 @@ class CalendarPage extends ConsumerWidget {
     return Scaffold(
       appBar: _buildAppBar(context, ref),
       body: const CalendarViewWidget(
-        // TODO: 라우팅 연결
-        // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
-        // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
-      ),
+          // TODO: 라우팅 연결
+          // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
+          // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
+          ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showScheduleFormSheet(context);
@@ -91,9 +91,8 @@ class CalendarPage extends ConsumerWidget {
         titleText = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(displayDate);
         break;
       case CalendarViewType.week:
-        final startOfWeek = displayDate.subtract(
-          Duration(days: displayDate.weekday - 1),
-        );
+        final startOfWeek =
+            displayDate.subtract(Duration(days: displayDate.weekday - 1));
         final endOfWeek = startOfWeek.add(const Duration(days: 6));
         titleText =
             '${DateFormat('M/d', 'ko').format(startOfWeek)} - ${DateFormat('M/d', 'ko').format(endOfWeek)}';
@@ -178,7 +177,6 @@ class CalendarPage extends ConsumerWidget {
   void _showFilterSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      useRootNavigator: true,
       isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.5,
@@ -222,7 +220,10 @@ class _FilterSheetContent extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('필터', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                '필터',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               TextButton(
                 onPressed: () {
                   ref.read(calendarFilterProvider.notifier).clearFilters();

@@ -4,14 +4,22 @@ class AppException implements Exception {
   final String? code;
   final StackTrace? stackTrace;
 
-  AppException({required this.message, this.code, this.stackTrace});
+  AppException({
+    required this.message,
+    this.code,
+    this.stackTrace,
+  });
 
   @override
   String toString() => 'AppException: $message (code: $code)';
 }
 
 class NetworkException extends AppException {
-  NetworkException({required super.message, super.code, super.stackTrace});
+  NetworkException({
+    required super.message,
+    super.code,
+    super.stackTrace,
+  });
 }
 
 class ServerException extends AppException {
@@ -26,9 +34,17 @@ class ServerException extends AppException {
 }
 
 class AuthException extends AppException {
-  AuthException({required super.message, super.code, super.stackTrace});
+  AuthException({
+    required super.message,
+    super.code,
+    super.stackTrace,
+  });
 }
 
 class ValidationException extends AppException {
-  ValidationException({required super.message, super.code, super.stackTrace});
+  ValidationException({
+    required super.message,
+    super.code,
+    super.stackTrace,
+  });
 }
