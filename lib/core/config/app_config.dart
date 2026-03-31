@@ -32,20 +32,25 @@ class AppConfig {
   // ==========================================
 
   /// API 기본 URL
-  static String get apiBaseUrl =>
-      _readEnv('API_BASE_URL') ?? 'http://localhost:8001';
+  static String get apiBaseUrl {
+    final url = _readEnv('API_BASE_URL');
+    if (url == null || url.isEmpty) {
+      throw Exception('API_BASE_URL이 .env 파일에 설정되지 않았습니다.');
+    }
+    return url;
+  }
 
   /// HTTP 연결 타임아웃
   static Duration get connectTimeout {
-    final seconds = int.tryParse(_readEnv('CONNECT_TIMEOUT_SECONDS') ?? '10') ??
-        10;
+    final seconds =
+        int.tryParse(_readEnv('CONNECT_TIMEOUT_SECONDS') ?? '10') ?? 10;
     return Duration(seconds: seconds);
   }
 
   /// HTTP 응답 수신 타임아웃
   static Duration get receiveTimeout {
-    final seconds = int.tryParse(_readEnv('RECEIVE_TIMEOUT_SECONDS') ?? '10') ??
-        10;
+    final seconds =
+        int.tryParse(_readEnv('RECEIVE_TIMEOUT_SECONDS') ?? '10') ?? 10;
     return Duration(seconds: seconds);
   }
 

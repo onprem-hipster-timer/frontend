@@ -47,10 +47,10 @@ class AuthInterceptor extends Interceptor {
       debugPrint('   Status: ${err.response?.statusCode}');
     }
 
-    // 401 Unauthorized 처리 (토큰 만료 등)
+    // 401 Unauthorized: 토큰 만료 → 자동 로그아웃
     if (err.response?.statusCode == 401) {
-      debugPrint('⚠️ [AUTH] Unauthorized - Token may have expired');
-      // TODO: 토큰 갱신 또는 로그아웃 로직 추가
+      debugPrint('⚠️ [AUTH] Unauthorized - signing out');
+      ref.read(authProvider.notifier).signOut();
     }
 
     return handler.next(err);

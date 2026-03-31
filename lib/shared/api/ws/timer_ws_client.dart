@@ -124,11 +124,31 @@ class TimerWsClient {
   }
 
   void _onDone() {
+    final closeCode = _channel?.closeCode;
+
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
 
     if (_disposed || _manualClose) return;
+
+    // 인증 실패(4001/4003) close code인 경우 재연결하지 않음
+    if (closeCode != null && (closeCode == 4001 || closeCode == 4003)) {
+      if (kDebugMode && AppConfig.enableDebugLogging) {
+        debugPrint(
+          '🔒 [WS] Authentication failed (close code: $closeCode), not reconnecting',
+        );
+      }
+      if (!_messageController.isClosed) {
+        _messageController.add(
+          TimerWsError(
+            code: 'AUTH_FAILED',
+            message: 'Authentication failed (close code: $closeCode)',
+          ),
+        );
+      }
+      return;
+    }
 
     // Rate limit 4029 등으로 닫힌 경우 재연결
     if (_reconnectAttempts < maxReconnectAttempts) {
