@@ -3,13 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
-import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// Todo 대시보드 페이지
 ///
-/// 그룹들을 카드 형태로 표시하는 메인 페이지입니다.
+/// Todo 그룹들을 카드 형태로 표시하는 메인 페이지입니다.
 /// 개별 Todo 항목은 표시하지 않고, 그룹 선택만 담당합니다.
 class TodoDashboardPage extends ConsumerWidget {
   const TodoDashboardPage({super.key});
@@ -27,8 +26,9 @@ class TodoDashboardPage extends ConsumerWidget {
       ),
       body: tagGroupsAsync.when(
         data: (tagGroups) {
-          // 모든 태그 그룹을 Todo 그룹으로 사용 가능하도록 변경
-          final todoGroups = tagGroups;
+          // isTodoGroup = true인 그룹들만 필터링
+          final todoGroups =
+              tagGroups.where((group) => group.isTodoGroup).toList();
 
           if (todoGroups.isEmpty) {
             return _buildEmptyState(context, theme);
@@ -36,19 +36,21 @@ class TodoDashboardPage extends ConsumerWidget {
 
           return _buildGroupGrid(context, theme, todoGroups);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
         error: (error, stack) => _buildErrorState(context, theme, error),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateGroupDialog(context),
         icon: const Icon(Icons.create_new_folder),
         label: const Text('새 그룹 만들기'),
-        tooltip: '새 그룹 만들기',
+        tooltip: '새 할 일 그룹 만들기',
       ),
     );
   }
 
-  /// 그룹 그리드 뷰
+  /// Todo 그룹 그리드 뷰
   Widget _buildGroupGrid(
     BuildContext context,
     ThemeData theme,
@@ -76,7 +78,7 @@ class TodoDashboardPage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '그룹 관리',
+                            '할 일 그룹 관리',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -85,9 +87,8 @@ class TodoDashboardPage extends ConsumerWidget {
                           Text(
                             '그룹을 선택해서 할 일들을 관리하세요.',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.7,
-                              ),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -110,18 +111,23 @@ class TodoDashboardPage extends ConsumerWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 1.1,
             ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final group = todoGroups[index];
-              return TodoGroupCard(
-                group: group,
-                onTap: () => context.go('${AppRoute.todo.path}/${group.id}'),
-              );
-            }, childCount: todoGroups.length),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final group = todoGroups[index];
+                return TodoGroupCard(
+                  group: group,
+                  onTap: () => context.go('${AppRoute.todo.path}/${group.id}'),
+                );
+              },
+              childCount: todoGroups.length,
+            ),
           ),
         ),
 
         // 하단 여백 (FAB 가리지 않도록)
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: 80),
+        ),
       ],
     );
   }
@@ -141,7 +147,7 @@ class TodoDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              '그룹이 없습니다',
+              '할 일 그룹이 없습니다',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
@@ -149,7 +155,7 @@ class TodoDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '첫 번째 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
+              '첫 번째 할 일 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -161,10 +167,8 @@ class TodoDashboardPage extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: const Text('첫 그룹 만들기'),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -181,10 +185,14 @@ class TodoDashboardPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text(
-              '그룹을 불러오지 못했습니다',
+              '할 일 그룹을 불러오지 못했습니다',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.error,
               ),
@@ -217,7 +225,17 @@ class TodoDashboardPage extends ConsumerWidget {
 
   /// 새 그룹 생성 다이얼로그
   void _showCreateGroupDialog(BuildContext context) {
-    showTagGroupFormSheet(context);
+    // TODO: 그룹 생성 로직 구현
+    // 현재는 스낵바로 임시 대체
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('그룹 생성 기능이 곧 구현됩니다!'),
+        action: SnackBarAction(
+          label: '확인',
+          onPressed: () {},
+        ),
+      ),
+    );
   }
 }
 
@@ -226,7 +244,11 @@ class TodoGroupCard extends StatelessWidget {
   final TagGroupRead group;
   final VoidCallback onTap;
 
-  const TodoGroupCard({super.key, required this.group, required this.onTap});
+  const TodoGroupCard({
+    super.key,
+    required this.group,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -266,6 +288,7 @@ class TodoGroupCard extends StatelessWidget {
                         size: 24,
                       ),
                     ),
+                    const Spacer(),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
@@ -303,17 +326,26 @@ class TodoGroupCard extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
 
-                // 하단 정보 (TODO: 실제 할 일 개수 표시)
+                // 하단 정보 (Todo 개수 등)
                 Row(
                   children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '할 일 그룹',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                     const Spacer(),
                     // TODO: 실제 할 일 개수 표시
-                    // Text(
-                    //   'N개',
-                    //   style: theme.textTheme.labelSmall?.copyWith(
-                    //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    //   ),
-                    // ),
                     // Text(
                     //   'N개',
                     //   style: theme.textTheme.labelSmall?.copyWith(

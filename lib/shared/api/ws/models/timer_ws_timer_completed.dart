@@ -11,8 +11,9 @@ part 'timer_ws_timer_completed.g.dart';
 abstract class TimerWsTimerCompleted extends TimerWsEvent
     with _$TimerWsTimerCompleted {
   const TimerWsTimerCompleted._();
-  const factory TimerWsTimerCompleted({required TimerRead timer}) =
-      _TimerWsTimerCompleted;
+  const factory TimerWsTimerCompleted({
+    required TimerRead timer,
+  }) = _TimerWsTimerCompleted;
 
   factory TimerWsTimerCompleted.fromJson(Map<String, Object?> json) =>
       _$TimerWsTimerCompletedFromJson(json);

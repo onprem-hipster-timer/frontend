@@ -11,7 +11,10 @@ class TagGroupWithTags {
   /// 이 그룹에 속한 태그들 (OpenAPI 생성 모델들)
   final List<TagRead> tags;
 
-  const TagGroupWithTags({required this.group, required this.tags});
+  const TagGroupWithTags({
+    required this.group,
+    required this.tags,
+  });
 
   /// 태그가 있는 그룹인지 확인
   bool get hasTags => tags.isNotEmpty;
@@ -30,6 +33,9 @@ class TagGroupWithTags {
 
   /// 그룹 설명 (편의 getter)
   String? get groupDescription => group.description;
+
+  /// Todo 그룹 여부 (편의 getter)
+  bool get isTodoGroup => group.isTodoGroup;
 
   /// 생성일 (편의 getter)
   DateTime get createdAt => group.createdAt;
@@ -55,12 +61,18 @@ class TagGroupWithTags {
 
   /// 새로운 태그 목록으로 복사본 생성
   TagGroupWithTags copyWithTags(List<TagRead> newTags) {
-    return TagGroupWithTags(group: group, tags: newTags);
+    return TagGroupWithTags(
+      group: group,
+      tags: newTags,
+    );
   }
 
   /// 새로운 그룹 정보로 복사본 생성
   TagGroupWithTags copyWithGroup(TagGroupRead newGroup) {
-    return TagGroupWithTags(group: newGroup, tags: tags);
+    return TagGroupWithTags(
+      group: newGroup,
+      tags: tags,
+    );
   }
 
   @override

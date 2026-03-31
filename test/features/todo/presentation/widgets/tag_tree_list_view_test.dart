@@ -20,7 +20,10 @@ void main() {
   Widget buildTestWidget({required TagRead tag}) {
     return MaterialApp(
       home: Scaffold(
-        body: DraggableTagTile(tag: tag, groupColor: Colors.blue),
+        body: DraggableTagTile(
+          tag: tag,
+          groupColor: Colors.blue,
+        ),
       ),
     );
   }
@@ -37,7 +40,9 @@ void main() {
 
       expect(find.text('태그 삭제'), findsOneWidget);
       expect(
-        find.text('태그 "테스트 태그"을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
+        find.text(
+          '태그 "테스트 태그"을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+        ),
         findsOneWidget,
       );
       expect(find.text('취소'), findsOneWidget);
@@ -56,7 +61,10 @@ void main() {
       await tester.tap(find.text('취소'));
       await tester.pumpAndSettle();
 
-      expect(find.text('태그 삭제 기능이 곧 구현됩니다'), findsNothing);
+      expect(
+        find.text('태그 삭제 기능이 곧 구현됩니다'),
+        findsNothing,
+      );
     });
 
     testWidgets('다이얼로그에서 삭제 확인 시 SnackBar가 표시된다', (tester) async {
@@ -71,7 +79,10 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '삭제'));
       await tester.pumpAndSettle();
 
-      expect(find.text('태그 삭제 기능이 곧 구현됩니다'), findsOneWidget);
+      expect(
+        find.text('태그 삭제 기능이 곧 구현됩니다'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('다이얼로그가 닫힌 뒤에만 SnackBar가 표시된다 (await 동작 검증)', (tester) async {

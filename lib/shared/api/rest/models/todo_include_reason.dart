@@ -17,8 +17,10 @@ enum TodoIncludeReason {
 
   const TodoIncludeReason(this.json);
 
-  factory TodoIncludeReason.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory TodoIncludeReason.fromJson(String json) => values.firstWhere(
+        (e) => e.json == json,
+        orElse: () => $unknown,
+      );
 
   final String? json;
 

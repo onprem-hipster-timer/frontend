@@ -53,9 +53,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     try {
-      await ref
-          .read(authProvider.notifier)
-          .signInWithEmail(
+      await ref.read(authProvider.notifier).signInWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -85,17 +83,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 'momeet',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
                 '일상을 계획하고 기록하세요',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
               ),
               const SizedBox(height: 48),
 
@@ -161,7 +159,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
               const SizedBox(height: 8),
 
-              ErrorBanner(message: _errorMessage, onDismiss: _clearError),
+              ErrorBanner(
+                message: _errorMessage,
+                onDismiss: _clearError,
+              ),
 
               AuthButton(
                 text: '로그인',

@@ -19,8 +19,10 @@ enum ScheduleState {
 
   const ScheduleState(this.json);
 
-  factory ScheduleState.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory ScheduleState.fromJson(String json) => values.firstWhere(
+        (e) => e.json == json,
+        orElse: () => $unknown,
+      );
 
   final String? json;
 

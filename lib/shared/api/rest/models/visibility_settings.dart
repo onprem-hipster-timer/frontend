@@ -14,9 +14,7 @@ part 'visibility_settings.g.dart';
 abstract class VisibilitySettings with _$VisibilitySettings {
   const factory VisibilitySettings({
     @JsonKey(name: 'allowed_user_ids') List<String>? allowedUserIds,
-    @JsonKey(name: 'allowed_emails') List<String>? allowedEmails,
-    @JsonKey(name: 'allowed_domains') List<String>? allowedDomains,
-    @Default(VisibilityLevel.public) VisibilityLevel level,
+    @Default(VisibilityLevel.private) VisibilityLevel level,
   }) = _VisibilitySettings;
 
   factory VisibilitySettings.fromJson(Map<String, Object?> json) =>

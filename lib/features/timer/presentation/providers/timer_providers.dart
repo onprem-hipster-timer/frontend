@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/utils/timezone_utils.dart';
-import 'package:momeet/features/timer/data/timer_repository_impl.dart';
-import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -33,18 +31,6 @@ final timerWsClientProvider = Provider<TimerWsClient?>((ref) {
 });
 
 // ============================================================
-// Timer Repository
-// ============================================================
-
-/// 타이머 리포지토리 프로바이더
-///
-/// REST API 클라이언트를 래핑하여 도메인 레이어 인터페이스를 제공합니다.
-final timerRepositoryProvider = Provider<TimerRepository>((ref) {
-  final client = ref.watch(timersApiProvider);
-  return TimerRepositoryImpl(client);
-});
-
-// ============================================================
 // Timer Data Providers
 // ============================================================
 
@@ -58,22 +44,29 @@ class TimerWsLastErrorNotifier extends Notifier<TimerWsError?> {
 
 final timerWsLastErrorProvider =
     NotifierProvider<TimerWsLastErrorNotifier, TimerWsError?>(
-      TimerWsLastErrorNotifier.new,
-    );
+  TimerWsLastErrorNotifier.new,
+);
 
 /// 활성 타이머 조회 (실시간)
 ///
 /// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / completed / sync_result) payload로만 갱신합니다.
 @riverpod
 Stream<TimerRead?> activeTimer(Ref ref) async* {
-  final repository = ref.watch(timerRepositoryProvider);
+  final api = ref.watch(timersApiProvider);
 
   TimerRead? initial;
   try {
-    initial = await repository.getActiveTimer();
+    initial = await api.getUserActiveTimerV1TimersActiveGet(
+      includeTodo: true,
+      includeSchedule: true,
+    );
   } catch (error) {
-    debugPrint('활성 타이머 조회 실패: $error');
-    initial = null;
+    if (error.toString().contains('404')) {
+      initial = null;
+    } else {
+      debugPrint('활성 타이머 조회 실패: $error');
+      initial = null;
+    }
   }
   yield initial;
 
@@ -118,10 +111,15 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
 /// 활성(RUNNING/PAUSED)이 상단, 완료(COMPLETED)가 하단 — 각 그룹 내에서 최신순.
 @riverpod
 Future<List<TimerRead>> timerHistory(Ref ref) async {
-  final repository = ref.watch(timerRepositoryProvider);
+  final api = ref.watch(timersApiProvider);
 
   try {
-    final timers = await repository.getTimerHistory();
+    final timers = await api.listTimersV1TimersGet(
+      status: ['RUNNING', 'PAUSED', 'COMPLETED'],
+      includeTodo: true,
+      includeSchedule: true,
+    );
+
     return sortTimerHistory(timers);
   } catch (error) {
     debugPrint('타이머 히스토리 조회 실패: $error');
@@ -208,11 +206,8 @@ class TimerController extends _$TimerController {
     state = const AsyncValue.loading();
 
     try {
-      final id =
-          timerId ??
-          ref
-              .read(activeTimerProvider)
-              .when(
+      final id = timerId ??
+          ref.read(activeTimerProvider).when(
                 data: (timer) => timer?.id,
                 loading: () => null,
                 error: (_, __) => null,
@@ -229,8 +224,11 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
+      final api = ref.read(timersApiProvider);
+      await api.updateTimerV1TimersTimerIdPatch(
+        timerId: id,
+        body: const TimerUpdate(),
+      );
       state = const AsyncValue.data(null);
       ref.invalidate(timerHistoryProvider);
     } catch (error, stackTrace) {
@@ -246,9 +244,7 @@ class TimerController extends _$TimerController {
     state = const AsyncValue.loading();
 
     try {
-      final activeTimer = ref
-          .read(activeTimerProvider)
-          .when(
+      final activeTimer = ref.read(activeTimerProvider).when(
             data: (timer) => timer,
             loading: () => null,
             error: (error, stack) => null,
@@ -258,7 +254,7 @@ class TimerController extends _$TimerController {
         throw Exception('일시정지할 실행 중인 타이머가 없습니다');
       }
       if (timerId == null &&
-          (activeTimer == null || activeTimer.status != TimerStatus.running)) {
+          (activeTimer == null || activeTimer.status != 'RUNNING')) {
         throw Exception('일시정지할 실행 중인 타이머가 없습니다');
       }
 
@@ -269,8 +265,11 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
+      final api = ref.read(timersApiProvider);
+      await api.updateTimerV1TimersTimerIdPatch(
+        timerId: id,
+        body: const TimerUpdate(),
+      );
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -285,9 +284,7 @@ class TimerController extends _$TimerController {
     state = const AsyncValue.loading();
 
     try {
-      final activeTimer = ref
-          .read(activeTimerProvider)
-          .when(
+      final activeTimer = ref.read(activeTimerProvider).when(
             data: (timer) => timer,
             loading: () => null,
             error: (error, stack) => null,
@@ -297,7 +294,7 @@ class TimerController extends _$TimerController {
         throw Exception('재개할 일시정지된 타이머가 없습니다');
       }
       if (timerId == null &&
-          (activeTimer == null || activeTimer.status != TimerStatus.paused)) {
+          (activeTimer == null || activeTimer.status != 'PAUSED')) {
         throw Exception('재개할 일시정지된 타이머가 없습니다');
       }
 
@@ -308,8 +305,11 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
+      final api = ref.read(timersApiProvider);
+      await api.updateTimerV1TimersTimerIdPatch(
+        timerId: id,
+        body: const TimerUpdate(),
+      );
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -328,10 +328,8 @@ class TimerController extends _$TimerController {
 List<TimerRead> sortTimerHistory(List<TimerRead> timers) {
   final sorted = List<TimerRead>.from(timers);
   sorted.sort((a, b) {
-    final aActive =
-        a.status == TimerStatus.running || a.status == TimerStatus.paused;
-    final bActive =
-        b.status == TimerStatus.running || b.status == TimerStatus.paused;
+    final aActive = a.status == 'RUNNING' || a.status == 'PAUSED';
+    final bActive = b.status == 'RUNNING' || b.status == 'PAUSED';
     if (aActive != bActive) return aActive ? -1 : 1;
 
     final aStarted = a.startedAt ?? a.createdAt;
@@ -351,7 +349,7 @@ List<TimerRead> sortTimerHistory(List<TimerRead> timers) {
 /// - PAUSED / COMPLETED 등 비실행 상태: [elapsedTime] 그대로
 /// - RUNNING: [elapsedTime] + (now - [resumedAt]) 보정
 Duration calculateElapsed({
-  required TimerStatus? status,
+  required String? status,
   required int elapsedTime,
   DateTime? startedAt,
   DateTime? pausedAt,
@@ -359,7 +357,7 @@ Duration calculateElapsed({
 }) {
   if (status == null) return Duration.zero;
 
-  if (status != TimerStatus.running) {
+  if (status != 'RUNNING') {
     return Duration(seconds: elapsedTime);
   }
 

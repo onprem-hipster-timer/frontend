@@ -5,7 +5,9 @@ import 'package:momeet/shared/pages/security_warning_page.dart';
 void main() {
   group('SecurityWarningPage', () {
     Widget buildPage({String? attemptedUrl}) {
-      return MaterialApp(home: SecurityWarningPage(attemptedUrl: attemptedUrl));
+      return MaterialApp(
+        home: SecurityWarningPage(attemptedUrl: attemptedUrl),
+      );
     }
 
     testWidgets('경고 아이콘과 제목이 표시된다', (tester) async {
@@ -18,7 +20,10 @@ void main() {
     testWidgets('허가되지 않은 리다이렉트 경고 메시지가 표시된다', (tester) async {
       await tester.pumpWidget(buildPage());
 
-      expect(find.text('허가되지 않은 리다이렉트가 감지되었습니다.'), findsOneWidget);
+      expect(
+        find.text('허가되지 않은 리다이렉트가 감지되었습니다.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('연락처 이메일이 표시된다', (tester) async {
@@ -150,7 +155,10 @@ void main() {
 
     group('임의 텍스트 차단 (소셜 엔지니어링 방지)', () {
       test('한글 메시지를 차단한다', () {
-        expect(SecurityWarningPage.sanitizeBlockedUrl('계정이 해킹되었습니다'), isNull);
+        expect(
+          SecurityWarningPage.sanitizeBlockedUrl('계정이 해킹되었습니다'),
+          isNull,
+        );
       });
 
       test('전화번호가 포함된 피싱 메시지를 차단한다', () {
@@ -163,14 +171,16 @@ void main() {
       test('영문 피싱 메시지를 차단한다', () {
         expect(
           SecurityWarningPage.sanitizeBlockedUrl(
-            'Your account has been compromised call now',
-          ),
+              'Your account has been compromised call now'),
           isNull,
         );
       });
 
       test('숫자만 있는 값을 차단한다', () {
-        expect(SecurityWarningPage.sanitizeBlockedUrl('1234567890'), isNull);
+        expect(
+          SecurityWarningPage.sanitizeBlockedUrl('1234567890'),
+          isNull,
+        );
       });
 
       test('빈 문자열을 차단한다', () {
@@ -186,7 +196,10 @@ void main() {
       test('200자 이내 URL은 그대로 반환한다', () {
         final url = 'https://evil.com/${'a' * 170}';
         expect(url.length, lessThanOrEqualTo(200));
-        expect(SecurityWarningPage.sanitizeBlockedUrl(url), url);
+        expect(
+          SecurityWarningPage.sanitizeBlockedUrl(url),
+          url,
+        );
       });
 
       test('200자 초과 URL은 잘리고 ...이 붙는다', () {
