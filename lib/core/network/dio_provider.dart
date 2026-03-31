@@ -54,23 +54,8 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     }
 
     if (err.response?.statusCode == 401) {
-      // Supabase 세션 갱신 시도 → 성공 시 새 토큰으로 요청 재시도
-      try {
-        debugPrint('🔄 [AUTH] 401 received - refreshing session');
-        final supabase = ref.read(supabaseClientProvider);
-        await supabase.auth.refreshSession();
-
-        final newToken = ref.read(accessTokenProvider);
-        if (newToken != null && newToken.isNotEmpty) {
-          final opts = err.requestOptions;
-          opts.headers['Authorization'] = 'Bearer $newToken';
-          final response = await Dio().fetch(opts);
-          return handler.resolve(response);
-        }
-      } catch (_) {
-        debugPrint('⚠️ [AUTH] Session refresh failed - signing out');
-        ref.read(authProvider.notifier).signOut();
-      }
+      debugPrint('⚠️ [AUTH] 401 received - signing out');
+      ref.read(authProvider.notifier).signOut();
     }
 
     return handler.next(err);
