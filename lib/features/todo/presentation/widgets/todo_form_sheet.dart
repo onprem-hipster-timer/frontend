@@ -924,6 +924,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           status: _selectedStatus,
           tagIds: _selectedTagIds.toList(),
           deadline: _selectedDeadline,
+          parentId: widget.todo!.parentId,
         );
 
         await ref
