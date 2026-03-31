@@ -212,19 +212,6 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 새 비밀번호로 업데이트 (비밀번호 재설정 링크를 통해 호출)
-  Future<void> updatePassword(String newPassword) async {
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.updateUser(UserAttributes(password: newPassword));
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
-  }
-
   /// 비밀번호 변경 전 재인증용 일회용 코드를 이메일(또는 확인된 휴대전화)로 발송합니다.
   ///
   /// [공식 문서](https://supabase.com/docs/reference/dart/auth-reauthentication)의
