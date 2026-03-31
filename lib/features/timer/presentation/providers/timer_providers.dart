@@ -215,7 +215,7 @@ class TimerController extends _$TimerController {
               .when(
                 data: (timer) => timer?.id,
                 loading: () => null,
-                error: (_, __) => null,
+                error: (_, _) => null,
               );
       if (id == null) {
         throw Exception('정지할 활성 타이머가 없습니다');

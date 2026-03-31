@@ -16,10 +16,7 @@ import 'package:momeet/core/utils/color_utils.dart';
 class TodoGroupDetailPage extends ConsumerWidget {
   final String groupId;
 
-  const TodoGroupDetailPage({
-    super.key,
-    required this.groupId,
-  });
+  const TodoGroupDetailPage({super.key, required this.groupId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,11 +53,10 @@ class TodoGroupDetailPage extends ConsumerWidget {
           // 로딩 오버레이 (뮤테이션 중)
           if (mutationState.isLoading)
             Container(
-              color:
-                  Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              color: Theme.of(
+                context,
+              ).colorScheme.shadow.withValues(alpha: 0.3),
+              child: const Center(child: CircularProgressIndicator()),
             ),
         ],
       ),
@@ -157,11 +153,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
   }
 
   /// Todo 목록 슬리버
-  Widget _buildTodoList(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic tree,
-  ) {
+  Widget _buildTodoList(BuildContext context, WidgetRef ref, dynamic tree) {
     if (tree.roots.isEmpty) {
       return SliverFillRemaining(
         child: _buildEmptyState(context, Theme.of(context)),
@@ -189,13 +181,12 @@ class TodoGroupDetailPage extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           '이 그룹의 할 일들입니다. 드래그로 순서를 바꿀 수 있습니다.',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
                         ),
                       ),
                     ],
@@ -270,8 +261,10 @@ class TodoGroupDetailPage extends ConsumerWidget {
               icon: const Icon(Icons.add_task),
               label: const Text('첫 할 일 추가하기'),
               style: FilledButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -288,11 +281,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               '할 일을 불러오지 못했습니다',

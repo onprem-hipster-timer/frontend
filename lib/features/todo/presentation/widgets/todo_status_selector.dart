@@ -3,30 +3,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import '../providers/todo_provider.dart';
 
-
 extension TodoStatusUI on TodoStatus {
   IconData get icon => switch (this) {
     TodoStatus.unscheduled => Icons.circle_outlined,
-    TodoStatus.scheduled  => Icons.schedule,
-    TodoStatus.done       => Icons.check_circle,
-    TodoStatus.cancelled  => Icons.cancel,
-    TodoStatus.$unknown   => Icons.help_outline,
+    TodoStatus.scheduled => Icons.schedule,
+    TodoStatus.done => Icons.check_circle,
+    TodoStatus.cancelled => Icons.cancel,
+    TodoStatus.$unknown => Icons.help_outline,
   };
 
   Color color(BuildContext context) => switch (this) {
     TodoStatus.unscheduled => Colors.grey,
-    TodoStatus.scheduled   => Colors.blue,
-    TodoStatus.done        => Colors.green,
-    TodoStatus.cancelled   => Colors.red,
-    TodoStatus.$unknown    => Colors.grey,
+    TodoStatus.scheduled => Colors.blue,
+    TodoStatus.done => Colors.green,
+    TodoStatus.cancelled => Colors.red,
+    TodoStatus.$unknown => Colors.grey,
   };
 
   String get label => switch (this) {
     TodoStatus.unscheduled => '미예정',
-    TodoStatus.scheduled   => '예정됨',
-    TodoStatus.done        => '완료',
-    TodoStatus.cancelled   => '취소',
-    TodoStatus.$unknown    => '알 수 없음',
+    TodoStatus.scheduled => '예정됨',
+    TodoStatus.done => '완료',
+    TodoStatus.cancelled => '취소',
+    TodoStatus.$unknown => '알 수 없음',
   };
 }
 
@@ -66,11 +65,7 @@ class TodoStatusSelector extends ConsumerWidget {
                 value: status,
                 child: Row(
                   children: [
-                    Icon(
-                      status.icon,
-                      color: status.color(context),
-                      size: 20,
-                    ),
+                    Icon(status.icon, color: status.color(context), size: 20),
                     const SizedBox(width: 12),
                     Text(status.label),
                   ],
