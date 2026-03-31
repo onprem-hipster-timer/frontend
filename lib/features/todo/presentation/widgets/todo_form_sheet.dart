@@ -823,7 +823,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     final availableGroups = tagGroupsAsync.when(
       data: (groups) => groups,
       loading: () => <TagGroupWithTags>[],
-      error: (_, __) => <TagGroupWithTags>[],
+      error: (_, _) => <TagGroupWithTags>[],
     );
 
     if (availableGroups.isEmpty) {
@@ -869,7 +869,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       var tagGroups = tagTreeAsync.when(
         data: (groups) => groups,
         loading: () => <TagGroupWithTags>[],
-        error: (_, __) => <TagGroupWithTags>[],
+        error: (_, _) => <TagGroupWithTags>[],
       );
 
       // 태그 그룹이 없으면 기본 그룹 생성
