@@ -30,13 +30,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
 
     try {
-      await ref.read(authProvider.notifier).resetPassword(
-            _emailController.text.trim(),
-          );
+      await ref
+          .read(authProvider.notifier)
+          .resetPassword(_emailController.text.trim());
 
       if (mounted) {
         showDialog(
           context: context,
+          useRootNavigator: true,
           builder: (context) => AlertDialog(
             title: const Text('이메일 전송 완료'),
             content: const Text('비밀번호 재설정 링크가 이메일로 전송되었습니다.'),
@@ -70,9 +71,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('비밀번호 재설정'),
-      ),
+      appBar: AppBar(title: const Text('비밀번호 재설정')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

@@ -109,8 +109,9 @@ class ScheduleAppointmentBuilder {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: _getContrastColor(appointment.color)
-                              .withValues(alpha: 0.8),
+                          color: _getContrastColor(
+                            appointment.color,
+                          ).withValues(alpha: 0.8),
                           fontSize: 10,
                         ),
                       ),
@@ -127,8 +128,9 @@ class ScheduleAppointmentBuilder {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: _getContrastColor(appointment.color)
-                              .withValues(alpha: 0.7),
+                          color: _getContrastColor(
+                            appointment.color,
+                          ).withValues(alpha: 0.7),
                           fontSize: 10,
                         ),
                       ),
@@ -154,12 +156,10 @@ class ScheduleAppointmentBuilder {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(color: appointment.color, width: 4),
-        ),
+        border: Border(left: BorderSide(color: appointment.color, width: 4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -187,10 +187,9 @@ class ScheduleAppointmentBuilder {
                     _formatTime(appointment.endTime),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -219,10 +218,9 @@ class ScheduleAppointmentBuilder {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -232,10 +230,9 @@ class ScheduleAppointmentBuilder {
             // 화살표
             Icon(
               Icons.chevron_right,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ],
         ),
@@ -275,9 +272,17 @@ class ScheduleAppointmentBuilder {
   // ============================================================
 
   /// 배경색 대비 글자색 결정
-  static Color _getContrastColor(Color backgroundColor) {
+  static Color _getContrastColor(Color backgroundColor,
+      [BuildContext? context]) {
     // 상대 휘도 계산
     final luminance = backgroundColor.computeLuminance();
+    if (context != null) {
+      final theme = Theme.of(context);
+      return luminance > 0.5
+          ? theme.colorScheme.onSurface
+          : theme.colorScheme.surface;
+    }
+    // 기본값 (컨텍스트가 없는 경우)
     return luminance > 0.5 ? Colors.black87 : Colors.white;
   }
 

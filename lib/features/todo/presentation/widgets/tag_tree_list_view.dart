@@ -49,9 +49,7 @@ class TagTreeListView extends ConsumerWidget {
       ),
       data: (tagGroups) {
         if (tagGroups.isEmpty) {
-          return const Center(
-            child: Text('태그 그룹이 없습니다'),
-          );
+          return const Center(child: Text('태그 그룹이 없습니다'));
         }
 
         return ListView.builder(
@@ -100,7 +98,9 @@ class TagGroupExpansionTile extends ConsumerWidget {
         if (dragData.groupId != group.id) {
           // 다른 그룹으로 태그 이동
           try {
-            await ref.read(tagMutationsProvider.notifier).updateTag(
+            await ref
+                .read(tagMutationsProvider.notifier)
+                .updateTag(
                   dragData.tagId,
                   TagUpdate(
                     // groupId는 TagUpdate에 없으므로 다른 방법 사용 필요
@@ -143,41 +143,18 @@ class TagGroupExpansionTile extends ConsumerWidget {
               radius: 12,
               child: Text(
                 group.tags.length.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    group.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (group.isTodoGroup)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'TODO',
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
+            title: Text(
+              group.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             subtitle: group.description != null
                 ? Text(
@@ -195,17 +172,13 @@ class TagGroupExpansionTile extends ConsumerWidget {
                   subtitle: Text('새 태그를 추가해보세요'),
                 )
               else
-                ...group.tags.map((tag) => DraggableTagTile(
-                      tag: tag,
-                      groupColor: groupColor,
-                    )),
+                ...group.tags.map(
+                  (tag) => DraggableTagTile(tag: tag, groupColor: groupColor),
+                ),
 
               // 태그 추가 버튼
               ListTile(
-                leading: Icon(
-                  Icons.add,
-                  color: theme.colorScheme.primary,
-                ),
+                leading: Icon(Icons.add, color: theme.colorScheme.primary),
                 title: Text(
                   '태그 추가',
                   style: TextStyle(
@@ -231,17 +204,20 @@ class TagGroupExpansionTile extends ConsumerWidget {
       }
       return Color(int.parse(hex, radix: 16));
     } catch (e) {
-      return Colors.grey;
+      return Colors.grey; // 정적 fallback 색상
     }
   }
 
   /// 태그 생성 다이얼로그 표시
   void _showCreateTagDialog(
-      BuildContext context, WidgetRef ref, String groupId) {
+    BuildContext context,
+    WidgetRef ref,
+    String groupId,
+  ) {
     // TODO: 태그 생성 다이얼로그 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('태그 생성 다이얼로그가 곧 구현됩니다')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('태그 생성 다이얼로그가 곧 구현됩니다')));
   }
 }
 
@@ -262,11 +238,7 @@ class DraggableTagTile extends StatelessWidget {
     final tagColor = _parseColor(tag.color);
 
     return LongPressDraggable<TagDragData>(
-      data: TagDragData(
-        tagId: tag.id,
-        tagName: tag.name,
-        groupId: tag.groupId,
-      ),
+      data: TagDragData(tagId: tag.id, tagName: tag.name, groupId: tag.groupId),
       feedback: Material(
         elevation: 4,
         borderRadius: BorderRadius.circular(8),
@@ -333,10 +305,7 @@ class DraggableTagTile extends StatelessWidget {
           leading: Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(
-              color: tagColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: tagColor, shape: BoxShape.circle),
           ),
           title: Text(
             tag.name,
@@ -399,13 +368,15 @@ class DraggableTagTile extends StatelessWidget {
       }
       return Color(int.parse(hex, radix: 16));
     } catch (e) {
-      return Colors.grey;
+      return Colors.grey; // 여기는 정적 함수이므로 유지
     }
   }
 
   /// 삭제 확인 다이얼로그
   Future<void> _showDeleteConfirmDialog(
-      BuildContext context, TagRead tag) async {
+    BuildContext context,
+    TagRead tag,
+  ) async {
     final confirmed = await showConfirmDialog(
       context,
       title: '태그 삭제',
@@ -417,9 +388,9 @@ class DraggableTagTile extends StatelessWidget {
     if (!confirmed || !context.mounted) return;
 
     // TODO: 삭제 로직 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('태그 삭제 기능이 곧 구현됩니다')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('태그 삭제 기능이 곧 구현됩니다')));
   }
 }
 

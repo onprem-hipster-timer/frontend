@@ -7,22 +7,13 @@ import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// 태그 생성/수정 폼 시트
-///
-/// Modal Bottom Sheet로 표시되며, 태그의 이름, 그룹, 색상을 편집할 수 있습니다.
 class TagFormSheet extends ConsumerStatefulWidget {
-  /// 수정할 태그 (null인 경우 생성 모드)
   final TagRead? tag;
-
-  /// 사용 가능한 태그 그룹 목록
-  final List<TagGroupWithTags> availableGroups;
-
-  /// 기본 선택될 그룹 ID (생성 모드에서 사용)
   final String? defaultGroupId;
 
   const TagFormSheet({
     super.key,
     this.tag,
-    required this.availableGroups,
     this.defaultGroupId,
   });
 
@@ -41,22 +32,16 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
   @override
   void initState() {
     super.initState();
-
     _isEditMode = widget.tag != null;
 
     if (_isEditMode) {
-      // 수정 모드: 기존 데이터로 초기화
       final tag = widget.tag!;
       _nameController.text = tag.name;
       _selectedColor = HexColor.fromHex(tag.color);
       _selectedGroupId = tag.groupId;
     } else {
-      // 생성 모드: 기본값으로 초기화
       _selectedColor = TagColorPalette.defaultColor;
-      _selectedGroupId = widget.defaultGroupId ??
-          (widget.availableGroups.isNotEmpty
-              ? widget.availableGroups.first.groupId
-              : '');
+      _selectedGroupId = widget.defaultGroupId ?? '';
     }
   }
 
@@ -71,52 +56,68 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     final theme = Theme.of(context);
     final mutations = ref.watch(tagMutationsProvider);
     final isLoading = mutations.isLoading;
+    final availableGroupsAsync = ref.watch(tagTreeProvider);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return availableGroupsAsync.when(
+      loading: () => const SafeArea(
+        child: Center(
+          child: CircularProgressIndicator(),
         ),
       ),
+      error: (error, stack) => SafeArea(
+        child: Center(
+          child: Text('태그 그룹을 불러올 수 없습니다: $error'),
+        ),
+      ),
+      data: (availableGroups) => _buildFormSheet(context, theme, isLoading, availableGroups),
+    );
+  }
+
+  Widget _buildFormSheet(
+    BuildContext context,
+    ThemeData theme,
+    bool isLoading,
+    List<TagGroupWithTags> availableGroups,
+  ) {
+    // 첫 로드 시 기본 그룹 ID 설정
+    if (_selectedGroupId.isEmpty && availableGroups.isNotEmpty) {
+      _selectedGroupId = widget.defaultGroupId ?? availableGroups.first.groupId;
+    }
+
+    // [안전한 바텀 시트 레이아웃 구조]
+    // SafeArea로 가장 바깥을 감싸고, padding으로 키보드 높이를 처리합니다.
+    return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 헤더
-                _buildHeader(theme),
-
-                const SizedBox(height: 24),
-
-                // 태그 이름 입력
-                _buildNameField(),
-
-                const SizedBox(height: 20),
-
-                // 그룹 선택
-                _buildGroupSelector(theme),
-
-                const SizedBox(height: 24),
-
-                // 색상 선택
-                _buildColorPicker(theme),
-
-                const SizedBox(height: 32),
-
-                // 버튼 영역
-                _buildButtonBar(isLoading),
-              ],
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // 내부 콘텐츠 크기만큼만 높이 차지
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(theme),
+                  const SizedBox(height: 24),
+                  _buildNameField(),
+                  const SizedBox(height: 20),
+                  _buildGroupSelector(theme, availableGroups),
+                  const SizedBox(height: 24),
+                  _buildColorPicker(theme),
+                  const SizedBox(height: 32),
+                  _buildButtonBar(isLoading),
+                ],
+              ),
             ),
           ),
         ),
@@ -124,34 +125,30 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     );
   }
 
-  /// 헤더 (제목과 핸들)
   Widget _buildHeader(ThemeData theme) {
-    return Column(
-      children: [
-        // 핸들
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.outline.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(2),
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.outline.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // 제목
-        Text(
-          _isEditMode ? '태그 수정' : '새 태그 만들기',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 16),
+          Text(
+            _isEditMode ? '태그 수정' : '새 태그 만들기',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  /// 태그 이름 입력 필드
   Widget _buildNameField() {
     return TextFormField(
       controller: _nameController,
@@ -159,9 +156,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       decoration: InputDecoration(
         labelText: '태그 이름',
         hintText: '태그 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -185,13 +180,11 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     );
   }
 
-  /// 그룹 선택 드롭다운
-  Widget _buildGroupSelector(ThemeData theme) {
-    // 수정 모드에서는 현재 그룹 정보만 표시 (변경 불가)
+  Widget _buildGroupSelector(ThemeData theme, List<TagGroupWithTags> availableGroups) {
     if (_isEditMode) {
-      final currentGroup = widget.availableGroups.firstWhere(
+      final currentGroup = availableGroups.firstWhere(
         (group) => group.groupId == _selectedGroupId,
-        orElse: () => widget.availableGroups.first,
+        orElse: () => availableGroups.first,
       );
 
       return Column(
@@ -209,17 +202,18 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.5)),
+                color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              ),
               borderRadius: BorderRadius.circular(12),
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.folder_outlined, color: Colors.grey),
+                Icon(Icons.folder_outlined,
+                    color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 12),
-
-                // 그룹 색상 점
                 Container(
                   width: 12,
                   height: 12,
@@ -229,18 +223,14 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                // 그룹 이름
                 Expanded(
                   child: Text(
                     currentGroup.groupName,
                     style: TextStyle(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
                 ),
-
-                // 수정 불가 안내
                 Text(
                   '(수정 불가)',
                   style: TextStyle(
@@ -255,7 +245,6 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       );
     }
 
-    // 생성 모드에서는 그룹 선택 가능
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -267,19 +256,18 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
+          // ⭐️ 핵심 Fix: 드롭다운이 넓이를 안전하게 잡도록 보장
+          isExpanded: true,
           initialValue: _selectedGroupId.isNotEmpty ? _selectedGroupId : null,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixIcon: const Icon(Icons.folder_outlined),
           ),
-          items: widget.availableGroups.map((group) {
+          items: availableGroups.map((group) {
             return DropdownMenuItem<String>(
               value: group.groupId,
               child: Row(
                 children: [
-                  // 그룹 색상 점
                   Container(
                     width: 12,
                     height: 12,
@@ -289,16 +277,20 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // 그룹 이름
-                  Expanded(
-                    child: Text(group.groupName),
+                  // ⭐️ 핵심 Fix: Expanded를 제거하고 글자가 길면 잘리도록 처리
+                  Flexible(
+                    child: Text(
+                      group.groupName,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  // 태그 개수 배지
                   if (group.tagCount > 0) ...[
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -335,7 +327,6 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     );
   }
 
-  /// 색상 선택기 (16가지 파스텔 팔레트)
   Widget _buildColorPicker(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,16 +337,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             fontWeight: FontWeight.w600,
           ),
         ),
-
         const SizedBox(height: 12),
-
-        // 색상 팔레트 그리드 (4x4)
         Wrap(
           spacing: 12,
           runSpacing: 12,
           children: TagColorPalette.colors.map((color) {
             final isSelected = color.toARGB32() == _selectedColor.toARGB32();
-
             return GestureDetector(
               onTap: () {
                 setState(() {
@@ -377,8 +364,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -396,41 +384,15 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             );
           }).toList(),
         ),
-
-        const SizedBox(height: 8),
-
-        // 선택된 색상 미리보기
-        Row(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: _selectedColor,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '선택된 색상: ${_selectedColor.toHex()}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
 
-  /// 버튼 영역 (취소/저장)
   Widget _buildButtonBar(bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
-        // 취소 버튼
         Expanded(
           child: OutlinedButton(
             onPressed: isLoading ? null : () => Navigator.of(context).pop(),
@@ -443,10 +405,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             child: const Text('취소'),
           ),
         ),
-
         const SizedBox(width: 16),
-
-        // 저장 버튼
         Expanded(
           flex: 2,
           child: FilledButton(
@@ -458,12 +417,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(_isEditMode ? '수정' : '생성'),
@@ -473,36 +432,31 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     );
   }
 
-  /// 폼 제출 처리
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     try {
       if (_isEditMode) {
-        // 수정 모드
         final updateData = TagUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
         );
-
         await ref
             .read(tagMutationsProvider.notifier)
             .updateTag(widget.tag!.id, updateData);
-
         if (mounted) {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('태그가 수정되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그가 수정되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -511,56 +465,46 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           );
         }
       } else {
-        // 생성 모드
         final createData = TagCreate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
           groupId: _selectedGroupId,
         );
-
         await ref.read(tagMutationsProvider.notifier).createTag(createData);
-
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('태그가 생성되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          _showSuccess(scaffoldMessenger, '태그가 생성되었습니다');
         }
       }
     } catch (error) {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _isEditMode
-                        ? '태그 수정에 실패했습니다: $error'
-                        : '태그 생성에 실패했습니다: $error',
-                  ),
-                ),
-              ],
+            content: Text(
+              _isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error',
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
           ),
         );
       }
     }
+  }
+
+  void _showSuccess(ScaffoldMessengerState messenger, String message) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Text(message),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
 
@@ -570,23 +514,21 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 /// ```dart
 /// showTagFormSheet(
 ///   context,
-///   availableGroups: groups,
 ///   defaultGroupId: groupId,
 /// );
 /// ```
 Future<void> showTagFormSheet(
   BuildContext context, {
   TagRead? tag,
-  required List<TagGroupWithTags> availableGroups,
   String? defaultGroupId,
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => TagFormSheet(
       tag: tag,
-      availableGroups: availableGroups,
       defaultGroupId: defaultGroupId,
     ),
   );

@@ -97,7 +97,8 @@ class AuthNotifier extends _$AuthNotifier {
 
         if (AppConfig.enableDebugLogging) {
           debugPrint(
-              '🔀 [AUTH] ${data.event.name}, user: ${session?.user.email}');
+            '🔀 [AUTH] ${data.event.name}, user: ${session?.user.email}',
+          );
         }
 
         switch (data.event) {
@@ -157,10 +158,7 @@ class AuthNotifier extends _$AuthNotifier {
   }) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await supabase.auth.signInWithPassword(email: email, password: password);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -179,10 +177,7 @@ class AuthNotifier extends _$AuthNotifier {
   }) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
+      await supabase.auth.signUp(email: email, password: password);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -217,12 +212,36 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 새 비밀번호로 업데이트 (비밀번호 재설정 링크를 통해 호출)
-  Future<void> updatePassword(String newPassword) async {
+  /// 비밀번호 변경 전 재인증용 일회용 코드를 이메일(또는 확인된 휴대전화)로 발송합니다.
+  ///
+  /// [공식 문서](https://supabase.com/docs/reference/dart/auth-reauthentication)의
+  /// `reauthenticate()`에 해당합니다. 이후 `updatePasswordWithReauthNonce`로
+  /// 수신한 코드와 새 비밀번호를 함께 제출해야 합니다.
+  Future<void> requestPasswordChangeReauthentication() async {
     try {
       final supabase = ref.read(supabaseClientProvider);
+      // currentUser null 체크는 router guard가 보장하므로 생략
+      await supabase.auth.reauthenticate();
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 재인증 nonce(이메일/SMS로 수신)와 함께 비밀번호를 변경합니다.
+  ///
+  /// 반드시 [requestPasswordChangeReauthentication] 성공 후 호출하세요.
+  Future<void> updatePasswordWithReauthNonce({
+    required String newPassword,
+    required String nonce,
+  }) async {
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      // currentUser null 체크는 router guard가 보장하므로 생략
       await supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
+        UserAttributes(password: newPassword, nonce: nonce.trim()),
       );
     } catch (e) {
       throw AuthException(
@@ -248,17 +267,17 @@ class AuthNotifier extends _$AuthNotifier {
 /// ```
 @riverpod
 User? currentUser(Ref ref) {
-  return ref.watch(authProvider).whenOrNull(
-        authenticated: (user, token, refreshToken) => user,
-      );
+  return ref
+      .watch(authProvider)
+      .whenOrNull(authenticated: (user, token, refreshToken) => user);
 }
 
 /// 현재 액세스 토큰 제공자
 @riverpod
 String? accessToken(Ref ref) {
-  return ref.watch(authProvider).whenOrNull(
-        authenticated: (user, token, refreshToken) => token,
-      );
+  return ref
+      .watch(authProvider)
+      .whenOrNull(authenticated: (user, token, refreshToken) => token);
 }
 
 /// 인증 여부 확인
@@ -269,7 +288,9 @@ String? accessToken(Ref ref) {
 /// ```
 @riverpod
 bool isAuthenticated(Ref ref) {
-  return ref.watch(authProvider).maybeWhen(
+  return ref
+      .watch(authProvider)
+      .maybeWhen(
         authenticated: (user, token, refreshToken) => true,
         orElse: () => false,
       );
@@ -278,17 +299,15 @@ bool isAuthenticated(Ref ref) {
 /// 인증 로딩 여부 확인
 @riverpod
 bool isAuthLoading(Ref ref) {
-  return ref.watch(authProvider).maybeWhen(
-        loading: () => true,
-        orElse: () => false,
-      );
+  return ref
+      .watch(authProvider)
+      .maybeWhen(loading: () => true, orElse: () => false);
 }
 
 /// 인증 에러 메시지 제공자
 @riverpod
 String? authError(Ref ref) {
-  return ref.watch(authProvider).maybeWhen(
-        error: (message, _) => message,
-        orElse: () => null,
-      );
+  return ref
+      .watch(authProvider)
+      .maybeWhen(error: (message, _) => message, orElse: () => null);
 }
