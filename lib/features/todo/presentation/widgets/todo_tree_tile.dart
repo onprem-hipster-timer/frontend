@@ -368,10 +368,7 @@ class TodoTreeTile extends ConsumerWidget {
       child: AnimatedRotation(
         turns: isExpanded ? 0.25 : 0, // 90도 회전
         duration: const Duration(milliseconds: 200),
-        child: const Icon(
-          Icons.chevron_right,
-          size: 24,
-        ),
+        child: const Icon(Icons.chevron_right, size: 24),
       ),
     );
   }
@@ -485,10 +482,9 @@ class TodoRootDropTarget extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final draggedTodo = details.data;
         // 부모를 null로 설정하여 루트로 이동
-        await ref.read(todoMutationsProvider.notifier).changeParent(
-              draggedTodo.id,
-              null,
-            );
+        await ref
+            .read(todoMutationsProvider.notifier)
+            .changeParent(draggedTodo.id, null);
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
@@ -528,8 +524,9 @@ class TodoRootDropTarget extends ConsumerWidget {
                     color: isValidTarget
                         ? kDropTargetColor
                         : theme.colorScheme.onSurfaceVariant,
-                    fontWeight:
-                        isValidTarget ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isValidTarget
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ],

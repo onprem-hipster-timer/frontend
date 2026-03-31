@@ -163,8 +163,7 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
 
           // 액션 버튼들
           OutlinedButton.icon(
-            onPressed: () =>
-                TodoActions.showEditTodoDialog(context, node.todo),
+            onPressed: () => TodoActions.showEditTodoDialog(context, node.todo),
             icon: const Icon(Icons.edit, size: 14),
             label: const Text('수정'),
             style: OutlinedButton.styleFrom(
@@ -177,12 +176,8 @@ class TodoTreeTileWithTimer extends ConsumerWidget {
           const SizedBox(width: 4),
 
           OutlinedButton.icon(
-            onPressed: () => TodoActions.showDeleteTodoDialog(
-              context,
-              ref,
-              node.todo,
-              node,
-            ),
+            onPressed: () =>
+                TodoActions.showDeleteTodoDialog(context, ref, node.todo, node),
             icon: const Icon(Icons.delete_outline, size: 14),
             label: const Text('삭제'),
             style: OutlinedButton.styleFrom(

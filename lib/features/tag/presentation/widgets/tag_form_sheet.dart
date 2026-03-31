@@ -11,11 +11,7 @@ class TagFormSheet extends ConsumerStatefulWidget {
   final TagRead? tag;
   final String? defaultGroupId;
 
-  const TagFormSheet({
-    super.key,
-    this.tag,
-    this.defaultGroupId,
-  });
+  const TagFormSheet({super.key, this.tag, this.defaultGroupId});
 
   @override
   ConsumerState<TagFormSheet> createState() => _TagFormSheetState();
@@ -59,17 +55,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     final availableGroupsAsync = ref.watch(tagTreeProvider);
 
     return availableGroupsAsync.when(
-      loading: () => const SafeArea(
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (error, stack) => SafeArea(
-        child: Center(
-          child: Text('태그 그룹을 불러올 수 없습니다: $error'),
-        ),
-      ),
-      data: (availableGroups) => _buildFormSheet(context, theme, isLoading, availableGroups),
+      loading: () =>
+          const SafeArea(child: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          SafeArea(child: Center(child: Text('태그 그룹을 불러올 수 없습니다: $error'))),
+      data: (availableGroups) =>
+          _buildFormSheet(context, theme, isLoading, availableGroups),
     );
   }
 
@@ -180,7 +171,10 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     );
   }
 
-  Widget _buildGroupSelector(ThemeData theme, List<TagGroupWithTags> availableGroups) {
+  Widget _buildGroupSelector(
+    ThemeData theme,
+    List<TagGroupWithTags> availableGroups,
+  ) {
     if (_isEditMode) {
       final currentGroup = availableGroups.firstWhere(
         (group) => group.groupId == _selectedGroupId,
@@ -211,8 +205,10 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             ),
             child: Row(
               children: [
-                Icon(Icons.folder_outlined,
-                    color: theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.folder_outlined,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 12),
                 Container(
                   width: 12,
@@ -527,9 +523,7 @@ Future<void> showTagFormSheet(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => TagFormSheet(
-      tag: tag,
-      defaultGroupId: defaultGroupId,
-    ),
+    builder: (context) =>
+        TagFormSheet(tag: tag, defaultGroupId: defaultGroupId),
   );
 }

@@ -179,9 +179,7 @@ class TagManagementPage extends ConsumerWidget {
 
           // 하위 태그 목록
           children: tagGroup.tags
-              .map(
-                (tag) => _buildTagItem(context, ref, tag, tagGroup),
-              )
+              .map((tag) => _buildTagItem(context, ref, tag, tagGroup))
               .toList(),
         ),
       ),
@@ -261,8 +259,7 @@ class TagManagementPage extends ConsumerWidget {
         ),
 
         // Interaction: 탭하면 수정 폼
-        onTap: () =>
-            _showEditTagSheet(context, ref, tag, parentGroup),
+        onTap: () => _showEditTagSheet(context, ref, tag, parentGroup),
 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         tileColor: theme.colorScheme.surface,
@@ -435,10 +432,7 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagGroupWithTags parentGroup,
   ) {
-    showTagFormSheet(
-      context,
-      defaultGroupId: parentGroup.groupId,
-    );
+    showTagFormSheet(context, defaultGroupId: parentGroup.groupId);
   }
 
   /// 태그 수정 시트 표시
@@ -448,10 +442,7 @@ class TagManagementPage extends ConsumerWidget {
     TagRead tag,
     TagGroupWithTags parentGroup,
   ) {
-    showTagFormSheet(
-      context,
-      tag: tag,
-    );
+    showTagFormSheet(context, tag: tag);
   }
 
   /// 태그 삭제 확인 다이얼로그
