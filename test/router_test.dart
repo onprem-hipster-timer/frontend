@@ -220,6 +220,15 @@ void main() {
     // 미인증 상태
     // ----------------------------------------------------------
     group('미인증 상태', () {
+      test('미인증 사용자가 보호된 경로에 접근하면 /login으로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.tags.path,
+        );
+        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.tags.path}');
+      });
+
       test('미인증 사용자가 루트(/)에 접근하면 /landing으로 리다이렉트한다', () {
         final result = authRedirect(
           isAuthenticated: false,
