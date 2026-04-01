@@ -39,6 +39,7 @@ enum AppRoute {
   login(path: '/login', requiresAuth: false),
   signup(path: '/signup', requiresAuth: false),
   forgotPassword(path: '/forgot-password', requiresAuth: false),
+  landing(path: '/landing', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
   securityWarning(path: '/security-warning', requiresAuth: false),
 
@@ -202,6 +203,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.forgotPassword.path,
         name: AppRoute.forgotPassword.name,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+
+      // ============================================================
+      // 랜딩 페이지 (정적 HTML이 표시되므로 Flutter는 빈 화면)
+      // ============================================================
+      GoRoute(
+        path: AppRoute.landing.path,
+        name: AppRoute.landing.name,
+        builder: (context, state) => const SizedBox.shrink(),
       ),
 
       // ============================================================
