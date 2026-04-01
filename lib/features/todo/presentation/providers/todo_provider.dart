@@ -1,5 +1,8 @@
 // Todo Feature - Providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/dio_provider.dart';
+import 'package:momeet/core/network/patch_request.dart';
+import 'package:momeet/core/utils/patch_value.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -122,22 +125,23 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// 부모 변경 (드래그 앤 드롭)
+  /// Todo PATCH 요청 (raw Dio)
   ///
-  /// [todoId] 이동할 Todo ID
-  /// [newParentId] 새 부모 ID (null이면 루트로 이동)
-  Future<TodoRead?> changeParent(String todoId, String? newParentId) async {
+  /// [PatchValue] 래퍼를 사용하여 "미설정"(JSON 미포함)과
+  /// "명시적 null"(JSON에 null)을 구분합니다.
+  Future<TodoRead?> patchFields(
+    String todoId,
+    Map<String, PatchValue<dynamic>> fields,
+  ) async {
     state = const AsyncValue.loading();
 
     try {
-      final api = ref.read(todosApiProvider);
-
-      // TodoUpdate 객체 생성 (Freezed 패턴)
-      final updateData = TodoUpdate(parentId: newParentId);
-
-      final response = await api.updateTodoV1TodosTodoIdPatch(
-        todoId: todoId,
-        body: updateData,
+      final dio = ref.read(dioClientProvider);
+      final response = await patchRequest<TodoRead>(
+        dio: dio,
+        path: '/v1/todos/$todoId',
+        fields: fields,
+        fromJson: TodoRead.fromJson,
       );
 
       // 목록 갱신
@@ -151,30 +155,21 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// 부모 변경 (드래그 앤 드롭)
+  ///
+  /// [todoId] 이동할 Todo ID
+  /// [newParentId] 새 부모 ID (null이면 루트로 이동)
+  ///
+  /// PatchValue 래퍼를 사용하여 null과 미설정을 구분합니다.
+  /// - PatchValue.present("parent-id") → {"parent_id": "parent-id"}
+  /// - PatchValue.present(null) → {"parent_id": null} (루트로 이동)
+  Future<TodoRead?> changeParent(String todoId, String? newParentId) async {
+    return patchFields(todoId, {'parent_id': PatchValue.present(newParentId)});
+  }
+
   /// 상태 변경
   Future<TodoRead?> changeStatus(String todoId, TodoStatus newStatus) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final api = ref.read(todosApiProvider);
-
-      // TodoUpdate 객체 생성 (Freezed 패턴)
-      final updateData = TodoUpdate(status: newStatus);
-
-      final response = await api.updateTodoV1TodosTodoIdPatch(
-        todoId: todoId,
-        body: updateData,
-      );
-
-      // 목록 갱신
-      ref.invalidate(todosProvider);
-
-      state = const AsyncValue.data(null);
-      return response;
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      return null;
-    }
+    return update(todoId, TodoUpdate(status: newStatus));
   }
 }
 
