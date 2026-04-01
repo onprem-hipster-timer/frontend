@@ -14,6 +14,16 @@ import 'package:dio/dio.dart';
 ///   options: RequestOptions(extra: {'explicit_nulls': ['parent_id']}),
 /// );
 /// ```
+/// 명시적 null 전송이 필요한 필드가 있을 때 [RequestOptions]를 생성합니다.
+///
+/// ```dart
+/// options: explicitNulls(['parent_id', 'description']),
+/// ```
+RequestOptions? explicitNulls(List<String> fields) {
+  if (fields.isEmpty) return null;
+  return RequestOptions(extra: {'explicit_nulls': fields});
+}
+
 class ExplicitNullInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {

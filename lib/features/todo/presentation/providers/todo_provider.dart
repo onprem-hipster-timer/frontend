@@ -1,6 +1,7 @@
 // Todo Feature - Providers
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -140,13 +141,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     return update(
       todoId,
       TodoUpdate(parentId: newParentId),
-      options: newParentId == null
-          ? RequestOptions(
-              extra: {
-                'explicit_nulls': ['parent_id'],
-              },
-            )
-          : null,
+      options: newParentId == null ? explicitNulls(['parent_id']) : null,
     );
   }
 

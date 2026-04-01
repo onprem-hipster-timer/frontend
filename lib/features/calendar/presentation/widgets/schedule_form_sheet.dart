@@ -1,7 +1,7 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 
@@ -507,13 +507,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
             .updateSchedule(
               widget.existingSchedule!.id,
               scheduleUpdate,
-              options: descriptionEmpty
-                  ? RequestOptions(
-                      extra: {
-                        'explicit_nulls': ['description'],
-                      },
-                    )
-                  : null,
+              options: descriptionEmpty ? explicitNulls(['description']) : null,
             );
 
         if (mounted) {

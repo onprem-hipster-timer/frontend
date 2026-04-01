@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
@@ -326,13 +326,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
             .updateGroup(
               widget.tagGroup!.id,
               updateData,
-              options: descriptionEmpty
-                  ? RequestOptions(
-                      extra: {
-                        'explicit_nulls': ['description'],
-                      },
-                    )
-                  : null,
+              options: descriptionEmpty ? explicitNulls(['description']) : null,
             );
 
         if (mounted) {
