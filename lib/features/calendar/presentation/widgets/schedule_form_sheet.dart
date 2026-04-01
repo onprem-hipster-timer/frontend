@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -491,18 +492,29 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     try {
       if (widget.existingSchedule != null) {
         // 수정 모드
+        final descriptionEmpty = _descriptionController.text.trim().isEmpty;
         final scheduleUpdate = ScheduleUpdate(
           title: _titleController.text.trim(),
           startTime: _startTime.toUtc(),
           endTime: _endTime.toUtc(),
-          description: _descriptionController.text.trim().isEmpty
+          description: descriptionEmpty
               ? null
               : _descriptionController.text.trim(),
         );
 
         await ref
             .read(scheduleMutationsProvider.notifier)
-            .updateSchedule(widget.existingSchedule!.id, scheduleUpdate);
+            .updateSchedule(
+              widget.existingSchedule!.id,
+              scheduleUpdate,
+              options: descriptionEmpty
+                  ? RequestOptions(
+                      extra: {
+                        'explicit_nulls': ['description'],
+                      },
+                    )
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();

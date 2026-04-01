@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -66,7 +67,11 @@ class ScheduleMutations extends _$ScheduleMutations {
   ///
   /// [id] 수정할 일정 ID
   /// [data] 수정할 일정 정보
-  Future<void> updateSchedule(String id, ScheduleUpdate data) async {
+  Future<void> updateSchedule(
+    String id,
+    ScheduleUpdate data, {
+    RequestOptions? options,
+  }) async {
     // 이미 dispose된 상태인지 확인
     if (!ref.mounted) return;
 
@@ -76,7 +81,11 @@ class ScheduleMutations extends _$ScheduleMutations {
       final api = ref.read(schedulesApiProvider);
 
       final updatedSchedule = await api
-          .updateScheduleV1SchedulesScheduleIdPatch(scheduleId: id, body: data);
+          .updateScheduleV1SchedulesScheduleIdPatch(
+            scheduleId: id,
+            body: data,
+            options: options,
+          );
 
       // provider가 dispose되지 않았는지 확인
       if (!ref.mounted) return;

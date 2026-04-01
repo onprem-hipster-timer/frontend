@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -311,17 +312,28 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     try {
       if (widget.tagGroup != null) {
         // 수정 모드
+        final descriptionEmpty = _descriptionController.text.trim().isEmpty;
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          description: _descriptionController.text.trim().isEmpty
+          description: descriptionEmpty
               ? null
               : _descriptionController.text.trim(),
         );
 
         await ref
             .read(tagMutationsProvider.notifier)
-            .updateGroup(widget.tagGroup!.id, updateData);
+            .updateGroup(
+              widget.tagGroup!.id,
+              updateData,
+              options: descriptionEmpty
+                  ? RequestOptions(
+                      extra: {
+                        'explicit_nulls': ['description'],
+                      },
+                    )
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -916,9 +917,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     try {
       if (_isEditMode) {
         // 수정 모드
+        final descriptionEmpty = _descriptionController.text.trim().isEmpty;
         final updateData = TodoUpdate(
           title: _titleController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
+          description: descriptionEmpty
               ? null
               : _descriptionController.text.trim(),
           status: _selectedStatus,
@@ -928,7 +930,17 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
         await ref
             .read(todoMutationsProvider.notifier)
-            .update(widget.todo!.id, updateData);
+            .update(
+              widget.todo!.id,
+              updateData,
+              options: descriptionEmpty
+                  ? RequestOptions(
+                      extra: {
+                        'explicit_nulls': ['description'],
+                      },
+                    )
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();
