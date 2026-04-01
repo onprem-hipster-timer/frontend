@@ -3,14 +3,12 @@
 (function () {
   'use strict';
 
-  var path = window.location.pathname;
-  var isLanding = path === '/landing' || path === '/landing/';
-
+  var m = window.__momeet;
   var landing = document.getElementById('landing');
   var loading = document.getElementById('loading');
 
   // Route-based display
-  if (isLanding) {
+  if (m.isLanding) {
     if (landing) landing.style.display = '';
     if (loading) loading.style.display = 'none';
     document.body.classList.add('landing-active');
@@ -19,10 +17,8 @@
   } else {
     if (landing) landing.style.display = 'none';
     if (loading) loading.style.display = '';
-    document.body.classList.remove('landing-active');
   }
 
-  // ===== Scroll animations for landing =====
   function initScrollAnimations() {
     var targets = document.querySelectorAll('.bento-card, .how-item');
     if (!targets.length) return;
@@ -46,35 +42,30 @@
     targets.forEach(function (el) { observer.observe(el); });
   }
 
-  // ===== Landing: enable CTA when Flutter fires 'flutter-ready' =====
+  // Enable CTA buttons when Flutter is ready (CSS pointer-events handles blocking)
   function initFlutterReady() {
-    var ctaButtons = document.querySelectorAll('.btn-enter-app');
-    var loadingStrip = document.querySelector('.loading-strip');
-
-    // Block clicks while disabled
-    ctaButtons.forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        if (btn.classList.contains('disabled')) {
-          e.preventDefault();
-        }
-      });
-    });
+    var TIMEOUT_MS = 20000;
 
     function enableButtons() {
-      ctaButtons.forEach(function (btn) {
+      var btns = document.querySelectorAll('.btn-enter-app');
+      btns.forEach(function (btn) {
         btn.classList.remove('disabled');
         btn.textContent = btn.dataset.readyText || '시작하기';
       });
-      if (loadingStrip) loadingStrip.style.display = 'none';
+      var strip = document.querySelector('.loading-strip');
+      if (strip) strip.style.display = 'none';
     }
 
-    // Already ready (e.g. cached/fast load)
-    if (window.__momeetFlutterReady) {
+    if (m.flutterReady) {
       enableButtons();
       return;
     }
 
-    // Wait for custom event from flutter bootstrap
     document.addEventListener('flutter-ready', enableButtons, { once: true });
+
+    // Fallback: enable buttons after timeout even if Flutter fails
+    setTimeout(function () {
+      if (!m.flutterReady) enableButtons();
+    }, TIMEOUT_MS);
   }
 })();

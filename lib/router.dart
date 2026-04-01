@@ -134,11 +134,16 @@ String? authRedirect({
 
   // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
   if (matchedLocation == AppRoute.loading.path) {
-    return isAuthenticated ? AppRoute.calendar.path : AppRoute.login.path;
+    return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
   }
 
-  // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
+  // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
   if (!isAuthenticated && !isPublicRoute) {
+    // 2-1. 루트 경로는 랜딩 페이지로 (서비스 소개)
+    if (matchedLocation == AppRoute.calendar.path) {
+      return AppRoute.landing.path;
+    }
+    // 2-2. 그 외 보호 경로는 로그인 후 원래 경로로 돌아가도록
     return '${AppRoute.login.path}?redirect=$matchedLocation';
   }
 
