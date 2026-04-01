@@ -917,12 +917,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     try {
       if (_isEditMode) {
         // 수정 모드
-        final descriptionEmpty = _descriptionController.text.trim().isEmpty;
+        final description = _descriptionController.text.trim();
         final updateData = TodoUpdate(
           title: _titleController.text.trim(),
-          description: descriptionEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
           status: _selectedStatus,
           tagIds: _selectedTagIds.toList(),
           deadline: _selectedDeadline,
@@ -933,7 +931,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             .update(
               widget.todo!.id,
               updateData,
-              options: descriptionEmpty ? explicitNulls(['description']) : null,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
             );
 
         if (mounted) {

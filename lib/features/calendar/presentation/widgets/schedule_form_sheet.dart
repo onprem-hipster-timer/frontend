@@ -492,14 +492,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     try {
       if (widget.existingSchedule != null) {
         // 수정 모드
-        final descriptionEmpty = _descriptionController.text.trim().isEmpty;
+        final description = _descriptionController.text.trim();
         final scheduleUpdate = ScheduleUpdate(
           title: _titleController.text.trim(),
           startTime: _startTime.toUtc(),
           endTime: _endTime.toUtc(),
-          description: descriptionEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
         );
 
         await ref
@@ -507,7 +505,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
             .updateSchedule(
               widget.existingSchedule!.id,
               scheduleUpdate,
-              options: descriptionEmpty ? explicitNulls(['description']) : null,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
             );
 
         if (mounted) {

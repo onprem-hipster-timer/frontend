@@ -312,13 +312,11 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     try {
       if (widget.tagGroup != null) {
         // 수정 모드
-        final descriptionEmpty = _descriptionController.text.trim().isEmpty;
+        final description = _descriptionController.text.trim();
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          description: descriptionEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
         );
 
         await ref
@@ -326,7 +324,9 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
             .updateGroup(
               widget.tagGroup!.id,
               updateData,
-              options: descriptionEmpty ? explicitNulls(['description']) : null,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
             );
 
         if (mounted) {

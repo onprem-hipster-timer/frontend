@@ -131,12 +131,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
 
   /// 부모 변경 (드래그 앤 드롭)
   ///
-  /// [todoId] 이동할 Todo ID
-  /// [newParentId] 새 부모 ID (null이면 루트로 이동)
-  ///
-  /// ExplicitNullInterceptor를 통해 null과 미설정을 구분합니다.
-  /// - newParentId != null → TodoUpdate(parentId: value) (Retrofit 기본 경로)
-  /// - newParentId == null → explicit_nulls로 {"parent_id": null} 전송
+  /// [newParentId]가 null이면 루트로 이동합니다.
   Future<TodoRead?> changeParent(String todoId, String? newParentId) async {
     return update(
       todoId,
