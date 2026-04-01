@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -17,8 +17,20 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Plan your day efficiently with an directly calendar and todo list.">
+  <meta name="description" content="momeet - 캘린더, 투두, 타이머를 하나로. 하루를 효율적으로 계획하세요.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="momeet - 하루를 하나로">
+  <meta property="og:description" content="캘린더, 투두리스트, 집중 타이머를 한 곳에서. 흩어진 일정을 momeet으로 모아보세요.">
+  <meta property="og:image" content="icons/Icon-512.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="momeet - 하루를 하나로">
+  <meta name="twitter:description" content="캘린더, 투두리스트, 집중 타이머를 한 곳에서.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -27,12 +39,109 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>momeet</title>
+  <title>momeet - 하루를 하나로</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Landing Page Styles -->
+  <link rel="stylesheet" href="landing/style.css">
 </head>
-<body>
+<body class="landing-active">
+
+  <!-- ===== Landing Page ===== -->
+  <div id="landing">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-logo">momeet</div>
+        <p class="hero-tagline">하루를 하나로</p>
+        <p class="hero-desc">
+          캘린더, 투두리스트, 집중 타이머가 한 곳에.<br>
+          흩어진 일정과 할 일을 momeet에서 모아 관리하세요.
+        </p>
+        <a href="#features" class="hero-cta">서비스 둘러보기 ↓</a>
+        <div class="loading-badge">
+          <span class="spinner"></span>앱을 준비하고 있어요
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+      <h2 class="section-title">왜 momeet인가요?</h2>
+      <p class="section-subtitle">하나의 앱에서 하루를 완성하세요</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon calendar">📅</div>
+          <h3>캘린더</h3>
+          <p>일정을 한눈에 확인하고 빠르게 추가하세요. 월간/주간 뷰를 자유롭게 전환할 수 있습니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon todo">✅</div>
+          <h3>투두리스트</h3>
+          <p>할 일을 태그로 분류하고 우선순위를 관리하세요. 캘린더와 자연스럽게 연동됩니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon timer">⏱️</div>
+          <h3>집중 타이머</h3>
+          <p>할 일에 바로 타이머를 연결해 집중 시간을 측정하세요. 몰입의 흐름을 끊지 않습니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Flow -->
+    <section class="flow">
+      <div class="flow-content">
+        <h2 class="section-title">이렇게 사용하세요</h2>
+        <p class="section-subtitle">3단계로 하루를 설계합니다</p>
+
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="step-number">1</div>
+            <div class="step-text">
+              <h3>일정 등록</h3>
+              <p>캘린더에 오늘의 약속과 미팅을 추가하세요.</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="step-number">2</div>
+            <div class="step-text">
+              <h3>할 일 정리</h3>
+              <p>투두리스트에서 해야 할 작업을 태그별로 분류하세요.</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="step-number">3</div>
+            <div class="step-text">
+              <h3>집중 실행</h3>
+              <p>타이머를 켜고 하나씩 완료해 나가세요.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <h2>지금 시작하세요</h2>
+      <p>가입하고 momeet으로 하루를 정리해 보세요.</p>
+      <a href="/signup" class="cta-btn">무료로 시작하기</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      &copy; 2025 momeet. All rights reserved.
+    </footer>
+
+  </div>
+
+  <!-- Landing Page Script -->
+  <script src="landing/script.js"></script>
+
+  <!-- Flutter Bootstrap (loads in background) -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
