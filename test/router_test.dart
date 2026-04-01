@@ -220,15 +220,6 @@ void main() {
     // 미인증 상태
     // ----------------------------------------------------------
     group('미인증 상태', () {
-      test('미인증 사용자가 보호된 경로에 접근하면 /login으로 리다이렉트한다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.tags.path,
-        );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.tags.path}');
-      });
-
       test('미인증 사용자가 루트(/)에 접근하면 /landing으로 리다이렉트한다', () {
         final result = authRedirect(
           isAuthenticated: false,
@@ -238,46 +229,23 @@ void main() {
         expect(result, AppRoute.landing.path);
       });
 
-      test('미인증 사용자가 /todo에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.todo.path,
+      test('미인증 사용자가 보호된 경로에 접근하면 /login으로 리다이렉트한다', () {
+        final protectedRoutes = AppRoute.values.where(
+          (r) => r.requiresAuth && r != AppRoute.calendar,
         );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.todo.path}');
-      });
 
-      test('미인증 사용자가 /mypage에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.mypage.path,
-        );
-        expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
-        );
-      });
-
-      test('미인증 사용자가 /tags에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.tags.path,
-        );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.tags.path}');
-      });
-
-      test('미인증 사용자가 /timer에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.timer.path,
-        );
-        expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.timer.path}',
-        );
+        for (final route in protectedRoutes) {
+          final result = authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: route.path,
+          );
+          expect(
+            result,
+            '${AppRoute.login.path}?redirect=${route.path}',
+            reason: '${route.name} 경로에서 /login 리다이렉트 실패',
+          );
+        }
       });
 
       test('미인증 사용자가 /login에 있으면 리다이렉트하지 않는다', () {
