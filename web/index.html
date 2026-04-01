@@ -1,147 +1,178 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="momeet - 캘린더, 투두, 타이머를 하나로. 하루를 효율적으로 계획하세요.">
+  <meta name="description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="momeet - 하루를 하나로">
-  <meta property="og:description" content="캘린더, 투두리스트, 집중 타이머를 한 곳에서. 흩어진 일정을 momeet으로 모아보세요.">
-  <meta property="og:image" content="icons/Icon-512.png">
+  <meta property="og:title" content="모두모두 모여라! 모모밋">
+  <meta property="og:description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
+  <meta property="og:image" content="/preview.webp">
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="momeet - 하루를 하나로">
-  <meta name="twitter:description" content="캘린더, 투두리스트, 집중 타이머를 한 곳에서.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="twitter:domain" content="momeet.date">
+  <meta property="twitter:url" content="https://momeet.date">
+  <meta name="twitter:title" content="모두모두 모여라! 모모밋">
+  <meta name="twitter:description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
+  <meta name="twitter:image" content="/preview.webp">
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="momeet">
+  <meta name="apple-mobile-web-app-title" content="모모밋">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>momeet - 하루를 하나로</title>
+  <title>모두의 생산성 앱 모모밋</title>
   <link rel="manifest" href="manifest.json">
-
-  <!-- Landing Page Styles -->
   <link rel="stylesheet" href="landing/style.css">
+
+  <!-- Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 </head>
 <body class="landing-active">
 
-  <!-- ===== Landing Page ===== -->
+  <!-- ===== 1. Landing Page (/landing) ===== -->
   <div id="landing">
+    <nav class="landing-nav">
+      <a href="/landing" class="nav-logo">momeet</a>
+      <a href="/login" class="nav-link">로그인</a>
+    </nav>
 
-    <!-- Hero -->
     <section class="hero">
-      <div class="hero-content">
-        <div class="hero-logo">momeet</div>
-        <p class="hero-tagline">하루를 하나로</p>
-        <p class="hero-desc">
-          캘린더, 투두리스트, 집중 타이머가 한 곳에.<br>
-          흩어진 일정과 할 일을 momeet에서 모아 관리하세요.
-        </p>
-        <a href="#features" class="hero-cta">서비스 둘러보기 ↓</a>
-        <div class="loading-badge">
-          <span class="spinner"></span>앱을 준비하고 있어요
-        </div>
+      <div class="hero-badge">캘린더 + 투두 + 타이머</div>
+      <h1>흩어진 하루,<br><span>한 곳에서</span> 모으세요</h1>
+      <p class="hero-desc">
+        일정은 캘린더에, 할 일은 노트앱에, 집중은 또 다른 앱에.
+        매일 세 개의 앱을 오가는 대신, momeet 하나로 끝내세요.
+      </p>
+      <div class="hero-actions">
+        <a href="/signup" class="btn-primary btn-enter-app disabled" data-ready-text="시작하기">준비 중...</a>
+        <a href="#features" class="btn-ghost">어떻게 다른가요? ↓</a>
       </div>
     </section>
 
-    <!-- Features -->
-    <section class="features" id="features">
-      <h2 class="section-title">왜 momeet인가요?</h2>
-      <p class="section-subtitle">하나의 앱에서 하루를 완성하세요</p>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon calendar">📅</div>
+    <section class="bento" id="features">
+      <p class="bento-label">Features</p>
+      <h2 class="bento-title">각각 따로 쓰던 도구,<br>이제 하나로.</h2>
+      <div class="bento-grid">
+        <div class="bento-card">
+          <div class="bento-card-icon cal"><img src="landing/svg/icon-calendar.svg" alt="" width="24" height="24"></div>
           <h3>캘린더</h3>
-          <p>일정을 한눈에 확인하고 빠르게 추가하세요. 월간/주간 뷰를 자유롭게 전환할 수 있습니다.</p>
+          <p>월간, 주간 뷰를 자유롭게. 일정 추가는 탭 한 번이면 충분합니다.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon todo">✅</div>
+        <div class="bento-card">
+          <div class="bento-card-icon todo"><img src="landing/svg/icon-todo.svg" alt="" width="24" height="24"></div>
           <h3>투두리스트</h3>
-          <p>할 일을 태그로 분류하고 우선순위를 관리하세요. 캘린더와 자연스럽게 연동됩니다.</p>
+          <p>태그로 분류하고, 캘린더와 연동해서 놓치는 일 없이.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon timer">⏱️</div>
+        <div class="bento-card wide">
+          <div class="bento-card-icon tmr"><img src="landing/svg/icon-timer.svg" alt="" width="24" height="24"></div>
           <h3>집중 타이머</h3>
-          <p>할 일에 바로 타이머를 연결해 집중 시간을 측정하세요. 몰입의 흐름을 끊지 않습니다.</p>
+          <p>할 일에 바로 타이머를 연결하세요. 뭘 얼마나 했는지 기록이 남습니다. 앱을 전환할 필요 없이, 할 일 옆의 재생 버튼만 누르면 됩니다.</p>
         </div>
       </div>
     </section>
 
-    <!-- Flow -->
-    <section class="flow">
-      <div class="flow-content">
-        <h2 class="section-title">이렇게 사용하세요</h2>
-        <p class="section-subtitle">3단계로 하루를 설계합니다</p>
-
-        <div class="flow-steps">
-          <div class="flow-step">
-            <div class="step-number">1</div>
-            <div class="step-text">
-              <h3>일정 등록</h3>
-              <p>캘린더에 오늘의 약속과 미팅을 추가하세요.</p>
+    <section class="how">
+      <div class="how-inner">
+        <p class="bento-label">How it works</p>
+        <h2 class="bento-title">3분이면 오늘 하루가 정리됩니다</h2>
+        <ol class="how-list">
+          <li class="how-item">
+            <div>
+              <h3>오늘 일정 확인</h3>
+              <p>캘린더를 열면 오늘의 약속이 한눈에 보입니다.</p>
             </div>
-          </div>
-          <div class="flow-step">
-            <div class="step-number">2</div>
-            <div class="step-text">
+          </li>
+          <li class="how-item">
+            <div>
               <h3>할 일 정리</h3>
-              <p>투두리스트에서 해야 할 작업을 태그별로 분류하세요.</p>
+              <p>빈 시간에 해야 할 일을 투두리스트에 추가하세요.</p>
             </div>
-          </div>
-          <div class="flow-step">
-            <div class="step-number">3</div>
-            <div class="step-text">
-              <h3>집중 실행</h3>
-              <p>타이머를 켜고 하나씩 완료해 나가세요.</p>
+          </li>
+          <li class="how-item">
+            <div>
+              <h3>하나씩 실행</h3>
+              <p>타이머를 켜고 집중하세요. 완료하면 다음 할 일로.</p>
             </div>
-          </div>
-        </div>
+          </li>
+        </ol>
       </div>
     </section>
 
-    <!-- CTA -->
     <section class="cta">
-      <h2>지금 시작하세요</h2>
-      <p>가입하고 momeet으로 하루를 정리해 보세요.</p>
-      <a href="/signup" class="cta-btn">무료로 시작하기</a>
+      <div class="cta-inner">
+        <h2>오늘부터 써보세요</h2>
+        <p>가입은 30초. 복잡한 설정 없이 바로 시작할 수 있습니다.</p>
+        <a href="/signup" class="btn-primary btn-enter-app disabled" data-ready-text="무료로 시작하기">준비 중...</a>
+      </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="landing-footer">
-      &copy; 2025 momeet. All rights reserved.
-    </footer>
+    <footer class="landing-footer">&copy; 2025 momeet</footer>
 
+    <div class="loading-strip">
+      <span class="dot"></span>앱을 준비하고 있어요
+    </div>
   </div>
 
-  <!-- Landing Page Script -->
+  <!-- ===== 2. Loading Screen (non-landing routes) ===== -->
+  <div id="loading">
+    <div class="loading-screen">
+      <div class="loading-logo">momeet</div>
+      <div class="loading-spinner"></div>
+      <p class="loading-text">잠시만 기다려 주세요</p>
+    </div>
+  </div>
+
+  <!-- Route-based section toggle + scroll animations -->
   <script src="landing/script.js"></script>
 
-  <!-- Flutter Bootstrap (loads in background) -->
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Flutter bootstrap with onEntrypointLoaded hook -->
+  <script>
+    (function() {
+      // Capture original path BEFORE Flutter modifies anything
+      var originalPath = window.location.pathname;
+      var isLanding = originalPath === '/landing' || originalPath === '/landing/';
+
+      // Expose Flutter readiness for landing page script
+      window.__momeetFlutterReady = false;
+
+      var scriptEl = document.createElement('script');
+      scriptEl.src = 'flutter_bootstrap.js';
+      scriptEl.async = true;
+      scriptEl.onload = function() {
+        if (typeof _flutter !== 'undefined' && _flutter.loader) {
+          _flutter.loader.load({
+            onEntrypointLoaded: async function(engineInitializer) {
+              var appRunner = await engineInitializer.initializeEngine();
+              await appRunner.runApp();
+
+              // Flutter first frame painted
+              window.__momeetFlutterReady = true;
+              document.dispatchEvent(new CustomEvent('flutter-ready'));
+
+              // Non-landing: fade out loading screen
+              if (!isLanding) {
+                var loading = document.getElementById('loading');
+                if (loading) {
+                  loading.classList.add('fade-out');
+                  setTimeout(function() { loading.remove(); }, 400);
+                }
+              }
+            }
+          });
+        }
+      };
+      document.body.appendChild(scriptEl);
+    })();
+  </script>
 </body>
 </html>
