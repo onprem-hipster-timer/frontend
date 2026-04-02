@@ -33,16 +33,20 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="/landing/style.css">
 
-  <!-- Material Icons: Shadow DOM 내부 @font-face가 브라우저에 등록되지 않는 문제 우회 -->
+  <!-- Shadow DOM 내 @font-face 미등록 우회: FontManifest.json에서 자동 주입 -->
   <!-- https://bugs.chromium.org/p/chromium/issues/detail?id=336876 -->
-  <style>
-    @font-face {
-      font-family: 'MaterialIcons';
-      font-style: normal;
-      font-weight: 400;
-      src: url(assets/fonts/MaterialIcons-Regular.otf) format('opentype');
-    }
-  </style>
+  <script>
+    fetch('assets/FontManifest.json')
+      .then(function(r) { return r.json(); })
+      .then(function(manifest) {
+        manifest.forEach(function(entry) {
+          entry.fonts.forEach(function(font) {
+            var face = new FontFace(entry.family, 'url(assets/' + font.asset + ')');
+            face.load().then(function(loaded) { document.fonts.add(loaded); });
+          });
+        });
+      });
+  </script>
 
   <!-- Pretendard -->
   <link rel="stylesheet" as="style" crossorigin
@@ -166,32 +170,27 @@
   <!-- Route-based section toggle + scroll animations -->
   <script src="/landing/script.js"></script>
 
-  <!-- Flutter bootstrap (visibility is managed by script.js) -->
+  <!-- Flutter engine loader + build config (template tokens replaced at build time) -->
   <script>
+    {{flutter_js}}
+    {{flutter_build_config}}
+
     (function() {
       var m = window.__momeet;
       var flutterHost = document.getElementById('flutter-host');
 
-      var scriptEl = document.createElement('script');
-      scriptEl.src = 'flutter_bootstrap.js';
-      scriptEl.async = true;
-      scriptEl.onload = function() {
-        if (typeof _flutter !== 'undefined' && _flutter.loader) {
-          _flutter.loader.load({
-            config: { hostElement: flutterHost },
-            onEntrypointLoaded: async function(engineInitializer) {
-              var appRunner = await engineInitializer.initializeEngine({
-                hostElement: flutterHost
-              });
-              await appRunner.runApp();
-
-              m.flutterReady = true;
-              document.dispatchEvent(new CustomEvent('flutter-ready'));
-            }
+      _flutter.loader.load({
+        config: { hostElement: flutterHost },
+        onEntrypointLoaded: async function(engineInitializer) {
+          var appRunner = await engineInitializer.initializeEngine({
+            hostElement: flutterHost
           });
+          await appRunner.runApp();
+
+          m.flutterReady = true;
+          document.dispatchEvent(new CustomEvent('flutter-ready'));
         }
-      };
-      document.body.appendChild(scriptEl);
+      });
     })();
   </script>
 </body>
