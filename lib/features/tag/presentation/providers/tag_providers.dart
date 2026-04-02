@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -128,7 +129,11 @@ class TagMutations extends _$TagMutations {
   ///
   /// [groupId] 수정할 그룹 ID
   /// [data] 수정할 데이터
-  Future<TagGroupRead> updateGroup(String groupId, TagGroupUpdate data) async {
+  Future<TagGroupRead> updateGroup(
+    String groupId,
+    TagGroupUpdate data, {
+    RequestOptions? options,
+  }) async {
     state = const AsyncValue.loading();
 
     try {
@@ -136,6 +141,7 @@ class TagMutations extends _$TagMutations {
       final result = await api.updateTagGroupV1TagsGroupsGroupIdPatch(
         groupId: groupId,
         body: data,
+        options: options,
       );
 
       // 관련 Provider들 새로고침

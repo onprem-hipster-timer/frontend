@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/config/app_config.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/core/network/timezone_interceptor.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 
@@ -82,6 +83,7 @@ final dioClientProvider = Provider<Dio>((ref) {
 
   dio.interceptors.add(AuthInterceptor(ref));
   dio.interceptors.add(TimezoneInterceptor());
+  dio.interceptors.add(ExplicitNullInterceptor());
 
   return dio;
 });

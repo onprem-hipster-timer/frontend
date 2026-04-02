@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Core Infrastructure
+- PATCH 요청에서 null 필드가 직렬화되어 백엔드가 의도치 않게 필드를 초기화하는 버그 수정 (#29, #32, #33, #34)
+  - `build.yaml`에 `include_if_null: false` 설정 추가
+  - `ExplicitNullInterceptor` 도입으로 명시적 null 전송 지원
+  - `explicitNulls()` 헬퍼 함수로 호출부 간소화
+- Todo 수정 시 `parent_id` 보존하여 트리 관계 유지
+- Todo, Schedule, TagGroup 수정 폼에서 description 비우기 반영
+
 ### Added
 
 #### Core Infrastructure
