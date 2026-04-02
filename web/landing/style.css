@@ -81,11 +81,10 @@ body.landing-active {
 
 /* ===== Hero ===== */
 .hero {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 8rem 2rem 6rem;
+  justify-content: flex-start;
+  padding: 10rem 2rem 6rem;
   max-width: 680px;
   margin: 0 auto;
   position: relative;
