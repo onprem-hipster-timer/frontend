@@ -27,8 +27,17 @@
 
   function showApp() {
     if (landing) landing.style.display = 'none';
-    if (loading) loading.style.display = '';
     document.body.classList.remove('landing-active');
+
+    // Flutter 이미 준비됨 → 로딩 스크린 불필요
+    if (m.flutterReady) {
+      if (loading) {
+        loading.classList.add('fade-out');
+        setTimeout(function () { loading.remove(); }, 400);
+      }
+    } else {
+      if (loading) loading.style.display = '';
+    }
   }
 
   // ── Initial route ──
