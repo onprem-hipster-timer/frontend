@@ -159,13 +159,19 @@
   <!-- Shared state: route detection + session check (single source of truth) -->
   <script>
     (function() {
-      var h = window.location.hash;
-      var isLandingRoute = h === '#/landing' || h === '#/landing/' || h === '' || h === '#/';
-      var hasSession = Object.keys(localStorage).some(function(k) {
-        return k.startsWith('sb-') && k.endsWith('-auth-token');
-      });
+      function hasSupabaseSession() {
+        return Object.keys(localStorage).some(function(k) {
+          return k.startsWith('sb-') && k.endsWith('-auth-token');
+        });
+      }
+      function isLandingHash(hash) {
+        var isLandingRoute = hash === '#/landing' || hash === '#/landing/'
+            || hash === '' || hash === '#/';
+        return isLandingRoute && !hasSupabaseSession();
+      }
       window.__momeet = {
-        isLanding: isLandingRoute && !hasSession,
+        isLanding: isLandingHash(window.location.hash),
+        isLandingHash: isLandingHash,
         flutterReady: false
       };
     })();
