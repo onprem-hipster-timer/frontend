@@ -1,4 +1,5 @@
 // momeet Landing & Loading Script
+// Single owner of: route detection → visibility toggle → transition
 
 (function () {
   'use strict';
@@ -6,19 +7,69 @@
   var m = window.__momeet;
   var landing = document.getElementById('landing');
   var loading = document.getElementById('loading');
+  var flutterHost = document.getElementById('flutter-host');
 
-  // Route-based display
-  if (m.isLanding) {
+  // ── Route helpers ──
+  function isLandingHash(hash) {
+    return hash === '#/landing' || hash === '#/landing/'
+        || hash === ''         || hash === '#/';
+  }
+
+  // ── Visibility (single source of truth) ──
+  // flutter-host는 CSS(body.landing-active #flutter-host)가 제어 — JS에서 display 토글 금지
+  function showLanding() {
     if (landing) landing.style.display = '';
     if (loading) loading.style.display = 'none';
     document.body.classList.add('landing-active');
     initScrollAnimations();
     initFlutterReady();
-  } else {
-    if (landing) landing.style.display = 'none';
-    if (loading) loading.style.display = '';
   }
 
+  function showApp() {
+    if (landing) landing.style.display = 'none';
+    if (loading) loading.style.display = '';
+    document.body.classList.remove('landing-active');
+  }
+
+  // ── Initial route ──
+  if (m.isLanding) {
+    showLanding();
+  } else {
+    showApp();
+  }
+
+  // ── Hash change: landing ↔ app transition ──
+  window.addEventListener('hashchange', function () {
+    if (isLandingHash(window.location.hash)) {
+      m.isLanding = true;
+      showLanding();
+    } else if (m.isLanding) {
+      m.isLanding = false;
+      if (landing) {
+        landing.classList.add('fade-out');
+        landing.addEventListener('animationend', function handler() {
+          landing.classList.remove('fade-out');
+          landing.removeEventListener('animationend', handler);
+          showApp();
+        });
+      } else {
+        showApp();
+      }
+    }
+  });
+
+  // ── Flutter ready: loading fade-out (non-landing) & CTA enable (landing) ──
+  document.addEventListener('flutter-ready', function () {
+    if (!m.isLanding) {
+      // Non-landing: fade out loading screen
+      if (loading) {
+        loading.classList.add('fade-out');
+        setTimeout(function () { loading.remove(); }, 400);
+      }
+    }
+  }, { once: true });
+
+  // ── Scroll animations ──
   function initScrollAnimations() {
     var targets = document.querySelectorAll('.bento-card, .how-item');
     if (!targets.length) return;
@@ -42,7 +93,7 @@
     targets.forEach(function (el) { observer.observe(el); });
   }
 
-  // Enable CTA buttons when Flutter is ready (CSS pointer-events handles blocking)
+  // ── CTA button enable on Flutter ready ──
   function initFlutterReady() {
     var TIMEOUT_MS = 20000;
 
