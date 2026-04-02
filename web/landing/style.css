@@ -25,6 +25,18 @@ html {
   font-size: 16px;
 }
 
+body {
+  overscroll-behavior-y: none;
+}
+
+/* 모바일(뷰포트 높이 낮음): 가로 바운스 방지 */
+/* 데스크톱/맥북(뷰포트 높이 높음): 트랙패드 좌우 스와이프(뒤로가기) 유지 */
+@media (max-height: 999px) {
+  body {
+    overscroll-behavior-x: none;
+  }
+}
+
 body.landing-active {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, Roboto, 'Helvetica Neue', 'Noto Sans KR', sans-serif;
@@ -388,6 +400,7 @@ body.landing-active #flutter-host {
 /* ===== Landing enter/exit transitions ===== */
 #landing {
   opacity: 0;
+  overflow-x: hidden;
   animation: landingFadeIn 0.6s ease-out 0.1s forwards;
 }
 

@@ -33,6 +33,17 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="/landing/style.css">
 
+  <!-- Material Icons: Shadow DOM 내부 @font-face가 브라우저에 등록되지 않는 문제 우회 -->
+  <!-- https://bugs.chromium.org/p/chromium/issues/detail?id=336876 -->
+  <style>
+    @font-face {
+      font-family: 'MaterialIcons';
+      font-style: normal;
+      font-weight: 400;
+      src: url(assets/fonts/MaterialIcons-Regular.otf) format('opentype');
+    }
+  </style>
+
   <!-- Pretendard -->
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
