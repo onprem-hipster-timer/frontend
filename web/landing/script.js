@@ -115,6 +115,14 @@
     if (strip) strip.style.display = 'none';
   }
 
+  function showLoadError() {
+    var strip = document.querySelector('.loading-strip');
+    if (strip) {
+      strip.classList.add('error');
+      strip.innerHTML = '앱을 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+    }
+  }
+
   function initFlutterReady() {
     var TIMEOUT_MS = 20000;
 
@@ -133,7 +141,7 @@
     document.addEventListener('flutter-ready', flutterReadyListener, { once: true });
 
     flutterReadyTimeout = setTimeout(function () {
-      if (!m.flutterReady) enableButtons();
+      if (!m.flutterReady) showLoadError();
     }, TIMEOUT_MS);
   }
 })();

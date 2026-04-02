@@ -1,13 +1,5 @@
 /* momeet Landing */
 
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 :root {
   --ink: #1a1a1a;
   --ink-light: #555;
@@ -455,6 +447,12 @@ body.landing-active #flutter-host {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.loading-strip.error {
+  color: #dc2626;
+  background: #fef2f2;
+  border-top-color: #fecaca;
 }
 
 /* ===== Loading Screen (non-landing routes) ===== */
