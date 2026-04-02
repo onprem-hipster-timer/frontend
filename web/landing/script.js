@@ -11,8 +11,11 @@
 
   // ── Route helpers ──
   function isLandingHash(hash) {
-    return hash === '#/landing' || hash === '#/landing/'
-        || hash === ''         || hash === '#/';
+    var isLandingRoute = hash === '#/landing' || hash === '#/landing/'
+        || hash === '' || hash === '#/';
+    return isLandingRoute && !Object.keys(localStorage).some(function(k) {
+      return k.startsWith('sb-') && k.endsWith('-auth-token');
+    });
   }
 
   // ── Visibility (single source of truth) ──

@@ -156,12 +156,16 @@
     </div>
   </div>
 
-  <!-- Shared state: route detection (single source of truth) -->
+  <!-- Shared state: route detection + session check (single source of truth) -->
   <script>
     (function() {
       var h = window.location.hash;
+      var isLandingRoute = h === '#/landing' || h === '#/landing/' || h === '' || h === '#/';
+      var hasSession = Object.keys(localStorage).some(function(k) {
+        return k.startsWith('sb-') && k.endsWith('-auth-token');
+      });
       window.__momeet = {
-        isLanding: h === '#/landing' || h === '#/landing/' || h === '' || h === '#/',
+        isLanding: isLandingRoute && !hasSession,
         flutterReady: false
       };
     })();
