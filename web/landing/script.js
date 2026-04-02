@@ -9,14 +9,9 @@
   var loading = document.getElementById('loading');
   var flutterHost = document.getElementById('flutter-host');
 
-  // ── Route helpers ──
-  function isLandingHash(hash) {
-    var isLandingRoute = hash === '#/landing' || hash === '#/landing/'
-        || hash === '' || hash === '#/';
-    return isLandingRoute && !Object.keys(localStorage).some(function(k) {
-      return k.startsWith('sb-') && k.endsWith('-auth-token');
-    });
-  }
+  // Cleanup state for re-entrant calls
+  var scrollObserver = null;
+  var flutterReadyTimeout = null;
 
   // ── Visibility (single source of truth) ──
   // flutter-host는 CSS(body.landing-active #flutter-host)가 제어 — JS에서 display 토글 금지
@@ -52,7 +47,7 @@
 
   // ── Hash change: landing ↔ app transition ──
   window.addEventListener('hashchange', function () {
-    if (isLandingHash(window.location.hash)) {
+    if (m.isLandingHash(window.location.hash)) {
       m.isLanding = true;
       showLanding();
     } else if (m.isLanding) {
@@ -83,10 +78,12 @@
 
   // ── Scroll animations ──
   function initScrollAnimations() {
+    if (scrollObserver) scrollObserver.disconnect();
+
     var targets = document.querySelectorAll('.bento-card, .how-item');
     if (!targets.length) return;
 
-    var observer = new IntersectionObserver(
+    scrollObserver = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -95,39 +92,47 @@
             setTimeout(function () {
               entry.target.classList.add('visible');
             }, idx * 150);
-            observer.unobserve(entry.target);
+            scrollObserver.unobserve(entry.target);
           }
         });
       },
       { threshold: 0.15 }
     );
 
-    targets.forEach(function (el) { observer.observe(el); });
+    targets.forEach(function (el) { scrollObserver.observe(el); });
   }
 
   // ── CTA button enable on Flutter ready ──
+  var flutterReadyListener = null;
+
+  function enableButtons() {
+    var btns = document.querySelectorAll('.btn-enter-app');
+    btns.forEach(function (btn) {
+      btn.classList.remove('disabled');
+      btn.textContent = btn.dataset.readyText || '시작하기';
+    });
+    var strip = document.querySelector('.loading-strip');
+    if (strip) strip.style.display = 'none';
+  }
+
   function initFlutterReady() {
     var TIMEOUT_MS = 20000;
-
-    function enableButtons() {
-      var btns = document.querySelectorAll('.btn-enter-app');
-      btns.forEach(function (btn) {
-        btn.classList.remove('disabled');
-        btn.textContent = btn.dataset.readyText || '시작하기';
-      });
-      var strip = document.querySelector('.loading-strip');
-      if (strip) strip.style.display = 'none';
-    }
 
     if (m.flutterReady) {
       enableButtons();
       return;
     }
 
-    document.addEventListener('flutter-ready', enableButtons, { once: true });
+    // 이전 리스너/타임아웃 정리 (랜딩 재진입 시 누적 방지)
+    if (flutterReadyListener) {
+      document.removeEventListener('flutter-ready', flutterReadyListener);
+    }
+    if (flutterReadyTimeout) clearTimeout(flutterReadyTimeout);
 
-    // Fallback: enable buttons after timeout even if Flutter fails
-    setTimeout(function () {
+    flutterReadyListener = enableButtons;
+    document.addEventListener('flutter-ready', flutterReadyListener, { once: true });
+
+    flutterReadyTimeout = setTimeout(function () {
       if (!m.flutterReady) enableButtons();
     }, TIMEOUT_MS);
   }
