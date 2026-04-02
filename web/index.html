@@ -151,7 +151,45 @@
   <div id="loading" style="z-index:60;position:relative;">
     <div class="loading-screen">
       <div class="loading-logo">mo.momeet</div>
-      <div class="loading-spinner"></div>
+
+      <div class="loading-anim">
+        <svg viewBox="0 0 72 72" width="72" height="72" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <!-- 프레임 링 -->
+          <circle cx="36" cy="36" r="34" stroke="#f0f0f0" stroke-width="1.2"/>
+          <!-- 회전 accent 아크 -->
+          <circle class="anim-arc" cx="36" cy="36" r="34" stroke="#2563eb" stroke-width="1.8"
+                  stroke-dasharray="18 196" opacity="0.5"/>
+
+          <!-- 캘린더 (phase 1 · blue) -->
+          <g class="anim-phase anim-phase-1">
+            <rect x="24" y="25" width="24" height="22" rx="3" stroke="#2563eb" stroke-width="1.8"/>
+            <line x1="31" y1="23" x2="31" y2="28" stroke="#2563eb" stroke-width="1.8"/>
+            <line x1="41" y1="23" x2="41" y2="28" stroke="#2563eb" stroke-width="1.8"/>
+            <line x1="24" y1="33" x2="48" y2="33" stroke="#2563eb" stroke-width="1.8"/>
+          </g>
+
+          <!-- 투두 (phase 2 · green) -->
+          <g class="anim-phase anim-phase-2">
+            <rect x="24" y="24" width="24" height="24" rx="3" stroke="#16a34a" stroke-width="1.8"/>
+            <path d="M31 36 L34.5 39.5 L42 31" stroke="#16a34a" stroke-width="2.5"/>
+          </g>
+
+          <!-- 타이머 (phase 3 · orange) -->
+          <g class="anim-phase anim-phase-3">
+            <circle cx="36" cy="38" r="12" stroke="#ea580c" stroke-width="1.8"/>
+            <polyline points="36,32 36,38 40,41" stroke="#ea580c" stroke-width="1.8"/>
+            <line x1="33" y1="24" x2="39" y2="24" stroke="#ea580c" stroke-width="1.8"/>
+            <line x1="36" y1="24" x2="36" y2="27" stroke="#ea580c" stroke-width="1.8"/>
+          </g>
+        </svg>
+
+        <div class="anim-dots">
+          <span class="anim-dot anim-dot-1"></span>
+          <span class="anim-dot anim-dot-2"></span>
+          <span class="anim-dot anim-dot-3"></span>
+        </div>
+      </div>
+
       <p class="loading-text">잠시만 기다려 주세요</p>
     </div>
   </div>
