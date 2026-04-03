@@ -95,11 +95,12 @@ class TodoGroupDetailPage extends ConsumerWidget {
             onPressed: () => context.go(AppRoute.todo.path),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              tooltip: '그룹 설정',
-              onPressed: () => _showGroupSettings(context, ref, group),
-            ),
+            if (group != null)
+              IconButton(
+                icon: const Icon(Icons.settings),
+                tooltip: '그룹 설정',
+                onPressed: () => _showGroupSettings(context, ref, group),
+              ),
           ],
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
@@ -349,10 +350,8 @@ class TodoGroupDetailPage extends ConsumerWidget {
   void _showGroupSettings(
     BuildContext context,
     WidgetRef ref,
-    TagGroupRead? group,
+    TagGroupRead group,
   ) {
-    if (group == null) return;
-
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
