@@ -458,3 +458,5 @@ lefthook-local.yml
 /.run/main.dart.run.xml
 /.cursor/
 .vercel
+
+.*/*

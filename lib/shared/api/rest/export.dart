@@ -10,6 +10,7 @@ export 'tags/tags_client.dart';
 export 'todos/todos_client.dart';
 export 'meetings/meetings_client.dart';
 export 'friends/friends_client.dart';
+export 'visibility/visibility_client.dart';
 export 'graph_ql/graph_ql_client.dart';
 export 'health/health_client.dart';
 // Data classes
@@ -31,6 +32,7 @@ export 'models/participant_create.dart';
 export 'models/participant_read.dart';
 export 'models/pending_request_read.dart';
 export 'models/resource_scope.dart';
+export 'models/resource_type.dart';
 export 'models/schedule_create.dart';
 export 'models/schedule_read.dart';
 export 'models/schedule_state.dart';
@@ -57,7 +59,7 @@ export 'models/todo_status.dart';
 export 'models/todo_update.dart';
 export 'models/validation_error.dart';
 export 'models/visibility_level.dart';
-export 'models/visibility_settings.dart';
-export 'models/app_domain_schedule_schema_dto_visibility_settings.dart';
+export 'models/visibility_read.dart';
+export 'models/visibility_update.dart';
 // Root client
 export 'mo_meet_client.dart';
