@@ -411,7 +411,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
       destructive: true,
     );
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed && context.mounted) {
       try {
         await ref.read(tagMutationsProvider.notifier).deleteGroup(group.id);
 
