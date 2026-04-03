@@ -102,20 +102,71 @@
     targets.forEach(function (el) { scrollObserver.observe(el); });
   }
 
+  // ── Simulated progress ──
+  var progressInterval = null;
+  var currentProgress = 0;
+
+  function updateProgress(pct) {
+    currentProgress = pct;
+    var rounded = Math.round(pct);
+    var bar = document.querySelector('.loading-strip-bar');
+    var pctEl = document.querySelector('.loading-pct');
+    var btns = document.querySelectorAll('.btn-enter-app');
+
+    if (bar) bar.style.width = rounded + '%';
+    if (pctEl) pctEl.textContent = rounded + '%';
+    btns.forEach(function (btn) {
+      btn.style.setProperty('--load-pct', rounded + '%');
+    });
+  }
+
+  function startProgress() {
+    currentProgress = 0;
+    var elapsed = 0;
+    var DURATION = 18000; // 90%에 도달하는 예상 시간 (ms)
+    var INTERVAL = 150;
+    updateProgress(0);
+    document.querySelectorAll('.btn-enter-app').forEach(function (btn) {
+      btn.classList.add('loading');
+    });
+    if (progressInterval) clearInterval(progressInterval);
+    progressInterval = setInterval(function () {
+      elapsed += INTERVAL;
+      // ease-out: 초반 빠르게 → 후반 감속, 90%에 수렴
+      var t = Math.min(elapsed / DURATION, 1);
+      var eased = 1 - Math.pow(1 - t, 3);
+      currentProgress = eased * 90;
+      updateProgress(currentProgress);
+      if (t >= 1) clearInterval(progressInterval);
+    }, INTERVAL);
+  }
+
+  function stopProgress() {
+    if (progressInterval) clearInterval(progressInterval);
+    updateProgress(100);
+    document.querySelectorAll('.btn-enter-app').forEach(function (btn) {
+      btn.classList.remove('loading');
+    });
+  }
+
   // ── CTA button enable on Flutter ready ──
   var flutterReadyListener = null;
 
   function enableButtons() {
+    stopProgress();
     var btns = document.querySelectorAll('.btn-enter-app');
     btns.forEach(function (btn) {
       btn.classList.remove('disabled');
       btn.textContent = btn.dataset.readyText || '시작하기';
     });
     var strip = document.querySelector('.loading-strip');
-    if (strip) strip.style.display = 'none';
+    if (strip) {
+      setTimeout(function () { strip.style.display = 'none'; }, 400);
+    }
   }
 
   function showLoadError() {
+    if (progressInterval) clearInterval(progressInterval);
     var strip = document.querySelector('.loading-strip');
     if (strip) {
       strip.classList.add('error');
@@ -130,6 +181,8 @@
       enableButtons();
       return;
     }
+
+    startProgress();
 
     // 이전 리스너/타임아웃 정리 (랜딩 재진입 시 누적 방지)
     if (flutterReadyListener) {
