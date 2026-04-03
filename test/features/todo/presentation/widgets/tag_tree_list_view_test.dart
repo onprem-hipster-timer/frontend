@@ -45,13 +45,13 @@ void main() {
       overrides: [tagsApiProvider.overrideWithValue(mockTagsClient)],
       child: MaterialApp(
         home: Scaffold(
-          body: DraggableTagTile(tag: tag, groupColor: Colors.blue),
+          body: TagTile(tag: tag, groupColor: Colors.blue),
         ),
       ),
     );
   }
 
-  group('DraggableTagTile UI 렌더링', () {
+  group('TagTile UI 렌더링', () {
     testWidgets('태그 이름과 PopupMenuButton이 표시된다', (tester) async {
       await tester.pumpWidget(buildTestWidget(tag: testTag));
 
@@ -75,7 +75,7 @@ void main() {
     });
   });
 
-  group('DraggableTagTile 삭제 확인 다이얼로그', () {
+  group('TagTile 삭제 확인 다이얼로그', () {
     testWidgets('삭제 메뉴 선택 시 확인 다이얼로그가 표시된다', (tester) async {
       await tester.pumpWidget(buildTestWidget(tag: testTag));
 
@@ -165,7 +165,7 @@ void main() {
     });
   });
 
-  group('DraggableTagTile 수정', () {
+  group('TagTile 수정', () {
     testWidgets('수정 메뉴 선택 시 태그 폼 시트가 표시된다', (tester) async {
       // TagFormSheet가 태그의 그룹 정보를 조회하므로 해당 그룹을 포함한 mock 데이터 필요
       when(
