@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/tag_providers.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 태그 트리 리스트 뷰
@@ -214,15 +215,12 @@ class TagGroupExpansionTile extends ConsumerWidget {
     WidgetRef ref,
     String groupId,
   ) {
-    // TODO: 태그 생성 다이얼로그 구현
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('태그 생성 다이얼로그가 곧 구현됩니다')));
+    showTagFormSheet(context, defaultGroupId: groupId);
   }
 }
 
 /// 드래그 가능한 태그 타일
-class DraggableTagTile extends StatelessWidget {
+class DraggableTagTile extends ConsumerWidget {
   final TagRead tag;
   final Color groupColor;
 
@@ -233,7 +231,7 @@ class DraggableTagTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final tagColor = _parseColor(tag.color);
 
@@ -343,13 +341,10 @@ class DraggableTagTile extends StatelessWidget {
             onSelected: (value) async {
               switch (value) {
                 case 'edit':
-                  // TODO: 태그 수정 다이얼로그
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('태그 수정 기능이 곧 구현됩니다')),
-                  );
+                  showTagFormSheet(context, tag: tag);
                   break;
                 case 'delete':
-                  await _showDeleteConfirmDialog(context, tag);
+                  await _showDeleteConfirmDialog(context, ref, tag);
                   break;
               }
             },
@@ -375,6 +370,7 @@ class DraggableTagTile extends StatelessWidget {
   /// 삭제 확인 다이얼로그
   Future<void> _showDeleteConfirmDialog(
     BuildContext context,
+    WidgetRef ref,
     TagRead tag,
   ) async {
     final confirmed = await showConfirmDialog(
@@ -387,10 +383,28 @@ class DraggableTagTile extends StatelessWidget {
 
     if (!confirmed || !context.mounted) return;
 
-    // TODO: 삭제 로직 구현
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('태그 삭제 기능이 곧 구현됩니다')));
+    try {
+      await ref.read(tagMutationsProvider.notifier).deleteTag(tag.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${tag.name} 태그가 삭제되었습니다'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('태그 삭제에 실패했습니다: $error'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }
 
