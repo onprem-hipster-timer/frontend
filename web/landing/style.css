@@ -423,6 +423,21 @@ body.landing-active #flutter-host {
   font-size: 0.8rem;
   color: var(--ink-muted);
   z-index: 100;
+  overflow: hidden;
+}
+
+.loading-strip-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.3s ease-out;
+}
+
+.loading-pct {
+  font-variant-numeric: tabular-nums;
 }
 
 .loading-strip .dot {
@@ -443,9 +458,22 @@ body.landing-active #flutter-host {
 
 /* ===== Disabled CTA button ===== */
 .btn-enter-app.disabled {
-  opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.btn-enter-app.loading {
+  background:
+    linear-gradient(var(--ink), var(--ink)) no-repeat left / var(--load-pct, 0%) 100%,
+    rgba(26, 26, 26, 0.25);
+  transition: background-size 0.4s ease-out;
+}
+
+.cta .btn-enter-app.loading {
+  background:
+    linear-gradient(var(--surface), var(--surface)) no-repeat left / var(--load-pct, 0%) 100%,
+    rgba(255, 255, 255, 0.3);
+  transition: background-size 0.4s ease-out;
 }
 
 .loading-strip.error {
