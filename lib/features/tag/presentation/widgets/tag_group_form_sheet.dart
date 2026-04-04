@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
@@ -311,17 +312,22 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     try {
       if (widget.tagGroup != null) {
         // 수정 모드
+        final description = _descriptionController.text.trim();
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
         );
 
         await ref
             .read(tagMutationsProvider.notifier)
-            .updateGroup(widget.tagGroup!.id, updateData);
+            .updateGroup(
+              widget.tagGroup!.id,
+              updateData,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();

@@ -1,38 +1,246 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Plan your day efficiently with an directly calendar and todo list.">
+  <meta name="description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="모두의 생산성 앱 모모밋">
+  <meta property="og:description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
+  <meta property="og:image" content="/preview.webp">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="twitter:domain" content="momeet.date">
+  <meta property="twitter:url" content="https://momeet.date">
+  <meta name="twitter:title" content="모두의 생산성 앱 모모밋">
+  <meta name="twitter:description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
+  <meta name="twitter:image" content="/preview.webp">
+
+  <!-- iOS -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="momeet">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="모모밋">
+  <link rel="apple-touch-icon" href="gwiyeowo.webp">
+  <link rel="icon" type="image/webp" href="gwiyeowo.webp">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>momeet</title>
+  <title>모두의 생산성 앱 모모밋</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="/landing/style.css">
+
+  <!-- Shadow DOM 내 @font-face 미등록 우회: FontManifest.json에서 자동 주입 -->
+  <!-- https://bugs.chromium.org/p/chromium/issues/detail?id=336876 -->
+  <script>
+    fetch('assets/FontManifest.json')
+      .then(function(r) { return r.json(); })
+      .then(function(manifest) {
+        manifest.forEach(function(entry) {
+          entry.fonts.forEach(function(font) {
+            var face = new FontFace(entry.family, 'url(assets/' + font.asset + ')');
+            face.load().then(function(loaded) { document.fonts.add(loaded); });
+          });
+        });
+      });
+  </script>
+
+  <!-- Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <noscript>
+    <div style="text-align: center; margin: 20px; font-family: sans-serif">
+      <p><strong>JavaScript가 비활성화되어 있습니다.</strong></p>
+      <p>모두의 일상을 위해 브라우저 설정에서 JavaScript를 활성화해주세요.</p>
+    </div>
+  </noscript>
+
+  <!-- ===== 1. Landing Page (/landing) ===== -->
+  <div id="landing">
+    <nav class="landing-nav">
+      <a href="/#/landing" class="nav-logo">mo.momeet</a>
+      <a href="/#/login" class="nav-link">로그인</a>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-badge">캘린더 + 투두 + 타이머</div>
+      <h1>흩어진 하루,<br><span>한 곳에서</span> 모으세요</h1>
+      <p class="hero-desc">
+        일정은 캘린더에, 할 일은 노트앱에, 집중은 또 다른 앱에.
+        매일 세 개의 앱을 오가는 대신, 모모밋 하나로 끝내세요.
+      </p>
+      <div class="hero-actions">
+        <a href="/#/signup" class="btn-primary btn-enter-app disabled" data-ready-text="시작하기">모모밋을 가져오는 중...</a>
+        <a href="javascript:void(0)" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})" class="btn-ghost">어떻게 다른가요? ↓</a>
+      </div>
+    </section>
+
+    <section class="bento" id="features">
+      <p class="bento-label">Features</p>
+      <h2 class="bento-title">각각 따로 쓰던 도구,<br>이제 하나로.</h2>
+      <div class="bento-grid">
+        <div class="bento-card">
+          <div class="bento-card-icon cal"><img src="/landing/svg/icon-calendar.svg" alt="" width="24" height="24"></div>
+          <h3>캘린더</h3>
+          <p>월간, 주간 뷰를 자유롭게. 일정 추가는 탭 한 번이면 충분합니다.</p>
+        </div>
+        <div class="bento-card">
+          <div class="bento-card-icon todo"><img src="/landing/svg/icon-todo.svg" alt="" width="24" height="24"></div>
+          <h3>투두리스트</h3>
+          <p>태그로 분류하고, 캘린더와 연동해서 놓치는 일 없이.</p>
+        </div>
+        <div class="bento-card wide">
+          <div class="bento-card-icon tmr"><img src="/landing/svg/icon-timer.svg" alt="" width="24" height="24"></div>
+          <h3>집중 타이머</h3>
+          <p>할 일에 바로 타이머를 연결하세요. 뭘 얼마나 했는지 기록이 남습니다. 앱을 전환할 필요 없이, 할 일 옆의 재생 버튼만 누르면 됩니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="how">
+      <div class="how-inner">
+        <p class="bento-label">How it works</p>
+        <h2 class="bento-title">3분이면 오늘 하루가 정리됩니다</h2>
+        <ol class="how-list">
+          <li class="how-item">
+            <div>
+              <h3>오늘 일정 확인</h3>
+              <p>캘린더를 열면 오늘의 약속이 한눈에 보입니다.</p>
+            </div>
+          </li>
+          <li class="how-item">
+            <div>
+              <h3>할 일 정리</h3>
+              <p>빈 시간에 해야 할 일을 투두리스트에 추가하세요.</p>
+            </div>
+          </li>
+          <li class="how-item">
+            <div>
+              <h3>하나씩 실행</h3>
+              <p>타이머를 켜고 집중하세요. 완료하면 다음 할 일로.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="cta-inner">
+        <h2>오늘부터 써보세요</h2>
+        <p>가입은 30초. 복잡한 설정 없이 바로 시작할 수 있습니다.</p>
+        <a href="/#/signup" class="btn-primary btn-enter-app disabled" data-ready-text="무료로 시작하기">모모밋을 가져오는 중...</a>
+      </div>
+    </section>
+
+    <footer class="landing-footer">&copy; 2026 mo.momeet</footer>
+
+    <div class="loading-strip">
+      <div class="loading-strip-bar"></div>
+      <span class="dot"></span>모모밋을 가져오는 중이에요 <span class="loading-pct">0%</span>
+    </div>
+  </div>
+
+  <!-- ===== Flutter render target ===== -->
+  <div id="flutter-host" style="position:fixed;inset:0;z-index:50;"></div>
+
+  <!-- ===== 2. Loading Screen (non-landing routes) ===== -->
+  <div id="loading" style="z-index:60;position:relative;">
+    <div class="loading-screen">
+      <div class="loading-logo">mo.momeet</div>
+
+      <div class="loading-anim">
+        <svg viewBox="0 0 72 72" width="72" height="72" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <!-- 프레임 링 -->
+          <circle cx="36" cy="36" r="34" stroke="#f0f0f0" stroke-width="1.2"/>
+          <!-- 회전 accent 아크 -->
+          <circle class="anim-arc" cx="36" cy="36" r="34" stroke="#2563eb" stroke-width="1.8"
+                  stroke-dasharray="18 196" opacity="0.5"/>
+
+          <!-- 캘린더 (phase 1 · blue) -->
+          <g class="anim-phase anim-phase-1">
+            <rect x="24" y="25" width="24" height="22" rx="3" stroke="#2563eb" stroke-width="1.8"/>
+            <line x1="31" y1="23" x2="31" y2="28" stroke="#2563eb" stroke-width="1.8"/>
+            <line x1="41" y1="23" x2="41" y2="28" stroke="#2563eb" stroke-width="1.8"/>
+            <line x1="24" y1="33" x2="48" y2="33" stroke="#2563eb" stroke-width="1.8"/>
+          </g>
+
+          <!-- 투두 (phase 2 · green) -->
+          <g class="anim-phase anim-phase-2">
+            <rect x="24" y="24" width="24" height="24" rx="3" stroke="#16a34a" stroke-width="1.8"/>
+            <path d="M31 36 L34.5 39.5 L42 31" stroke="#16a34a" stroke-width="2.5"/>
+          </g>
+
+          <!-- 타이머 (phase 3 · orange) -->
+          <g class="anim-phase anim-phase-3">
+            <circle cx="36" cy="38" r="12" stroke="#ea580c" stroke-width="1.8"/>
+            <polyline points="36,32 36,38 40,41" stroke="#ea580c" stroke-width="1.8"/>
+            <line x1="33" y1="24" x2="39" y2="24" stroke="#ea580c" stroke-width="1.8"/>
+            <line x1="36" y1="24" x2="36" y2="27" stroke="#ea580c" stroke-width="1.8"/>
+          </g>
+        </svg>
+
+        <div class="anim-wave">
+          <span class="wave-dot"></span>
+          <span class="wave-dot"></span>
+          <span class="wave-dot"></span>
+        </div>
+      </div>
+
+      <p class="loading-text">잠시만 기다려 주세요</p>
+    </div>
+  </div>
+
+  <!-- Shared state: route detection + session check (single source of truth) -->
+  <script>
+    (function() {
+      function hasSupabaseSession() {
+        return Object.keys(localStorage).some(function(k) {
+          return k.startsWith('sb-') && k.endsWith('-auth-token');
+        });
+      }
+      function isLandingHash(hash) {
+        var isLandingRoute = hash === '#/landing' || hash === '#/landing/'
+            || hash === '' || hash === '#/';
+        return isLandingRoute && !hasSupabaseSession();
+      }
+      window.__momeet = {
+        isLanding: isLandingHash(window.location.hash),
+        isLandingHash: isLandingHash,
+        flutterReady: false
+      };
+    })();
+  </script>
+
+  <!-- Route-based section toggle + scroll animations -->
+  <script src="/landing/script.js"></script>
+
+  <!-- Flutter engine loader + build config (template tokens replaced at build time) -->
+  <script>
+    {{flutter_js}}
+    {{flutter_build_config}}
+
+    (function() {
+      var m = window.__momeet;
+      var flutterHost = document.getElementById('flutter-host');
+
+      _flutter.loader.load({
+        config: { hostElement: flutterHost },
+        onEntrypointLoaded: async function(engineInitializer) {
+          var appRunner = await engineInitializer.initializeEngine({
+            hostElement: flutterHost
+          });
+          await appRunner.runApp();
+
+          m.flutterReady = true;
+          document.dispatchEvent(new CustomEvent('flutter-ready'));
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -27,17 +27,19 @@ class TodoDashboardPage extends ConsumerWidget {
       ),
       body: tagGroupsAsync.when(
         data: (tagGroups) {
-          // 모든 태그 그룹을 Todo 그룹으로 사용 가능하도록 변경
-          final todoGroups = tagGroups;
-
-          if (todoGroups.isEmpty) {
+          if (tagGroups.isEmpty) {
             return _buildEmptyState(context, theme);
           }
 
-          return _buildGroupGrid(context, theme, todoGroups);
+          return _buildGroupGrid(context, theme, tagGroups);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(context, theme, error),
+        error: (error, stack) => _buildErrorState(
+          context,
+          theme,
+          error,
+          onRetry: () => ref.invalidate(tagGroupsProvider),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateGroupDialog(context),
@@ -174,7 +176,12 @@ class TodoDashboardPage extends ConsumerWidget {
   }
 
   /// 에러 상태 위젯
-  Widget _buildErrorState(BuildContext context, ThemeData theme, Object error) {
+  Widget _buildErrorState(
+    BuildContext context,
+    ThemeData theme,
+    Object error, {
+    required VoidCallback onRetry,
+  }) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -202,10 +209,7 @@ class TodoDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () {
-                // 새로고침 로직
-                // ref.invalidate(tagGroupsProvider);
-              },
+              onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text('다시 시도'),
             ),

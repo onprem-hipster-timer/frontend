@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart'
@@ -916,11 +917,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     try {
       if (_isEditMode) {
         // 수정 모드
+        final description = _descriptionController.text.trim();
         final updateData = TodoUpdate(
           title: _titleController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
           status: _selectedStatus,
           tagIds: _selectedTagIds.toList(),
           deadline: _selectedDeadline,
@@ -928,7 +928,13 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
         await ref
             .read(todoMutationsProvider.notifier)
-            .update(widget.todo!.id, updateData);
+            .update(
+              widget.todo!.id,
+              updateData,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();

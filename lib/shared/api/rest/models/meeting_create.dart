@@ -4,8 +4,6 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'visibility_settings.dart';
-
 part 'meeting_create.freezed.dart';
 part 'meeting_create.g.dart';
 
@@ -21,7 +19,6 @@ abstract class MeetingCreate with _$MeetingCreate {
     @JsonKey(name: 'end_time') required String endTime,
     @JsonKey(name: 'time_slot_minutes') @Default(30) int timeSlotMinutes,
     String? description,
-    VisibilitySettings? visibility,
   }) = _MeetingCreate;
 
   factory MeetingCreate.fromJson(Map<String, Object?> json) =>
