@@ -3,6 +3,10 @@ name: Deploy Production
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'CHANGELOG.md'
+      - '*.md'
+      - '.github/workflows/release.yml'
 
 concurrency:
   group: production-deploy
