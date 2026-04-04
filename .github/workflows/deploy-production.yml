@@ -39,6 +39,7 @@ jobs:
         run: |
           mkdir -p assets
           cat <<EOF > assets/.env
+          API_BASE_URL=${{ vars.API_BASE_URL }}
           SUPABASE_URL=${{ vars.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
           EOF
@@ -54,6 +55,9 @@ jobs:
 
       - name: Pull Vercel Environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Vercel Output
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel (Production)
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
