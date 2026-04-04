@@ -27,14 +27,11 @@ class TodoDashboardPage extends ConsumerWidget {
       ),
       body: tagGroupsAsync.when(
         data: (tagGroups) {
-          // 모든 태그 그룹을 Todo 그룹으로 사용 가능하도록 변경
-          final todoGroups = tagGroups;
-
-          if (todoGroups.isEmpty) {
+          if (tagGroups.isEmpty) {
             return _buildEmptyState(context, theme);
           }
 
-          return _buildGroupGrid(context, theme, todoGroups);
+          return _buildGroupGrid(context, theme, tagGroups);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildErrorState(context, theme, error),

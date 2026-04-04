@@ -4,26 +4,24 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// 접근권한 레벨
+/// 리소스 타입
 @JsonEnum()
-enum VisibilityLevel {
-  @JsonValue('private')
-  private('private'),
-  @JsonValue('friends')
-  friends('friends'),
-  @JsonValue('selected')
-  selected('selected'),
-  @JsonValue('allowed_emails')
-  allowedEmails('allowed_emails'),
-  @JsonValue('public')
-  public('public'),
+enum ResourceType {
+  @JsonValue('schedule')
+  schedule('schedule'),
+  @JsonValue('timer')
+  timer('timer'),
+  @JsonValue('todo')
+  todo('todo'),
+  @JsonValue('meeting')
+  meeting('meeting'),
 
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 
-  const VisibilityLevel(this.json);
+  const ResourceType(this.json);
 
-  factory VisibilityLevel.fromJson(String json) =>
+  factory ResourceType.fromJson(String json) =>
       values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
@@ -32,6 +30,6 @@ enum VisibilityLevel {
   String toString() => json?.toString() ?? super.toString();
 
   /// Returns all defined enum values excluding the $unknown value.
-  static List<VisibilityLevel> get $valuesDefined =>
+  static List<ResourceType> get $valuesDefined =>
       values.where((value) => value != $unknown).toList();
 }
