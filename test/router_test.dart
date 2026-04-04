@@ -10,6 +10,7 @@ void main() {
       expect(AppRoute.login.requiresAuth, false);
       expect(AppRoute.signup.requiresAuth, false);
       expect(AppRoute.forgotPassword.requiresAuth, false);
+      expect(AppRoute.landing.requiresAuth, false);
       expect(AppRoute.loading.requiresAuth, false);
       expect(AppRoute.securityWarning.requiresAuth, false);
     });
@@ -26,6 +27,7 @@ void main() {
       expect(AppRoute.publicPaths, contains(AppRoute.login.path));
       expect(AppRoute.publicPaths, contains(AppRoute.signup.path));
       expect(AppRoute.publicPaths, contains(AppRoute.forgotPassword.path));
+      expect(AppRoute.publicPaths, contains(AppRoute.landing.path));
       expect(AppRoute.publicPaths, contains(AppRoute.loading.path));
       expect(AppRoute.publicPaths, contains(AppRoute.securityWarning.path));
     });
@@ -65,6 +67,7 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/login'), false);
         expect(AppRoute.isKnownProtectedPath('/signup'), false);
         expect(AppRoute.isKnownProtectedPath('/forgot-password'), false);
+        expect(AppRoute.isKnownProtectedPath('/landing'), false);
         expect(AppRoute.isKnownProtectedPath('/loading'), false);
       });
 
@@ -194,13 +197,13 @@ void main() {
     // /loading 탈출 로직
     // ----------------------------------------------------------
     group('로딩 페이지 탈출', () {
-      test('로딩 끝나고 미인증이면 /loading에서 /login으로 리다이렉트한다', () {
+      test('로딩 끝나고 미인증이면 /loading에서 /landing으로 리다이렉트한다', () {
         final result = authRedirect(
           isAuthenticated: false,
           isAuthLoading: false,
           matchedLocation: AppRoute.loading.path,
         );
-        expect(result, AppRoute.login.path);
+        expect(result, AppRoute.landing.path);
       });
 
       test('로딩 끝나고 인증이면 /loading에서 /로 리다이렉트한다', () {
@@ -217,58 +220,32 @@ void main() {
     // 미인증 상태
     // ----------------------------------------------------------
     group('미인증 상태', () {
-      test('미인증 사용자가 보호된 경로에 접근하면 /login으로 리다이렉트한다', () {
+      test('미인증 사용자가 루트(/)에 접근하면 /landing으로 리다이렉트한다', () {
         final result = authRedirect(
           isAuthenticated: false,
           isAuthLoading: false,
           matchedLocation: AppRoute.calendar.path,
         );
-        expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.calendar.path}',
-        );
+        expect(result, AppRoute.landing.path);
       });
 
-      test('미인증 사용자가 /todo에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.todo.path,
+      test('미인증 사용자가 보호된 경로에 접근하면 /login으로 리다이렉트한다', () {
+        final protectedRoutes = AppRoute.values.where(
+          (r) => r.requiresAuth && r != AppRoute.calendar,
         );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.todo.path}');
-      });
 
-      test('미인증 사용자가 /mypage에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.mypage.path,
-        );
-        expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
-        );
-      });
-
-      test('미인증 사용자가 /tags에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.tags.path,
-        );
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.tags.path}');
-      });
-
-      test('미인증 사용자가 /timer에 접근하면 redirect 파라미터와 함께 /login으로 보낸다', () {
-        final result = authRedirect(
-          isAuthenticated: false,
-          isAuthLoading: false,
-          matchedLocation: AppRoute.timer.path,
-        );
-        expect(
-          result,
-          '${AppRoute.login.path}?redirect=${AppRoute.timer.path}',
-        );
+        for (final route in protectedRoutes) {
+          final result = authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: route.path,
+          );
+          expect(
+            result,
+            '${AppRoute.login.path}?redirect=${route.path}',
+            reason: '${route.name} 경로에서 /login 리다이렉트 실패',
+          );
+        }
       });
 
       test('미인증 사용자가 /login에 있으면 리다이렉트하지 않는다', () {
@@ -364,6 +341,58 @@ void main() {
           matchedLocation: AppRoute.mypage.path,
         );
         expect(result, isNull);
+      });
+    });
+
+    // ----------------------------------------------------------
+    // 랜딩 페이지 리다이렉트
+    // ----------------------------------------------------------
+    group('랜딩 페이지', () {
+      test('미인증 사용자가 /landing에 있으면 리다이렉트하지 않는다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.landing.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('인증된 사용자가 /landing에 있으면 /로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.landing.path,
+        );
+        expect(result, AppRoute.calendar.path);
+      });
+
+      test('미인증 사용자가 루트(/)에 접근하면 /login이 아닌 /landing으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.calendar.path,
+        );
+        expect(result, isNot(contains(AppRoute.login.path)));
+        expect(result, AppRoute.landing.path);
+      });
+
+      test('미인증 사용자가 /todo에 접근하면 /landing이 아닌 /login으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.todo.path,
+        );
+        expect(result, isNot(AppRoute.landing.path));
+        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.todo.path}');
+      });
+
+      test('로딩 완료 후 미인증이면 /landing으로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+        );
+        expect(result, AppRoute.landing.path);
       });
     });
 
@@ -624,7 +653,7 @@ void main() {
         );
       });
 
-      test('인증된 사용자가 로그아웃하면 모든 보호된 경로에서 /login으로 리다이렉트된다', () {
+      test('인증된 사용자가 로그아웃하면 모든 보호된 경로에서 리다이렉트된다', () {
         final protectedRoutes = AppRoute.values.where((r) => r.requiresAuth);
 
         for (final route in protectedRoutes) {
@@ -633,11 +662,22 @@ void main() {
             isAuthLoading: false,
             matchedLocation: route.path,
           );
-          expect(
-            result,
-            '${AppRoute.login.path}?redirect=${route.path}',
-            reason: '${route.name} 경로에서 리다이렉트 실패',
-          );
+
+          if (route == AppRoute.calendar) {
+            // 루트 경로는 /landing으로
+            expect(
+              result,
+              AppRoute.landing.path,
+              reason: '${route.name} 경로에서 /landing 리다이렉트 실패',
+            );
+          } else {
+            // 그 외 보호 경로는 /login?redirect=...으로
+            expect(
+              result,
+              '${AppRoute.login.path}?redirect=${route.path}',
+              reason: '${route.name} 경로에서 /login 리다이렉트 실패',
+            );
+          }
         }
       });
     });
