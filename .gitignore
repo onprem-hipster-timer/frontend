@@ -460,3 +460,4 @@ lefthook-local.yml
 .vercel
 
 .*/*
+!.github/*
