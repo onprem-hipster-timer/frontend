@@ -32,7 +32,12 @@ class ExplicitNullInterceptor extends Interceptor {
         handler.next(options);
         return;
       } else if (data != null) {
-        json = (data as dynamic).toJson() as Map<String, dynamic>;
+        try {
+          json = (data as dynamic).toJson() as Map<String, dynamic>;
+        } catch (_) {
+          handler.next(options);
+          return;
+        }
       } else {
         json = {};
       }
