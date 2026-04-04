@@ -27,6 +27,10 @@ class ExplicitNullInterceptor extends Interceptor {
       final Map<String, dynamic> json;
       if (data is Map<String, dynamic>) {
         json = data;
+      } else if (data is String || data is FormData) {
+        // null 필드 주입 불가능한 타입 — 원본 데이터 유지
+        handler.next(options);
+        return;
       } else if (data != null) {
         json = (data as dynamic).toJson() as Map<String, dynamic>;
       } else {

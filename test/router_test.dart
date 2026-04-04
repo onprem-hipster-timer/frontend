@@ -242,7 +242,7 @@ void main() {
           );
           expect(
             result,
-            '${AppRoute.login.path}?redirect=${route.path}',
+            '${AppRoute.login.path}?redirect=${Uri.encodeComponent(route.path)}',
             reason: '${route.name} 경로에서 /login 리다이렉트 실패',
           );
         }
@@ -383,7 +383,10 @@ void main() {
           matchedLocation: AppRoute.todo.path,
         );
         expect(result, isNot(AppRoute.landing.path));
-        expect(result, '${AppRoute.login.path}?redirect=${AppRoute.todo.path}');
+        expect(
+          result,
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.todo.path)}',
+        );
       });
 
       test('로딩 완료 후 미인증이면 /landing으로 리다이렉트한다', () {
@@ -477,7 +480,7 @@ void main() {
         );
         expect(
           step2,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.mypage.path)}',
         );
 
         // 3. 로그인 성공 → redirect 파라미터로 /mypage 복원
@@ -649,7 +652,7 @@ void main() {
         );
         expect(
           afterLogout,
-          '${AppRoute.login.path}?redirect=${AppRoute.mypage.path}',
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.mypage.path)}',
         );
       });
 
@@ -674,7 +677,7 @@ void main() {
             // 그 외 보호 경로는 /login?redirect=...으로
             expect(
               result,
-              '${AppRoute.login.path}?redirect=${route.path}',
+              '${AppRoute.login.path}?redirect=${Uri.encodeComponent(route.path)}',
               reason: '${route.name} 경로에서 /login 리다이렉트 실패',
             );
           }

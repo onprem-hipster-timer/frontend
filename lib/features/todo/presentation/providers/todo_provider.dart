@@ -65,7 +65,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
   AsyncValue<void> build() => const AsyncValue.data(null);
 
   /// 새 Todo 생성
-  Future<TodoRead?> create(TodoCreate data) async {
+  Future<TodoRead> create(TodoCreate data) async {
     state = const AsyncValue.loading();
 
     try {
@@ -79,12 +79,12 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
       return response;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-      return null;
+      rethrow;
     }
   }
 
   /// Todo 수정
-  Future<TodoRead?> update(
+  Future<TodoRead> update(
     String todoId,
     TodoUpdate data, {
     RequestOptions? options,
@@ -106,7 +106,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
       return response;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-      return null;
+      rethrow;
     }
   }
 
@@ -132,7 +132,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
   /// 부모 변경 (드래그 앤 드롭)
   ///
   /// [newParentId]가 null이면 루트로 이동합니다.
-  Future<TodoRead?> changeParent(String todoId, String? newParentId) async {
+  Future<TodoRead> changeParent(String todoId, String? newParentId) async {
     return update(
       todoId,
       TodoUpdate(parentId: newParentId),
@@ -141,7 +141,7 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// 상태 변경
-  Future<TodoRead?> changeStatus(String todoId, TodoStatus newStatus) async {
+  Future<TodoRead> changeStatus(String todoId, TodoStatus newStatus) async {
     return update(todoId, TodoUpdate(status: newStatus));
   }
 }

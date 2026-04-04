@@ -148,7 +148,7 @@ String? authRedirect({
       return AppRoute.landing.path;
     }
     // 2-2. 그 외 보호 경로는 로그인 후 원래 경로로 돌아가도록
-    return '${AppRoute.login.path}?redirect=$matchedLocation';
+    return '${AppRoute.login.path}?redirect=${Uri.encodeComponent(matchedLocation)}';
   }
 
   // 3. 인증된 사용자가 공개 페이지에 있으면 원래 목적지 또는 메인 앱으로
@@ -289,7 +289,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
                 routes: [
                   GoRoute(
-                    path: '/:groupId',
+                    path: ':groupId',
                     name: AppRoute.todoGroupDetail.name,
                     builder: (context, state) {
                       final groupId = state.pathParameters['groupId']!;
