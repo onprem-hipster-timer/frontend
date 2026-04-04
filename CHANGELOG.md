@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+---
+
+## [v2026.04.04-bedf04d] - 2026-04-04
+
 ### Fixed
 
 #### Core Infrastructure
@@ -94,4 +100,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/main...HEAD
+[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.04.04-bedf04d...HEAD
+[v2026.04.04-bedf04d]: https://github.com/onprem-hipster-timer/frontend/compare/main...v2026.04.04-bedf04d
