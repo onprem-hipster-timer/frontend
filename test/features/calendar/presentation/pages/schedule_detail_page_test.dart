@@ -87,7 +87,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      expect(find.text('확정됨'), findsAtLeastNWidgets(1));
+      expect(find.text('확정됨'), findsOneWidget); // 상태 배지
     });
 
     testWidgets('태그가 표시된다', (tester) async {
@@ -114,7 +114,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      expect(find.text('타이머'), findsAtLeastNWidgets(1));
+      expect(find.text('타이머'), findsOneWidget); // 섹션 헤더만
       expect(find.text('1'), findsAtLeastNWidgets(1)); // 타이머 개수 배지
     });
 
@@ -123,6 +123,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('타이머'), findsNothing);
+    });
+
+    testWidgets('제목 없는 타이머는 "제목 없음"으로 표시된다', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('제목 없음'), findsOneWidget);
     });
 
     testWidgets('완료된 타이머의 상태 텍스트가 표시된다', (tester) async {
@@ -186,7 +193,7 @@ void main() {
       await tester.pumpWidget(buildPage(schedule: planned));
       await tester.pumpAndSettle();
 
-      expect(find.text('계획됨'), findsAtLeastNWidgets(1));
+      expect(find.text('계획됨'), findsOneWidget); // 상태 배지
     });
 
     testWidgets('취소됨 상태가 올바르게 표시된다', (tester) async {
@@ -198,7 +205,7 @@ void main() {
       await tester.pumpWidget(buildPage(schedule: cancelled));
       await tester.pumpAndSettle();
 
-      expect(find.text('취소됨'), findsAtLeastNWidgets(1));
+      expect(find.text('취소됨'), findsOneWidget); // 상태 배지
     });
   });
 
@@ -226,16 +233,29 @@ void main() {
       expect(find.text('태그'), findsNothing);
     });
 
-    testWidgets('반복 규칙이 있으면 반복 일정 표시된다', (tester) async {
+    testWidgets('반복 규칙이 사람이 읽을 수 있는 텍스트로 표시된다', (tester) async {
       final recurring = makeSchedule(
         id: testScheduleId,
-        title: '반복 일정',
+        title: '주간 회의',
         recurrenceRule: 'FREQ=WEEKLY',
       );
       await tester.pumpWidget(buildPage(schedule: recurring));
       await tester.pumpAndSettle();
 
-      expect(find.text('반복 일정'), findsAtLeastNWidgets(1));
+      expect(find.text('매주'), findsOneWidget);
+      expect(find.text('반복'), findsOneWidget); // label
+    });
+
+    testWidgets('BYDAY가 포함된 반복 규칙이 요일과 함께 표시된다', (tester) async {
+      final recurring = makeSchedule(
+        id: testScheduleId,
+        title: '요일 반복',
+        recurrenceRule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+      );
+      await tester.pumpWidget(buildPage(schedule: recurring));
+      await tester.pumpAndSettle();
+
+      expect(find.text('매주 (월, 수, 금)'), findsOneWidget);
     });
   });
 }

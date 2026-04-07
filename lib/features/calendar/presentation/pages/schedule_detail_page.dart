@@ -154,7 +154,11 @@ class ScheduleDetailPage extends ConsumerWidget {
         ),
         if (schedule.recurrenceRule != null) ...[
           const SizedBox(height: 16),
-          _InfoRow(icon: Icons.repeat, label: '반복', value: '반복 일정'),
+          _InfoRow(
+            icon: Icons.repeat,
+            label: '반복',
+            value: _parseRecurrenceRule(schedule.recurrenceRule!),
+          ),
         ],
         const SizedBox(height: 16),
         _InfoRow(
@@ -239,7 +243,7 @@ class ScheduleDetailPage extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              timer.title ?? '타이머',
+              timer.title ?? '제목 없음',
               style: theme.textTheme.bodySmall,
               overflow: TextOverflow.ellipsis,
             ),
@@ -645,6 +649,58 @@ class ScheduleDetailPage extends ConsumerWidget {
       default:
         return Colors.grey;
     }
+  }
+
+  /// RRULE 문자열을 사람이 읽을 수 있는 텍스트로 변환
+  String _parseRecurrenceRule(String rule) {
+    final upper = rule.toUpperCase();
+
+    // FREQ 추출
+    final freqMatch = RegExp(r'FREQ=(\w+)').firstMatch(upper);
+    if (freqMatch == null) return rule;
+
+    final freq = freqMatch.group(1);
+    final interval =
+        RegExp(r'INTERVAL=(\d+)').firstMatch(upper)?.group(1) ?? '1';
+    final intervalNum = int.tryParse(interval) ?? 1;
+
+    // BYDAY 추출 (주간 반복용)
+    final byDay = RegExp(r'BYDAY=([A-Z,]+)').firstMatch(upper)?.group(1);
+
+    String base;
+    switch (freq) {
+      case 'DAILY':
+        base = intervalNum > 1 ? '$intervalNum일마다' : '매일';
+        break;
+      case 'WEEKLY':
+        final days = byDay != null ? ' (${_translateDays(byDay)})' : '';
+        base = intervalNum > 1 ? '$intervalNum주마다$days' : '매주$days';
+        break;
+      case 'MONTHLY':
+        base = intervalNum > 1 ? '$intervalNum개월마다' : '매월';
+        break;
+      case 'YEARLY':
+        base = intervalNum > 1 ? '$intervalNum년마다' : '매년';
+        break;
+      default:
+        return rule;
+    }
+
+    return base;
+  }
+
+  /// BYDAY 약어를 한국어 요일로 변환
+  String _translateDays(String byDay) {
+    const dayMap = {
+      'MO': '월',
+      'TU': '화',
+      'WE': '수',
+      'TH': '목',
+      'FR': '금',
+      'SA': '토',
+      'SU': '일',
+    };
+    return byDay.split(',').map((d) => dayMap[d.trim()] ?? d).join(', ');
   }
 
   String _getTimerStatusText(TimerStatus status) {

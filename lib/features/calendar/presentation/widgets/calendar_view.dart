@@ -338,12 +338,12 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         return holidayDate != null && _isSameDay(holidayDate, date);
       }).firstOrNull;
 
-      if (holiday != null && context.mounted) {
-        // 휴일인 경우 휴일 상세 시트 표시
-        showHolidayDetailSheet(context, holiday);
-      } else if (hasAppointments && context.mounted) {
-        // 일정 있는 날짜 → 바텀시트로 일정 목록 표시
+      if (hasAppointments && context.mounted) {
+        // 일정이 있으면 일정 목록 우선 표시 (휴일+일정 겹침 시에도 접근 가능)
         _showScheduleListSheet(date);
+      } else if (holiday != null && context.mounted) {
+        // 일정 없는 휴일인 경우 휴일 상세 시트 표시
+        showHolidayDetailSheet(context, holiday);
       } else if (context.mounted) {
         // 일정이 없는 날짜인 경우 일정 생성 폼 표시
         showScheduleFormSheet(context, initialDate: date);

@@ -104,9 +104,10 @@ class ScheduleListSheet extends StatelessWidget {
     ThemeData theme,
     ScheduleRead schedule,
   ) {
-    final tagColor = schedule.tags.isNotEmpty
+    final hasTag = schedule.tags.isNotEmpty;
+    final tagColor = hasTag
         ? HexColor.fromHex(schedule.tags.first.color)
-        : theme.colorScheme.primary;
+        : theme.colorScheme.outlineVariant;
 
     final start = schedule.startTime.toLocal();
     final end = schedule.endTime.toLocal();

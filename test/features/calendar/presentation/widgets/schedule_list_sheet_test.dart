@@ -192,7 +192,7 @@ void main() {
   // 색상 표시
   // ============================================================
   group('색상 바 표시', () {
-    testWidgets('태그가 있는 일정은 색상 바가 표시된다', (tester) async {
+    testWidgets('모든 일정에 색상 바가 표시된다', (tester) async {
       await tester.pumpWidget(buildSheet());
       await tester.pumpAndSettle();
 
@@ -205,6 +205,29 @@ void main() {
       );
       // ListTile의 leading으로 3개 존재
       expect(colorBars, findsNWidgets(3));
+    });
+
+    testWidgets('태그 있는 일정은 태그 색상, 없는 일정은 중립 색상을 사용한다', (tester) async {
+      await tester.pumpWidget(buildSheet());
+      await tester.pumpAndSettle();
+
+      // 태그 있는 첫 번째 일정의 색상 바
+      final colorBars = find.byWidgetPredicate(
+        (widget) =>
+            widget is Container &&
+            widget.constraints?.maxWidth == 4 &&
+            widget.constraints?.maxHeight == 40,
+      );
+
+      // 3개 색상 바 존재
+      expect(colorBars, findsNWidgets(3));
+
+      // 첫 번째(태그 있음)와 두 번째(태그 없음) 색상이 다른지 확인
+      final firstBar = tester.widget<Container>(colorBars.at(0));
+      final secondBar = tester.widget<Container>(colorBars.at(1));
+      final firstDecoration = firstBar.decoration as BoxDecoration;
+      final secondDecoration = secondBar.decoration as BoxDecoration;
+      expect(firstDecoration.color, isNot(equals(secondDecoration.color)));
     });
   });
 }
