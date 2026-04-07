@@ -10,6 +10,8 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_form_shee
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
+    as fmt;
 import 'package:momeet/router.dart';
 import 'package:go_router/go_router.dart';
 
@@ -326,7 +328,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
     final hasAppointments =
         scheduleDataSource?.appointments
-            ?.where((app) => _isSameDay(app.startTime, date))
+            ?.where((app) => fmt.isSameDay(app.startTime, date))
             .isNotEmpty ??
         false;
 
@@ -335,7 +337,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final holiday = holidayAsync.whenOrNull(
       data: (holidays) => holidays.where((h) {
         final holidayDate = parseHolidayDate(h.locdate);
-        return holidayDate != null && _isSameDay(holidayDate, date);
+        return holidayDate != null && fmt.isSameDay(holidayDate, date);
       }).firstOrNull,
     );
 
@@ -366,7 +368,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final schedules = ref.read(filteredSchedulesProvider).value;
     final daySchedules =
         schedules
-            ?.where((s) => _isSameDay(s.startTime.toLocal(), date))
+            ?.where((s) => fmt.isSameDay(s.startTime.toLocal(), date))
             .toList() ??
         [];
     if (daySchedules.isEmpty || !context.mounted) return;
@@ -474,7 +476,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   Widget _buildMonthCell(BuildContext context, MonthCellDetails details) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isToday = _isSameDay(details.date, DateTime.now());
+    final isToday = fmt.isSameDay(details.date, DateTime.now());
     final isCurrentMonth =
         details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
@@ -488,7 +490,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         // 현재 날짜에 해당하는 휴일 찾기
         final holiday = holidays.where((h) {
           final holidayDate = parseHolidayDate(h.locdate);
-          return holidayDate != null && _isSameDay(holidayDate, details.date);
+          return holidayDate != null &&
+              fmt.isSameDay(holidayDate, details.date);
         }).firstOrNull;
 
         final isHoliday = holiday != null;
@@ -575,7 +578,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isToday = _isSameDay(details.date, DateTime.now());
+    final isToday = fmt.isSameDay(details.date, DateTime.now());
     final isCurrentMonth =
         details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
@@ -660,12 +663,5 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       loading: () => [],
       error: (error, stack) => [],
     );
-  }
-
-  /// 두 날짜가 같은 날인지 확인
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
   }
 }
