@@ -6,9 +6,11 @@ import 'package:momeet/features/calendar/presentation/providers/holiday_provider
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_appointment_builder.dart'
     as custom_builder;
-import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
+import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
+import 'package:momeet/router.dart';
+import 'package:go_router/go_router.dart';
 
 /// SfCalendar 위젯을 래핑한 캘린더 뷰
 ///
@@ -298,6 +300,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       if (appointmentId != null) {
         _handleScheduleTap(appointmentId);
       }
+    } else if (details.targetElement == CalendarElement.moreAppointmentRegion &&
+        details.date != null) {
+      // "+N more" 탭 → 바텀시트 일정 리스트
+      _showScheduleListSheet(details.date!);
     } else if (details.targetElement == CalendarElement.calendarCell &&
         details.date != null) {
       // 날짜 셀 탭 - 휴일 확인 후 처리
@@ -329,7 +335,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       if (holiday != null && context.mounted) {
         // 휴일인 경우 휴일 상세 시트 표시
         showHolidayDetailSheet(context, holiday);
-      } else if (!hasAppointments && context.mounted) {
+      } else if (hasAppointments && context.mounted) {
+        // 일정 있는 날짜 → 바텀시트로 일정 목록 표시
+        _showScheduleListSheet(date);
+      } else if (context.mounted) {
         // 일정이 없는 날짜인 경우 일정 생성 폼 표시
         showScheduleFormSheet(context, initialDate: date);
       }
@@ -337,25 +346,28 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   }
 
   /// 일정 탭 처리
-  Future<void> _handleScheduleTap(String scheduleId) async {
+  void _handleScheduleTap(String scheduleId) {
     // 외부 콜백이 있으면 우선 사용
     if (widget.onScheduleTap != null) {
       widget.onScheduleTap!(scheduleId);
       return;
     }
 
-    // 기본 상세 보기 처리
-    try {
-      final schedules = await ref.read(filteredSchedulesProvider.future);
-      final schedule = schedules.where((s) => s.id == scheduleId).firstOrNull;
-
-      if (schedule != null && context.mounted) {
-        // ignore: use_build_context_synchronously
-        showScheduleDetailSheet(context, schedule);
-      }
-    } catch (error) {
-      debugPrint('일정 상세 보기 오류: $error');
+    if (context.mounted) {
+      context.push('${AppRoute.calendar.path}/schedule/detail?id=$scheduleId');
     }
+  }
+
+  /// 다중 일정 바텀시트 표시
+  void _showScheduleListSheet(DateTime date) {
+    final schedules = ref.read(filteredSchedulesProvider).value;
+    final daySchedules =
+        schedules
+            ?.where((s) => _isSameDay(s.startTime.toLocal(), date))
+            .toList() ??
+        [];
+    if (daySchedules.isEmpty || !context.mounted) return;
+    showScheduleListSheet(context, date, daySchedules);
   }
 
   /// 캘린더 길게 누르기 콜백
