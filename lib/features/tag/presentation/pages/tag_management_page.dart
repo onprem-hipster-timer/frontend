@@ -55,7 +55,7 @@ class TagManagementPage extends ConsumerWidget {
         SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) =>
-                _buildTagGroupItem(context, ref, tagGroups[index], tagGroups),
+                _buildTagGroupItem(context, ref, tagGroups[index]),
             childCount: tagGroups.length,
           ),
         ),
@@ -71,7 +71,6 @@ class TagManagementPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     TagGroupWithTags tagGroup,
-    List<TagGroupWithTags> allGroups,
   ) {
     final theme = Theme.of(context);
 
@@ -105,29 +104,6 @@ class TagManagementPage extends ConsumerWidget {
                   ),
                 ),
               ),
-
-              // Todo 그룹 배지
-              if (tagGroup.isTodoGroup) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'TODO',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
             ],
           ),
 
@@ -151,12 +127,14 @@ class TagManagementPage extends ConsumerWidget {
                   // 태그 추가 버튼 (주요 액션)
                   FilledButton.icon(
                     onPressed: () =>
-                        _showCreateTagSheet(context, ref, tagGroup, allGroups),
+                        _showCreateTagSheet(context, ref, tagGroup),
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('태그 추가'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -169,7 +147,9 @@ class TagManagementPage extends ConsumerWidget {
                     label: const Text('그룹 수정'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -185,7 +165,9 @@ class TagManagementPage extends ConsumerWidget {
                       foregroundColor: theme.colorScheme.error,
                       side: BorderSide(color: theme.colorScheme.error),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(0, 32),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
@@ -197,8 +179,7 @@ class TagManagementPage extends ConsumerWidget {
 
           // 하위 태그 목록
           children: tagGroup.tags
-              .map((tag) =>
-                  _buildTagItem(context, ref, tag, tagGroup, allGroups))
+              .map((tag) => _buildTagItem(context, ref, tag, tagGroup))
               .toList(),
         ),
       ),
@@ -211,7 +192,6 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
     TagGroupWithTags parentGroup,
-    List<TagGroupWithTags> allGroups,
   ) {
     final theme = Theme.of(context);
 
@@ -244,12 +224,14 @@ class TagManagementPage extends ConsumerWidget {
             // 태그 수정 버튼
             OutlinedButton.icon(
               onPressed: () =>
-                  _showEditTagSheet(context, ref, tag, parentGroup, allGroups),
+                  _showEditTagSheet(context, ref, tag, parentGroup),
               icon: const Icon(Icons.edit, size: 16),
               label: const Text('수정'),
               style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 minimumSize: const Size(0, 32),
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -265,8 +247,10 @@ class TagManagementPage extends ConsumerWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
                 side: BorderSide(color: theme.colorScheme.error),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 minimumSize: const Size(0, 32),
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -275,8 +259,7 @@ class TagManagementPage extends ConsumerWidget {
         ),
 
         // Interaction: 탭하면 수정 폼
-        onTap: () =>
-            _showEditTagSheet(context, ref, tag, parentGroup, allGroups),
+        onTap: () => _showEditTagSheet(context, ref, tag, parentGroup),
 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         tileColor: theme.colorScheme.surface,
@@ -389,7 +372,6 @@ class TagManagementPage extends ConsumerWidget {
       id: tagGroup.groupId,
       name: tagGroup.groupName,
       color: tagGroup.groupColor,
-      isTodoGroup: tagGroup.isTodoGroup,
       createdAt: tagGroup.createdAt,
       updatedAt: tagGroup.updatedAt,
       description: tagGroup.groupDescription,
@@ -408,7 +390,8 @@ class TagManagementPage extends ConsumerWidget {
     final confirmed = await showConfirmDialog(
       context,
       title: '그룹 삭제',
-      content: '${tagGroup.groupName} 그룹을 삭제하시겠습니까?\n'
+      content:
+          '${tagGroup.groupName} 그룹을 삭제하시겠습니까?\n'
           '이 작업은 되돌릴 수 없습니다.\n'
           '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
       confirmText: '삭제',
@@ -448,21 +431,8 @@ class TagManagementPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     TagGroupWithTags parentGroup,
-    List<TagGroupWithTags> allGroups,
   ) {
-    final tagGroupsAsync = ref.read(tagTreeProvider);
-
-    tagGroupsAsync.when(
-      data: (allGroups) {
-        showTagFormSheet(
-          context,
-          availableGroups: allGroups,
-          defaultGroupId: parentGroup.groupId,
-        );
-      },
-      loading: () {},
-      error: (error, stack) {},
-    );
+    showTagFormSheet(context, defaultGroupId: parentGroup.groupId);
   }
 
   /// 태그 수정 시트 표시
@@ -471,17 +441,8 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
     TagGroupWithTags parentGroup,
-    List<TagGroupWithTags> allGroups,
   ) {
-    final tagGroupsAsync = ref.read(tagTreeProvider);
-
-    tagGroupsAsync.when(
-      data: (allGroups) {
-        showTagFormSheet(context, tag: tag, availableGroups: allGroups);
-      },
-      loading: () {},
-      error: (error, stack) {},
-    );
+    showTagFormSheet(context, tag: tag);
   }
 
   /// 태그 삭제 확인 다이얼로그

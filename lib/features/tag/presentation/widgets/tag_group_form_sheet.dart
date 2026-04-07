@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
@@ -147,10 +148,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       autofocus: true,
       decoration: InputDecoration(
         labelText: '그룹 이름',
-        hintText: '그룹 이름을 입력하세요',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        hintText: '태그 그룹 이름을 입력하세요',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -253,6 +252,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
   /// 버튼 영역
   Widget _buildButtonBar(bool isEditMode, bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // 취소 버튼
@@ -283,12 +284,12 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(isEditMode ? '수정' : '생성'),
@@ -306,32 +307,37 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     try {
       if (widget.tagGroup != null) {
         // 수정 모드
+        final description = _descriptionController.text.trim();
         final updateData = TagGroupUpdate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: true, // 모든 그룹은 이제 통합되어 todo 그룹으로 설정
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
         );
 
         await ref
             .read(tagMutationsProvider.notifier)
-            .updateGroup(widget.tagGroup!.id, updateData);
+            .updateGroup(
+              widget.tagGroup!.id,
+              updateData,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('그룹이 수정되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그 그룹이 수정되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -344,7 +350,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         final createData = TagGroupCreate(
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
-          isTodoGroup: true, // 모든 그룹은 이제 통합되어 todo 그룹으로 설정
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -356,11 +361,11 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('그룹이 생성되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('태그 그룹이 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -375,13 +380,13 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     widget.tagGroup != null
-                        ? '그룹 수정에 실패했습니다: $error'
-                        : '그룹 생성에 실패했습니다: $error',
+                        ? '태그 그룹 수정에 실패했습니다: $error'
+                        : '태그 그룹 생성에 실패했습니다: $error',
                   ),
                 ),
               ],

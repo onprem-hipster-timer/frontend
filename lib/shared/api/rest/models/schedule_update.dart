@@ -5,7 +5,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'schedule_state.dart';
-import 'visibility_settings.dart';
 
 part 'schedule_update.freezed.dart';
 part 'schedule_update.g.dart';
@@ -24,7 +23,6 @@ abstract class ScheduleUpdate with _$ScheduleUpdate {
     @JsonKey(name: 'tag_group_id') String? tagGroupId,
     @JsonKey(name: 'source_todo_id') String? sourceTodoId,
     ScheduleState? state,
-    VisibilitySettings? visibility,
   }) = _ScheduleUpdate;
 
   factory ScheduleUpdate.fromJson(Map<String, Object?> json) =>

@@ -443,6 +443,9 @@ hs_err_pid*
 
 # End of https://www.toptal.com/developers/gitignore/api/flutter,androidstudio,jetbrains,dart,android,swift
 
+# Vercel
+.vercel/
+
 # FVM Version Cache
 .fvm/
 .fvmrc
@@ -454,3 +457,7 @@ lefthook-local.yml
 *.g.dart
 /.run/main.dart.run.xml
 /.cursor/
+.vercel
+
+.*/*
+!.github/*

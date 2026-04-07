@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -6,79 +7,60 @@ import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
 part 'tag_providers.g.dart';
 
 // ============================================================
-// Base Data Providers (API 조회)
+// Base Data Provider (단일 API 호출)
 // ============================================================
 
-/// 태그 그룹 목록 조회 Provider
+/// 태그 그룹+태그 원본 데이터 Provider
 ///
-/// API에서 태그 그룹 목록만 조회합니다. (태그는 별도)
+/// `readTagGroupsV1TagsGroupsGet()`이 그룹과 태그를 모두 포함하므로
+/// 한 번의 API 호출로 모든 데이터를 가져옵니다.
 @riverpod
-Future<List<TagGroupRead>> tagGroups(Ref ref) async {
+Future<List<TagGroupReadWithTags>> tagGroupsRaw(Ref ref) async {
   final api = ref.watch(tagsApiProvider);
 
   try {
-    // TagGroupReadWithTags 대신 개별적으로 그룹과 태그를 조회
-    final groupsWithTags = await api.readTagGroupsV1TagsGroupsGet();
-
-    // TagGroupRead만 추출
-    return groupsWithTags
-        .map(
-          (groupWithTags) => TagGroupRead(
-            id: groupWithTags.id,
-            name: groupWithTags.name,
-            color: groupWithTags.color,
-            isTodoGroup: groupWithTags.isTodoGroup,
-            createdAt: groupWithTags.createdAt,
-            updatedAt: groupWithTags.updatedAt,
-            description: groupWithTags.description,
-            goalRatios: groupWithTags.goalRatios,
-          ),
-        )
-        .toList();
+    return await api.readTagGroupsV1TagsGroupsGet();
   } catch (error) {
     throw Exception('태그 그룹 조회 실패: $error');
   }
 }
 
-/// 개별 태그 목록 조회 Provider
-///
-/// 모든 태그를 조회합니다. tagTree에서 그룹별로 분류됩니다.
-@riverpod
-Future<List<TagRead>> tags(Ref ref) async {
-  final api = ref.watch(tagsApiProvider);
+// ============================================================
+// Derived Providers (파생 데이터)
+// ============================================================
 
-  try {
-    final result = await api.readTagsV1TagsGet();
-    return result;
-  } catch (error) {
-    throw Exception('태그 조회 실패: $error');
-  }
+extension on TagGroupReadWithTags {
+  TagGroupRead toTagGroupRead() => TagGroupRead(
+    id: id,
+    name: name,
+    color: color,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    description: description,
+    goalRatios: goalRatios,
+  );
 }
 
-// ============================================================
-// Computed Provider (계층형 데이터)
-// ============================================================
+/// 태그 그룹 목록 조회 Provider
+///
+/// 원본 데이터에서 TagGroupRead만 추출합니다.
+@riverpod
+Future<List<TagGroupRead>> tagGroups(Ref ref) async {
+  final raw = await ref.watch(tagGroupsRawProvider.future);
+  return raw.map((g) => g.toTagGroupRead()).toList();
+}
 
 /// 태그 트리 Provider
 ///
-/// tagGroups와 tags Provider를 watch하여 계층형 TagGroupWithTags 데이터를 제공합니다.
-/// Left Join 방식으로 태그가 없는 그룹도 포함됩니다.
+/// 원본 데이터에서 계층형 TagGroupWithTags로 변환합니다.
+/// 태그가 없는 그룹도 포함됩니다.
 @riverpod
 Future<List<TagGroupWithTags>> tagTree(Ref ref) async {
-  // 두 Provider를 모두 watch
-  final groups = await ref.watch(tagGroupsProvider.future);
-  final allTags = await ref.watch(tagsProvider.future);
+  final raw = await ref.watch(tagGroupsRawProvider.future);
 
-  // 각 그룹별로 해당하는 태그들을 분류
-  final List<TagGroupWithTags> result = [];
-
-  for (final group in groups) {
-    // 이 그룹에 속한 태그들을 필터링
-    final groupTags = allTags.where((tag) => tag.groupId == group.id).toList();
-
-    // 태그가 없는 그룹도 포함 (Left Join)
-    result.add(TagGroupWithTags(group: group, tags: groupTags));
-  }
+  final result = raw
+      .map((g) => TagGroupWithTags(group: g.toTagGroupRead(), tags: g.tags))
+      .toList();
 
   // 태그 개수 기준으로 정렬 (태그가 많은 그룹이 위로)
   result.sort((a, b) => b.tagCount.compareTo(a.tagCount));
@@ -113,9 +95,7 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       final result = await api.createTagGroupV1TagsGroupsPost(body: data);
 
-      // 관련 Provider들 새로고침
-      ref.invalidate(tagGroupsProvider);
-      ref.invalidate(tagTreeProvider); // 계층형 데이터도 갱신
+      ref.invalidate(tagGroupsRawProvider);
 
       state = const AsyncValue.data(null);
       return result;
@@ -129,7 +109,11 @@ class TagMutations extends _$TagMutations {
   ///
   /// [groupId] 수정할 그룹 ID
   /// [data] 수정할 데이터
-  Future<TagGroupRead> updateGroup(String groupId, TagGroupUpdate data) async {
+  Future<TagGroupRead> updateGroup(
+    String groupId,
+    TagGroupUpdate data, {
+    RequestOptions? options,
+  }) async {
     state = const AsyncValue.loading();
 
     try {
@@ -137,11 +121,10 @@ class TagMutations extends _$TagMutations {
       final result = await api.updateTagGroupV1TagsGroupsGroupIdPatch(
         groupId: groupId,
         body: data,
+        options: options,
       );
 
-      // 관련 Provider들 새로고침
-      ref.invalidate(tagGroupsProvider);
-      ref.invalidate(tagTreeProvider);
+      ref.invalidate(tagGroupsRawProvider);
 
       state = const AsyncValue.data(null);
       return result;
@@ -162,10 +145,7 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       await api.deleteTagGroupV1TagsGroupsGroupIdDelete(groupId: groupId);
 
-      // 그룹 삭제 시 태그 목록도 영향을 받으므로 모두 갱신
-      ref.invalidate(tagGroupsProvider);
-      ref.invalidate(tagsProvider);
-      ref.invalidate(tagTreeProvider);
+      ref.invalidate(tagGroupsRawProvider);
 
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
@@ -188,9 +168,7 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       final result = await api.createTagV1TagsPost(body: data);
 
-      // 태그 관련 Provider들 새로고침
-      ref.invalidate(tagsProvider);
-      ref.invalidate(tagTreeProvider);
+      ref.invalidate(tagGroupsRawProvider);
 
       state = const AsyncValue.data(null);
       return result;
@@ -214,9 +192,7 @@ class TagMutations extends _$TagMutations {
         body: data,
       );
 
-      // 태그 관련 Provider들 새로고침
-      ref.invalidate(tagsProvider);
-      ref.invalidate(tagTreeProvider);
+      ref.invalidate(tagGroupsRawProvider);
 
       state = const AsyncValue.data(null);
       return result;
@@ -236,9 +212,7 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       await api.deleteTagV1TagsTagIdDelete(tagId: tagId);
 
-      // 태그 관련 Provider들 새로고침
-      ref.invalidate(tagsProvider);
-      ref.invalidate(tagTreeProvider);
+      ref.invalidate(tagGroupsRawProvider);
 
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {

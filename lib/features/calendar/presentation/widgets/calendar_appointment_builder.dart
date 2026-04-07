@@ -159,7 +159,7 @@ class ScheduleAppointmentBuilder {
         border: Border(left: BorderSide(color: appointment.color, width: 4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -272,9 +272,19 @@ class ScheduleAppointmentBuilder {
   // ============================================================
 
   /// 배경색 대비 글자색 결정
-  static Color _getContrastColor(Color backgroundColor) {
+  static Color _getContrastColor(
+    Color backgroundColor, [
+    BuildContext? context,
+  ]) {
     // 상대 휘도 계산
     final luminance = backgroundColor.computeLuminance();
+    if (context != null) {
+      final theme = Theme.of(context);
+      return luminance > 0.5
+          ? theme.colorScheme.onSurface
+          : theme.colorScheme.surface;
+    }
+    // 기본값 (컨텍스트가 없는 경우)
     return luminance > 0.5 ? Colors.black87 : Colors.white;
   }
 

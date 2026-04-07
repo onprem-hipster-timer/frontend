@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Tag & Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update CHANGELOG [Unreleased] → version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REPO_URL: https://github.com/${{ github.repository }}
+        run: |
+          TODAY=$(date +'%Y-%m-%d')
+
+          # [Unreleased] 섹션에 실제 내용이 있을 때만 치환
+          if grep -q "^## \[Unreleased\]" CHANGELOG.md && \
+             ! grep -q "_No unreleased changes._" CHANGELOG.md; then
+
+            # [Unreleased] → [version] - date
+            sed -i "s/^## \[Unreleased\]/## [${VERSION}] - ${TODAY}/" CHANGELOG.md
+
+            # 새 [Unreleased] 섹션을 상단에 추가
+            sed -i "/^## \[${VERSION}\]/i ## [Unreleased]\n\n_No unreleased changes._\n\n---\n" CHANGELOG.md
+
+            # 하단 reference link 갱신
+            PREV_TAG=$(sed -n 's/^\[Unreleased\]: .*compare\/\(.*\)\.\.\.HEAD$/\1/p' CHANGELOG.md)
+            sed -i "s|^\[Unreleased\]: .*|[Unreleased]: ${REPO_URL}/compare/${VERSION}...HEAD|" CHANGELOG.md
+            sed -i "/^\[Unreleased\]: /a [${VERSION}]: ${REPO_URL}/compare/${PREV_TAG}...${VERSION}" CHANGELOG.md
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add CHANGELOG.md
+            git commit -m "chore: update CHANGELOG for ${VERSION}"
+            git push
+          fi
+
+      - name: Create git tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "$VERSION" &>/dev/null; then
+            exit 0
+          fi
+
+          gh release create "$VERSION" \
+            --generate-notes \
+            --title "Release $VERSION"

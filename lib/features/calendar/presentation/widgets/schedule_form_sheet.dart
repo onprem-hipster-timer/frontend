@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 
@@ -349,12 +350,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                         ),
                       ),
                       child: mutations.isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: theme.colorScheme.onPrimary,
                               ),
                             )
                           : Text(widget.existingSchedule != null ? '수정' : '저장'),
@@ -491,18 +492,23 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     try {
       if (widget.existingSchedule != null) {
         // 수정 모드
+        final description = _descriptionController.text.trim();
         final scheduleUpdate = ScheduleUpdate(
           title: _titleController.text.trim(),
           startTime: _startTime.toUtc(),
           endTime: _endTime.toUtc(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
         );
 
         await ref
             .read(scheduleMutationsProvider.notifier)
-            .updateSchedule(widget.existingSchedule!.id, scheduleUpdate);
+            .updateSchedule(
+              widget.existingSchedule!.id,
+              scheduleUpdate,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();

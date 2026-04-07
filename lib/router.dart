@@ -9,12 +9,16 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
-import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
+import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart'
+    deferred as calendar;
 import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page.dart';
-import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
-import 'package:momeet/features/todo/todo.dart';
-import 'package:momeet/features/tag/tag.dart';
-import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
+import 'package:momeet/features/timer/presentation/pages/timer_page.dart'
+    deferred as timer;
+import 'package:momeet/features/todo/todo.dart' deferred as todo;
+import 'package:momeet/features/tag/tag.dart' deferred as tag;
+import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
+    deferred as mypage;
+import 'package:momeet/shared/widgets/deferred_widget.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
@@ -36,6 +40,7 @@ enum AppRoute {
   login(path: '/login', requiresAuth: false),
   signup(path: '/signup', requiresAuth: false),
   forgotPassword(path: '/forgot-password', requiresAuth: false),
+  landing(path: '/landing', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
   securityWarning(path: '/security-warning', requiresAuth: false),
 
@@ -134,12 +139,17 @@ String? authRedirect({
 
   // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
   if (matchedLocation == AppRoute.loading.path) {
-    return isAuthenticated ? AppRoute.calendar.path : AppRoute.login.path;
+    return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
   }
 
-  // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 로그인 페이지로
+  // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
   if (!isAuthenticated && !isPublicRoute) {
-    return '${AppRoute.login.path}?redirect=$matchedLocation';
+    // 2-1. 루트 경로는 랜딩 페이지로 (서비스 소개)
+    if (matchedLocation == AppRoute.calendar.path) {
+      return AppRoute.landing.path;
+    }
+    // 2-2. 그 외 보호 경로는 로그인 후 원래 경로로 돌아가도록
+    return '${AppRoute.login.path}?redirect=${Uri.encodeComponent(matchedLocation)}';
   }
 
   // 3. 인증된 사용자가 공개 페이지에 있으면 원래 목적지 또는 메인 앱으로
@@ -202,6 +212,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ============================================================
+      // 랜딩 페이지 (정적 HTML이 표시되므로 Flutter는 빈 화면)
+      // ============================================================
+      GoRoute(
+        path: AppRoute.landing.path,
+        name: AppRoute.landing.name,
+        builder: (context, state) => const SizedBox.shrink(),
+      ),
+
+      // ============================================================
       // 로딩 페이지
       // ============================================================
       GoRoute(
@@ -236,7 +255,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.calendar.path,
                 name: AppRoute.calendar.name,
-                builder: (context, state) => const CalendarPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: calendar.loadLibrary,
+                  builder: (_) => calendar.CalendarPage(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'schedule/detail',
@@ -257,14 +279,21 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.todo.path,
                 name: AppRoute.todo.name,
-                builder: (context, state) => const TodoDashboardPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: todo.loadLibrary,
+                  builder: (_) => todo.TodoDashboardPage(),
+                ),
                 routes: [
                   GoRoute(
-                    path: '/:groupId',
+                    path: ':groupId',
                     name: AppRoute.todoGroupDetail.name,
                     builder: (context, state) {
                       final groupId = state.pathParameters['groupId']!;
-                      return TodoGroupDetailPage(groupId: groupId);
+                      return DeferredWidget(
+                        loader: todo.loadLibrary,
+                        builder: (_) =>
+                            todo.TodoGroupDetailPage(groupId: groupId),
+                      );
                     },
                   ),
                 ],
@@ -278,7 +307,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.timer.path,
                 name: AppRoute.timer.name,
-                builder: (context, state) => const TimerPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: timer.loadLibrary,
+                  builder: (_) => timer.TimerPage(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'detail',
@@ -302,7 +334,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.tags.path,
                 name: AppRoute.tags.name,
-                builder: (context, state) => const TagManagementPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: tag.loadLibrary,
+                  builder: (_) => tag.TagManagementPage(),
+                ),
               ),
             ],
           ),
@@ -313,7 +348,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoute.mypage.path,
                 name: AppRoute.mypage.name,
-                builder: (context, state) => const MyPage(),
+                builder: (context, state) => DeferredWidget(
+                  loader: mypage.loadLibrary,
+                  builder: (_) => mypage.MyPage(),
+                ),
               ),
             ],
           ),

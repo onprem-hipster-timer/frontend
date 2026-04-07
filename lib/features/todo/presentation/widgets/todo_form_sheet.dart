@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart'
@@ -353,7 +354,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(context, tagGroups),
+                  onPressed: () => _showCreateTagDialog(context),
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('새 태그'),
                   style: TextButton.styleFrom(
@@ -422,7 +423,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => _showCreateTagDialog(context, []),
+                onPressed: () => _showCreateTagDialog(context),
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('새 태그'),
                 style: TextButton.styleFrom(
@@ -481,13 +482,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            selectedGroup.group.isTodoGroup
-                ? Icons.task_alt_rounded
-                : Icons.label_outline_rounded,
-            size: 16,
-            color: groupColor,
-          ),
+          Icon(Icons.folder_rounded, size: 16, color: groupColor),
           const SizedBox(width: 6),
           Text(
             '${selectedGroup.group.name} 그룹',
@@ -594,7 +589,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: () => _showCreateTagDialog(context, []),
+            onPressed: () => _showCreateTagDialog(context),
             icon: const Icon(Icons.add, size: 16),
             label: const Text('첫 태그 만들기'),
             style: FilledButton.styleFrom(
@@ -639,9 +634,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 ),
                 // 이 그룹에 새 태그 추가 버튼
                 TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(context, [
-                    tagGroup,
-                  ], defaultGroupId: tagGroup.group.id),
+                  onPressed: () => _showCreateTagDialog(
+                    context,
+                    defaultGroupId: tagGroup.group.id,
+                  ),
                   icon: const Icon(Icons.add, size: 14),
                   label: const Text('추가'),
                   style: TextButton.styleFrom(
@@ -724,9 +720,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                         fontSize: 12,
                       ),
                     ),
-                    onPressed: () => _showCreateTagDialog(context, [
-                      tagGroup,
-                    ], defaultGroupId: tagGroup.group.id),
+                    onPressed: () => _showCreateTagDialog(
+                      context,
+                      defaultGroupId: tagGroup.group.id,
+                    ),
                     backgroundColor: theme.colorScheme.primaryContainer
                         .withValues(alpha: 0.3),
                     side: BorderSide(
@@ -750,6 +747,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   /// 버튼 영역 (취소/저장)
   Widget _buildButtonBar(bool isLoading) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         // 취소 버튼
@@ -780,12 +779,12 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
               ),
             ),
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                     ),
                   )
                 : Text(_isEditMode ? '수정' : '생성'),
@@ -817,10 +816,17 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   /// 새 태그 생성 다이얼로그 표시
   Future<void> _showCreateTagDialog(
-    BuildContext context,
-    List<TagGroupWithTags> availableGroups, {
+    BuildContext context, {
     String? defaultGroupId,
   }) async {
+    // Provider에서 태그 그룹 데이터 가져오기
+    final tagGroupsAsync = ref.read(tag_providers.tagTreeProvider);
+    final availableGroups = tagGroupsAsync.when(
+      data: (groups) => groups,
+      loading: () => <TagGroupWithTags>[],
+      error: (_, _) => <TagGroupWithTags>[],
+    );
+
     if (availableGroups.isEmpty) {
       // 태그 그룹이 없는 경우 안내
       ScaffoldMessenger.of(context).showSnackBar(
@@ -835,7 +841,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     // 태그 생성 폼 시트 표시
     await showTagFormSheet(
       context,
-      availableGroups: availableGroups,
       defaultGroupId:
           defaultGroupId ??
           (availableGroups.isNotEmpty ? availableGroups.first.group.id : null),
@@ -856,6 +861,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
 
     // 생성 모드에서 tagGroupId 검증 및 기본 그룹 생성
     if (!_isEditMode) {
@@ -864,7 +870,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       var tagGroups = tagTreeAsync.when(
         data: (groups) => groups,
         loading: () => <TagGroupWithTags>[],
-        error: (_, __) => <TagGroupWithTags>[],
+        error: (_, _) => <TagGroupWithTags>[],
       );
 
       // 태그 그룹이 없으면 기본 그룹 생성
@@ -873,7 +879,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           final defaultGroup = TagGroupCreate(
             name: '기본 그룹',
             color: '#2196F3', // 파란색
-            isTodoGroup: true,
             description: '할 일을 위한 기본 태그 그룹입니다.',
           );
 
@@ -912,11 +917,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     try {
       if (_isEditMode) {
         // 수정 모드
+        final description = _descriptionController.text.trim();
         final updateData = TodoUpdate(
           title: _titleController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          description: description.isEmpty ? null : description,
           status: _selectedStatus,
           tagIds: _selectedTagIds.toList(),
           deadline: _selectedDeadline,
@@ -924,17 +928,23 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
         await ref
             .read(todoMutationsProvider.notifier)
-            .update(widget.todo!.id, updateData);
+            .update(
+              widget.todo!.id,
+              updateData,
+              options: description.isEmpty
+                  ? explicitNulls(['description'])
+                  : null,
+            );
 
         if (mounted) {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('할 일이 수정되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('할 일이 수정되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -962,11 +972,11 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('할 일이 생성되었습니다'),
+                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
+                  const SizedBox(width: 12),
+                  const Text('할 일이 생성되었습니다'),
                 ],
               ),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -981,7 +991,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(Icons.error, color: theme.colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -1036,17 +1046,18 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   }
 
   Color _getStatusColor(TodoStatus status) {
+    final theme = Theme.of(context);
     switch (status) {
       case TodoStatus.unscheduled:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
       case TodoStatus.scheduled:
-        return Colors.blue;
+        return theme.colorScheme.primary;
       case TodoStatus.done:
-        return Colors.green;
+        return theme.colorScheme.tertiary;
       case TodoStatus.cancelled:
-        return Colors.red;
+        return theme.colorScheme.error;
       case TodoStatus.$unknown:
-        return Colors.grey;
+        return theme.colorScheme.onSurfaceVariant;
     }
   }
 }

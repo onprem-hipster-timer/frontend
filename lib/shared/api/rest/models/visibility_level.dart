@@ -4,7 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// 가시성 레벨
+/// 접근권한 레벨
 @JsonEnum()
 enum VisibilityLevel {
   @JsonValue('private')
@@ -13,6 +13,8 @@ enum VisibilityLevel {
   friends('friends'),
   @JsonValue('selected')
   selected('selected'),
+  @JsonValue('allowed_emails')
+  allowedEmails('allowed_emails'),
   @JsonValue('public')
   public('public'),
 

@@ -136,9 +136,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    tagGroup.isTodoGroup
-                        ? Icons.task_alt_rounded
-                        : Icons.label_outline_rounded,
+                    Icons.folder_rounded,
                     color: groupColor,
                     size: 24,
                   ),
@@ -175,26 +173,6 @@ class TagGroupSelectorPage extends ConsumerWidget {
                 ],
 
                 const Spacer(),
-
-                // Todo 그룹 배지 (있는 경우)
-                if (tagGroup.isTodoGroup)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '할 일 그룹',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),

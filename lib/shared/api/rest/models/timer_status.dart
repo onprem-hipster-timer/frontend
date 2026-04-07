@@ -7,6 +7,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 /// 타이머 상태
 @JsonEnum()
 enum TimerStatus {
+  @JsonValue('NOT_STARTED')
+  notStarted('NOT_STARTED'),
   @JsonValue('RUNNING')
   running('RUNNING'),
   @JsonValue('PAUSED')

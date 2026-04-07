@@ -551,7 +551,7 @@ class TimerHistoryItem extends ConsumerWidget {
     final style = _statusStyle(context);
     final activeTimer = ref
         .watch(activeTimerProvider)
-        .when(data: (t) => t, loading: () => null, error: (_, __) => null);
+        .when(data: (t) => t, loading: () => null, error: (_, _) => null);
     final tickerAsync = ref.watch(timerTickerProvider);
     final controllerLoading = ref.watch(timerControllerProvider).isLoading;
 
@@ -574,7 +574,7 @@ class TimerHistoryItem extends ConsumerWidget {
         ? tickerAsync.when(
             data: (d) => d,
             loading: () => Duration(seconds: timer.elapsedTime),
-            error: (_, __) => Duration(seconds: timer.elapsedTime),
+            error: (_, _) => Duration(seconds: timer.elapsedTime),
           )
         : Duration(seconds: timer.elapsedTime);
 
