@@ -330,25 +330,22 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
             .isNotEmpty ??
         false;
 
-    // 휴일인지 확인
+    // 휴일인지 확인 — loading/error 시에도 일정/생성 폼은 동작해야 함
     final holidayAsync = ref.read(currentHolidaysProvider);
-    holidayAsync.whenData((holidays) {
-      final holiday = holidays.where((h) {
+    final holiday = holidayAsync.whenOrNull(
+      data: (holidays) => holidays.where((h) {
         final holidayDate = parseHolidayDate(h.locdate);
         return holidayDate != null && _isSameDay(holidayDate, date);
-      }).firstOrNull;
+      }).firstOrNull,
+    );
 
-      if (hasAppointments && context.mounted) {
-        // 일정이 있으면 일정 목록 우선 표시 (휴일+일정 겹침 시에도 접근 가능)
-        _showScheduleListSheet(date);
-      } else if (holiday != null && context.mounted) {
-        // 일정 없는 휴일인 경우 휴일 상세 시트 표시
-        showHolidayDetailSheet(context, holiday);
-      } else if (context.mounted) {
-        // 일정이 없는 날짜인 경우 일정 생성 폼 표시
-        showScheduleFormSheet(context, initialDate: date);
-      }
-    });
+    if (hasAppointments && context.mounted) {
+      _showScheduleListSheet(date);
+    } else if (holiday != null && context.mounted) {
+      showHolidayDetailSheet(context, holiday);
+    } else if (context.mounted) {
+      showScheduleFormSheet(context, initialDate: date);
+    }
   }
 
   /// 일정 탭 처리

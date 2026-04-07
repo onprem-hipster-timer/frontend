@@ -12,11 +12,15 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
 import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
-/// 일정 상세 페이지
-///
-/// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지입니다.
+/// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
 class ScheduleDetailPage extends ConsumerWidget {
+  static final _dateFormat = DateFormat('yyyy.MM.dd HH:mm');
+  static final _dateFormatFull = DateFormat('yyyy년 MM월 dd일 (E)', 'ko');
+  static final _dateFormatShort = DateFormat('yyyy년 MM월 dd일', 'ko');
+  static final _timeFormat = DateFormat('HH:mm', 'ko');
+  static final _dateTimeFormat = DateFormat('yyyy년 MM월 dd일 HH:mm', 'ko');
+
   final String scheduleId;
 
   const ScheduleDetailPage({super.key, required this.scheduleId});
@@ -67,31 +71,28 @@ class ScheduleDetailPage extends ConsumerWidget {
     ThemeData theme,
     ScheduleRead schedule,
   ) {
+    final mutations = ref.watch(scheduleMutationsProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildScheduleHeader(context, theme, schedule),
+          _buildScheduleHeader(theme, schedule),
           const SizedBox(height: 24),
           _buildScheduleInfo(context, schedule),
           const SizedBox(height: 16),
           _buildTimerSection(context, ref, schedule.id),
           const SizedBox(height: 16),
-          _buildTodoConversionRow(context, ref, schedule),
+          _buildTodoConversionRow(context, ref, schedule, mutations),
           const SizedBox(height: 16),
-          _buildActionButtons(context, ref, schedule),
+          _buildActionButtons(context, ref, schedule, mutations),
         ],
       ),
     );
   }
 
-  /// 일정 헤더
-  Widget _buildScheduleHeader(
-    BuildContext context,
-    ThemeData theme,
-    ScheduleRead schedule,
-  ) {
+  Widget _buildScheduleHeader(ThemeData theme, ScheduleRead schedule) {
     return Row(
       children: [
         Icon(Icons.event, color: theme.colorScheme.primary, size: 28),
@@ -108,7 +109,6 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// 일정 정보 위젯
   Widget _buildScheduleInfo(BuildContext context, ScheduleRead schedule) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,15 +164,12 @@ class ScheduleDetailPage extends ConsumerWidget {
         _InfoRow(
           icon: Icons.schedule,
           label: '생성',
-          value: DateFormat(
-            'yyyy.MM.dd HH:mm',
-          ).format(schedule.createdAt.toLocal()),
+          value: _dateFormat.format(schedule.createdAt.toLocal()),
         ),
       ],
     );
   }
 
-  /// 타이머 섹션
   Widget _buildTimerSection(
     BuildContext context,
     WidgetRef ref,
@@ -229,7 +226,6 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// 타이머 행
   Widget _buildTimerRow(BuildContext context, TimerRead timer) {
     final theme = Theme.of(context);
     final statusColor = _getTimerStatusColor(timer.status);
@@ -276,13 +272,12 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// TODO 변환 행
   Widget _buildTodoConversionRow(
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
+    AsyncValue<void> mutations,
   ) {
-    final mutations = ref.watch(scheduleMutationsProvider);
     final hasLinkedTodo = schedule.sourceTodoId != null;
 
     if (hasLinkedTodo) {
@@ -332,7 +327,7 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// TODO 변환 핸들러 (스마트 기본값)
+  /// tagGroupId가 없으면 사용자에게 선택하게 한 뒤 TODO로 변환
   Future<void> _handleConvertToTodo(
     BuildContext context,
     WidgetRef ref,
@@ -354,40 +349,15 @@ class ScheduleDetailPage extends ConsumerWidget {
           .convertToTodo(schedule.id, tagGroupId);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('TODO로 변환되었습니다'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showSnackBar(context, message: 'TODO로 변환되었습니다');
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('변환에 실패했습니다: ${error.toString()}')),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showSnackBar(context, message: '변환에 실패했습니다: $error', isError: true);
       }
     }
   }
 
-  /// 연결된 TODO로 이동
   void _navigateToLinkedTodo(BuildContext context, ScheduleRead schedule) {
     final tagGroupId = schedule.tagGroupId;
     if (tagGroupId != null) {
@@ -397,7 +367,6 @@ class ScheduleDetailPage extends ConsumerWidget {
     }
   }
 
-  /// 태그 섹션 위젯
   Widget _buildTagsSection(BuildContext context, List<TagRead> tags) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,7 +394,6 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// 태그 칩 위젯
   Widget _buildTagChip(BuildContext context, TagRead tag) {
     final color = HexColor.fromHex(tag.color);
 
@@ -446,14 +414,12 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// 액션 버튼들 (수정/삭제)
   Widget _buildActionButtons(
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
+    AsyncValue<void> mutations,
   ) {
-    final mutations = ref.watch(scheduleMutationsProvider);
-
     return Row(
       children: [
         Expanded(
@@ -499,12 +465,10 @@ class ScheduleDetailPage extends ConsumerWidget {
     );
   }
 
-  /// 수정 버튼 핸들러
   void _handleEdit(BuildContext context, ScheduleRead schedule) {
     showScheduleEditSheet(context, schedule);
   }
 
-  /// 삭제 버튼 핸들러
   Future<void> _handleDelete(
     BuildContext context,
     WidgetRef ref,
@@ -527,57 +491,31 @@ class ScheduleDetailPage extends ConsumerWidget {
 
       if (context.mounted) {
         context.pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('일정이 삭제되었습니다'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showSnackBar(context, message: '일정이 삭제되었습니다');
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('삭제에 실패했습니다: ${error.toString()}')),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showSnackBar(context, message: '삭제에 실패했습니다: $error', isError: true);
       }
     }
   }
 
-  /// 일정 시간을 포맷팅
   String _formatScheduleTime(ScheduleRead schedule) {
     final start = schedule.startTime.toLocal();
     final end = schedule.endTime.toLocal();
 
     if (_isAllDay(start, end)) {
       if (_isSameDay(start, end.subtract(const Duration(days: 1)))) {
-        return '${DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(start)} 종일';
+        return '${_dateFormatFull.format(start)} 종일';
       } else {
-        return '${DateFormat('yyyy년 MM월 dd일', 'ko').format(start)} ~ ${DateFormat('yyyy년 MM월 dd일', 'ko').format(end.subtract(const Duration(days: 1)))}';
+        return '${_dateFormatShort.format(start)} ~ ${_dateFormatShort.format(end.subtract(const Duration(days: 1)))}';
       }
     }
 
     if (_isSameDay(start, end)) {
-      return '${DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(start)}\n${DateFormat('HH:mm', 'ko').format(start)} ~ ${DateFormat('HH:mm', 'ko').format(end)}';
+      return '${_dateFormatFull.format(start)}\n${_timeFormat.format(start)} ~ ${_timeFormat.format(end)}';
     } else {
-      return '${DateFormat('yyyy년 MM월 dd일 HH:mm', 'ko').format(start)} ~\n${DateFormat('yyyy년 MM월 dd일 HH:mm', 'ko').format(end)}';
+      return '${_dateTimeFormat.format(start)} ~\n${_dateTimeFormat.format(end)}';
     }
   }
 
@@ -595,63 +533,40 @@ class ScheduleDetailPage extends ConsumerWidget {
         date1.day == date2.day;
   }
 
-  String _getStatusText(ScheduleState state) {
-    switch (state) {
-      case ScheduleState.planned:
-        return '계획됨';
-      case ScheduleState.confirmed:
-        return '확정됨';
-      case ScheduleState.cancelled:
-        return '취소됨';
-      default:
-        return state.toString();
-    }
-  }
+  String _getStatusText(ScheduleState state) => switch (state) {
+    ScheduleState.planned => '계획됨',
+    ScheduleState.confirmed => '확정됨',
+    ScheduleState.cancelled => '취소됨',
+    ScheduleState.$unknown => state.toString(),
+  };
 
-  Color _getStatusColor(ScheduleState state) {
-    switch (state) {
-      case ScheduleState.planned:
-        return Colors.orange;
-      case ScheduleState.confirmed:
-        return Colors.green;
-      case ScheduleState.cancelled:
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
+  Color _getStatusColor(ScheduleState state) => switch (state) {
+    ScheduleState.planned => Colors.orange,
+    ScheduleState.confirmed => Colors.green,
+    ScheduleState.cancelled => Colors.red,
+    ScheduleState.$unknown => Colors.grey,
+  };
 
-  IconData _getTimerStatusIcon(TimerStatus status) {
-    switch (status) {
-      case TimerStatus.running:
-        return Icons.play_arrow;
-      case TimerStatus.paused:
-        return Icons.pause;
-      case TimerStatus.completed:
-        return Icons.check_circle;
-      case TimerStatus.cancelled:
-        return Icons.cancel;
-      default:
-        return Icons.timer;
-    }
-  }
+  IconData _getTimerStatusIcon(TimerStatus status) => switch (status) {
+    TimerStatus.notStarted => Icons.hourglass_empty,
+    TimerStatus.running => Icons.play_arrow,
+    TimerStatus.paused => Icons.pause,
+    TimerStatus.completed => Icons.check_circle,
+    TimerStatus.cancelled => Icons.cancel,
+    TimerStatus.$unknown => Icons.timer,
+  };
 
-  Color _getTimerStatusColor(TimerStatus status) {
-    switch (status) {
-      case TimerStatus.running:
-        return Colors.green;
-      case TimerStatus.paused:
-        return Colors.orange;
-      case TimerStatus.completed:
-        return Colors.blue;
-      case TimerStatus.cancelled:
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
+  Color _getTimerStatusColor(TimerStatus status) => switch (status) {
+    TimerStatus.notStarted => Colors.blueGrey,
+    TimerStatus.running => Colors.green,
+    TimerStatus.paused => Colors.orange,
+    TimerStatus.completed => Colors.blue,
+    TimerStatus.cancelled => Colors.grey,
+    TimerStatus.$unknown => Colors.grey,
+  };
 
-  /// RRULE 문자열을 사람이 읽을 수 있는 텍스트로 변환
+  /// RFC 5545 RRULE → 사람이 읽을 수 있는 한국어 텍스트.
+  /// 예: "FREQ=WEEKLY;BYDAY=MO,WE" → "매주 (월, 수)"
   String _parseRecurrenceRule(String rule) {
     final upper = rule.toUpperCase();
 
@@ -689,7 +604,6 @@ class ScheduleDetailPage extends ConsumerWidget {
     return base;
   }
 
-  /// BYDAY 약어를 한국어 요일로 변환
   String _translateDays(String byDay) {
     const dayMap = {
       'MO': '월',
@@ -703,23 +617,38 @@ class ScheduleDetailPage extends ConsumerWidget {
     return byDay.split(',').map((d) => dayMap[d.trim()] ?? d).join(', ');
   }
 
-  String _getTimerStatusText(TimerStatus status) {
-    switch (status) {
-      case TimerStatus.running:
-        return '진행중';
-      case TimerStatus.paused:
-        return '일시정지';
-      case TimerStatus.completed:
-        return '완료';
-      case TimerStatus.cancelled:
-        return '취소';
-      default:
-        return '알 수 없음';
-    }
+  String _getTimerStatusText(TimerStatus status) => switch (status) {
+    TimerStatus.notStarted => '시작 전',
+    TimerStatus.running => '진행중',
+    TimerStatus.paused => '일시정지',
+    TimerStatus.completed => '완료',
+    TimerStatus.cancelled => '취소',
+    TimerStatus.$unknown => '알 수 없음',
+  };
+  void _showSnackBar(
+    BuildContext context, {
+    required String message,
+    bool isError = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error : Icons.check_circle,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
 
-/// 정보 행 위젯
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;

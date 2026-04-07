@@ -11,6 +11,9 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 해당 날짜의 모든 일정을 리스트로 표시합니다.
 /// 일정을 선택하면 상세 페이지로 이동합니다.
 class ScheduleListSheet extends StatelessWidget {
+  static final _headerDateFormat = DateFormat('M월 d일 (E)', 'ko');
+  static final _timeFormat = DateFormat('HH:mm');
+
   final DateTime date;
   final List<ScheduleRead> schedules;
 
@@ -59,7 +62,7 @@ class ScheduleListSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  DateFormat('M월 d일 (E)', 'ko').format(date),
+                  _headerDateFormat.format(date),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -120,7 +123,7 @@ class ScheduleListSheet extends StatelessWidget {
 
     final timeText = isAllDay
         ? '종일'
-        : '${DateFormat('HH:mm').format(start)} - ${DateFormat('HH:mm').format(end)}';
+        : '${_timeFormat.format(start)} - ${_timeFormat.format(end)}';
 
     return ListTile(
       leading: Container(
