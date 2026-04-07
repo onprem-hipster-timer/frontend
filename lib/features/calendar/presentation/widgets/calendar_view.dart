@@ -359,7 +359,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     }
 
     if (context.mounted) {
-      context.push('${AppRoute.calendar.path}/schedule/detail?id=$scheduleId');
+      context.pushNamed(
+        AppRoute.scheduleDetail.name,
+        queryParameters: {'id': scheduleId},
+      );
     }
   }
 

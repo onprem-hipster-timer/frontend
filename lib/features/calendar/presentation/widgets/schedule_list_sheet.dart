@@ -151,8 +151,9 @@ class ScheduleListSheet extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right, size: 20),
       onTap: () {
         Navigator.of(context).pop();
-        context.push(
-          '${AppRoute.calendar.path}/schedule/detail?id=${schedule.id}',
+        context.pushNamed(
+          AppRoute.scheduleDetail.name,
+          queryParameters: {'id': schedule.id},
         );
       },
     );

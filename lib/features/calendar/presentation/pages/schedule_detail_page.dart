@@ -369,7 +369,10 @@ class ScheduleDetailPage extends ConsumerWidget {
   void _navigateToLinkedTodo(BuildContext context, ScheduleRead schedule) {
     final tagGroupId = schedule.tagGroupId;
     if (tagGroupId != null) {
-      context.go('${AppRoute.todo.path}/$tagGroupId');
+      context.goNamed(
+        AppRoute.todoGroupDetail.name,
+        pathParameters: {'groupId': tagGroupId},
+      );
     } else {
       context.go(AppRoute.todo.path);
     }
