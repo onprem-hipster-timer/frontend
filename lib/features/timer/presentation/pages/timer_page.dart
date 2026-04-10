@@ -184,7 +184,18 @@ class TimerDashboard extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('타이머가 정지되었습니다')));
+        ).showSnackBar(
+          SnackBar(
+            content: const Text('타이머가 정지되었습니다'),
+            action: SnackBarAction(
+              label: '새 타이머 시작',
+              onPressed: () {
+                if (!context.mounted) return;
+                _showStartTimerDialog(context, ref);
+              },
+            ),
+          ),
+        );
       }
     } catch (error) {
       if (context.mounted) {
