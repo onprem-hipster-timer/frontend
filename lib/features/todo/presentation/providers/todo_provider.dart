@@ -8,6 +8,36 @@ import 'package:momeet/shared/api/rest/export.dart';
 import '../utils/todo_tree_builder.dart';
 
 // ============================================================
+// Todo 통계 Provider
+// ============================================================
+
+/// Todo 통계 조회 Provider
+///
+/// groupId를 지정하면 해당 그룹의 통계만 조회합니다.
+final todoStatsProvider = FutureProvider.family<TodoStats, String?>((
+  ref,
+  groupId,
+) async {
+  final api = ref.watch(todosApiProvider);
+  return api.getTodoStatsV1TodosStatsGet(groupId: groupId);
+});
+
+// ============================================================
+// Todo 단건 조회 Provider
+// ============================================================
+
+/// 특정 Todo 단건 조회 Provider
+///
+/// ID로 Todo 최신 데이터를 조회합니다.
+final todoByIdProvider = FutureProvider.family<TodoRead, String>((
+  ref,
+  todoId,
+) async {
+  final api = ref.watch(todosApiProvider);
+  return api.readTodoV1TodosTodoIdGet(todoId: todoId);
+});
+
+// ============================================================
 // Todo 목록 조회 Provider
 // ============================================================
 

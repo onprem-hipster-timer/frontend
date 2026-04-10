@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
@@ -58,47 +59,11 @@ class TodoDashboardPage extends ConsumerWidget {
   ) {
     return CustomScrollView(
       slivers: [
-        // 헤더 정보
+        // 전체 통계 헤더
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.dashboard_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '그룹 관리',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '그룹을 선택해서 할 일들을 관리하세요.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.7,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: _TodoStatsHeader(),
           ),
         ),
 
@@ -226,16 +191,17 @@ class TodoDashboardPage extends ConsumerWidget {
 }
 
 /// Todo 그룹 카드 위젯
-class TodoGroupCard extends StatelessWidget {
+class TodoGroupCard extends ConsumerWidget {
   final TagGroupRead group;
   final VoidCallback onTap;
 
   const TodoGroupCard({super.key, required this.group, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final groupColor = HexColor.fromHex(group.color);
+    final statsAsync = ref.watch(todoStatsProvider(group.id));
 
     return Card(
       elevation: 2,
@@ -255,7 +221,7 @@ class TodoGroupCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 헤더 (아이콘 + 상태)
+                // 헤더 (아이콘 + 화살표)
                 Row(
                   children: [
                     Container(
@@ -270,6 +236,7 @@ class TodoGroupCard extends StatelessWidget {
                         size: 24,
                       ),
                     ),
+                    const Spacer(),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
@@ -278,7 +245,7 @@ class TodoGroupCard extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // 그룹 이름
                 Text(
@@ -287,7 +254,7 @@ class TodoGroupCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
 
@@ -301,36 +268,198 @@ class TodoGroupCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                 ],
 
-                // 하단 정보 (TODO: 실제 할 일 개수 표시)
-                Row(
-                  children: [
-                    const Spacer(),
-                    // TODO: 실제 할 일 개수 표시
-                    // Text(
-                    //   'N개',
-                    //   style: theme.textTheme.labelSmall?.copyWith(
-                    //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    //   ),
-                    // ),
-                    // Text(
-                    //   'N개',
-                    //   style: theme.textTheme.labelSmall?.copyWith(
-                    //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    //   ),
-                    // ),
-                  ],
+                // 통계 정보
+                statsAsync.when(
+                  loading: () => const SizedBox(
+                    height: 16,
+                    child: LinearProgressIndicator(),
+                  ),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (stats) => _GroupStatsBadge(
+                    stats: stats,
+                    groupColor: groupColor,
+                    theme: theme,
+                  ),
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 그룹 카드 하단 통계 배지
+class _GroupStatsBadge extends StatelessWidget {
+  final TodoStats stats;
+  final Color groupColor;
+  final ThemeData theme;
+
+  const _GroupStatsBadge({
+    required this.stats,
+    required this.groupColor,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.checklist_rounded,
+          size: 13,
+          color: groupColor.withValues(alpha: 0.8),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '${stats.totalCount}개',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: groupColor.withValues(alpha: 0.9),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 전체 통계 헤더 위젯
+class _TodoStatsHeader extends ConsumerWidget {
+  const _TodoStatsHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final statsAsync = ref.watch(todoStatsProvider(null));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: statsAsync.when(
+          loading: () => _buildLoadingState(theme),
+          error: (error, _) => _buildErrorState(theme, ref),
+          data: (stats) => _buildStatsContent(context, theme, stats),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(ThemeData theme) {
+    return Row(
+      children: [
+        Icon(Icons.dashboard_rounded, color: theme.colorScheme.primary, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '통계 로딩 중...',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const LinearProgressIndicator(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme, WidgetRef ref) {
+    return Row(
+      children: [
+        Icon(Icons.dashboard_rounded, color: theme.colorScheme.primary, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            '그룹을 선택해서 할 일들을 관리하세요.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.refresh, size: 18),
+          onPressed: () => ref.invalidate(todoStatsProvider(null)),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsContent(
+    BuildContext context,
+    ThemeData theme,
+    TodoStats stats,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.dashboard_rounded,
+              color: theme.colorScheme.primary,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '전체 현황',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '총 ${stats.totalCount}개',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (stats.byTag.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: stats.byTag.take(5).map((tagStat) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${tagStat.tagName} ${tagStat.count}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_detail_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// Todo 그룹 상세 페이지
@@ -326,12 +327,9 @@ class TodoGroupDetailPage extends ConsumerWidget {
     );
   }
 
-  /// 할 일 상세 보기/수정
+  /// 할 일 상세 보기
   void _showTodoDetail(BuildContext context, TodoRead todo) {
-    showTodoFormSheet(
-      context,
-      todo: todo, // 수정 모드로 전달
-    );
+    showTodoDetailSheet(context, todo.id);
   }
 
   /// 할 일 생성 다이얼로그

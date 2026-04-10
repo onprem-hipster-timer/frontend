@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -124,6 +125,31 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
     }
     return states;
   });
+}
+
+// ============================================================
+// Todo별 타이머 Providers (TodosClient 사용)
+// ============================================================
+
+/// 특정 Todo에 연결된 타이머 목록 조회
+@riverpod
+Future<List<TimerRead>> todoTimers(Ref ref, String todoId) async {
+  final api = ref.watch(todosApiProvider);
+  return api.getTodoTimersV1TodosTodoIdTimersGet(todoId: todoId);
+}
+
+/// 특정 Todo의 현재 활성 타이머 조회 (없으면 null)
+@riverpod
+Future<TimerRead?> todoActiveTimer(Ref ref, String todoId) async {
+  final api = ref.watch(todosApiProvider);
+  try {
+    return await api.getTodoActiveTimerV1TodosTodoIdTimersActiveGet(
+      todoId: todoId,
+    );
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 404) return null;
+    rethrow;
+  }
 }
 
 // ============================================================

@@ -11,6 +11,7 @@ export 'presentation/pages/tag_group_selector_page.dart';
 // Widgets
 export 'presentation/widgets/todo_tree_tile.dart';
 export 'presentation/widgets/todo_form_sheet.dart';
+export 'presentation/widgets/todo_detail_sheet.dart';
 
 // Providers
 export 'presentation/providers/todo_provider.dart';

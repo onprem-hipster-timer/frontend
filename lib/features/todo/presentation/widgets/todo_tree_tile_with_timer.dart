@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart'
+    as timer_feature;
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
@@ -308,10 +310,12 @@ class TimerControlButtons extends ConsumerWidget {
   /// 타이머 시작
   Future<void> _handleTimerStart(BuildContext context, WidgetRef ref) async {
     try {
-      // 현재는 타이머 생성 API가 없으므로 placeholder 구현
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('타이머 기능이 곧 구현됩니다')));
+      await ref
+          .read(timer_feature.timerControllerProvider.notifier)
+          .startTimer(relatedTodoId: todoId);
+
+      // 집계 데이터 갱신
+      ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -330,10 +334,16 @@ class TimerControlButtons extends ConsumerWidget {
     ActiveTimerState timerState,
   ) async {
     try {
-      // 현재는 타이머 제어 API가 없으므로 placeholder 구현
-      debugPrint('타이머 토글: ${timerState.timerId}');
+      final controller = ref.read(
+        timer_feature.timerControllerProvider.notifier,
+      );
+      if (timerState.isRunning) {
+        await controller.pauseTimer(timerId: timerState.timerId);
+      } else {
+        await controller.resumeTimer(timerId: timerState.timerId);
+      }
+      ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
-      // 에러는 mutations provider의 state에서 처리됨
       debugPrint('타이머 토글 실패: $error');
     }
   }
@@ -353,14 +363,11 @@ class TimerControlButtons extends ConsumerWidget {
 
     if (confirmed) {
       try {
-        // 현재는 타이머 정지 API가 없으므로 placeholder 구현
-        debugPrint('타이머 정지: ${timerState.timerId}');
+        await ref
+            .read(timer_feature.timerControllerProvider.notifier)
+            .stopTimer(timerId: timerState.timerId);
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('타이머 정지 기능이 곧 구현됩니다')));
-        }
+        ref.invalidate(todoTimerAggregationsProvider);
       } catch (error) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
