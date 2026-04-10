@@ -162,8 +162,25 @@ class TimerDashboard extends ConsumerWidget {
 
   /// 타이머 정지
   void _stopTimer(BuildContext context, WidgetRef ref) async {
+    final activeTimer = ref.read(activeTimerProvider).when(
+      data: (timer) => timer,
+      loading: () => null,
+      error: (_, _) => null,
+    );
+
+    if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
+      ref.invalidate(activeTimerProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('진행 중인 작업이 없습니다.')));
+      }
+      return;
+    }
+
     try {
       await ref.read(timerControllerProvider.notifier).stopTimer();
+      ref.invalidate(activeTimerProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
@@ -326,6 +343,9 @@ class TimerControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRunning = activeTimer?.status == TimerStatus.running;
+    final isPaused = activeTimer?.status == TimerStatus.paused;
+    final hasControllableTimer = isRunning || isPaused;
 
     if (isLoading) {
       return SizedBox(
@@ -338,7 +358,7 @@ class TimerControlButton extends StatelessWidget {
       );
     }
 
-    if (activeTimer == null) {
+    if (!hasControllableTimer) {
       return FloatingActionButton(
         onPressed: onStart,
         backgroundColor: theme.colorScheme.primary,
@@ -348,7 +368,7 @@ class TimerControlButton extends StatelessWidget {
           color: theme.colorScheme.onPrimary,
         ),
       );
-    } else if (activeTimer!.status == TimerStatus.running) {
+    } else if (isRunning) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
