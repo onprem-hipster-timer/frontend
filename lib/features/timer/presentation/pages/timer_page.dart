@@ -162,11 +162,13 @@ class TimerDashboard extends ConsumerWidget {
 
   /// 타이머 정지
   void _stopTimer(BuildContext context, WidgetRef ref) async {
-    final activeTimer = ref.read(activeTimerProvider).when(
-      data: (timer) => timer,
-      loading: () => null,
-      error: (_, _) => null,
-    );
+    final activeTimer = ref
+        .read(activeTimerProvider)
+        .when(
+          data: (timer) => timer,
+          loading: () => null,
+          error: (_, _) => null,
+        );
 
     if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
       ref.invalidate(activeTimerProvider);
@@ -182,9 +184,7 @@ class TimerDashboard extends ConsumerWidget {
       await ref.read(timerControllerProvider.notifier).stopTimer();
       ref.invalidate(activeTimerProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('타이머가 정지되었습니다'),
             action: SnackBarAction(
