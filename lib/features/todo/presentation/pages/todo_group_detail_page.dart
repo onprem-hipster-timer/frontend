@@ -5,8 +5,10 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// Todo 그룹 상세 페이지
@@ -35,7 +37,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
           CustomScrollView(
             slivers: [
               // AppBar with group info
-              _buildAppBar(context, theme, groupAsync),
+              _buildAppBar(context, ref, theme, groupAsync),
 
               // Todo list content
               todoTreeAsync.when(
@@ -71,6 +73,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
   /// 그룹 정보가 포함된 AppBar
   Widget _buildAppBar(
     BuildContext context,
+    WidgetRef ref,
     ThemeData theme,
     AsyncValue<List<TagGroupRead>> groupAsync,
   ) {
@@ -92,11 +95,12 @@ class TodoGroupDetailPage extends ConsumerWidget {
             onPressed: () => context.go(AppRoute.todo.path),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              tooltip: '그룹 설정',
-              onPressed: () => _showGroupSettings(context),
-            ),
+            if (group != null)
+              IconButton(
+                icon: const Icon(Icons.settings),
+                tooltip: '그룹 설정',
+                onPressed: () => _showGroupSettings(context, ref, group),
+              ),
           ],
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
@@ -343,12 +347,15 @@ class TodoGroupDetailPage extends ConsumerWidget {
   }
 
   /// 그룹 설정 다이얼로그
-  void _showGroupSettings(BuildContext context) {
-    // TODO: 그룹 설정 (수정/삭제) 구현
+  void _showGroupSettings(
+    BuildContext context,
+    WidgetRef ref,
+    TagGroupRead group,
+  ) {
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -357,9 +364,18 @@ class TodoGroupDetailPage extends ConsumerWidget {
               leading: const Icon(Icons.edit),
               title: const Text('그룹 수정'),
               onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('그룹 수정 기능이 곧 구현됩니다!')),
+                Navigator.pop(sheetContext);
+                showTagGroupFormSheet(
+                  context,
+                  tagGroup: TagGroupReadWithTags(
+                    id: group.id,
+                    name: group.name,
+                    color: group.color,
+                    createdAt: group.createdAt,
+                    updatedAt: group.updatedAt,
+                    description: group.description,
+                    goalRatios: group.goalRatios,
+                  ),
                 );
               },
             ),
@@ -367,16 +383,57 @@ class TodoGroupDetailPage extends ConsumerWidget {
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('그룹 삭제', style: TextStyle(color: Colors.red)),
               onTap: () {
-                Navigator.pop(context);
-                // TODO: 삭제 확인 다이얼로그
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('그룹 삭제 기능이 곧 구현됩니다!')),
-                );
+                Navigator.pop(sheetContext);
+                _showDeleteGroupDialog(context, ref, group);
               },
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// 그룹 삭제 확인 다이얼로그
+  Future<void> _showDeleteGroupDialog(
+    BuildContext context,
+    WidgetRef ref,
+    TagGroupRead group,
+  ) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '그룹 삭제',
+      content:
+          '${group.name} 그룹을 삭제하시겠습니까?\n'
+          '이 작업은 되돌릴 수 없습니다.\n'
+          '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
+      confirmText: '삭제',
+      destructive: true,
+    );
+
+    if (confirmed && context.mounted) {
+      try {
+        await ref.read(tagMutationsProvider.notifier).deleteGroup(group.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${group.name} 그룹이 삭제되었습니다'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go(AppRoute.todo.path);
+        }
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('그룹 삭제에 실패했습니다: $error'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 }
