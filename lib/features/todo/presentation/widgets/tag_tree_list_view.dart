@@ -8,7 +8,7 @@ import 'package:momeet/core/utils/color_utils.dart';
 
 /// 태그 트리 리스트 뷰
 ///
-/// ��그 그룹을 ExpansionTile로 표시합니다.
+/// 태그 그룹을 ExpansionTile로 표시합니다.
 class TagTreeListView extends ConsumerWidget {
   const TagTreeListView({super.key});
 
