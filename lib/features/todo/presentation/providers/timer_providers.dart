@@ -127,62 +127,6 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
 }
 
 // ============================================================
-// Timer Mutation Provider
-// ============================================================
-
-/// 타이머 관련 CUD 작업
-@riverpod
-class TimerMutations extends _$TimerMutations {
-  @override
-  FutureOr<void> build() {}
-
-  /// 타이머 업데이트 (현재 사용 가능한 유일한 메서드)
-  Future<TimerRead> updateTimer(String timerId, TimerUpdate data) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final api = ref.read(timersApiProvider);
-      final result = await api.updateTimerV1TimersTimerIdPatch(
-        timerId: timerId,
-        body: data,
-      );
-
-      state = const AsyncValue.data(null);
-
-      // 관련 데이터 새로고침
-      ref.invalidate(timersProvider());
-      ref.invalidate(activeTimersProvider);
-      ref.invalidate(todoTimerAggregationsProvider);
-
-      return result;
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
-  }
-
-  /// 타이머 삭제
-  Future<void> deleteTimer(String timerId) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final api = ref.read(timersApiProvider);
-      await api.deleteTimerV1TimersTimerIdDelete(timerId: timerId);
-
-      state = const AsyncValue.data(null);
-
-      // 관련 데이터 새로고침
-      ref.invalidate(timersProvider());
-      ref.invalidate(activeTimersProvider);
-      ref.invalidate(todoTimerAggregationsProvider);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
-  }
-}
-
-// ============================================================
 // Helper Classes & Functions
 // ============================================================
 

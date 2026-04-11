@@ -309,10 +309,13 @@ class TimerControlButtons extends ConsumerWidget {
 
   /// 타이머 시작
   Future<void> _handleTimerStart(BuildContext context, WidgetRef ref) async {
+    if (ref.read(timerControllerProvider).isLoading) return;
     try {
       await ref
           .read(timerControllerProvider.notifier)
           .startTimer(relatedTodoId: todoId);
+      ref.invalidate(activeTimersProvider);
+      ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -331,6 +334,7 @@ class TimerControlButtons extends ConsumerWidget {
     WidgetRef ref,
     ActiveTimerState timerState,
   ) async {
+    if (ref.read(timerControllerProvider).isLoading) return;
     try {
       final notifier = ref.read(timerControllerProvider.notifier);
       if (timerState.isRunning) {
@@ -338,6 +342,8 @@ class TimerControlButtons extends ConsumerWidget {
       } else {
         await notifier.resumeTimer(timerId: timerState.timerId);
       }
+      ref.invalidate(activeTimersProvider);
+      ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -356,6 +362,7 @@ class TimerControlButtons extends ConsumerWidget {
     WidgetRef ref,
     ActiveTimerState timerState,
   ) async {
+    if (ref.read(timerControllerProvider).isLoading) return;
     final confirmed = await showConfirmDialog(
       context,
       title: '타이머 정지',
@@ -368,6 +375,8 @@ class TimerControlButtons extends ConsumerWidget {
         await ref
             .read(timerControllerProvider.notifier)
             .stopTimer(timerId: timerState.timerId);
+        ref.invalidate(activeTimersProvider);
+        ref.invalidate(todoTimerAggregationsProvider);
       } catch (error) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

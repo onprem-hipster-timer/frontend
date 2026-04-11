@@ -229,10 +229,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
-      ref.invalidate(timerHistoryProvider);
+      throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -269,9 +266,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
+      throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -308,9 +303,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
+      throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
