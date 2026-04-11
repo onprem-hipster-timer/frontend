@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart'
+    as timer_feature;
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 
@@ -73,12 +74,17 @@ Future<TodoTimerAggregation?> todoTimerAggregation(
 // ============================================================
 
 /// 활성 타이머 실시간 스트림
+///
+/// Timer feature의 [timer_feature.activeTimerProvider](WS 기반)를 watch하여
+/// WS 이벤트 수신 시 스트림이 재시작됩니다.
 @riverpod
 Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
-  // 처음에는 현재 활성 타이머 조회
+  // WS 이벤트를 변경 신호로 watch — 이벤트마다 스트림 재시작
+  ref.watch(timer_feature.activeTimerProvider);
+
   final activeTimers = await ref.watch(activeTimersProvider.future);
 
-  yield* Stream.periodic(const Duration(seconds: 1), (count) {
+  yield* Stream.periodic(const Duration(seconds: 1), (_) {
     final now = DateTime.now();
     final activeStates = <String, ActiveTimerState>{};
 
@@ -109,20 +115,7 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
       }
     }
 
-    return MapEntry(count, activeStates);
-  }).asyncMap((entry) async {
-    final count = entry.key;
-    final states = entry.value;
-
-    // 상태가 변경되면 활성 타이머 다시 조회 (10초마다)
-    if (count % 10 == 0) {
-      try {
-        final _ = await ref.refresh(activeTimersProvider.future);
-      } catch (error) {
-        debugPrint('활성 타이머 재조회 실패: $error');
-      }
-    }
-    return states;
+    return activeStates;
   });
 }
 
