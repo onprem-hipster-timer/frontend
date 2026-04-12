@@ -11,6 +11,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart'
     deferred as calendar;
+import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart'
     deferred as timer;
 import 'package:momeet/features/todo/todo.dart' deferred as todo;
@@ -263,13 +264,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'schedule/detail',
                     name: AppRoute.scheduleDetail.name,
                     builder: (context, state) {
-                      final scheduleId = state.uri.queryParameters['id'];
-                      return Scaffold(
-                        appBar: AppBar(title: const Text('일정 상세')),
-                        body: Center(
-                          child: Text('일정 상세 페이지 (ID: $scheduleId)'),
-                        ),
-                      );
+                      final scheduleId = state.uri.queryParameters['id']!;
+                      return ScheduleDetailPage(scheduleId: scheduleId);
                     },
                   ),
                 ],

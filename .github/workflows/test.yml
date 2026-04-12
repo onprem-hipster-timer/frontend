@@ -144,3 +144,44 @@ jobs:
               issue_number: context.issue.number,
               labels: ['auth-architecture']
             });
+
+      - name: Check for manual route path concatenation
+        id: check-route
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..HEAD -- '*.dart')
+          if [ -z "$FILES" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          MATCHES=$(echo "$FILES" | grep -v 'router\.dart$' | \
+            grep -v 'no_manual_route_path\.dart$' | \
+            grep -v '_test\.dart$' | \
+            xargs grep -l 'AppRoute\.\w\+\.path' 2>/dev/null || true)
+          if [ -n "$MATCHES" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$MATCHES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Warn on manual route path usage
+        if: steps.check-route.outputs.found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = `${{ steps.check-route.outputs.files }}`.trim().split('\n').map(f => `- \`${f}\``).join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `⚠️ **Route Safety Warning**\n\n` +
+                `다음 파일에서 \`AppRoute.xxx.path\` 직접 결합이 감지되었습니다:\n${files}\n\n` +
+                `\`AppRoute.calendar.path\`가 \`'/'\`이므로 경로를 직접 결합하면 \`//schedule/detail\` 같은 이중 슬래시 버그가 발생합니다.\n\n` +
+                `**대신 \`context.goNamed()\` / \`pushNamed()\`를 사용하세요:**\n` +
+                `\`\`\`dart\n` +
+                `// BAD\ncontext.go('\${AppRoute.todo.path}/\$id');\n\n` +
+                `// GOOD\ncontext.goNamed(AppRoute.todoGroupDetail.name, pathParameters: {'groupId': id});\n` +
+                `\`\`\``
+            });
