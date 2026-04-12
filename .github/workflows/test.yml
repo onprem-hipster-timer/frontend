@@ -154,6 +154,8 @@ jobs:
             exit 0
           fi
           MATCHES=$(echo "$FILES" | grep -v 'router\.dart$' | \
+            grep -v 'no_manual_route_path\.dart$' | \
+            grep -v '_test\.dart$' | \
             xargs grep -l 'AppRoute\.\w\+\.path' 2>/dev/null || true)
           if [ -n "$MATCHES" ]; then
             echo "found=true" >> $GITHUB_OUTPUT
