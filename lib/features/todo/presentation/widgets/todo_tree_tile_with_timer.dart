@@ -314,6 +314,7 @@ class TimerControlButtons extends ConsumerWidget {
       await ref
           .read(timerControllerProvider.notifier)
           .startTimer(relatedTodoId: todoId);
+      ref.invalidate(activeTimersProvider);
       ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
       if (context.mounted) {
@@ -341,6 +342,7 @@ class TimerControlButtons extends ConsumerWidget {
       } else {
         await notifier.resumeTimer(timerId: timerState.timerId);
       }
+      ref.invalidate(activeTimersProvider);
       ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
       if (context.mounted) {
@@ -373,6 +375,7 @@ class TimerControlButtons extends ConsumerWidget {
         await ref
             .read(timerControllerProvider.notifier)
             .stopTimer(timerId: timerState.timerId);
+        ref.invalidate(activeTimersProvider);
         ref.invalidate(todoTimerAggregationsProvider);
       } catch (error) {
         if (context.mounted) {

@@ -269,6 +269,95 @@ void main() {
     });
   });
 
+  group('상태 즉시 동기화 (provider invalidation)', () {
+    late int activeTimersFetchCount;
+    late int aggregationsFetchCount;
+
+    setUp(() {
+      activeTimersFetchCount = 0;
+      aggregationsFetchCount = 0;
+    });
+
+    Widget buildTracked({ActiveTimerState? activeTimerState}) {
+      final container = ProviderContainer(
+        overrides: [
+          timerControllerProvider.overrideWith(() => fakeController),
+          activeTimersProvider.overrideWith((ref) async {
+            activeTimersFetchCount++;
+            return [];
+          }),
+          todoTimerAggregationsProvider.overrideWith((ref) async {
+            aggregationsFetchCount++;
+            return {};
+          }),
+        ],
+      );
+      // invalidate 시 rebuild을 트리거하려면 리스너가 있어야 함
+      container.listen(activeTimersProvider, (_, __) {});
+      container.listen(todoTimerAggregationsProvider, (_, __) {});
+
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            body: TimerControlButtons(
+              todoId: todoId,
+              activeTimerState: activeTimerState,
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('시작 후 activeTimersProvider·todoTimerAggregationsProvider 갱신',
+        (tester) async {
+      await tester.pumpWidget(buildTracked());
+      await tester.pumpAndSettle();
+
+      final initialActive = activeTimersFetchCount;
+      final initialAgg = aggregationsFetchCount;
+
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      expect(activeTimersFetchCount, greaterThan(initialActive));
+      expect(aggregationsFetchCount, greaterThan(initialAgg));
+    });
+
+    testWidgets('토글 후 activeTimersProvider·todoTimerAggregationsProvider 갱신',
+        (tester) async {
+      await tester.pumpWidget(buildTracked(activeTimerState: runningState));
+      await tester.pumpAndSettle();
+
+      final initialActive = activeTimersFetchCount;
+      final initialAgg = aggregationsFetchCount;
+
+      await tester.tap(find.byIcon(Icons.pause));
+      await tester.pumpAndSettle();
+
+      expect(activeTimersFetchCount, greaterThan(initialActive));
+      expect(aggregationsFetchCount, greaterThan(initialAgg));
+    });
+
+    testWidgets('정지 후 activeTimersProvider·todoTimerAggregationsProvider 갱신',
+        (tester) async {
+      await tester.pumpWidget(buildTracked(activeTimerState: runningState));
+      await tester.pumpAndSettle();
+
+      final initialActive = activeTimersFetchCount;
+      final initialAgg = aggregationsFetchCount;
+
+      await tester.tap(find.byIcon(Icons.stop));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, '정지'));
+      await tester.pumpAndSettle();
+
+      expect(activeTimersFetchCount, greaterThan(initialActive));
+      expect(aggregationsFetchCount, greaterThan(initialAgg));
+    });
+  });
+
   group('더블클릭 방지', () {
     testWidgets('로딩 중 시작 버튼 연타 시 중복 호출 방지', (tester) async {
       fakeController.holdNextCall();
