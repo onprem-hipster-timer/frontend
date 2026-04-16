@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
@@ -251,7 +252,7 @@ class TimerControlButtons extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(timerMutationsProvider);
+    final timerController = ref.watch(timerControllerProvider);
 
     final hasActiveTimer = activeTimerState != null;
     final isRunning = activeTimerState?.isRunning ?? false;
@@ -261,7 +262,7 @@ class TimerControlButtons extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (mutations.isLoading)
+          if (timerController.isLoading)
             const SizedBox(
               width: 20,
               height: 20,
@@ -276,7 +277,8 @@ class TimerControlButtons extends ConsumerWidget {
                     ? theme.colorScheme.error
                     : theme.colorScheme.primary,
               ),
-              onPressed: () => _handleTimerToggle(ref, activeTimerState!),
+              onPressed: () =>
+                  _handleTimerToggle(context, ref, activeTimerState!),
               tooltip: isRunning ? '일시정지' : '재개',
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               padding: EdgeInsets.zero,
@@ -307,11 +309,13 @@ class TimerControlButtons extends ConsumerWidget {
 
   /// 타이머 시작
   Future<void> _handleTimerStart(BuildContext context, WidgetRef ref) async {
+    if (ref.read(timerControllerProvider).isLoading) return;
     try {
-      // 현재는 타이머 생성 API가 없으므로 placeholder 구현
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('타이머 기능이 곧 구현됩니다')));
+      await ref
+          .read(timerControllerProvider.notifier)
+          .startTimer(relatedTodoId: todoId);
+      ref.invalidate(activeTimersProvider);
+      ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -326,15 +330,29 @@ class TimerControlButtons extends ConsumerWidget {
 
   /// 타이머 일시정지/재개 토글
   Future<void> _handleTimerToggle(
+    BuildContext context,
     WidgetRef ref,
     ActiveTimerState timerState,
   ) async {
+    if (ref.read(timerControllerProvider).isLoading) return;
     try {
-      // 현재는 타이머 제어 API가 없으므로 placeholder 구현
-      debugPrint('타이머 토글: ${timerState.timerId}');
+      final notifier = ref.read(timerControllerProvider.notifier);
+      if (timerState.isRunning) {
+        await notifier.pauseTimer(timerId: timerState.timerId);
+      } else {
+        await notifier.resumeTimer(timerId: timerState.timerId);
+      }
+      ref.invalidate(activeTimersProvider);
+      ref.invalidate(todoTimerAggregationsProvider);
     } catch (error) {
-      // 에러는 mutations provider의 state에서 처리됨
-      debugPrint('타이머 토글 실패: $error');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('타이머 토글 실패: $error'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
@@ -344,6 +362,7 @@ class TimerControlButtons extends ConsumerWidget {
     WidgetRef ref,
     ActiveTimerState timerState,
   ) async {
+    if (ref.read(timerControllerProvider).isLoading) return;
     final confirmed = await showConfirmDialog(
       context,
       title: '타이머 정지',
@@ -353,14 +372,11 @@ class TimerControlButtons extends ConsumerWidget {
 
     if (confirmed) {
       try {
-        // 현재는 타이머 정지 API가 없으므로 placeholder 구현
-        debugPrint('타이머 정지: ${timerState.timerId}');
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('타이머 정지 기능이 곧 구현됩니다')));
-        }
+        await ref
+            .read(timerControllerProvider.notifier)
+            .stopTimer(timerId: timerState.timerId);
+        ref.invalidate(activeTimersProvider);
+        ref.invalidate(todoTimerAggregationsProvider);
       } catch (error) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
