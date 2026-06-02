@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
     as fmt;
 import 'package:momeet/shared/api/rest/export.dart';
@@ -43,7 +44,7 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   Color _getScheduleColor(ScheduleRead schedule) {
     final tags = schedule.tags.toList();
     if (tags.isNotEmpty) {
-      return _parseColor(tags.first.color);
+      return HexColor.fromHex(tags.first.color);
     }
 
     // 상태에 따른 기본 색상
@@ -52,24 +53,6 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
       ScheduleState.cancelled => Colors.grey,
       ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
     };
-  }
-
-  /// Hex 색상 문자열을 Color로 변환
-  ///
-  /// 지원 형식: '#RRGGBB', '#AARRGGBB', 'RRGGBB'
-  Color _parseColor(String colorString) {
-    try {
-      String hex = colorString.replaceAll('#', '');
-
-      // 6자리면 FF (불투명) 추가
-      if (hex.length == 6) {
-        hex = 'FF$hex';
-      }
-
-      return Color(int.parse(hex, radix: 16));
-    } catch (e) {
-      return Colors.blue; // 파싱 실패시 기본 색상
-    }
   }
 
   // ============================================================

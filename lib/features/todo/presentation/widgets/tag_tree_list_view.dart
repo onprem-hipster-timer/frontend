@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/tag_providers.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
@@ -90,7 +91,7 @@ class TagGroupExpansionTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final groupColor = _parseColor(group.color);
+    final groupColor = HexColor.fromHex(group.color);
 
     return DragTarget<TagDragData>(
       onAcceptWithDetails: (details) async {
@@ -195,19 +196,6 @@ class TagGroupExpansionTile extends ConsumerWidget {
     );
   }
 
-  /// 색상 문자열을 Color로 파싱
-  Color _parseColor(String colorString) {
-    try {
-      String hex = colorString.replaceAll('#', '');
-      if (hex.length == 6) {
-        hex = 'FF$hex';
-      }
-      return Color(int.parse(hex, radix: 16));
-    } catch (e) {
-      return Colors.grey; // 정적 fallback 색상
-    }
-  }
-
   /// 태그 생성 다이얼로그 표시
   void _showCreateTagDialog(
     BuildContext context,
@@ -235,7 +223,7 @@ class DraggableTagTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tagColor = _parseColor(tag.color);
+    final tagColor = HexColor.fromHex(tag.color);
 
     return LongPressDraggable<TagDragData>(
       data: TagDragData(tagId: tag.id, tagName: tag.name, groupId: tag.groupId),
@@ -357,19 +345,6 @@ class DraggableTagTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// 색상 문자열을 Color로 파싱
-  Color _parseColor(String colorString) {
-    try {
-      String hex = colorString.replaceAll('#', '');
-      if (hex.length == 6) {
-        hex = 'FF$hex';
-      }
-      return Color(int.parse(hex, radix: 16));
-    } catch (e) {
-      return Colors.grey; // 여기는 정적 함수이므로 유지
-    }
   }
 
   /// 삭제 확인 다이얼로그
