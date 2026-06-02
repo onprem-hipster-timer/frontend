@@ -27,26 +27,14 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
       notes: schedule.description,
       startTime: schedule.startTime.toLocal(),
       endTime: schedule.endTime.toLocal(),
-      isAllDay: _isAllDayEvent(schedule),
+      isAllDay: fmt.isAllDay(
+        schedule.startTime.toLocal(),
+        schedule.endTime.toLocal(),
+      ),
       color: _getScheduleColor(schedule),
       recurrenceRule: schedule.recurrenceRule,
       recurrenceExceptionDates: null, // TODO: 반복 예외 날짜 처리 (백엔드 지원 필요)
     );
-  }
-
-  /// 종일 이벤트 여부 판단
-  ///
-  /// 시작 시간이 자정이고 끝 시간도 자정이면 종일 이벤트로 간주
-  bool _isAllDayEvent(ScheduleRead schedule) {
-    final start = schedule.startTime.toLocal();
-    final end = schedule.endTime.toLocal();
-
-    // 시작이 자정이고 끝도 자정이며 최소 하루 이상 차이나면 종일 이벤트
-    final isStartMidnight = start.hour == 0 && start.minute == 0;
-    final isEndMidnight = end.hour == 0 && end.minute == 0;
-    final duration = end.difference(start);
-
-    return isStartMidnight && isEndMidnight && duration.inHours >= 24;
   }
 
   /// 일정의 색상 결정
