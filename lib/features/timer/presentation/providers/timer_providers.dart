@@ -162,6 +162,8 @@ Stream<Duration> timerTicker(Ref ref) async* {
 // Timer Controller (Mutation)
 // ============================================================
 
+const _wsNotConnectedError = 'WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.';
+
 /// 타이머 제어 로직
 ///
 /// 타이머 시작/정지 등의 CUD 작업을 담당합니다.
@@ -194,7 +196,7 @@ class TimerController extends _$TimerController {
         state = const AsyncValue.data(null);
         return;
       }
-      throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -229,10 +231,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
-      ref.invalidate(timerHistoryProvider);
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -269,9 +268,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -308,9 +305,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
