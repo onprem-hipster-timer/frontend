@@ -309,8 +309,9 @@ void main() {
       );
     }
 
-    testWidgets('시작 후 activeTimersProvider·todoTimerAggregationsProvider 갱신',
-        (tester) async {
+    testWidgets('시작 후 activeTimersProvider·todoTimerAggregationsProvider 갱신', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTracked());
       await tester.pumpAndSettle();
 
@@ -324,8 +325,9 @@ void main() {
       expect(aggregationsFetchCount, greaterThan(initialAgg));
     });
 
-    testWidgets('토글 후 activeTimersProvider·todoTimerAggregationsProvider 갱신',
-        (tester) async {
+    testWidgets('토글 후 activeTimersProvider·todoTimerAggregationsProvider 갱신', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTracked(activeTimerState: runningState));
       await tester.pumpAndSettle();
 
@@ -339,8 +341,9 @@ void main() {
       expect(aggregationsFetchCount, greaterThan(initialAgg));
     });
 
-    testWidgets('정지 후 activeTimersProvider·todoTimerAggregationsProvider 갱신',
-        (tester) async {
+    testWidgets('정지 후 activeTimersProvider·todoTimerAggregationsProvider 갱신', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTracked(activeTimerState: runningState));
       await tester.pumpAndSettle();
 

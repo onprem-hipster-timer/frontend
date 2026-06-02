@@ -303,11 +303,3 @@ bool isAuthLoading(Ref ref) {
       .watch(authProvider)
       .maybeWhen(loading: () => true, orElse: () => false);
 }
-
-/// 인증 에러 메시지 제공자
-@riverpod
-String? authError(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .maybeWhen(error: (message, _) => message, orElse: () => null);
-}

@@ -5,6 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 
 part 'schedule_mutations.g.dart';
 
@@ -131,6 +133,40 @@ class ScheduleMutations extends _$ScheduleMutations {
 
       state = AsyncValue.error(error, stackTrace);
       debugPrint('일정 삭제 실패: $error');
+      rethrow;
+    }
+  }
+
+  /// 일정 → TODO 변환
+  ///
+  /// [scheduleId] 변환할 일정 ID
+  /// [tagGroupId] TODO가 속할 TagGroup ID
+  Future<void> convertToTodo(String scheduleId, String tagGroupId) async {
+    if (!ref.mounted) return;
+
+    state = const AsyncValue.loading();
+
+    try {
+      final api = ref.read(schedulesApiProvider);
+
+      await api.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
+        scheduleId: scheduleId,
+        tagGroupId: tagGroupId,
+      );
+
+      if (!ref.mounted) return;
+
+      state = const AsyncValue.data(null);
+      ref.invalidate(scheduleDetailProvider(scheduleId));
+      ref.invalidate(currentSchedulesProvider);
+      ref.invalidate(todosProvider(null));
+
+      debugPrint('일정이 TODO로 변환되었습니다: $scheduleId');
+    } catch (error, stackTrace) {
+      if (!ref.mounted) return;
+
+      state = AsyncValue.error(error, stackTrace);
+      debugPrint('TODO 변환 실패: $error');
       rethrow;
     }
   }
