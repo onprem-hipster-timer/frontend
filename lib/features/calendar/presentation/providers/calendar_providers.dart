@@ -290,15 +290,6 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   }).toList();
 }
 
-/// 캘린더 데이터 소스 Provider
-///
-/// 필터링된 일정을 Syncfusion CalendarDataSource로 변환합니다.
-@riverpod
-Future<ScheduleCalendarDataSource> calendarDataSource(Ref ref) async {
-  final schedules = await ref.watch(filteredSchedulesProvider.future);
-  return ScheduleCalendarDataSource(schedules);
-}
-
 /// 일정 전용 캘린더 데이터 소스 Provider
 ///
 /// 휴일을 제외한 사용자 일정만으로 DataSource를 생성합니다.
