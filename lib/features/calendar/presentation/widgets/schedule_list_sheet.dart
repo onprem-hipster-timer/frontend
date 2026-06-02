@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
+    as fmt;
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -114,14 +116,9 @@ class ScheduleListSheet extends StatelessWidget {
 
     final start = schedule.startTime.toLocal();
     final end = schedule.endTime.toLocal();
-    final isAllDay =
-        start.hour == 0 &&
-        start.minute == 0 &&
-        end.hour == 0 &&
-        end.minute == 0 &&
-        end.difference(start).inHours >= 24;
+    final allDay = fmt.isAllDay(start, end);
 
-    final timeText = isAllDay
+    final timeText = allDay
         ? '종일'
         : '${_timeFormat.format(start)} - ${_timeFormat.format(end)}';
 

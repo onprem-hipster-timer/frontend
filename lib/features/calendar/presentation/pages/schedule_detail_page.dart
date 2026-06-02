@@ -374,7 +374,7 @@ class ScheduleDetailPage extends ConsumerWidget {
         pathParameters: {'groupId': tagGroupId},
       );
     } else {
-      context.go(AppRoute.todo.path);
+      context.goNamed(AppRoute.todo.name);
     }
   }
 

@@ -25,6 +25,16 @@ bool isAllDay(DateTime start, DateTime end) {
       end.difference(start).inHours >= 24;
 }
 
+/// [compareDate]가 일정 기간 [startDate, endDate]에 포함되는지 검사합니다.
+///
+/// 시작일·종료일과 같은 날이거나, 두 날짜 사이에 걸친 멀티-데이 일정을
+/// 캘린더 셀에서 올바르게 판별하기 위해 사용합니다.
+bool isIncludeDay(DateTime startDate, DateTime endDate, DateTime compareDate) {
+  return isSameDay(startDate, compareDate) ||
+      isSameDay(endDate, compareDate) ||
+      (startDate.isBefore(compareDate) && endDate.isAfter(compareDate));
+}
+
 String formatScheduleTime(ScheduleRead schedule) {
   final start = schedule.startTime.toLocal();
   final end = schedule.endTime.toLocal();

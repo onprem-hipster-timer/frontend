@@ -328,7 +328,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
     final hasAppointments =
         scheduleDataSource?.appointments
-            ?.where((app) => fmt.isSameDay(app.startTime, date))
+            ?.where((app) => fmt.isIncludeDay(app.startTime, app.endTime, date))
             .isNotEmpty ??
         false;
 
@@ -371,7 +371,13 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final schedules = ref.read(filteredSchedulesProvider).value;
     final daySchedules =
         schedules
-            ?.where((s) => fmt.isSameDay(s.startTime.toLocal(), date))
+            ?.where(
+              (s) => fmt.isIncludeDay(
+                s.startTime.toLocal(),
+                s.endTime.toLocal(),
+                date,
+              ),
+            )
             .toList() ??
         [];
     if (daySchedules.isEmpty || !context.mounted) return;
@@ -637,8 +643,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   }
 
   /// Special Regions 빌더 - 일간/주간 뷰 휴일 표시
+  ///
+  /// build 경로(_buildCalendar)에서 호출되므로 watch로 구독해야
+  /// 휴일 데이터가 나중에 로드돼도 캘린더에 반영됩니다.
   List<TimeRegion> _buildSpecialRegions(CalendarSettingsState settings) {
-    final holidayAsync = ref.read(currentHolidaysProvider);
+    final holidayAsync = ref.watch(currentHolidaysProvider);
 
     return holidayAsync.when(
       data: (holidays) {
