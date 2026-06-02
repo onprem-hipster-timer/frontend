@@ -324,13 +324,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     // 선택 날짜 변경
     ref.read(calendarSettingsProvider.notifier).setSelectedDate(date);
 
-    // 해당 날짜에 일정이 있는지 확인
+    // 해당 날짜에 일정이 있는지 확인 (멀티-데이 포함)
     final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
     final hasAppointments =
-        scheduleDataSource?.appointments
-            ?.where((app) => fmt.isIncludeDay(app.startTime, app.endTime, date))
-            .isNotEmpty ??
-        false;
+        scheduleDataSource?.getAppointmentsForDate(date).isNotEmpty ?? false;
 
     // 휴일인지 확인 — loading/error 시에도 일정/생성 폼은 동작해야 함
     final holidayAsync = ref.read(currentHolidaysProvider);

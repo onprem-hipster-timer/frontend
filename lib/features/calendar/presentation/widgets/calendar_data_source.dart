@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
+    as fmt;
 import 'package:momeet/shared/api/rest/export.dart';
 
 /// ScheduleRead를 Syncfusion Calendar의 Appointment로 매핑하는 DataSource
@@ -141,23 +143,17 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   }
 
   /// 특정 날짜의 모든 Appointment 가져오기
+  ///
+  /// 멀티-데이 일정도 포함되도록 [fmt.isIncludeDay]로 날짜 걸침을 판별합니다.
   List<Appointment> getAppointmentsForDate(DateTime date) {
-    final targetDate = DateTime(date.year, date.month, date.day);
     return appointments
             ?.where((apt) {
               final appointment = apt as Appointment;
-              final startDate = DateTime(
-                appointment.startTime.year,
-                appointment.startTime.month,
-                appointment.startTime.day,
+              return fmt.isIncludeDay(
+                appointment.startTime,
+                appointment.endTime,
+                date,
               );
-              final endDate = DateTime(
-                appointment.endTime.year,
-                appointment.endTime.month,
-                appointment.endTime.day,
-              );
-              return !targetDate.isBefore(startDate) &&
-                  !targetDate.isAfter(endDate);
             })
             .cast<Appointment>()
             .toList() ??
