@@ -16,17 +16,27 @@ import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
-class ScheduleDetailPage extends ConsumerWidget {
-  static final _createdAtFormat = DateFormat('yyyy.MM.dd HH:mm');
-
+class ScheduleDetailPage extends ConsumerStatefulWidget {
   final String scheduleId;
 
   const ScheduleDetailPage({super.key, required this.scheduleId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScheduleDetailPage> createState() => _ScheduleDetailPageState();
+}
+
+/// 상세 페이지에서 진행 중인 mutation 종류 — 버튼별 로딩 표시를 구분하기 위함.
+enum _PendingAction { convert, delete }
+
+class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
+  static final _createdAtFormat = DateFormat('yyyy.MM.dd HH:mm');
+
+  _PendingAction? _pendingAction;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheduleAsync = ref.watch(scheduleDetailProvider(scheduleId));
+    final scheduleAsync = ref.watch(scheduleDetailProvider(widget.scheduleId));
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +63,7 @@ class ScheduleDetailPage extends ConsumerWidget {
               const SizedBox(height: 8),
               FilledButton.tonal(
                 onPressed: () =>
-                    ref.invalidate(scheduleDetailProvider(scheduleId)),
+                    ref.invalidate(scheduleDetailProvider(widget.scheduleId)),
                 child: const Text('다시 시도'),
               ),
             ],
@@ -113,6 +123,7 @@ class ScheduleDetailPage extends ConsumerWidget {
 
   Widget _buildScheduleInfo(BuildContext context, ScheduleRead schedule) {
     final statusColor = getScheduleStatusColor(schedule.state);
+    final statusText = getScheduleStatusText(schedule.state);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +151,7 @@ class ScheduleDetailPage extends ConsumerWidget {
         InfoRow(
           icon: Icons.flag,
           label: '상태',
-          value: getScheduleStatusText(schedule.state),
+          value: statusText,
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -148,7 +159,7 @@ class ScheduleDetailPage extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              getScheduleStatusText(schedule.state),
+              statusText,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: statusColor,
                 fontWeight: FontWeight.w500,
@@ -262,7 +273,7 @@ class ScheduleDetailPage extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: mutations.isLoading
+        child: _pendingAction == _PendingAction.convert
             ? const SizedBox(
                 width: 16,
                 height: 16,
@@ -309,14 +320,16 @@ class ScheduleDetailPage extends ConsumerWidget {
             onPressed: mutations.isLoading
                 ? null
                 : () => _handleDelete(context, ref, schedule),
-            icon: mutations.isLoading
+            icon: _pendingAction == _PendingAction.delete
                 ? const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.delete),
-            label: Text(mutations.isLoading ? '삭제 중...' : '삭제'),
+            label: Text(
+              _pendingAction == _PendingAction.delete ? '삭제 중...' : '삭제',
+            ),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
@@ -351,6 +364,7 @@ class ScheduleDetailPage extends ConsumerWidget {
       tagGroupId = selected.id;
     }
 
+    setState(() => _pendingAction = _PendingAction.convert);
     try {
       await ref
           .read(scheduleMutationsProvider.notifier)
@@ -363,6 +377,8 @@ class ScheduleDetailPage extends ConsumerWidget {
       if (context.mounted) {
         _showSnackBar(context, message: '변환에 실패했습니다: $error', isError: true);
       }
+    } finally {
+      if (mounted) setState(() => _pendingAction = null);
     }
   }
 
@@ -397,6 +413,7 @@ class ScheduleDetailPage extends ConsumerWidget {
 
     if (!confirmed) return;
 
+    setState(() => _pendingAction = _PendingAction.delete);
     try {
       await ref
           .read(scheduleMutationsProvider.notifier)
@@ -410,6 +427,8 @@ class ScheduleDetailPage extends ConsumerWidget {
       if (context.mounted) {
         _showSnackBar(context, message: '삭제에 실패했습니다: $error', isError: true);
       }
+    } finally {
+      if (mounted) setState(() => _pendingAction = null);
     }
   }
 

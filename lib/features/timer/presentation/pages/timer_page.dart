@@ -516,6 +516,30 @@ class TimerHistoryItem extends ConsumerWidget {
 
   const TimerHistoryItem({super.key, required this.timer});
 
+  /// 타이머 액션을 실행하고, 실패 시(예: WS 미연결) SnackBar로 피드백한다.
+  ///
+  /// 대시보드(`_pauseTimer` 등)·`TimerControlButtons`와 동일하게
+  /// 히스토리 리스트의 액션에서도 예외가 사용자에게 전달되도록 한다.
+  Future<void> _runTimerAction(
+    BuildContext context,
+    WidgetRef ref, {
+    required Future<void> Function() action,
+    required String errorLabel,
+  }) async {
+    try {
+      await action();
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$errorLabel 실패: $error'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   ({IconData icon, Color bg, Color fg, String label}) _statusStyle(
     BuildContext context,
   ) {
@@ -643,9 +667,14 @@ class TimerHistoryItem extends ConsumerWidget {
                 if (timer.status == TimerStatus.running)
                   IconButton(
                     icon: const Icon(Icons.pause),
-                    onPressed: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .pauseTimer(timerId: timer.id),
+                    onPressed: () => _runTimerAction(
+                      context,
+                      ref,
+                      action: () => ref
+                          .read(timerControllerProvider.notifier)
+                          .pauseTimer(timerId: timer.id),
+                      errorLabel: '일시정지',
+                    ),
                     tooltip: '일시정지',
                     style: IconButton.styleFrom(
                       foregroundColor: theme.colorScheme.secondary,
@@ -654,9 +683,14 @@ class TimerHistoryItem extends ConsumerWidget {
                 if (timer.status == TimerStatus.paused)
                   IconButton(
                     icon: const Icon(Icons.play_arrow),
-                    onPressed: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .resumeTimer(timerId: timer.id),
+                    onPressed: () => _runTimerAction(
+                      context,
+                      ref,
+                      action: () => ref
+                          .read(timerControllerProvider.notifier)
+                          .resumeTimer(timerId: timer.id),
+                      errorLabel: '재개',
+                    ),
                     tooltip: '재개',
                     style: IconButton.styleFrom(
                       foregroundColor: theme.colorScheme.primary,
@@ -664,9 +698,14 @@ class TimerHistoryItem extends ConsumerWidget {
                   ),
                 IconButton(
                   icon: Icon(Icons.stop, color: theme.colorScheme.error),
-                  onPressed: () => ref
-                      .read(timerControllerProvider.notifier)
-                      .stopTimer(timerId: timer.id),
+                  onPressed: () => _runTimerAction(
+                    context,
+                    ref,
+                    action: () => ref
+                        .read(timerControllerProvider.notifier)
+                        .stopTimer(timerId: timer.id),
+                    errorLabel: '정지',
+                  ),
                   tooltip: '정지',
                 ),
               ],
