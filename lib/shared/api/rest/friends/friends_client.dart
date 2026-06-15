@@ -59,10 +59,13 @@ abstract class FriendsClient {
 
   /// Send Friend Request.
   ///
-  /// 친구 요청 보내기.
+  /// 친구 요청 보내기 (email 또는 friend_code).
   ///
-  /// 대상 사용자에게 친구 요청을 보냅니다.
-  /// 이미 친구이거나 대기 중인 요청이 있으면 에러가 발생합니다.
+  /// `email` / `friend_code` 중 정확히 하나를 보냅니다(DTO에서 검증):.
+  /// - **email**: 검증된 이메일 사용자와 매칭. 계정 열거를 막기 위해 매칭/자기자신/중복/차단/.
+  ///   미존재 여부와 무관하게 **항상 202** `{"ok": true}`를 반환합니다.
+  /// - **friend_code**: `GET /v1/users/me`로 공유된 코드와 직접 매칭. 코드가 유효하지 않으면.
+  ///   404, 매칭되면 정상 피드백(201, 또는 자기자신 400 / 중복·이미친구 409 / 차단 403).
   @POST('/v1/friends/requests')
   Future<FriendshipRead> sendFriendRequestV1FriendsRequestsPost({
     @Body() required FriendRequest body,

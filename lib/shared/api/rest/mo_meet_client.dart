@@ -6,32 +6,34 @@ import 'package:dio/dio.dart';
 
 import 'schedules/schedules_client.dart';
 import 'timers/timers_client.dart';
-import 'holidays/holidays_client.dart';
 import 'tags/tags_client.dart';
 import 'todos/todos_client.dart';
 import 'meetings/meetings_client.dart';
 import 'friends/friends_client.dart';
+import 'users/users_client.dart';
 import 'visibility/visibility_client.dart';
+import 'holidays/holidays_client.dart';
 import 'graph_ql/graph_ql_client.dart';
 import 'health/health_client.dart';
 
-/// onperm-hipster-timer-backend `vv2026.03.31-80c2e89`
+/// onperm-hipster-timer-backend `vv2026.06.15-9402ffc`
 class MoMeetClient {
   MoMeetClient(Dio dio, {String? baseUrl}) : _dio = dio, _baseUrl = baseUrl;
 
   final Dio _dio;
   final String? _baseUrl;
 
-  static String get version => 'v2026.03.31-80c2e89';
+  static String get version => 'v2026.06.15-9402ffc';
 
   SchedulesClient? _schedules;
   TimersClient? _timers;
-  HolidaysClient? _holidays;
   TagsClient? _tags;
   TodosClient? _todos;
   MeetingsClient? _meetings;
   FriendsClient? _friends;
+  UsersClient? _users;
   VisibilityClient? _visibility;
+  HolidaysClient? _holidays;
   GraphQlClient? _graphQl;
   HealthClient? _health;
 
@@ -39,9 +41,6 @@ class MoMeetClient {
       _schedules ??= SchedulesClient(_dio, baseUrl: _baseUrl);
 
   TimersClient get timers => _timers ??= TimersClient(_dio, baseUrl: _baseUrl);
-
-  HolidaysClient get holidays =>
-      _holidays ??= HolidaysClient(_dio, baseUrl: _baseUrl);
 
   TagsClient get tags => _tags ??= TagsClient(_dio, baseUrl: _baseUrl);
 
@@ -53,8 +52,13 @@ class MoMeetClient {
   FriendsClient get friends =>
       _friends ??= FriendsClient(_dio, baseUrl: _baseUrl);
 
+  UsersClient get users => _users ??= UsersClient(_dio, baseUrl: _baseUrl);
+
   VisibilityClient get visibility =>
       _visibility ??= VisibilityClient(_dio, baseUrl: _baseUrl);
+
+  HolidaysClient get holidays =>
+      _holidays ??= HolidaysClient(_dio, baseUrl: _baseUrl);
 
   GraphQlClient get graphQl =>
       _graphQl ??= GraphQlClient(_dio, baseUrl: _baseUrl);
