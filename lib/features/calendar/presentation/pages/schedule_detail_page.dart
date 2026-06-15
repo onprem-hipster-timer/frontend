@@ -151,7 +151,6 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
         InfoRow(
           icon: Icons.flag,
           label: '상태',
-          value: statusText,
           valueWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
