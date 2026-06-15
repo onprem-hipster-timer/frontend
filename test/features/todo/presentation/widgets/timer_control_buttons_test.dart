@@ -293,8 +293,8 @@ void main() {
         ],
       );
       // invalidate 시 rebuild을 트리거하려면 리스너가 있어야 함
-      container.listen(activeTimersProvider, (_, __) {});
-      container.listen(todoTimerAggregationsProvider, (_, __) {});
+      container.listen(activeTimersProvider, (_, _) {});
+      container.listen(todoTimerAggregationsProvider, (_, _) {});
 
       return UncontrolledProviderScope(
         container: container,
