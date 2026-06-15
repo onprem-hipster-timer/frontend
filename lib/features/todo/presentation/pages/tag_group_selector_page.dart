@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// 태그 그룹 선택 페이지
@@ -86,8 +87,11 @@ class TagGroupSelectorPage extends ConsumerWidget {
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.2,
               ),
-              itemCount: tagGroups.length,
+              itemCount: tagGroups.length + 1,
               itemBuilder: (context, index) {
+                if (index == tagGroups.length) {
+                  return _buildAddGroupCard(context, theme);
+                }
                 final tagGroup = tagGroups[index];
                 return _buildTagGroupCard(context, theme, tagGroup);
               },
@@ -181,6 +185,40 @@ class TagGroupSelectorPage extends ConsumerWidget {
     );
   }
 
+  /// 새 그룹 추가 카드
+  Widget _buildAddGroupCard(BuildContext context, ThemeData theme) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => showTagGroupFormSheet(context),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_circle_outline,
+              size: 36,
+              color: theme.colorScheme.outline,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '새 그룹 만들기',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 빈 상태 위젯
   Widget _buildEmptyState(BuildContext context, ThemeData theme) {
     return Center(
@@ -212,25 +250,9 @@ class TagGroupSelectorPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () {
-                // 현재 페이지를 닫고 사용자에게 태그 관리 페이지에서 그룹을 만들라고 안내
-                Navigator.of(context).pop();
-
-                // 태그 그룹 생성 안내 스낵바 표시
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('태그 관리 페이지에서 그룹을 먼저 만들어주세요.'),
-                    action: SnackBarAction(label: '확인', onPressed: () {}),
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
-
-                // TODO: 프로젝트의 라우팅 구조에 맞게 수정 필요
-                // 예시: context.push('/tag-management');
-                // 또는: Navigator.of(context).pushNamed('/tag-management');
-              },
+              onPressed: () => showTagGroupFormSheet(context),
               icon: const Icon(Icons.add),
-              label: const Text('태그 그룹 만들러 가기'),
+              label: const Text('새 그룹 만들기'),
             ),
           ],
         ),

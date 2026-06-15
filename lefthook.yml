@@ -19,8 +19,8 @@ pre-commit:
           dart analyze {staged_files}
         fi
 
-    architecture-lint:
-      glob: "**/auth_provider.dart"
+    custom-lint:
+      glob: "**/*.dart"
       run: |
         if command -v fvm &> /dev/null; then
           fvm dart run custom_lint

@@ -13,6 +13,8 @@ abstract class ValidationError with _$ValidationError {
     required List<dynamic> loc,
     required String msg,
     required String type,
+    dynamic input,
+    dynamic ctx,
   }) = _ValidationError;
 
   factory ValidationError.fromJson(Map<String, Object?> json) =>

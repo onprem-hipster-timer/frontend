@@ -1,6 +1,7 @@
 import 'package:custom_lint_builder/custom_lint_builder.dart';
 import 'package:momeet_lints/src/no_direct_supabase_auth.dart';
 import 'package:momeet_lints/src/auth_notifier_structure.dart';
+import 'package:momeet_lints/src/no_manual_route_path.dart';
 
 PluginBase createPlugin() => _MomeetLints();
 
@@ -12,5 +13,6 @@ class _MomeetLints extends PluginBase {
         const AuthActionNoStateMutation(),
         const AuthCatchRequireClassify(),
         const NoManualTokenRefresh(),
+        const NoManualRoutePath(),
       ];
 }

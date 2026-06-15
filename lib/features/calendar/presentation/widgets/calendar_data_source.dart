@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
+    as fmt;
 import 'package:momeet/shared/api/rest/export.dart';
 
 /// ScheduleRead를 Syncfusion Calendar의 Appointment로 매핑하는 DataSource
@@ -25,26 +28,14 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
       notes: schedule.description,
       startTime: schedule.startTime.toLocal(),
       endTime: schedule.endTime.toLocal(),
-      isAllDay: _isAllDayEvent(schedule),
+      isAllDay: fmt.isAllDay(
+        schedule.startTime.toLocal(),
+        schedule.endTime.toLocal(),
+      ),
       color: _getScheduleColor(schedule),
       recurrenceRule: schedule.recurrenceRule,
       recurrenceExceptionDates: null, // TODO: 반복 예외 날짜 처리 (백엔드 지원 필요)
     );
-  }
-
-  /// 종일 이벤트 여부 판단
-  ///
-  /// 시작 시간이 자정이고 끝 시간도 자정이면 종일 이벤트로 간주
-  bool _isAllDayEvent(ScheduleRead schedule) {
-    final start = schedule.startTime.toLocal();
-    final end = schedule.endTime.toLocal();
-
-    // 시작이 자정이고 끝도 자정이며 최소 하루 이상 차이나면 종일 이벤트
-    final isStartMidnight = start.hour == 0 && start.minute == 0;
-    final isEndMidnight = end.hour == 0 && end.minute == 0;
-    final duration = end.difference(start);
-
-    return isStartMidnight && isEndMidnight && duration.inHours >= 24;
   }
 
   /// 일정의 색상 결정
@@ -53,7 +44,7 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   Color _getScheduleColor(ScheduleRead schedule) {
     final tags = schedule.tags.toList();
     if (tags.isNotEmpty) {
-      return _parseColor(tags.first.color);
+      return HexColor.fromHex(tags.first.color);
     }
 
     // 상태에 따른 기본 색상
@@ -62,24 +53,6 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
       ScheduleState.cancelled => Colors.grey,
       ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
     };
-  }
-
-  /// Hex 색상 문자열을 Color로 변환
-  ///
-  /// 지원 형식: '#RRGGBB', '#AARRGGBB', 'RRGGBB'
-  Color _parseColor(String colorString) {
-    try {
-      String hex = colorString.replaceAll('#', '');
-
-      // 6자리면 FF (불투명) 추가
-      if (hex.length == 6) {
-        hex = 'FF$hex';
-      }
-
-      return Color(int.parse(hex, radix: 16));
-    } catch (e) {
-      return Colors.blue; // 파싱 실패시 기본 색상
-    }
   }
 
   // ============================================================
@@ -141,23 +114,17 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
   }
 
   /// 특정 날짜의 모든 Appointment 가져오기
+  ///
+  /// 멀티-데이 일정도 포함되도록 [fmt.isIncludeDay]로 날짜 걸침을 판별합니다.
   List<Appointment> getAppointmentsForDate(DateTime date) {
-    final targetDate = DateTime(date.year, date.month, date.day);
     return appointments
             ?.where((apt) {
               final appointment = apt as Appointment;
-              final startDate = DateTime(
-                appointment.startTime.year,
-                appointment.startTime.month,
-                appointment.startTime.day,
+              return fmt.isIncludeDay(
+                appointment.startTime,
+                appointment.endTime,
+                date,
               );
-              final endDate = DateTime(
-                appointment.endTime.year,
-                appointment.endTime.month,
-                appointment.endTime.day,
-              );
-              return !targetDate.isBefore(startDate) &&
-                  !targetDate.isAfter(endDate);
             })
             .cast<Appointment>()
             .toList() ??
