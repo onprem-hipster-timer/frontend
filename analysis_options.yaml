@@ -15,8 +15,6 @@ analyzer:
     - custom_lint
   exclude:
     - lib/core/templates/**
-    # swagger_parser 생성 코드 (output_directory: lib/shared/api/rest).
-    # 전부 `// GENERATED CODE - DO NOT MODIFY BY HAND` 이므로 분석 대상에서 제외.
     - lib/shared/api/rest/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
