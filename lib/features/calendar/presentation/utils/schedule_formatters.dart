@@ -73,12 +73,23 @@ String getScheduleStatusText(ScheduleState state) => switch (state) {
   ScheduleState.$unknown => '알 수 없음',
 };
 
-Color getScheduleStatusColor(ScheduleState state) => switch (state) {
-  ScheduleState.planned => Colors.orange,
-  ScheduleState.confirmed => Colors.green,
-  ScheduleState.cancelled => Colors.red,
-  ScheduleState.$unknown => Colors.grey,
-};
+/// 상태 배지 색상.
+///
+/// 시맨틱 색(계획=주황/확정=초록/취소=빨강/알 수 없음=회색)은 유지하되,
+/// [brightness]에 따라 shade를 골라 라이트/다크 모드 모두에서 대비를 확보한다.
+Color getScheduleStatusColor(ScheduleState state, Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  return switch (state) {
+    ScheduleState.planned =>
+      isDark ? Colors.orange.shade300 : Colors.orange.shade700,
+    ScheduleState.confirmed =>
+      isDark ? Colors.green.shade300 : Colors.green.shade700,
+    ScheduleState.cancelled =>
+      isDark ? Colors.red.shade300 : Colors.red.shade700,
+    ScheduleState.$unknown =>
+      isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+  };
+}
 
 // ============================================================
 // TimerStatus 매핑

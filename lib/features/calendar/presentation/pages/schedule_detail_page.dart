@@ -122,7 +122,10 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   }
 
   Widget _buildScheduleInfo(BuildContext context, ScheduleRead schedule) {
-    final statusColor = getScheduleStatusColor(schedule.state);
+    final statusColor = getScheduleStatusColor(
+      schedule.state,
+      Theme.of(context).brightness,
+    );
     final statusText = getScheduleStatusText(schedule.state);
 
     return Column(
