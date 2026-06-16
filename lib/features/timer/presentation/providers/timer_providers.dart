@@ -62,18 +62,20 @@ final timerWsLastErrorProvider =
     );
 
 /// 친구 타이머 활동 알림 스트림
-final timerFriendActivityProvider = StreamProvider<TimerWsFriendActivity>((
-  ref,
-) async* {
-  final client = ref.watch(timerWsClientProvider);
-  if (client == null) return;
+///
+/// 타이머 화면에서 SnackBar를 띄우기 위한 UI-scoped 스트림.
+/// 화면을 벗어나 listener가 모두 사라지면 WS 구독을 정리하도록 autoDispose.
+final timerFriendActivityProvider =
+    StreamProvider.autoDispose<TimerWsFriendActivity>((ref) async* {
+      final client = ref.watch(timerWsClientProvider);
+      if (client == null) return;
 
-  await for (final event in client.messageStream) {
-    if (event case TimerWsFriendActivity()) {
-      yield event;
-    }
-  }
-});
+      await for (final event in client.messageStream) {
+        if (event case TimerWsFriendActivity()) {
+          yield event;
+        }
+      }
+    });
 
 /// 활성 타이머 조회 (실시간)
 ///
