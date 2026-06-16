@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
@@ -292,37 +290,6 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   }).toList();
 }
 
-/// 캘린더 데이터 소스 Provider
-///
-/// 필터링된 일정을 Syncfusion CalendarDataSource로 변환합니다.
-@riverpod
-Future<ScheduleCalendarDataSource> calendarDataSource(Ref ref) async {
-  final schedules = await ref.watch(filteredSchedulesProvider.future);
-  return ScheduleCalendarDataSource(schedules);
-}
-
-// ============================================================
-// 일정 전용 Appointments Provider (휴일 제외)
-// ============================================================
-
-/// 사용자 일정만을 포함한 Appointments 목록
-///
-/// 휴일은 제외하고 오직 사용자의 일정(ScheduleRead)만 Appointment로 변환합니다.
-/// 휴일은 별도로 Cell Builder와 Special Regions에서 처리됩니다.
-@riverpod
-Future<List<Appointment>> calendarAppointments(Ref ref) async {
-  try {
-    // 사용자 일정만 가져오기 (필터링 적용)
-    final schedules = await ref.watch(filteredSchedulesProvider.future);
-
-    // 일정을 Appointment로 변환 (휴일 제외)
-    return schedules.map(_scheduleToAppointment).toList();
-  } catch (error) {
-    debugPrint('캘린더 일정 로드 실패: $error');
-    return []; // 에러 발생 시 빈 리스트 반환
-  }
-}
-
 /// 일정 전용 캘린더 데이터 소스 Provider
 ///
 /// 휴일을 제외한 사용자 일정만으로 DataSource를 생성합니다.
@@ -331,65 +298,4 @@ Future<List<Appointment>> calendarAppointments(Ref ref) async {
 Future<ScheduleCalendarDataSource> scheduleOnlyDataSource(Ref ref) async {
   final schedules = await ref.watch(filteredSchedulesProvider.future);
   return ScheduleCalendarDataSource(schedules);
-}
-
-/// ScheduleRead를 Appointment로 변환하는 헬퍼 함수
-Appointment _scheduleToAppointment(ScheduleRead schedule) {
-  return Appointment(
-    id: schedule.id,
-    subject: schedule.title,
-    notes: schedule.description,
-    startTime: schedule.startTime.toLocal(),
-    endTime: schedule.endTime.toLocal(),
-    isAllDay: _isAllDayEvent(schedule),
-    color: _getScheduleColor(schedule),
-    recurrenceRule: schedule.recurrenceRule,
-  );
-}
-
-/// 종일 이벤트 여부 판단 헬퍼 함수
-bool _isAllDayEvent(ScheduleRead schedule) {
-  final start = schedule.startTime.toLocal();
-  final end = schedule.endTime.toLocal();
-
-  // 시작이 자정이고 끝도 자정이며 최소 하루 이상 차이나면 종일 이벤트
-  final isStartMidnight = start.hour == 0 && start.minute == 0;
-  final isEndMidnight = end.hour == 0 && end.minute == 0;
-  final duration = end.difference(start);
-
-  return isStartMidnight && isEndMidnight && duration.inHours >= 24;
-}
-
-/// Hex 색상 문자열을 Color로 변환 헬퍼 함수
-Color _parseColor(String colorString) {
-  try {
-    String hex = colorString.replaceAll('#', '');
-    if (hex.length == 6) {
-      hex = 'FF$hex';
-    }
-    return Color(int.parse(hex, radix: 16));
-  } catch (e) {
-    return Colors.blue;
-  }
-}
-
-/// 일정의 색상 결정 헬퍼 함수
-Color _getScheduleColor(ScheduleRead schedule) {
-  final tags = schedule.tags.toList();
-  if (tags.isNotEmpty) {
-    return _parseColor(tags.first.color);
-  }
-  return getScheduleColor(schedule);
-}
-
-/// 일정 상태에 따른 색상 반환 (전역 함수)
-///
-/// 주의: BuildContext가 없는 전역 함수로 Theme 접근 불가
-/// TODO: 향후 테마 기반 색상으로 리팩토링 고려
-Color getScheduleColor(ScheduleRead schedule) {
-  return switch (schedule.state) {
-    ScheduleState.confirmed => Colors.blue,
-    ScheduleState.cancelled => Colors.grey, // 다크모드 호환성 제한
-    ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
-  };
 }

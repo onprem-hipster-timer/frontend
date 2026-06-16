@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
+    as fmt;
 
 /// 일정 생성/수정을 위한 Modal Bottom Sheet 위젯
 ///
@@ -65,7 +67,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       _endTime = schedule.endTime.toLocal();
 
       // 종일 여부 판단
-      _isAllDay = _checkIsAllDay(_startTime, _endTime);
+      _isAllDay = fmt.isAllDay(_startTime, _endTime);
     } else {
       // 새 일정 생성 모드
       final now = DateTime.now();
@@ -81,15 +83,6 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       _endTime =
           widget.initialEndTime ?? _startTime.add(const Duration(hours: 1));
     }
-  }
-
-  /// 종일 이벤트인지 확인하는 헬퍼 메서드
-  bool _checkIsAllDay(DateTime start, DateTime end) {
-    return start.hour == 0 &&
-        start.minute == 0 &&
-        end.hour == 0 &&
-        end.minute == 0 &&
-        end.difference(start).inHours >= 24;
   }
 
   @override

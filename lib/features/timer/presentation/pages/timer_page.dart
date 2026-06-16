@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -14,6 +15,18 @@ class TimerPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lastError = ref.watch(timerWsLastErrorProvider);
+
+    ref.listen<AsyncValue<TimerWsFriendActivity>>(timerFriendActivityProvider, (
+      _,
+      next,
+    ) {
+      next.whenData((activity) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendActivityMessage(activity))),
+        );
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -43,10 +56,35 @@ class TimerPage extends ConsumerWidget {
   }
 }
 
+/// 친구 활동 이벤트(`timer.friend_activity`)를 SnackBar 문구로 변환한다.
+///
+/// 백엔드 `TimerAction` 공식 값(start/pause/resume/stop)만 매핑하고,
+/// 그 외 미정의 action은 generic fallback 문구로 처리한다.
+/// `displayName`이 없거나 빈 문자열이면 `친구`로 대체한다.
+String friendActivityMessage(TimerWsFriendActivity activity) {
+  final displayName = activity.displayName?.trim();
+  final friendName = displayName == null || displayName.isEmpty
+      ? '친구'
+      : displayName;
+  final timerTitle = activity.timerTitle?.trim();
+  final target = timerTitle == null || timerTitle.isEmpty
+      ? '타이머'
+      : '$timerTitle 타이머';
+
+  return switch (activity.action) {
+    'start' => '$friendName님이 $target를 시작했습니다',
+    'pause' => '$friendName님이 $target를 일시정지했습니다',
+    'resume' => '$friendName님이 $target를 재개했습니다',
+    'stop' => '$friendName님이 $target를 정지했습니다',
+    _ => '$friendName님의 타이머 상태가 변경되었습니다',
+  };
+}
+
 const _stopTimerConfirmTitle = '타이머 종료';
 const _stopTimerConfirmContent =
     '정말 종료하시겠습니까?\n정지할 경우 다시 시작이 불가합니다.\n일시 정지를 이용해 주세요.';
 
+/// 타이머 정지 확인 다이얼로그. 사용자가 종료를 확인하면 true.
 Future<bool> _confirmStopTimer(BuildContext context) {
   return showConfirmDialog(
     context,
@@ -213,7 +251,11 @@ class TimerDashboard extends ConsumerWidget {
     if (!context.mounted || !confirmed) return;
 
     try {
-      await ref.read(timerControllerProvider.notifier).stopTimer();
+      // 확인 시점에 캡처한 타이머 id로 정지 — 다이얼로그가 열린 사이
+      // 활성 타이머가 바뀌어도 사용자가 확인한 타이머만 정지한다.
+      await ref
+          .read(timerControllerProvider.notifier)
+          .stopTimer(timerId: activeTimer.id);
       ref.invalidate(activeTimerProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -399,9 +441,6 @@ class TimerControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isRunning = activeTimer?.status == TimerStatus.running;
-    final isPaused = activeTimer?.status == TimerStatus.paused;
-    final hasControllableTimer = isRunning || isPaused;
 
     if (isLoading) {
       return SizedBox(
@@ -414,7 +453,7 @@ class TimerControlButton extends StatelessWidget {
       );
     }
 
-    if (!hasControllableTimer) {
+    if (activeTimer == null) {
       return FloatingActionButton(
         onPressed: onStart,
         backgroundColor: theme.colorScheme.primary,
@@ -424,7 +463,9 @@ class TimerControlButton extends StatelessWidget {
           color: theme.colorScheme.onPrimary,
         ),
       );
-    } else if (isRunning) {
+    } else if (activeTimer!.status == TimerStatus.running) {
+      // 위계: 자주 쓰는 일시정지를 큰 주 버튼(primary), 비가역 정지는
+      // 작은 보조 버튼(error)으로 + 간격을 넓혀 오탭을 방지한다.
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -594,22 +635,27 @@ class TimerHistoryItem extends ConsumerWidget {
 
   const TimerHistoryItem({super.key, required this.timer});
 
-  Future<void> _stopTimer(BuildContext context, WidgetRef ref) async {
-    final confirmed = await _confirmStopTimer(context);
-    if (!context.mounted || !confirmed) return;
-
+  /// 타이머 액션을 실행하고, 실패 시(예: WS 미연결) SnackBar로 피드백한다.
+  ///
+  /// 대시보드(`_pauseTimer` 등)·`TimerControlButtons`와 동일하게
+  /// 히스토리 리스트의 액션에서도 예외가 사용자에게 전달되도록 한다.
+  Future<void> _runTimerAction(
+    BuildContext context,
+    WidgetRef ref, {
+    required Future<void> Function() action,
+    required String errorLabel,
+  }) async {
     try {
-      await ref
-          .read(timerControllerProvider.notifier)
-          .stopTimer(timerId: timer.id);
+      await action();
     } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('타이머 정지 실패: ${error.toString()}'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$errorLabel 실패: $error'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
@@ -740,9 +786,14 @@ class TimerHistoryItem extends ConsumerWidget {
                 if (timer.status == TimerStatus.running)
                   IconButton(
                     icon: const Icon(Icons.pause),
-                    onPressed: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .pauseTimer(timerId: timer.id),
+                    onPressed: () => _runTimerAction(
+                      context,
+                      ref,
+                      action: () => ref
+                          .read(timerControllerProvider.notifier)
+                          .pauseTimer(timerId: timer.id),
+                      errorLabel: '일시정지',
+                    ),
                     tooltip: '일시정지',
                     style: IconButton.styleFrom(
                       foregroundColor: theme.colorScheme.secondary,
@@ -751,9 +802,14 @@ class TimerHistoryItem extends ConsumerWidget {
                 if (timer.status == TimerStatus.paused)
                   IconButton(
                     icon: const Icon(Icons.play_arrow),
-                    onPressed: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .resumeTimer(timerId: timer.id),
+                    onPressed: () => _runTimerAction(
+                      context,
+                      ref,
+                      action: () => ref
+                          .read(timerControllerProvider.notifier)
+                          .resumeTimer(timerId: timer.id),
+                      errorLabel: '재개',
+                    ),
                     tooltip: '재개',
                     style: IconButton.styleFrom(
                       foregroundColor: theme.colorScheme.primary,
@@ -761,7 +817,18 @@ class TimerHistoryItem extends ConsumerWidget {
                   ),
                 IconButton(
                   icon: Icon(Icons.stop, color: theme.colorScheme.error),
-                  onPressed: () => _stopTimer(context, ref),
+                  onPressed: () async {
+                    final confirmed = await _confirmStopTimer(context);
+                    if (!context.mounted || !confirmed) return;
+                    await _runTimerAction(
+                      context,
+                      ref,
+                      action: () => ref
+                          .read(timerControllerProvider.notifier)
+                          .stopTimer(timerId: timer.id),
+                      errorLabel: '정지',
+                    );
+                  },
                   tooltip: '정지',
                 ),
               ],

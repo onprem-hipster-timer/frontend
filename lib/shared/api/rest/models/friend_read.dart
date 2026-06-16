@@ -14,6 +14,8 @@ abstract class FriendRead with _$FriendRead {
     @JsonKey(name: 'user_id') required String userId,
     @JsonKey(name: 'friendship_id') required String friendshipId,
     required DateTime since,
+    @JsonKey(name: 'display_name') String? displayName,
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
   }) = _FriendRead;
 
   factory FriendRead.fromJson(Map<String, Object?> json) =>

@@ -61,9 +61,25 @@ final timerWsLastErrorProvider =
       TimerWsLastErrorNotifier.new,
     );
 
+/// 친구 타이머 활동 알림 스트림
+///
+/// 타이머 화면에서 SnackBar를 띄우기 위한 UI-scoped 스트림.
+/// 화면을 벗어나 listener가 모두 사라지면 WS 구독을 정리하도록 autoDispose.
+final timerFriendActivityProvider =
+    StreamProvider.autoDispose<TimerWsFriendActivity>((ref) async* {
+      final client = ref.watch(timerWsClientProvider);
+      if (client == null) return;
+
+      await for (final event in client.messageStream) {
+        if (event case TimerWsFriendActivity()) {
+          yield event;
+        }
+      }
+    });
+
 /// 활성 타이머 조회 (실시간)
 ///
-/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / completed / sync_result) payload로만 갱신합니다.
+/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / sync_result) payload로만 갱신합니다.
 @riverpod
 Stream<TimerRead?> activeTimer(Ref ref) async* {
   final repository = ref.watch(timerRepositoryProvider);
@@ -85,12 +101,19 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
       case TimerWsConnected():
         client.resetReconnectAttempts();
       case TimerWsTimerCreated(timer: final timer):
-      case TimerWsTimerUpdated(timer: final timer):
         ref.invalidate(timerHistoryProvider);
         yield timer;
-      case TimerWsTimerCompleted():
+      case TimerWsTimerUpdated(timer: final timer):
+        // timer.sync 단건 조회 응답에서 대상이 없거나, 완료/취소 상태가 오면
+        // 활성 타이머 없음으로 간주해 null을 흘려보낸다.
         ref.invalidate(timerHistoryProvider);
-        yield null;
+        if (timer == null ||
+            timer.status == TimerStatus.completed ||
+            timer.status == TimerStatus.cancelled) {
+          yield null;
+        } else {
+          yield timer;
+        }
       case TimerWsSyncResult():
         ref.invalidate(timerHistoryProvider);
         if (event.timers.isEmpty) {
@@ -162,6 +185,8 @@ Stream<Duration> timerTicker(Ref ref) async* {
 // Timer Controller (Mutation)
 // ============================================================
 
+const _wsNotConnectedError = 'WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.';
+
 /// 타이머 제어 로직
 ///
 /// 타이머 시작/정지 등의 CUD 작업을 담당합니다.
@@ -194,7 +219,7 @@ class TimerController extends _$TimerController {
         state = const AsyncValue.data(null);
         return;
       }
-      throw Exception('WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.');
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -229,10 +254,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
-      ref.invalidate(timerHistoryProvider);
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -269,9 +291,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -308,9 +328,7 @@ class TimerController extends _$TimerController {
         return;
       }
 
-      final repository = ref.read(timerRepositoryProvider);
-      await repository.updateTimer(id, const TimerUpdate());
-      state = const AsyncValue.data(null);
+      throw Exception(_wsNotConnectedError);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;

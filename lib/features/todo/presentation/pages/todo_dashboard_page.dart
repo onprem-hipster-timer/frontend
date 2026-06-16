@@ -116,7 +116,10 @@ class TodoDashboardPage extends ConsumerWidget {
               final group = todoGroups[index];
               return TodoGroupCard(
                 group: group,
-                onTap: () => context.go('${AppRoute.todo.path}/${group.id}'),
+                onTap: () => context.goNamed(
+                  AppRoute.todoGroupDetail.name,
+                  pathParameters: {'groupId': group.id},
+                ),
               );
             }, childCount: todoGroups.length),
           ),
