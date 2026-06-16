@@ -61,6 +61,20 @@ final timerWsLastErrorProvider =
       TimerWsLastErrorNotifier.new,
     );
 
+/// 친구 타이머 활동 알림 스트림
+final timerFriendActivityProvider = StreamProvider<TimerWsFriendActivity>((
+  ref,
+) async* {
+  final client = ref.watch(timerWsClientProvider);
+  if (client == null) return;
+
+  await for (final event in client.messageStream) {
+    if (event case TimerWsFriendActivity()) {
+      yield event;
+    }
+  }
+});
+
 /// 활성 타이머 조회 (실시간)
 ///
 /// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / sync_result) payload로만 갱신합니다.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 /// 타이머 대시보드 페이지
@@ -13,6 +14,18 @@ class TimerPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lastError = ref.watch(timerWsLastErrorProvider);
+
+    ref.listen<AsyncValue<TimerWsFriendActivity>>(timerFriendActivityProvider, (
+      _,
+      next,
+    ) {
+      next.whenData((activity) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_friendActivityMessage(activity))),
+        );
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -39,6 +52,25 @@ class TimerPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _friendActivityMessage(TimerWsFriendActivity activity) {
+    final displayName = activity.displayName?.trim();
+    final friendName = displayName == null || displayName.isEmpty
+        ? '친구'
+        : displayName;
+    final timerTitle = activity.timerTitle?.trim();
+    final target = timerTitle == null || timerTitle.isEmpty
+        ? '타이머'
+        : '$timerTitle 타이머';
+
+    return switch (activity.action) {
+      'start' || 'create' => '$friendName님이 $target를 시작했습니다',
+      'pause' => '$friendName님이 $target를 일시정지했습니다',
+      'resume' => '$friendName님이 $target를 재개했습니다',
+      'stop' || 'complete' => '$friendName님이 $target를 정지했습니다',
+      _ => '$friendName님의 타이머 상태가 변경되었습니다',
+    };
   }
 }
 
