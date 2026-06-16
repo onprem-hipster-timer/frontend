@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 /// 타이머 대시보드 페이지
@@ -42,6 +43,20 @@ class TimerPage extends ConsumerWidget {
   }
 }
 
+const _stopTimerConfirmTitle = '타이머 종료';
+const _stopTimerConfirmContent =
+    '정말 종료하시겠습니까?\n정지할 경우 다시 시작이 불가합니다.\n일시 정지를 이용해 주세요.';
+
+Future<bool> _confirmStopTimer(BuildContext context) {
+  return showConfirmDialog(
+    context,
+    title: _stopTimerConfirmTitle,
+    content: _stopTimerConfirmContent,
+    confirmText: '종료',
+    destructive: true,
+  );
+}
+
 /// 타이머 대시보드 (상단 영역)
 ///
 /// 디지털 시계와 제어 버튼을 포함합니다.
@@ -55,49 +70,63 @@ class TimerDashboard extends ConsumerWidget {
     final timerTicker = ref.watch(timerTickerProvider);
     final controllerState = ref.watch(timerControllerProvider);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-            theme.colorScheme.surface,
-          ],
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          timerTicker.when(
-            data: (duration) => DigitalClock(duration: duration),
-            loading: () => const DigitalClock(duration: Duration.zero),
-            error: (error, stack) =>
-                const DigitalClock(duration: Duration.zero),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 230;
+
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: compact ? 8 : 12,
           ),
-          const SizedBox(height: 12),
-          activeTimerAsync.when(
-            data: (activeTimer) => CurrentTaskDisplay(timer: activeTimer),
-            loading: () => const CurrentTaskDisplay(timer: null),
-            error: (error, stack) => const CurrentTaskDisplay(timer: null),
-          ),
-          const SizedBox(height: 16),
-          TimerControlButton(
-            activeTimer: activeTimerAsync.when(
-              data: (timer) => timer,
-              loading: () => null,
-              error: (error, stack) => null,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                theme.colorScheme.surface,
+              ],
             ),
-            isLoading: controllerState.isLoading,
-            onStart: () => _showStartTimerDialog(context, ref),
-            onStop: () => _stopTimer(context, ref),
-            onPause: () => _pauseTimer(context, ref),
-            onResume: () => _resumeTimer(context, ref),
           ),
-        ],
-      ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              timerTicker.when(
+                data: (duration) =>
+                    DigitalClock(duration: duration, compact: compact),
+                loading: () =>
+                    DigitalClock(duration: Duration.zero, compact: compact),
+                error: (error, stack) =>
+                    DigitalClock(duration: Duration.zero, compact: compact),
+              ),
+              SizedBox(height: compact ? 8 : 12),
+              activeTimerAsync.when(
+                data: (activeTimer) =>
+                    CurrentTaskDisplay(timer: activeTimer, compact: compact),
+                loading: () =>
+                    CurrentTaskDisplay(timer: null, compact: compact),
+                error: (error, stack) =>
+                    CurrentTaskDisplay(timer: null, compact: compact),
+              ),
+              SizedBox(height: compact ? 10 : 16),
+              TimerControlButton(
+                activeTimer: activeTimerAsync.when(
+                  data: (timer) => timer,
+                  loading: () => null,
+                  error: (error, stack) => null,
+                ),
+                isLoading: controllerState.isLoading,
+                onStart: () => _showStartTimerDialog(context, ref),
+                onStop: () => _stopTimer(context, ref),
+                onPause: () => _pauseTimer(context, ref),
+                onResume: () => _resumeTimer(context, ref),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -180,6 +209,9 @@ class TimerDashboard extends ConsumerWidget {
       return;
     }
 
+    final confirmed = await _confirmStopTimer(context);
+    if (!context.mounted || !confirmed) return;
+
     try {
       await ref.read(timerControllerProvider.notifier).stopTimer();
       ref.invalidate(activeTimerProvider);
@@ -241,8 +273,9 @@ class TimerDashboard extends ConsumerWidget {
 /// HH:MM:SS 형식으로 경과 시간을 크게 표시합니다.
 class DigitalClock extends StatelessWidget {
   final Duration duration;
+  final bool compact;
 
-  const DigitalClock({super.key, required this.duration});
+  const DigitalClock({super.key, required this.duration, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -253,12 +286,12 @@ class DigitalClock extends StatelessWidget {
       timeText,
       style: theme.textTheme.displayLarge?.copyWith(
         fontFamily: 'monospace', // 등폭 폰트 사용
-        fontSize: 56,
+        fontSize: compact ? 46 : 56,
         fontWeight: FontWeight.w300,
         color: duration.inSeconds > 0
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-        letterSpacing: 4,
+        letterSpacing: 0,
       ),
     );
   }
@@ -267,8 +300,13 @@ class DigitalClock extends StatelessWidget {
 /// 현재 작업 표시 위젯
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
+  final bool compact;
 
-  const CurrentTaskDisplay({super.key, required this.timer});
+  const CurrentTaskDisplay({
+    super.key,
+    required this.timer,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +335,10 @@ class CurrentTaskDisplay extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: compact ? 4 : 6,
+          ),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
@@ -310,15 +351,19 @@ class CurrentTaskDisplay extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: compact ? 4 : 8),
         Text(
           taskName,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+          style:
+              (compact
+                      ? theme.textTheme.titleMedium
+                      : theme.textTheme.titleLarge)
+                  ?.copyWith(fontWeight: FontWeight.w500),
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        if (timer!.startedAt != null) ...[
+        if (!compact && timer!.startedAt != null) ...[
           const SizedBox(height: 4),
           Text(
             '시작: ${formatTime(timer!.startedAt!)}',
@@ -384,15 +429,16 @@ class TimerControlButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FloatingActionButton.small(
-            onPressed: onPause,
-            backgroundColor: theme.colorScheme.secondary,
-            child: Icon(Icons.pause, color: theme.colorScheme.onSecondary),
-          ),
-          const SizedBox(width: 24),
-          FloatingActionButton(
             onPressed: onStop,
+            tooltip: '정지',
             backgroundColor: theme.colorScheme.error,
             child: Icon(Icons.stop, color: theme.colorScheme.onError),
+          ),
+          const SizedBox(width: 40),
+          FloatingActionButton(
+            onPressed: onPause,
+            backgroundColor: theme.colorScheme.primary,
+            child: Icon(Icons.pause, color: theme.colorScheme.onPrimary),
           ),
         ],
       );
@@ -401,15 +447,16 @@ class TimerControlButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FloatingActionButton.small(
+            onPressed: onStop,
+            tooltip: '정지',
+            backgroundColor: theme.colorScheme.error,
+            child: Icon(Icons.stop, color: theme.colorScheme.onError),
+          ),
+          const SizedBox(width: 40),
+          FloatingActionButton(
             onPressed: onResume,
             backgroundColor: theme.colorScheme.primary,
             child: Icon(Icons.play_arrow, color: theme.colorScheme.onPrimary),
-          ),
-          const SizedBox(width: 24),
-          FloatingActionButton(
-            onPressed: onStop,
-            backgroundColor: theme.colorScheme.error,
-            child: Icon(Icons.stop, color: theme.colorScheme.onError),
           ),
         ],
       );
@@ -695,9 +742,13 @@ class TimerHistoryItem extends ConsumerWidget {
                   ),
                 IconButton(
                   icon: Icon(Icons.stop, color: theme.colorScheme.error),
-                  onPressed: () => ref
-                      .read(timerControllerProvider.notifier)
-                      .stopTimer(timerId: timer.id),
+                  onPressed: () async {
+                    final confirmed = await _confirmStopTimer(context);
+                    if (!context.mounted || !confirmed) return;
+                    await ref
+                        .read(timerControllerProvider.notifier)
+                        .stopTimer(timerId: timer.id);
+                  },
                   tooltip: '정지',
                 ),
               ],
