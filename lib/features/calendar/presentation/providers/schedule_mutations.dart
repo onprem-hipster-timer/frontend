@@ -159,7 +159,8 @@ class ScheduleMutations extends _$ScheduleMutations {
       state = const AsyncValue.data(null);
       ref.invalidate(scheduleDetailProvider(scheduleId));
       ref.invalidate(currentSchedulesProvider);
-      ref.invalidate(todosProvider(null));
+      // 변환된 TODO가 특정 태그 그룹에 속할 수 있으므로 family 전체를 무효화한다.
+      ref.invalidate(todosProvider);
 
       debugPrint('일정이 TODO로 변환되었습니다: $scheduleId');
     } catch (error, stackTrace) {

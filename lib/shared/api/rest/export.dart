@@ -5,12 +5,13 @@
 // Clients
 export 'schedules/schedules_client.dart';
 export 'timers/timers_client.dart';
-export 'holidays/holidays_client.dart';
 export 'tags/tags_client.dart';
 export 'todos/todos_client.dart';
 export 'meetings/meetings_client.dart';
 export 'friends/friends_client.dart';
+export 'users/users_client.dart';
 export 'visibility/visibility_client.dart';
+export 'holidays/holidays_client.dart';
 export 'graph_ql/graph_ql_client.dart';
 export 'health/health_client.dart';
 // Data classes
@@ -20,6 +21,7 @@ export 'models/availability_time_slot.dart';
 export 'models/create_todo_options.dart';
 export 'models/friend_read.dart';
 export 'models/friend_request.dart';
+export 'models/friend_request_accepted.dart';
 export 'models/friendship_read.dart';
 export 'models/friendship_status.dart';
 export 'models/http_validation_error.dart';
@@ -28,6 +30,7 @@ export 'models/meeting_create.dart';
 export 'models/meeting_read.dart';
 export 'models/meeting_result_read.dart';
 export 'models/meeting_update.dart';
+export 'models/my_profile_read.dart';
 export 'models/participant_create.dart';
 export 'models/participant_read.dart';
 export 'models/pending_request_read.dart';

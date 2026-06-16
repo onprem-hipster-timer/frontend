@@ -7,7 +7,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'pending_request_read.freezed.dart';
 part 'pending_request_read.g.dart';
 
-/// 대기 중인 친구 요청 DTO
+/// 대기 중인 친구 요청 DTO.
+///
+/// 받은 요청에서 requester_* 필드로 "누가 보냈는지"를 표시한다.
+/// (보낸 요청에서는 requester가 본인이므로 본인 정보가 채워진다.).
 @Freezed()
 abstract class PendingRequestRead with _$PendingRequestRead {
   const factory PendingRequestRead({
@@ -15,6 +18,8 @@ abstract class PendingRequestRead with _$PendingRequestRead {
     @JsonKey(name: 'requester_id') required String requesterId,
     @JsonKey(name: 'addressee_id') required String addresseeId,
     @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'requester_display_name') String? requesterDisplayName,
+    @JsonKey(name: 'requester_avatar_url') String? requesterAvatarUrl,
   }) = _PendingRequestRead;
 
   factory PendingRequestRead.fromJson(Map<String, Object?> json) =>

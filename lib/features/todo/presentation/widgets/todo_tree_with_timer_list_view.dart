@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile_with_timer.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 
@@ -97,12 +98,9 @@ class _TodoTreeWithTimerListViewState
     );
   }
 
-  /// 노드 탭 핸들러
+  /// 노드 탭 핸들러 — Todo 상세/편집 폼 시트 열기
   void _handleNodeTap(TodoTreeNode node) {
-    // TODO: Todo 상세 보기 또는 편집 화면으로 이동
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Todo 탭: ${node.todo.title}')));
+    showTodoFormSheet(context, todo: node.todo);
   }
 
   /// 확장/축소 토글
@@ -184,12 +182,8 @@ class TodoWithTimerPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Todo 생성 화면으로 이동
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Todo 생성 기능이 곧 구현됩니다')));
-        },
+        onPressed: () => showTodoFormSheet(context),
+        tooltip: '새 할 일',
         child: const Icon(Icons.add),
       ),
     );

@@ -32,6 +32,12 @@ class NoManualRoutePath extends DartLintRule {
   /// router.dart 자체(리다이렉트 로직)는 예외 처리
   static final _routerFilePattern = RegExp(r'[/\\]router\.dart$');
 
+  /// 테스트 파일은 예외 처리
+  ///
+  /// `*_test.dart`는 리다이렉트 로직 검증을 위해 `AppRoute.xxx.path`를
+  /// 함수 입력값·expected value로 참조할 뿐, 실제 네비게이션을 하지 않습니다.
+  static final _testFilePattern = RegExp(r'_test\.dart$');
+
   @override
   void run(
     CustomLintResolver resolver,
@@ -40,6 +46,9 @@ class NoManualRoutePath extends DartLintRule {
   ) {
     // router.dart 내부의 리다이렉트 로직은 허용
     if (_routerFilePattern.hasMatch(resolver.path)) return;
+
+    // 테스트 파일은 허용 (expected value 문자열 등)
+    if (_testFilePattern.hasMatch(resolver.path)) return;
 
     // 문자열 보간 내 AppRoute.xxx.path 사용 감지
     // 예: '${AppRoute.todo.path}/something'

@@ -324,13 +324,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     // 선택 날짜 변경
     ref.read(calendarSettingsProvider.notifier).setSelectedDate(date);
 
-    // 해당 날짜에 일정이 있는지 확인
+    // 해당 날짜에 일정이 있는지 확인 (멀티-데이 포함)
     final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
     final hasAppointments =
-        scheduleDataSource?.appointments
-            ?.where((app) => fmt.isSameDay(app.startTime, date))
-            .isNotEmpty ??
-        false;
+        scheduleDataSource?.getAppointmentsForDate(date).isNotEmpty ?? false;
 
     // 휴일인지 확인 — loading/error 시에도 일정/생성 폼은 동작해야 함
     final holidayAsync = ref.read(currentHolidaysProvider);
@@ -371,7 +368,13 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final schedules = ref.read(filteredSchedulesProvider).value;
     final daySchedules =
         schedules
-            ?.where((s) => fmt.isSameDay(s.startTime.toLocal(), date))
+            ?.where(
+              (s) => fmt.isIncludeDay(
+                s.startTime.toLocal(),
+                s.endTime.toLocal(),
+                date,
+              ),
+            )
             .toList() ??
         [];
     if (daySchedules.isEmpty || !context.mounted) return;
@@ -637,8 +640,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   }
 
   /// Special Regions 빌더 - 일간/주간 뷰 휴일 표시
+  ///
+  /// build 경로(_buildCalendar)에서 호출되므로 watch로 구독해야
+  /// 휴일 데이터가 나중에 로드돼도 캘린더에 반영됩니다.
   List<TimeRegion> _buildSpecialRegions(CalendarSettingsState settings) {
-    final holidayAsync = ref.read(currentHolidaysProvider);
+    final holidayAsync = ref.watch(currentHolidaysProvider);
 
     return holidayAsync.when(
       data: (holidays) {

@@ -63,7 +63,13 @@ class ScheduleTimerSection extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (e, s) => const SizedBox.shrink(),
+      error: (e, s) => Padding(
+        padding: const EdgeInsets.only(left: 32),
+        child: Text(
+          '타이머를 불러올 수 없습니다',
+          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+        ),
+      ),
     );
   }
 }

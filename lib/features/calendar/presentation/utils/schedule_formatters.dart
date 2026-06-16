@@ -25,6 +25,21 @@ bool isAllDay(DateTime start, DateTime end) {
       end.difference(start).inHours >= 24;
 }
 
+/// [compareDate]가 일정 기간 [startDate, endDate]에 포함되는지 검사합니다.
+///
+/// 시작일·종료일과 같은 날이거나, 두 날짜 사이에 걸친 멀티-데이 일정을
+/// 캘린더 셀에서 올바르게 판별하기 위해 사용합니다.
+bool isIncludeDay(DateTime startDate, DateTime endDate, DateTime compareDate) {
+  // 종일/자정 종료 일정은 종료 시각(자정)을 exclusive end로 다루므로,
+  // 비교 전에 effective end를 하루 당겨 다음 날 셀에 포함되지 않도록 한다.
+  final effectiveEnd = isAllDay(startDate, endDate)
+      ? endDate.subtract(const Duration(days: 1))
+      : endDate;
+  return isSameDay(startDate, compareDate) ||
+      isSameDay(effectiveEnd, compareDate) ||
+      (startDate.isBefore(compareDate) && effectiveEnd.isAfter(compareDate));
+}
+
 String formatScheduleTime(ScheduleRead schedule) {
   final start = schedule.startTime.toLocal();
   final end = schedule.endTime.toLocal();
@@ -55,15 +70,26 @@ String getScheduleStatusText(ScheduleState state) => switch (state) {
   ScheduleState.planned => '계획됨',
   ScheduleState.confirmed => '확정됨',
   ScheduleState.cancelled => '취소됨',
-  ScheduleState.$unknown => state.toString(),
+  ScheduleState.$unknown => '알 수 없음',
 };
 
-Color getScheduleStatusColor(ScheduleState state) => switch (state) {
-  ScheduleState.planned => Colors.orange,
-  ScheduleState.confirmed => Colors.green,
-  ScheduleState.cancelled => Colors.red,
-  ScheduleState.$unknown => Colors.grey,
-};
+/// 상태 배지 색상.
+///
+/// 시맨틱 색(계획=주황/확정=초록/취소=빨강/알 수 없음=회색)은 유지하되,
+/// [brightness]에 따라 shade를 골라 라이트/다크 모드 모두에서 대비를 확보한다.
+Color getScheduleStatusColor(ScheduleState state, Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  return switch (state) {
+    ScheduleState.planned =>
+      isDark ? Colors.orange.shade300 : Colors.orange.shade700,
+    ScheduleState.confirmed =>
+      isDark ? Colors.green.shade300 : Colors.green.shade700,
+    ScheduleState.cancelled =>
+      isDark ? Colors.red.shade300 : Colors.red.shade700,
+    ScheduleState.$unknown =>
+      isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+  };
+}
 
 // ============================================================
 // TimerStatus 매핑

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 class InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String value;
+  final String? value;
   final Widget? valueWidget;
   final bool isMultiline;
 
@@ -15,10 +15,13 @@ class InfoRow extends StatelessWidget {
     super.key,
     required this.icon,
     required this.label,
-    required this.value,
+    this.value,
     this.valueWidget,
     this.isMultiline = false,
-  });
+  }) : assert(
+         value != null || valueWidget != null,
+         'value 또는 valueWidget 중 하나는 반드시 제공해야 합니다',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +46,7 @@ class InfoRow extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 32),
             child:
-                valueWidget ?? Text(value, style: theme.textTheme.bodyMedium),
+                valueWidget ?? Text(value!, style: theme.textTheme.bodyMedium),
           ),
         ],
       );
@@ -57,7 +60,7 @@ class InfoRow extends StatelessWidget {
         SizedBox(width: 60, child: Text(label, style: labelStyle)),
         const SizedBox(width: 12),
         Expanded(
-          child: valueWidget ?? Text(value, style: theme.textTheme.bodyMedium),
+          child: valueWidget ?? Text(value!, style: theme.textTheme.bodyMedium),
         ),
       ],
     );
