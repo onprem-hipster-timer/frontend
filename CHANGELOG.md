@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+---
+
+## [v2026.06.16-ad57845] - 2026-06-16
+
 ### Changed
 
 #### Timer WebSocket
@@ -106,5 +112,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.04.04-bedf04d...HEAD
+[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.16-ad57845...HEAD
+[v2026.06.16-ad57845]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.04.04-bedf04d...v2026.06.16-ad57845
 [v2026.04.04-bedf04d]: https://github.com/onprem-hipster-timer/frontend/compare/main...v2026.04.04-bedf04d
