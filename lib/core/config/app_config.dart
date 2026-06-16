@@ -79,9 +79,9 @@ class AppConfig {
 
   /// Supabase Anon Key
   static String get supabaseAnonKey {
-    final key = _readEnv('SUPABASE_ANON_KEY');
+    final key = _readEnv('SUPABASE_PUBLISHABLE_KEY');
     if (key == null || key.isEmpty) {
-      throw Exception('SUPABASE_ANON_KEY가 .env 파일에 설정되지 않았습니다.');
+      throw Exception('SUPABASE_PUBLISHABLE_KEY가 .env 파일에 설정되지 않았습니다.');
     }
     return key;
   }

@@ -56,7 +56,7 @@ sealed class AuthStatus with _$AuthStatus {
 /// ```dart
 /// await Supabase.initialize(
 ///   url: 'YOUR_SUPABASE_URL',
-///   anonKey: 'YOUR_SUPABASE_ANON_KEY',
+///   anonKey: 'YOUR_SUPABASE_PUBLISHABLE_KEY',
 /// );
 /// ```
 @Riverpod(keepAlive: true)
