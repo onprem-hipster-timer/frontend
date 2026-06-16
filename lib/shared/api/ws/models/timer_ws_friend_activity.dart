@@ -17,6 +17,7 @@ abstract class TimerWsFriendActivity extends TimerWsEvent
     required String action,
     @JsonKey(name: 'timer_id') required String timerId,
     @JsonKey(name: 'timer_title') String? timerTitle,
+    @JsonKey(name: 'display_name') String? displayName,
   }) = _TimerWsFriendActivity;
 
   factory TimerWsFriendActivity.fromJson(Map<String, Object?> json) =>

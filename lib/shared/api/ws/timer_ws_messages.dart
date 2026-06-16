@@ -30,10 +30,7 @@ TimerWsEvent parseTimerWsMessage(String raw) {
         return TimerWsTimerCreated.fromJson(payloadJson);
       case 'timer.updated':
         return TimerWsTimerUpdated.fromJson(payloadJson);
-      case 'timer.completed':
-        return TimerWsTimerCompleted.fromJson(payloadJson);
       case 'timer.sync_result':
-      case 'timer.synced':
         return TimerWsSyncResult.fromJson(payloadJson);
       case 'timer.friend_activity':
         return TimerWsFriendActivity.fromJson(payloadJson);
