@@ -6,7 +6,7 @@ import 'timer_ws_event.dart';
 part 'timer_ws_sync_result.freezed.dart';
 part 'timer_ws_sync_result.g.dart';
 
-/// 활성 타이머 동기화 결과 (timer.sync_result / timer.synced)
+/// 활성 타이머 동기화 결과 (timer.sync_result)
 @Freezed(fromJson: true)
 abstract class TimerWsSyncResult extends TimerWsEvent with _$TimerWsSyncResult {
   const TimerWsSyncResult._();

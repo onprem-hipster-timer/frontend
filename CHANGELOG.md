@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 백엔드 Timer WebSocket 스펙 재검토 반영
   - `timer.friend_activity` payload에 `display_name`(nullable) 필드 추가
   - `timer.updated` payload의 `timer`를 nullable로 변경 — `timer.sync` 단건 조회 대상이 없으면 `null`이 올 수 있어, 수신 처리에 null guard 추가(활성 타이머 없음으로 처리)
-  - `timer.completed` / `timer.synced`는 백엔드 공식 메시지 타입이 아닌 하위 호환 fallback임을 코드 주석으로 명시
+  - 백엔드 공식 메시지 타입이 아닌 `timer.completed` / `timer.synced` fallback 처리 제거
 
 ---
 

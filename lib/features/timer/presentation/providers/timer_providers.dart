@@ -63,7 +63,7 @@ final timerWsLastErrorProvider =
 
 /// 활성 타이머 조회 (실시간)
 ///
-/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / completed / sync_result) payload로만 갱신합니다.
+/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / sync_result) payload로만 갱신합니다.
 @riverpod
 Stream<TimerRead?> activeTimer(Ref ref) async* {
   final repository = ref.watch(timerRepositoryProvider);
@@ -88,13 +88,16 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
         ref.invalidate(timerHistoryProvider);
         yield timer;
       case TimerWsTimerUpdated(timer: final timer):
-        // timer.sync 단건 조회 응답에서 대상이 없으면 timer == null이 올 수 있음.
-        // 이 경우 활성 타이머 없음으로 간주해 null을 흘려보낸다.
+        // timer.sync 단건 조회 응답에서 대상이 없거나, 완료/취소 상태가 오면
+        // 활성 타이머 없음으로 간주해 null을 흘려보낸다.
         ref.invalidate(timerHistoryProvider);
-        yield timer;
-      case TimerWsTimerCompleted():
-        ref.invalidate(timerHistoryProvider);
-        yield null;
+        if (timer == null ||
+            timer.status == TimerStatus.completed ||
+            timer.status == TimerStatus.cancelled) {
+          yield null;
+        } else {
+          yield timer;
+        }
       case TimerWsSyncResult():
         ref.invalidate(timerHistoryProvider);
         if (event.timers.isEmpty) {

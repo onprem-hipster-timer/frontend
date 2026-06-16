@@ -138,19 +138,7 @@ void main() {
       });
     });
 
-    group('timer.completed', () {
-      test('완료된 타이머를 파싱한다', () {
-        final raw = jsonEncode({
-          'type': 'timer.completed',
-          'payload': {'timer': _minimalTimerJson('t5', status: 'COMPLETED')},
-        });
-        final event = parseTimerWsMessage(raw) as TimerWsTimerCompleted;
-        expect(event.timer.id, 't5');
-        expect(event.timer.status, TimerStatus.completed);
-      });
-    });
-
-    group('timer.sync_result / timer.synced', () {
+    group('timer.sync_result', () {
       test('timer.sync_result로 여러 타이머를 파싱한다', () {
         final raw = jsonEncode({
           'type': 'timer.sync_result',
@@ -167,19 +155,6 @@ void main() {
         expect(event.timers[0].id, 't1');
         expect(event.timers[1].status, TimerStatus.paused);
         expect(event.count, 2);
-      });
-
-      test('timer.synced도 동일하게 파싱한다', () {
-        final raw = jsonEncode({
-          'type': 'timer.synced',
-          'payload': {
-            'timers': [_minimalTimerJson('t1')],
-            'count': 1,
-          },
-        });
-        final event = parseTimerWsMessage(raw) as TimerWsSyncResult;
-        expect(event.timers.length, 1);
-        expect(event.count, 1);
       });
 
       test('빈 타이머 목록도 파싱한다', () {
@@ -281,6 +256,27 @@ void main() {
         final event = parseTimerWsMessage(raw) as TimerWsUnknown;
         expect(event.rawType, 'some.future.type');
         expect(event.payload!['data'], 123);
+      });
+
+      test('공식 타입이 아닌 timer.completed는 TimerWsUnknown으로 파싱한다', () {
+        final raw = jsonEncode({
+          'type': 'timer.completed',
+          'payload': {'timer': _minimalTimerJson('t5', status: 'COMPLETED')},
+        });
+        final event = parseTimerWsMessage(raw) as TimerWsUnknown;
+        expect(event.rawType, 'timer.completed');
+      });
+
+      test('공식 타입이 아닌 timer.synced는 TimerWsUnknown으로 파싱한다', () {
+        final raw = jsonEncode({
+          'type': 'timer.synced',
+          'payload': {
+            'timers': [_minimalTimerJson('t1')],
+            'count': 1,
+          },
+        });
+        final event = parseTimerWsMessage(raw) as TimerWsUnknown;
+        expect(event.rawType, 'timer.synced');
       });
 
       test('잘못된 JSON 문자열은 TimerWsUnknown을 반환한다', () {

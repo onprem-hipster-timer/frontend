@@ -30,12 +30,7 @@ TimerWsEvent parseTimerWsMessage(String raw) {
         return TimerWsTimerCreated.fromJson(payloadJson);
       case 'timer.updated':
         return TimerWsTimerUpdated.fromJson(payloadJson);
-      // 'timer.completed'는 백엔드 공식 메시지 타입이 아니며, 하위 호환 fallback으로만 처리한다.
-      case 'timer.completed':
-        return TimerWsTimerCompleted.fromJson(payloadJson);
-      // 'timer.synced'는 공식 타입이 아니며, 'timer.sync_result'의 하위 호환 alias로만 처리한다.
       case 'timer.sync_result':
-      case 'timer.synced':
         return TimerWsSyncResult.fromJson(payloadJson);
       case 'timer.friend_activity':
         return TimerWsFriendActivity.fromJson(payloadJson);
