@@ -75,6 +75,19 @@ void main() {
       expect(pauseSize.height, greaterThan(stopSize.height));
     });
 
+    testWidgets('PAUSED 상태에서 재개는 큰 FAB이고 정지는 작은 FAB이다', (tester) async {
+      final timer = makeTimer(id: 'timer-1', status: TimerStatus.paused);
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: timer, controller: controller);
+
+      final stopSize = tester.getSize(_dashboardFabByIcon(Icons.stop));
+      final resumeSize = tester.getSize(_dashboardFabByIcon(Icons.play_arrow));
+
+      expect(resumeSize.width, greaterThan(stopSize.width));
+      expect(resumeSize.height, greaterThan(stopSize.height));
+    });
+
     testWidgets('히스토리 목록 정지 버튼도 확인 다이얼로그를 거친다', (tester) async {
       final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
       final controller = _FakeTimerController();
@@ -90,6 +103,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.stopCalled, isFalse);
+    });
+
+    testWidgets('히스토리 목록 정지 실패 시 SnackBar를 표시한다', (tester) async {
+      final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
+      final controller = _FakeTimerController(stopError: Exception('failed'));
+
+      await _pumpTimerPage(tester, timer: timer, controller: controller);
+
+      await tester.tap(_historyStopButton());
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '종료'));
+      await tester.pumpAndSettle();
+
+      expect(controller.stopCalled, isTrue);
+      expect(controller.stoppedTimerId, timer.id);
+      expect(find.text('타이머 정지 실패: Exception: failed'), findsOneWidget);
     });
   });
 }
@@ -142,6 +171,9 @@ Finder _historyStopButton() {
 }
 
 class _FakeTimerController extends TimerController {
+  _FakeTimerController({this.stopError});
+
+  final Object? stopError;
   bool stopCalled = false;
   String? stoppedTimerId;
 
@@ -152,6 +184,10 @@ class _FakeTimerController extends TimerController {
   Future<void> stopTimer({String? timerId}) async {
     stopCalled = true;
     stoppedTimerId = timerId;
+    final error = stopError;
+    if (error != null) {
+      throw error;
+    }
   }
 
   @override

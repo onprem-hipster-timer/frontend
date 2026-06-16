@@ -291,7 +291,7 @@ class DigitalClock extends StatelessWidget {
         color: duration.inSeconds > 0
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-        letterSpacing: 0,
+        letterSpacing: compact ? 0 : 4,
       ),
     );
   }
@@ -594,6 +594,25 @@ class TimerHistoryItem extends ConsumerWidget {
 
   const TimerHistoryItem({super.key, required this.timer});
 
+  Future<void> _stopTimer(BuildContext context, WidgetRef ref) async {
+    final confirmed = await _confirmStopTimer(context);
+    if (!context.mounted || !confirmed) return;
+
+    try {
+      await ref
+          .read(timerControllerProvider.notifier)
+          .stopTimer(timerId: timer.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('타이머 정지 실패: ${error.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
   ({IconData icon, Color bg, Color fg, String label}) _statusStyle(
     BuildContext context,
   ) {
@@ -742,13 +761,7 @@ class TimerHistoryItem extends ConsumerWidget {
                   ),
                 IconButton(
                   icon: Icon(Icons.stop, color: theme.colorScheme.error),
-                  onPressed: () async {
-                    final confirmed = await _confirmStopTimer(context);
-                    if (!context.mounted || !confirmed) return;
-                    await ref
-                        .read(timerControllerProvider.notifier)
-                        .stopTimer(timerId: timer.id);
-                  },
+                  onPressed: () => _stopTimer(context, ref),
                   tooltip: '정지',
                 ),
               ],
