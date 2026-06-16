@@ -95,8 +95,8 @@ void main() {
           },
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
-        expect(event.timer.id, 't2');
-        expect(event.timer.status, TimerStatus.paused);
+        expect(event.timer!.id, 't2');
+        expect(event.timer!.status, TimerStatus.paused);
         expect(event.action, 'pause');
       });
 
@@ -116,6 +116,25 @@ void main() {
         });
         final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
         expect(event.action, 'sync');
+      });
+
+      test('단건 조회 대상이 없으면 timer가 null이다', () {
+        final raw = jsonEncode({
+          'type': 'timer.updated',
+          'payload': {'timer': null, 'action': 'sync'},
+        });
+        final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
+        expect(event.timer, isNull);
+        expect(event.action, 'sync');
+      });
+
+      test('payload에 timer 키가 없어도 null로 파싱한다', () {
+        final raw = jsonEncode({
+          'type': 'timer.updated',
+          'payload': {'action': 'sync'},
+        });
+        final event = parseTimerWsMessage(raw) as TimerWsTimerUpdated;
+        expect(event.timer, isNull);
       });
     });
 
@@ -183,6 +202,7 @@ void main() {
             'action': 'start',
             'timer_id': 'timer-99',
             'timer_title': '친구 작업',
+            'display_name': '친구 이름',
           },
         });
         final event = parseTimerWsMessage(raw) as TimerWsFriendActivity;
@@ -190,15 +210,17 @@ void main() {
         expect(event.action, 'start');
         expect(event.timerId, 'timer-99');
         expect(event.timerTitle, '친구 작업');
+        expect(event.displayName, '친구 이름');
       });
 
-      test('timer_title이 없으면 null이다', () {
+      test('timer_title과 display_name이 없으면 null이다', () {
         final raw = jsonEncode({
           'type': 'timer.friend_activity',
           'payload': {'friend_id': 'f1', 'action': 'stop', 'timer_id': 't1'},
         });
         final event = parseTimerWsMessage(raw) as TimerWsFriendActivity;
         expect(event.timerTitle, isNull);
+        expect(event.displayName, isNull);
       });
     });
 
@@ -473,6 +495,7 @@ void main() {
         'action': 'start',
         'timer_id': 't1',
         'timer_title': 'x',
+        'display_name': 'name',
       });
       final restored = TimerWsFriendActivity.fromJson(original.toJson());
       expect(restored, original);

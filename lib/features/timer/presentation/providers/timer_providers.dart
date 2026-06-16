@@ -85,7 +85,11 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
       case TimerWsConnected():
         client.resetReconnectAttempts();
       case TimerWsTimerCreated(timer: final timer):
+        ref.invalidate(timerHistoryProvider);
+        yield timer;
       case TimerWsTimerUpdated(timer: final timer):
+        // timer.sync 단건 조회 응답에서 대상이 없으면 timer == null이 올 수 있음.
+        // 이 경우 활성 타이머 없음으로 간주해 null을 흘려보낸다.
         ref.invalidate(timerHistoryProvider);
         yield timer;
       case TimerWsTimerCompleted():
