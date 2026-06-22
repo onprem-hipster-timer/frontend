@@ -97,8 +97,8 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       final result = await api.createTagGroupV1TagsGroupsPost(body: data);
 
-      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
-      // 건너뛴다. API는 이미 성공했으므로 결과는 그대로 반환한다.
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
       if (ref.mounted) {
         ref.invalidate(tagGroupsRawProvider);
         state = const AsyncValue.data(null);
@@ -132,8 +132,8 @@ class TagMutations extends _$TagMutations {
         options: options,
       );
 
-      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
-      // 건너뛴다. API는 이미 성공했으므로 결과는 그대로 반환한다.
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
       if (ref.mounted) {
         ref.invalidate(tagGroupsRawProvider);
         state = const AsyncValue.data(null);
@@ -158,12 +158,12 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       await api.deleteTagGroupV1TagsGroupsGroupIdDelete(groupId: groupId);
 
-      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
-      // 건너뛴다. 삭제 API는 이미 성공했으므로 에러로 처리하지 않는다.
-      if (!ref.mounted) return;
-
-      ref.invalidate(tagGroupsRawProvider);
-      state = const AsyncValue.data(null);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(tagGroupsRawProvider);
+        state = const AsyncValue.data(null);
+      }
     } catch (error, stackTrace) {
       if (ref.mounted) {
         state = AsyncValue.error(error, stackTrace);
@@ -186,8 +186,8 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       final result = await api.createTagV1TagsPost(body: data);
 
-      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
-      // 건너뛴다. API는 이미 성공했으므로 결과는 그대로 반환한다.
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
       if (ref.mounted) {
         ref.invalidate(tagGroupsRawProvider);
         state = const AsyncValue.data(null);
@@ -215,8 +215,8 @@ class TagMutations extends _$TagMutations {
         body: data,
       );
 
-      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
-      // 건너뛴다. API는 이미 성공했으므로 결과는 그대로 반환한다.
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
       if (ref.mounted) {
         ref.invalidate(tagGroupsRawProvider);
         state = const AsyncValue.data(null);
@@ -240,12 +240,12 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       await api.deleteTagV1TagsTagIdDelete(tagId: tagId);
 
-      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
-      // 건너뛴다. 삭제 API는 이미 성공했으므로 에러로 처리하지 않는다.
-      if (!ref.mounted) return;
-
-      ref.invalidate(tagGroupsRawProvider);
-      state = const AsyncValue.data(null);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(tagGroupsRawProvider);
+        state = const AsyncValue.data(null);
+      }
     } catch (error, stackTrace) {
       if (ref.mounted) {
         state = AsyncValue.error(error, stackTrace);
