@@ -1,61 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 
+// 참고: formatDuration·formatTime은 lib/core/utils/time_formatters.dart로 이동했으며
+// 해당 테스트는 test/core/utils/time_formatters_test.dart에 있습니다.
 void main() {
-  // ============================================================
-  // formatDuration
-  // ============================================================
-  group('formatDuration', () {
-    test('0초는 00:00:00', () {
-      expect(formatDuration(Duration.zero), '00:00:00');
-    });
-
-    test('59초는 00:00:59', () {
-      expect(formatDuration(const Duration(seconds: 59)), '00:00:59');
-    });
-
-    test('60초(1분)는 00:01:00', () {
-      expect(formatDuration(const Duration(seconds: 60)), '00:01:00');
-    });
-
-    test('3661초(1시간 1분 1초)는 01:01:01', () {
-      expect(formatDuration(const Duration(seconds: 3661)), '01:01:01');
-    });
-
-    test('3600초(1시간)는 01:00:00', () {
-      expect(formatDuration(const Duration(hours: 1)), '01:00:00');
-    });
-
-    test('36000초(10시간)는 10:00:00', () {
-      expect(formatDuration(const Duration(hours: 10)), '10:00:00');
-    });
-
-    test('90061초(25시간 1분 1초)는 25:01:01', () {
-      expect(formatDuration(const Duration(seconds: 90061)), '25:01:01');
-    });
-  });
-
-  // ============================================================
-  // formatTime
-  // ============================================================
-  group('formatTime', () {
-    test('자정(UTC)을 로컬 HH:MM으로 변환한다', () {
-      final dt = DateTime.utc(2026, 6, 15, 0, 0);
-      final result = formatTime(dt);
-      expect(result, matches(RegExp(r'^\d{2}:\d{2}$')));
-    });
-
-    test('오후 시간도 정상 표시한다', () {
-      final dt = DateTime(2026, 6, 15, 23, 59);
-      expect(formatTime(dt), '23:59');
-    });
-
-    test('새벽 시간을 앞자리 0으로 패딩한다', () {
-      final dt = DateTime(2026, 6, 15, 1, 5);
-      expect(formatTime(dt), '01:05');
-    });
-  });
-
   // ============================================================
   // formatDate
   // ============================================================

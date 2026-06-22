@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
-import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/shared/domain/tag_group_with_tags.dart';
+import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';

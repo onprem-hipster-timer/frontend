@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
+import 'package:momeet/core/utils/timezone_utils.dart';
 
 // ============================================================
 // Constants
@@ -91,13 +92,7 @@ String _extractCity(String timezoneId) {
 ///
 /// 예: '+09:00', '-05:00', '+05:30'
 String _formatOffset(tz.Location location) {
-  final now = tz.TZDateTime.now(location);
-  final offset = now.timeZoneOffset;
-  final totalMinutes = offset.inMinutes;
-  final hours = totalMinutes ~/ 60;
-  final minutes = totalMinutes.remainder(60).abs();
-  final sign = totalMinutes >= 0 ? '+' : '-';
-  return '$sign${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  return formatUtcOffset(tz.TZDateTime.now(location).timeZoneOffset);
 }
 
 /// 타임존을 사용자 친화적인 이름으로 변환합니다.
