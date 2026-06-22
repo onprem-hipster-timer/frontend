@@ -159,37 +159,7 @@ Future<List<ScheduleRead>> currentSchedules(Ref ref) async {
   final api = ref.watch(schedulesApiProvider);
 
   // 뷰 타입에 따라 조회 범위 결정
-  late DateTime startDate;
-  late DateTime endDate;
-
-  switch (settings.viewType) {
-    case CalendarViewType.day:
-      startDate = DateTime(
-        displayDate.year,
-        displayDate.month,
-        displayDate.day,
-      );
-      endDate = startDate.add(const Duration(days: 1));
-    case CalendarViewType.week:
-      // 주의 시작일 계산 (월요일 기준)
-      final weekday = displayDate.weekday;
-      final start = displayDate.subtract(Duration(days: weekday - 1));
-      startDate = DateTime(start.year, start.month, start.day);
-      endDate = startDate.add(const Duration(days: 7));
-    case CalendarViewType.month:
-    case CalendarViewType.agenda:
-      // 월 시작 전 주부터 월 끝 후 주까지 (캘린더 표시 영역)
-      final firstOfMonth = DateTime(displayDate.year, displayDate.month, 1);
-      final firstWeekday = firstOfMonth.weekday;
-      startDate = firstOfMonth.subtract(Duration(days: firstWeekday - 1));
-
-      final lastOfMonth = DateTime(displayDate.year, displayDate.month + 1, 0);
-      final lastWeekday = lastOfMonth.weekday;
-      endDate = lastOfMonth.add(Duration(days: 7 - lastWeekday + 1));
-    case CalendarViewType.year:
-      startDate = DateTime(displayDate.year, 1, 1);
-      endDate = DateTime(displayDate.year + 1, 1, 1);
-  }
+  final (startDate, endDate) = _visibleDateRange(settings, displayDate);
 
   final response = await api.readSchedulesV1SchedulesGet(
     startDate: startDate.toUtc(),
@@ -236,35 +206,7 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   final displayDate = settings.displayDate;
 
   // 뷰 타입에 따라 필요한 연도 범위 결정
-  late DateTime startDate;
-  late DateTime endDate;
-
-  switch (settings.viewType) {
-    case CalendarViewType.day:
-      startDate = DateTime(
-        displayDate.year,
-        displayDate.month,
-        displayDate.day,
-      );
-      endDate = startDate.add(const Duration(days: 1));
-    case CalendarViewType.week:
-      final weekday = displayDate.weekday;
-      final start = displayDate.subtract(Duration(days: weekday - 1));
-      startDate = DateTime(start.year, start.month, start.day);
-      endDate = startDate.add(const Duration(days: 7));
-    case CalendarViewType.month:
-    case CalendarViewType.agenda:
-      final firstOfMonth = DateTime(displayDate.year, displayDate.month, 1);
-      final firstWeekday = firstOfMonth.weekday;
-      startDate = firstOfMonth.subtract(Duration(days: firstWeekday - 1));
-
-      final lastOfMonth = DateTime(displayDate.year, displayDate.month + 1, 0);
-      final lastWeekday = lastOfMonth.weekday;
-      endDate = lastOfMonth.add(Duration(days: 7 - lastWeekday + 1));
-    case CalendarViewType.year:
-      startDate = DateTime(displayDate.year, 1, 1);
-      endDate = DateTime(displayDate.year + 1, 1, 1);
-  }
+  final (startDate, endDate) = _visibleDateRange(settings, displayDate);
 
   // 필요한 연도들 추출
   final years = <int>{};
@@ -298,4 +240,41 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
 Future<ScheduleCalendarDataSource> scheduleOnlyDataSource(Ref ref) async {
   final schedules = await ref.watch(filteredSchedulesProvider.future);
   return ScheduleCalendarDataSource(schedules);
+}
+
+(DateTime, DateTime) _visibleDateRange(
+  CalendarSettingsState settings,
+  DateTime displayDate,
+) {
+  switch (settings.viewType) {
+    case CalendarViewType.day:
+      final startDate = DateTime(
+        displayDate.year,
+        displayDate.month,
+        displayDate.day,
+      );
+      return (startDate, startDate.add(const Duration(days: 1)));
+    case CalendarViewType.week:
+      final startDate = _startOfWeek(displayDate, settings.firstDayOfWeek);
+      return (startDate, startDate.add(const Duration(days: 7)));
+    case CalendarViewType.month:
+    case CalendarViewType.agenda:
+      final firstOfMonth = DateTime(displayDate.year, displayDate.month, 1);
+      final lastOfMonth = DateTime(displayDate.year, displayDate.month + 1, 0);
+      final startDate = _startOfWeek(firstOfMonth, settings.firstDayOfWeek);
+      final lastWeekStart = _startOfWeek(lastOfMonth, settings.firstDayOfWeek);
+      final endDate = lastWeekStart.add(const Duration(days: 7));
+      return (startDate, endDate);
+    case CalendarViewType.year:
+      return (
+        DateTime(displayDate.year, 1, 1),
+        DateTime(displayDate.year + 1, 1, 1),
+      );
+  }
+}
+
+DateTime _startOfWeek(DateTime date, int firstDayOfWeek) {
+  final delta = (date.weekday - firstDayOfWeek) % DateTime.daysPerWeek;
+  final start = date.subtract(Duration(days: delta));
+  return DateTime(start.year, start.month, start.day);
 }

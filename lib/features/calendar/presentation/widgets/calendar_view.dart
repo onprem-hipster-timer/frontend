@@ -334,7 +334,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final holiday = holidayAsync.whenOrNull(
       data: (holidays) => holidays.where((h) {
         final holidayDate = parseHolidayDate(h.locdate);
-        return holidayDate != null && fmt.isSameDay(holidayDate, date);
+        return h.isHoliday &&
+            holidayDate != null &&
+            fmt.isSameDay(holidayDate, date);
       }).firstOrNull,
     );
 
@@ -496,7 +498,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         // 현재 날짜에 해당하는 휴일 찾기
         final holiday = holidays.where((h) {
           final holidayDate = parseHolidayDate(h.locdate);
-          return holidayDate != null &&
+          return h.isHoliday &&
+              holidayDate != null &&
               fmt.isSameDay(holidayDate, details.date);
         }).firstOrNull;
 
@@ -649,6 +652,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     return holidayAsync.when(
       data: (holidays) {
         return holidays
+            .where((holiday) => holiday.isHoliday)
             .map((holiday) {
               final holidayDate = parseHolidayDate(holiday.locdate);
               if (holidayDate == null) return null;

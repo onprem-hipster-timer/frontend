@@ -91,9 +91,7 @@ class CalendarPage extends ConsumerWidget {
         titleText = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(displayDate);
         break;
       case CalendarViewType.week:
-        final startOfWeek = displayDate.subtract(
-          Duration(days: displayDate.weekday - 1),
-        );
+        final startOfWeek = _startOfWeek(displayDate, settings.firstDayOfWeek);
         final endOfWeek = startOfWeek.add(const Duration(days: 6));
         titleText =
             '${DateFormat('M/d', 'ko').format(startOfWeek)} - ${DateFormat('M/d', 'ko').format(endOfWeek)}';
@@ -191,6 +189,12 @@ class CalendarPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+DateTime _startOfWeek(DateTime date, int firstDayOfWeek) {
+  final delta = (date.weekday - firstDayOfWeek) % DateTime.daysPerWeek;
+  final start = date.subtract(Duration(days: delta));
+  return DateTime(start.year, start.month, start.day);
 }
 
 /// 필터 시트 내용
