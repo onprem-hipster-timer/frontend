@@ -28,38 +28,26 @@ class ScheduleMutations extends _$ScheduleMutations {
   /// [data] 생성할 일정 정보
   /// 성공 시 일정 목록을 새로고침하고, UI 로딩 상태를 관리합니다.
   Future<void> createSchedule(ScheduleCreate data) async {
-    // 이미 dispose된 상태인지 확인
-    if (!ref.mounted) return;
-
-    // 로딩 상태로 설정
     state = const AsyncValue.loading();
 
     try {
       final api = ref.read(schedulesApiProvider);
-
-      // API 호출하여 일정 생성
       final createdSchedule = await api.createScheduleV1SchedulesPost(
         body: data,
       );
 
-      // provider가 dispose되지 않았는지 확인
-      if (!ref.mounted) return;
-
-      // 성공 상태로 설정
-      state = const AsyncValue.data(null);
-
-      // 캘린더 목록 새로고침 (현재 화면에 새 일정이 바로 표시되도록)
-      ref.invalidate(currentSchedulesProvider);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(currentSchedulesProvider);
+        state = const AsyncValue.data(null);
+      }
 
       debugPrint('일정이 성공적으로 생성되었습니다: ${createdSchedule.id}');
     } catch (error, stackTrace) {
-      // provider가 dispose되지 않았는지 확인
-      if (!ref.mounted) return;
-
-      // 에러 상태로 설정
-      state = AsyncValue.error(error, stackTrace);
-
-      // 에러 로깅
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       debugPrint('일정 생성 실패: $error');
       rethrow; // UI에서 에러 처리할 수 있도록 다시 throw
     }
@@ -74,14 +62,10 @@ class ScheduleMutations extends _$ScheduleMutations {
     ScheduleUpdate data, {
     RequestOptions? options,
   }) async {
-    // 이미 dispose된 상태인지 확인
-    if (!ref.mounted) return;
-
     state = const AsyncValue.loading();
 
     try {
       final api = ref.read(schedulesApiProvider);
-
       final updatedSchedule = await api
           .updateScheduleV1SchedulesScheduleIdPatch(
             scheduleId: id,
@@ -89,18 +73,18 @@ class ScheduleMutations extends _$ScheduleMutations {
             options: options,
           );
 
-      // provider가 dispose되지 않았는지 확인
-      if (!ref.mounted) return;
-
-      state = const AsyncValue.data(null);
-      ref.invalidate(currentSchedulesProvider);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(currentSchedulesProvider);
+        state = const AsyncValue.data(null);
+      }
 
       debugPrint('일정이 성공적으로 수정되었습니다: ${updatedSchedule.id}');
     } catch (error, stackTrace) {
-      // provider가 dispose되지 않았는지 확인
-      if (!ref.mounted) return;
-
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       debugPrint('일정 수정 실패: $error');
       rethrow;
     }
@@ -110,28 +94,24 @@ class ScheduleMutations extends _$ScheduleMutations {
   ///
   /// [id] 삭제할 일정 ID
   Future<void> deleteSchedule(String id) async {
-    // 이미 dispose된 상태인지 확인
-    if (!ref.mounted) return;
-
     state = const AsyncValue.loading();
 
     try {
       final api = ref.read(schedulesApiProvider);
-
       await api.deleteScheduleV1SchedulesScheduleIdDelete(scheduleId: id);
 
-      // provider가 dispose되지 않았는지 확인
-      if (!ref.mounted) return;
-
-      state = const AsyncValue.data(null);
-      ref.invalidate(currentSchedulesProvider);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(currentSchedulesProvider);
+        state = const AsyncValue.data(null);
+      }
 
       debugPrint('일정이 성공적으로 삭제되었습니다: $id');
     } catch (error, stackTrace) {
-      // provider가 dispose되지 않았는지 확인
-      if (!ref.mounted) return;
-
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       debugPrint('일정 삭제 실패: $error');
       rethrow;
     }
@@ -142,31 +122,30 @@ class ScheduleMutations extends _$ScheduleMutations {
   /// [scheduleId] 변환할 일정 ID
   /// [tagGroupId] TODO가 속할 TagGroup ID
   Future<void> convertToTodo(String scheduleId, String tagGroupId) async {
-    if (!ref.mounted) return;
-
     state = const AsyncValue.loading();
 
     try {
       final api = ref.read(schedulesApiProvider);
-
       await api.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
         scheduleId: scheduleId,
         tagGroupId: tagGroupId,
       );
 
-      if (!ref.mounted) return;
-
-      state = const AsyncValue.data(null);
-      ref.invalidate(scheduleDetailProvider(scheduleId));
-      ref.invalidate(currentSchedulesProvider);
-      // 변환된 TODO가 특정 태그 그룹에 속할 수 있으므로 family 전체를 무효화한다.
-      ref.invalidate(todosProvider);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(scheduleDetailProvider(scheduleId));
+        ref.invalidate(currentSchedulesProvider);
+        // 변환된 TODO가 특정 태그 그룹에 속할 수 있으므로 family 전체를 무효화한다.
+        ref.invalidate(todosProvider);
+        state = const AsyncValue.data(null);
+      }
 
       debugPrint('일정이 TODO로 변환되었습니다: $scheduleId');
     } catch (error, stackTrace) {
-      if (!ref.mounted) return;
-
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       debugPrint('TODO 변환 실패: $error');
       rethrow;
     }

@@ -400,9 +400,12 @@ class TagManagementPage extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await ref
-            .read(tagMutationsProvider.notifier)
-            .deleteGroup(tagGroup.groupId);
+        await deleteTagGroupMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(tagGroupsRawProvider.notifier)
+              .deleteGroup(tagGroup.groupId),
+        );
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -463,7 +466,10 @@ class TagManagementPage extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await ref.read(tagMutationsProvider.notifier).deleteTag(tag.id);
+        await deleteTagMutation.run(
+          ref,
+          (tsx) => tsx.get(tagGroupsRawProvider.notifier).deleteTag(tag.id),
+        );
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
