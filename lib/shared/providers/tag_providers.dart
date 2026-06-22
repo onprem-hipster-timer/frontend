@@ -97,12 +97,17 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       final result = await api.createTagGroupV1TagsGroupsPost(body: data);
 
-      ref.invalidate(tagGroupsRawProvider);
-
-      state = const AsyncValue.data(null);
+      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
+      // 건너뛴다. API는 이미 성공했으므로 결과는 그대로 반환한다.
+      if (ref.mounted) {
+        ref.invalidate(tagGroupsRawProvider);
+        state = const AsyncValue.data(null);
+      }
       return result;
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       rethrow;
     }
   }
@@ -127,12 +132,17 @@ class TagMutations extends _$TagMutations {
         options: options,
       );
 
-      ref.invalidate(tagGroupsRawProvider);
-
-      state = const AsyncValue.data(null);
+      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
+      // 건너뛴다. API는 이미 성공했으므로 결과는 그대로 반환한다.
+      if (ref.mounted) {
+        ref.invalidate(tagGroupsRawProvider);
+        state = const AsyncValue.data(null);
+      }
       return result;
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       rethrow;
     }
   }
@@ -148,11 +158,16 @@ class TagMutations extends _$TagMutations {
       final api = ref.read(tagsApiProvider);
       await api.deleteTagGroupV1TagsGroupsGroupIdDelete(groupId: groupId);
 
-      ref.invalidate(tagGroupsRawProvider);
+      // 화면 이탈 등으로 autoDispose provider가 dispose되면 ref 후처리를
+      // 건너뛴다. 삭제 API는 이미 성공했으므로 에러로 처리하지 않는다.
+      if (!ref.mounted) return;
 
+      ref.invalidate(tagGroupsRawProvider);
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      if (ref.mounted) {
+        state = AsyncValue.error(error, stackTrace);
+      }
       rethrow;
     }
   }
