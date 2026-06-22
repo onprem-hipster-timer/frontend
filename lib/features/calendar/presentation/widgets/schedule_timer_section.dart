@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart';
-import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/core/utils/time_formatters.dart';
 
 /// 일정에 연결된 타이머 목록을 표시하는 섹션.
 ///

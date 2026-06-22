@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
-import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/shared/domain/tag_group_with_tags.dart';
+import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
@@ -50,8 +50,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(tagMutationsProvider);
-    final isLoading = mutations.isLoading;
+    final isLoading = _isEditMode
+        ? ref.watch(updateTagMutation).isPending
+        : ref.watch(createTagMutation).isPending;
     final availableGroupsAsync = ref.watch(tagTreeProvider);
 
     return availableGroupsAsync.when(
@@ -441,9 +442,12 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           name: _nameController.text.trim(),
           color: _selectedColor.toHex(),
         );
-        await ref
-            .read(tagMutationsProvider.notifier)
-            .updateTag(widget.tag!.id, updateData);
+        await updateTagMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(tagGroupsRawProvider.notifier)
+              .updateTag(widget.tag!.id, updateData),
+        );
         if (mounted) {
           navigator.pop();
           scaffoldMessenger.showSnackBar(
@@ -466,7 +470,10 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           color: _selectedColor.toHex(),
           groupId: _selectedGroupId,
         );
-        await ref.read(tagMutationsProvider.notifier).createTag(createData);
+        await createTagMutation.run(
+          ref,
+          (tsx) => tsx.get(tagGroupsRawProvider.notifier).createTag(createData),
+        );
         if (mounted) {
           navigator.pop();
           _showSuccess(scaffoldMessenger, '태그가 생성되었습니다');

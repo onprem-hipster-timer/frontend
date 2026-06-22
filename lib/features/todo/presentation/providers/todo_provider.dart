@@ -72,13 +72,17 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
       final api = ref.read(todosApiProvider);
       final response = await api.createTodoV1TodosPost(body: data);
 
-      // 목록 갱신
-      ref.invalidate(todosProvider);
-
-      state = const AsyncValue.data(null);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(todosProvider);
+        state = const AsyncValue.data(null);
+      }
       return response;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (ref.mounted) {
+        state = AsyncValue.error(e, st);
+      }
       rethrow;
     }
   }
@@ -99,13 +103,17 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
         options: options,
       );
 
-      // 목록 갱신
-      ref.invalidate(todosProvider);
-
-      state = const AsyncValue.data(null);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(todosProvider);
+        state = const AsyncValue.data(null);
+      }
       return response;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (ref.mounted) {
+        state = AsyncValue.error(e, st);
+      }
       rethrow;
     }
   }
@@ -118,13 +126,17 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
       final api = ref.read(todosApiProvider);
       await api.deleteTodoV1TodosTodoIdDelete(todoId: todoId);
 
-      // 목록 갱신
-      ref.invalidate(todosProvider);
-
-      state = const AsyncValue.data(null);
+      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
+      // (Riverpod 3: UnmountedRefException 방지)
+      if (ref.mounted) {
+        ref.invalidate(todosProvider);
+        state = const AsyncValue.data(null);
+      }
       return true;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (ref.mounted) {
+        state = AsyncValue.error(e, st);
+      }
       return false;
     }
   }

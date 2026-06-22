@@ -131,7 +131,7 @@ TodoTree buildTodoTree(List<TodoRead> todos) {
 }
 
 /// 노드가 다른 노드의 자손인지 확인
-bool isDescendantOf(TodoTree tree, String nodeId, String potentialAncestorId) {
+bool _isDescendantOf(TodoTree tree, String nodeId, String potentialAncestorId) {
   final node = tree.getNode(nodeId);
   if (node == null) return false;
 
@@ -141,7 +141,7 @@ bool isDescendantOf(TodoTree tree, String nodeId, String potentialAncestorId) {
 
 /// 노드가 다른 노드의 조상인지 확인
 bool isAncestorOf(TodoTree tree, String nodeId, String potentialDescendantId) {
-  return isDescendantOf(tree, potentialDescendantId, nodeId);
+  return _isDescendantOf(tree, potentialDescendantId, nodeId);
 }
 
 /// 드롭이 유효한지 확인 (순환 방지)
