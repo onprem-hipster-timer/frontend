@@ -412,7 +412,10 @@ class TodoGroupDetailPage extends ConsumerWidget {
 
     if (confirmed && context.mounted) {
       try {
-        await ref.read(tagMutationsProvider.notifier).deleteGroup(group.id);
+        await deleteTagGroupMutation.run(
+          ref,
+          (tsx) => tsx.get(tagGroupsRawProvider.notifier).deleteGroup(group.id),
+        );
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

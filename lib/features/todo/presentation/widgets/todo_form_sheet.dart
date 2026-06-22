@@ -881,9 +881,12 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             description: '할 일을 위한 기본 태그 그룹입니다.',
           );
 
-          await ref
-              .read(tag_providers.tagMutationsProvider.notifier)
-              .createGroup(defaultGroup);
+          await tag_providers.createTagGroupMutation.run(
+            ref,
+            (tsx) => tsx
+                .get(tag_providers.tagGroupsRawProvider.notifier)
+                .createGroup(defaultGroup),
+          );
 
           // 생성 후 다시 태그 그룹 데이터 가져오기
           final updatedAsync = await ref.refresh(
