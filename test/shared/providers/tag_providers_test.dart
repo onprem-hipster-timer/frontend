@@ -9,7 +9,11 @@ class MockTagsClient extends Mock implements TagsClient {}
 
 class FakeTagGroupCreate extends Fake implements TagGroupCreate {}
 
+class FakeTagGroupUpdate extends Fake implements TagGroupUpdate {}
+
 class FakeTagCreate extends Fake implements TagCreate {}
+
+class FakeTagUpdate extends Fake implements TagUpdate {}
 
 TagGroupReadWithTags _group(
   String id,
@@ -42,7 +46,9 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakeTagGroupCreate());
+    registerFallbackValue(FakeTagGroupUpdate());
     registerFallbackValue(FakeTagCreate());
+    registerFallbackValue(FakeTagUpdate());
   });
 
   setUp(() {
@@ -61,6 +67,14 @@ void main() {
     when(
       () => api.readTagGroupsV1TagsGroupsGet(options: any(named: 'options')),
     ).thenAnswer((_) async => groups);
+  }
+
+  /// CUD 메서드는 invalidateSelf로 목록을 갱신하므로, 호출 동안 provider가
+  /// autoDispose되지 않게 목록을 구독한 컨테이너를 만든다(=목록 화면이 떠 있는 상황).
+  ProviderContainer listeningContainer() {
+    final container = makeContainer();
+    container.listen(tagGroupsRawProvider, (_, _) {});
+    return container;
   }
 
   group('파생 provider', () {
@@ -103,29 +117,29 @@ void main() {
     });
   });
 
-  group('TagMutations - 태그 그룹 CRUD', () {
-    test('createGroup은 API를 호출하고 결과를 반환한다', () async {
+  group('TagGroupsRaw - CUD 메서드는 해당 REST API를 호출한다', () {
+    test('createGroup', () async {
       stubRead([]);
-      final created = TagGroupRead(
-        id: 'g1',
-        name: 'New',
-        color: '#000000',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      );
       when(
         () => api.createTagGroupV1TagsGroupsPost(
           body: any(named: 'body'),
           options: any(named: 'options'),
         ),
-      ).thenAnswer((_) async => created);
+      ).thenAnswer(
+        (_) async => TagGroupRead(
+          id: 'g1',
+          name: 'New',
+          color: '#000000',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+        ),
+      );
 
-      final container = makeContainer();
-      final result = await container
-          .read(tagMutationsProvider.notifier)
+      final container = listeningContainer();
+      await container
+          .read(tagGroupsRawProvider.notifier)
           .createGroup(TagGroupCreate(name: 'New', color: '#000000'));
 
-      expect(result, created);
       verify(
         () => api.createTagGroupV1TagsGroupsPost(
           body: any(named: 'body'),
@@ -134,7 +148,39 @@ void main() {
       ).called(1);
     });
 
-    test('deleteGroup은 API를 호출한다', () async {
+    test('updateGroup', () async {
+      stubRead([]);
+      when(
+        () => api.updateTagGroupV1TagsGroupsGroupIdPatch(
+          groupId: any(named: 'groupId'),
+          body: any(named: 'body'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => TagGroupRead(
+          id: 'g1',
+          name: 'Up',
+          color: '#000000',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+        ),
+      );
+
+      final container = listeningContainer();
+      await container
+          .read(tagGroupsRawProvider.notifier)
+          .updateGroup('g1', TagGroupUpdate(name: 'Up'));
+
+      verify(
+        () => api.updateTagGroupV1TagsGroupsGroupIdPatch(
+          groupId: 'g1',
+          body: any(named: 'body'),
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+    });
+
+    test('deleteGroup', () async {
       stubRead([]);
       when(
         () => api.deleteTagGroupV1TagsGroupsGroupIdDelete(
@@ -143,8 +189,8 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final container = makeContainer();
-      await container.read(tagMutationsProvider.notifier).deleteGroup('g1');
+      final container = listeningContainer();
+      await container.read(tagGroupsRawProvider.notifier).deleteGroup('g1');
 
       verify(
         () => api.deleteTagGroupV1TagsGroupsGroupIdDelete(
@@ -153,25 +199,21 @@ void main() {
         ),
       ).called(1);
     });
-  });
 
-  group('TagMutations - 태그 CRUD', () {
-    test('createTag은 API를 호출한다', () async {
+    test('createTag', () async {
       stubRead([]);
-      final created = _tag('t1', 'g1');
       when(
         () => api.createTagV1TagsPost(
           body: any(named: 'body'),
           options: any(named: 'options'),
         ),
-      ).thenAnswer((_) async => created);
+      ).thenAnswer((_) async => _tag('t1', 'g1'));
 
-      final container = makeContainer();
-      final result = await container
-          .read(tagMutationsProvider.notifier)
+      final container = listeningContainer();
+      await container
+          .read(tagGroupsRawProvider.notifier)
           .createTag(TagCreate(name: 'tag', color: '#FF5733', groupId: 'g1'));
 
-      expect(result, created);
       verify(
         () => api.createTagV1TagsPost(
           body: any(named: 'body'),
@@ -180,7 +222,31 @@ void main() {
       ).called(1);
     });
 
-    test('deleteTag은 API를 호출한다', () async {
+    test('updateTag', () async {
+      stubRead([]);
+      when(
+        () => api.updateTagV1TagsTagIdPatch(
+          tagId: any(named: 'tagId'),
+          body: any(named: 'body'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async => _tag('t1', 'g1'));
+
+      final container = listeningContainer();
+      await container
+          .read(tagGroupsRawProvider.notifier)
+          .updateTag('t1', TagUpdate(name: 'up'));
+
+      verify(
+        () => api.updateTagV1TagsTagIdPatch(
+          tagId: 't1',
+          body: any(named: 'body'),
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+    });
+
+    test('deleteTag', () async {
       stubRead([]);
       when(
         () => api.deleteTagV1TagsTagIdDelete(
@@ -189,8 +255,8 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final container = makeContainer();
-      await container.read(tagMutationsProvider.notifier).deleteTag('t1');
+      final container = listeningContainer();
+      await container.read(tagGroupsRawProvider.notifier).deleteTag('t1');
 
       verify(
         () => api.deleteTagV1TagsTagIdDelete(
@@ -201,8 +267,8 @@ void main() {
     });
   });
 
-  group('TagMutations - 캐시 무효화', () {
-    test('mutation 후 tagGroupsRaw가 재조회된다', () async {
+  group('TagGroupsRaw - 캐시 갱신', () {
+    test('CUD 후 invalidateSelf로 목록이 재조회된다', () async {
       stubRead([]);
       when(
         () => api.deleteTagV1TagsTagIdDelete(
@@ -211,17 +277,73 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final container = makeContainer();
-      // keepAlive: 무효화 후 재계산을 관찰하기 위해 구독 유지
-      container.listen(tagGroupsRawProvider, (_, _) {});
-
-      await container.read(tagGroupsRawProvider.future);
-      await container.read(tagMutationsProvider.notifier).deleteTag('t1');
-      await container.read(tagGroupsRawProvider.future);
+      final container = listeningContainer();
+      await container.read(tagGroupsRawProvider.future); // 최초 조회
+      await container.read(tagGroupsRawProvider.notifier).deleteTag('t1');
+      await container.read(tagGroupsRawProvider.future); // 갱신 후 재조회
 
       verify(
         () => api.readTagGroupsV1TagsGroupsGet(options: any(named: 'options')),
       ).called(2);
+    });
+  });
+
+  group('Mutation - UI operation state', () {
+    test('run 성공 시 상태가 MutationSuccess가 되고 목록이 갱신된다', () async {
+      stubRead([]);
+      when(
+        () => api.deleteTagGroupV1TagsGroupsGroupIdDelete(
+          groupId: any(named: 'groupId'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final container = listeningContainer();
+      container.listen(deleteTagGroupMutation, (_, _) {}); // 상태 구독(자동 reset 방지)
+      await container.read(tagGroupsRawProvider.future); // 최초 조회
+
+      await deleteTagGroupMutation.run(
+        container,
+        (tsx) => tsx.get(tagGroupsRawProvider.notifier).deleteGroup('g1'),
+      );
+
+      expect(container.read(deleteTagGroupMutation).isSuccess, isTrue);
+      verify(
+        () => api.deleteTagGroupV1TagsGroupsGroupIdDelete(
+          groupId: 'g1',
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+      // invalidateSelf로 목록이 재조회됨
+      await container.read(tagGroupsRawProvider.future);
+      verify(
+        () => api.readTagGroupsV1TagsGroupsGet(options: any(named: 'options')),
+      ).called(2);
+    });
+
+    test('run 실패 시 원래 에러를 rethrow하고 상태가 MutationError가 된다', () async {
+      stubRead([]);
+      when(
+        () => api.deleteTagGroupV1TagsGroupsGroupIdDelete(
+          groupId: any(named: 'groupId'),
+          options: any(named: 'options'),
+        ),
+      ).thenThrow(Exception('delete-failed'));
+
+      final container = listeningContainer();
+      container.listen(deleteTagGroupMutation, (_, _) {});
+
+      await expectLater(
+        deleteTagGroupMutation.run(
+          container,
+          (tsx) => tsx.get(tagGroupsRawProvider.notifier).deleteGroup('g1'),
+        ),
+        throwsA(
+          predicate((Object? e) => e.toString().contains('delete-failed')),
+        ),
+      );
+
+      expect(container.read(deleteTagGroupMutation).hasError, isTrue);
     });
   });
 }
