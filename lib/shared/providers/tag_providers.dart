@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
+import 'package:momeet/shared/domain/tag_group_with_tags.dart';
 
 part 'tag_providers.g.dart';
 
@@ -14,6 +14,8 @@ part 'tag_providers.g.dart';
 ///
 /// `readTagGroupsV1TagsGroupsGet()`이 그룹과 태그를 모두 포함하므로
 /// 한 번의 API 호출로 모든 데이터를 가져옵니다.
+///
+/// tag·todo 양쪽 feature가 공유하는 단일 소스입니다.
 @riverpod
 Future<List<TagGroupReadWithTags>> tagGroupsRaw(Ref ref) async {
   final api = ref.watch(tagsApiProvider);
@@ -74,7 +76,8 @@ Future<List<TagGroupWithTags>> tagTree(Ref ref) async {
 
 /// 태그 및 태그 그룹 변경 작업을 담당하는 Provider
 ///
-/// 모든 CRUD 작업 후 관련 Provider들을 invalidate하여 UI를 자동 갱신합니다.
+/// 모든 CRUD 작업 후 [tagGroupsRawProvider]를 invalidate하여
+/// 파생 provider(tagGroups·tagTree)와 UI를 자동 갱신합니다.
 @riverpod
 class TagMutations extends _$TagMutations {
   @override
@@ -87,7 +90,6 @@ class TagMutations extends _$TagMutations {
   /// 태그 그룹 생성
   ///
   /// [data] 생성할 태그 그룹 데이터
-  /// 성공 시 태그 그룹 목록을 새로고침합니다.
   Future<TagGroupRead> createGroup(TagGroupCreate data) async {
     state = const AsyncValue.loading();
 
@@ -109,6 +111,7 @@ class TagMutations extends _$TagMutations {
   ///
   /// [groupId] 수정할 그룹 ID
   /// [data] 수정할 데이터
+  /// [options] 명시적 null 전송 등 요청 옵션 (선택)
   Future<TagGroupRead> updateGroup(
     String groupId,
     TagGroupUpdate data, {
@@ -178,7 +181,7 @@ class TagMutations extends _$TagMutations {
     }
   }
 
-  /// 태그 수정
+  /// 태그 수정 (그룹 이동 포함)
   ///
   /// [tagId] 수정할 태그 ID
   /// [data] 수정할 데이터
