@@ -75,8 +75,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(todoMutationsProvider);
-    final isLoading = mutations.isLoading;
+    final isLoading = _isEditMode
+        ? ref.watch(updateTodoMutation).isPending
+        : ref.watch(createTodoMutation).isPending;
 
     return Container(
       decoration: BoxDecoration(
@@ -928,15 +929,18 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           deadline: _selectedDeadline,
         );
 
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .update(
-              widget.todo!.id,
-              updateData,
-              options: description.isEmpty
-                  ? explicitNulls(['description'])
-                  : null,
-            );
+        await updateTodoMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(todoMutationsProvider.notifier)
+              .update(
+                widget.todo!.id,
+                updateData,
+                options: description.isEmpty
+                    ? explicitNulls(['description'])
+                    : null,
+              ),
+        );
 
         if (mounted) {
           navigator.pop();
@@ -968,7 +972,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           parentId: widget.defaultParentId,
         );
 
-        await ref.read(todoMutationsProvider.notifier).create(createData);
+        await createTodoMutation.run(
+          ref,
+          (tsx) => tsx.get(todoMutationsProvider.notifier).create(createData),
+        );
 
         if (mounted) {
           navigator.pop();
