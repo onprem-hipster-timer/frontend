@@ -26,7 +26,10 @@ class TodoGroupDetailPage extends ConsumerWidget {
 
     // 특정 그룹의 할 일들만 가져오기
     final todoTreeAsync = ref.watch(todoTreeProvider(groupId));
-    final mutationState = ref.watch(todoMutationsProvider);
+    final isTodoMutating =
+        ref.watch(createTodoMutation).isPending ||
+        ref.watch(updateTodoMutation).isPending ||
+        ref.watch(deleteTodoMutation).isPending;
 
     // 그룹 정보 가져오기
     final groupAsync = ref.watch(tagGroupsProvider);
@@ -53,7 +56,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
           ),
 
           // 로딩 오버레이 (뮤테이션 중)
-          if (mutationState.isLoading)
+          if (isTodoMutating)
             Container(
               color: Theme.of(
                 context,

@@ -39,11 +39,12 @@ class TodoActions {
 
     if (confirmed == true && context.mounted) {
       try {
-        final success = await ref
-            .read(todoMutationsProvider.notifier)
-            .delete(todo.id);
+        await deleteTodoMutation.run(
+          ref,
+          (tsx) => tsx.get(todoMutationsProvider.notifier).delete(todo.id),
+        );
 
-        if (success && context.mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('${todo.title}이(가) 삭제되었습니다'),
