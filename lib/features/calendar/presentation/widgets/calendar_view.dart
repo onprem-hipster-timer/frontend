@@ -494,8 +494,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final isCurrentMonth =
         details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
-    final highlightWeekends =
-        ref.watch(calendarSettingsProvider).highlightWeekends;
+    final highlightWeekends = ref
+        .watch(calendarSettingsProvider)
+        .highlightWeekends;
 
     // 휴일 확인
     final holidayAsync = ref.watch(currentHolidaysProvider);
@@ -598,8 +599,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final isCurrentMonth =
         details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
-    final highlightWeekends =
-        ref.watch(calendarSettingsProvider).highlightWeekends;
+    final highlightWeekends = ref
+        .watch(calendarSettingsProvider)
+        .highlightWeekends;
     final dateStyle = _monthDateTextStyle(
       date: details.date,
       isHoliday: false,
