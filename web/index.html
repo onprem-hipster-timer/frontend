@@ -203,10 +203,20 @@
           return k.startsWith('sb-') && k.endsWith('-auth-token');
         });
       }
+      // 명시적 /landing 은 항상 랜딩으로 표시한다.
+      //   Flutter 라우터가 미인증을 확정하고 /landing 으로 보낸 신호이므로,
+      //   만료된 토큰 키가 localStorage 에 남아 있어도(= hasSupabaseSession() true)
+      //   랜딩을 보여줘야 한다. 그렇지 않으면 토글이 동작하지 않아 빈 화면에 도달한다. (#64)
+      function isExplicitLandingHash(hash) {
+        return hash === '#/landing' || hash === '#/landing/';
+      }
+      // 루트(''·#/)는 Flutter 부팅 전 첫 페인트 최적화 — 세션 키가 없을 때만 랜딩.
+      function isRootHash(hash) {
+        return hash === '' || hash === '#/';
+      }
       function isLandingHash(hash) {
-        var isLandingRoute = hash === '#/landing' || hash === '#/landing/'
-            || hash === '' || hash === '#/';
-        return isLandingRoute && !hasSupabaseSession();
+        return isExplicitLandingHash(hash)
+            || (isRootHash(hash) && !hasSupabaseSession());
       }
       window.__momeet = {
         isLanding: isLandingHash(window.location.hash),

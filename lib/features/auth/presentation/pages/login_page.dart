@@ -8,7 +8,13 @@ import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.initialEmail});
+
+  /// 회원가입 폼에서 전환해 올 때 이어받는 이메일.
+  ///
+  /// URL이 아닌 라우터 `extra`(인메모리)로 전달돼 재입력 부담을 줄입니다.
+  /// 비밀번호는 보안상 이어받지 않습니다.
+  final String? initialEmail;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -25,6 +31,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   void initState() {
     super.initState();
+    _emailController.text = widget.initialEmail ?? '';
     _emailController.addListener(_clearError);
     _passwordController.addListener(_clearError);
   }
@@ -177,7 +184,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 children: [
                   const Text('계정이 없으신가요?'),
                   TextButton(
-                    onPressed: () => context.push(AppRoute.signup.path),
+                    onPressed: () => context.push(
+                      AppRoute.signup.path,
+                      extra: _emailController.text.trim(),
+                    ),
                     child: const Text('회원가입'),
                   ),
                 ],

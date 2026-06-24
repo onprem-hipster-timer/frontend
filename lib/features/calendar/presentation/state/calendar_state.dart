@@ -41,7 +41,7 @@ abstract class CalendarSettingsState with _$CalendarSettingsState {
     @Default(true) bool use24HourFormat,
 
     /// 주의 시작 요일 (1 = 월요일, 7 = 일요일)
-    @Default(1) int firstDayOfWeek,
+    @Default(7) int firstDayOfWeek,
 
     /// 배지 표시 스타일 ('colored', 'dot', 'count')
     @Default('colored') String badgeVariant,
@@ -59,6 +59,7 @@ abstract class CalendarSettingsState with _$CalendarSettingsState {
     return CalendarSettingsState(
       selectedDate: now,
       displayDate: DateTime(now.year, now.month, 1),
+      firstDayOfWeek: DateTime.sunday,
     );
   }
 }
