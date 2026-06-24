@@ -488,7 +488,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final isCurrentMonth =
         details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
-    final isWeekend = details.date.weekday == DateTime.sunday;
+    final highlightWeekends =
+        ref.watch(calendarSettingsProvider).highlightWeekends;
 
     // 휴일 확인
     final holidayAsync = ref.watch(currentHolidaysProvider);
@@ -504,7 +505,13 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         }).firstOrNull;
 
         final isHoliday = holiday != null;
-        final isRedDay = isHoliday || isWeekend;
+        final dateStyle = _monthDateTextStyle(
+          date: details.date,
+          isHoliday: isHoliday,
+          isCurrentMonth: isCurrentMonth,
+          highlightWeekends: highlightWeekends,
+          colorScheme: colorScheme,
+        );
 
         return Container(
           decoration: BoxDecoration(
@@ -538,15 +545,9 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                     : Text(
                         '${details.date.day}',
                         style: TextStyle(
-                          color: isRedDay
-                              ? Colors.red
-                              : isCurrentMonth
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                          color: dateStyle.color,
                           fontSize: 14,
-                          fontWeight: isRedDay
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight: dateStyle.weight,
                         ),
                       ),
               ),
@@ -591,7 +592,15 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final isCurrentMonth =
         details.date.month ==
         details.visibleDates[details.visibleDates.length ~/ 2].month;
-    final isWeekend = details.date.weekday == DateTime.sunday;
+    final highlightWeekends =
+        ref.watch(calendarSettingsProvider).highlightWeekends;
+    final dateStyle = _monthDateTextStyle(
+      date: details.date,
+      isHoliday: false,
+      isCurrentMonth: isCurrentMonth,
+      highlightWeekends: highlightWeekends,
+      colorScheme: colorScheme,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -625,21 +634,42 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                 : Text(
                     '${details.date.day}',
                     style: TextStyle(
-                      color: isWeekend
-                          ? Colors.red
-                          : isCurrentMonth
-                          ? colorScheme.onSurface
-                          : colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: dateStyle.color,
                       fontSize: 14,
-                      fontWeight: isWeekend
-                          ? FontWeight.w600
-                          : FontWeight.normal,
+                      fontWeight: dateStyle.weight,
                     ),
                   ),
           ),
         ],
       ),
     );
+  }
+
+  /// 월간 셀 날짜 텍스트 스타일.
+  ///
+  /// 한국 달력 관례에 따라 공휴일·일요일은 빨강, 토요일은 파랑으로 표시하고,
+  /// 나머지는 현재 달 여부에 따라 기본/흐림 색을 쓴다. 주말 강조는
+  /// [highlightWeekends] 설정으로 끌 수 있으나, 공휴일은 항상 강조한다.
+  ({Color color, FontWeight weight}) _monthDateTextStyle({
+    required DateTime date,
+    required bool isHoliday,
+    required bool isCurrentMonth,
+    required bool highlightWeekends,
+    required ColorScheme colorScheme,
+  }) {
+    final isSunday = date.weekday == DateTime.sunday;
+    final isSaturday = date.weekday == DateTime.saturday;
+
+    if (isHoliday || (highlightWeekends && isSunday)) {
+      return (color: Colors.red, weight: FontWeight.w600);
+    }
+    if (highlightWeekends && isSaturday) {
+      return (color: Colors.blue, weight: FontWeight.w600);
+    }
+    final base = isCurrentMonth
+        ? colorScheme.onSurface
+        : colorScheme.onSurface.withValues(alpha: 0.4);
+    return (color: base, weight: FontWeight.normal);
   }
 
   /// Special Regions 빌더 - 일간/주간 뷰 휴일 표시
