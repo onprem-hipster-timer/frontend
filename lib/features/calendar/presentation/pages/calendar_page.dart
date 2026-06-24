@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view_selector.dart';
 
@@ -91,12 +92,10 @@ class CalendarPage extends ConsumerWidget {
         titleText = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(displayDate);
         break;
       case CalendarViewType.week:
-        final startOfWeek = displayDate.subtract(
-          Duration(days: displayDate.weekday - 1),
-        );
-        final endOfWeek = startOfWeek.add(const Duration(days: 6));
+        final weekStart = startOfWeek(displayDate, settings.firstDayOfWeek);
+        final endOfWeek = weekStart.add(const Duration(days: 6));
         titleText =
-            '${DateFormat('M/d', 'ko').format(startOfWeek)} - ${DateFormat('M/d', 'ko').format(endOfWeek)}';
+            '${DateFormat('M/d', 'ko').format(weekStart)} - ${DateFormat('M/d', 'ko').format(endOfWeek)}';
         break;
       case CalendarViewType.month:
       case CalendarViewType.year:
