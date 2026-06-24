@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -159,7 +160,11 @@ Future<List<ScheduleRead>> currentSchedules(Ref ref) async {
   final api = ref.watch(schedulesApiProvider);
 
   // 뷰 타입에 따라 조회 범위 결정
-  final (startDate, endDate) = _visibleDateRange(settings, displayDate);
+  final (startDate, endDate) = visibleDateRange(
+    viewType: settings.viewType,
+    firstDayOfWeek: settings.firstDayOfWeek,
+    displayDate: displayDate,
+  );
 
   final response = await api.readSchedulesV1SchedulesGet(
     startDate: startDate.toUtc(),
@@ -206,7 +211,11 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   final displayDate = settings.displayDate;
 
   // 뷰 타입에 따라 필요한 연도 범위 결정
-  final (startDate, endDate) = _visibleDateRange(settings, displayDate);
+  final (startDate, endDate) = visibleDateRange(
+    viewType: settings.viewType,
+    firstDayOfWeek: settings.firstDayOfWeek,
+    displayDate: displayDate,
+  );
 
   // 필요한 연도들 추출
   final years = <int>{};
@@ -240,41 +249,4 @@ Future<List<HolidayItem>> currentHolidays(Ref ref) async {
 Future<ScheduleCalendarDataSource> scheduleOnlyDataSource(Ref ref) async {
   final schedules = await ref.watch(filteredSchedulesProvider.future);
   return ScheduleCalendarDataSource(schedules);
-}
-
-(DateTime, DateTime) _visibleDateRange(
-  CalendarSettingsState settings,
-  DateTime displayDate,
-) {
-  switch (settings.viewType) {
-    case CalendarViewType.day:
-      final startDate = DateTime(
-        displayDate.year,
-        displayDate.month,
-        displayDate.day,
-      );
-      return (startDate, startDate.add(const Duration(days: 1)));
-    case CalendarViewType.week:
-      final startDate = _startOfWeek(displayDate, settings.firstDayOfWeek);
-      return (startDate, startDate.add(const Duration(days: 7)));
-    case CalendarViewType.month:
-    case CalendarViewType.agenda:
-      final firstOfMonth = DateTime(displayDate.year, displayDate.month, 1);
-      final lastOfMonth = DateTime(displayDate.year, displayDate.month + 1, 0);
-      final startDate = _startOfWeek(firstOfMonth, settings.firstDayOfWeek);
-      final lastWeekStart = _startOfWeek(lastOfMonth, settings.firstDayOfWeek);
-      final endDate = lastWeekStart.add(const Duration(days: 7));
-      return (startDate, endDate);
-    case CalendarViewType.year:
-      return (
-        DateTime(displayDate.year, 1, 1),
-        DateTime(displayDate.year + 1, 1, 1),
-      );
-  }
-}
-
-DateTime _startOfWeek(DateTime date, int firstDayOfWeek) {
-  final delta = (date.weekday - firstDayOfWeek) % DateTime.daysPerWeek;
-  final start = date.subtract(Duration(days: delta));
-  return DateTime(start.year, start.month, start.day);
 }
