@@ -79,7 +79,9 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     ThemeData theme,
     ScheduleRead schedule,
   ) {
-    final mutations = ref.watch(scheduleMutationsProvider);
+    final isScheduleMutating =
+        ref.watch(deleteScheduleMutation).isPending ||
+        ref.watch(convertToTodoMutation).isPending;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -92,9 +94,9 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
           const SizedBox(height: 16),
           ScheduleTimerSection(scheduleId: schedule.id),
           const SizedBox(height: 16),
-          _buildTodoConversionRow(context, ref, schedule, mutations),
+          _buildTodoConversionRow(context, ref, schedule, isScheduleMutating),
           const SizedBox(height: 16),
-          _buildActionButtons(context, ref, schedule, mutations),
+          _buildActionButtons(context, ref, schedule, isScheduleMutating),
         ],
       ),
     );
@@ -242,7 +244,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
-    AsyncValue<void> mutations,
+    bool isLoading,
   ) {
     final hasLinkedTodo = schedule.sourceTodoId != null;
 
@@ -266,7 +268,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     return SizedBox(
       width: double.infinity,
       child: FilledButton.tonal(
-        onPressed: mutations.isLoading
+        onPressed: isLoading
             ? null
             : () => _handleConvertToTodo(context, ref, schedule),
         style: FilledButton.styleFrom(
@@ -297,15 +299,13 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
-    AsyncValue<void> mutations,
+    bool isLoading,
   ) {
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: mutations.isLoading
-                ? null
-                : () => _handleEdit(context, schedule),
+            onPressed: isLoading ? null : () => _handleEdit(context, schedule),
             icon: const Icon(Icons.edit),
             label: const Text('수정'),
             style: OutlinedButton.styleFrom(
@@ -319,7 +319,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
-            onPressed: mutations.isLoading
+            onPressed: isLoading
                 ? null
                 : () => _handleDelete(context, ref, schedule),
             icon: _pendingAction == _PendingAction.delete
@@ -366,11 +366,17 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       tagGroupId = selected.id;
     }
 
+    // 클로저 내부에선 재할당 가능한 지역변수의 null 승격이 풀리므로, 승격된 값을
+    // final 지역변수로 캡처해 전달한다.
+    final resolvedGroupId = tagGroupId;
     setState(() => _pendingAction = _PendingAction.convert);
     try {
-      await ref
-          .read(scheduleMutationsProvider.notifier)
-          .convertToTodo(schedule.id, tagGroupId);
+      await convertToTodoMutation.run(
+        ref,
+        (tsx) => tsx
+            .get(scheduleMutationsProvider.notifier)
+            .convertToTodo(schedule.id, resolvedGroupId),
+      );
 
       if (context.mounted) {
         _showSnackBar(context, message: 'TODO로 변환되었습니다');
@@ -417,9 +423,12 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
 
     setState(() => _pendingAction = _PendingAction.delete);
     try {
-      await ref
-          .read(scheduleMutationsProvider.notifier)
-          .deleteSchedule(schedule.id);
+      await deleteScheduleMutation.run(
+        ref,
+        (tsx) => tsx
+            .get(scheduleMutationsProvider.notifier)
+            .deleteSchedule(schedule.id),
+      );
 
       if (context.mounted) {
         context.pop();

@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/features/tag/presentation/providers/tag_providers.dart'
-    as tag_providers;
+import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
-import 'package:momeet/features/tag/domain/tag_group_with_tags.dart';
+import 'package:momeet/shared/domain/tag_group_with_tags.dart';
 
 /// Todo 생성/수정 폼 시트
 ///
@@ -76,8 +75,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(todoMutationsProvider);
-    final isLoading = mutations.isLoading;
+    final isLoading = _isEditMode
+        ? ref.watch(updateTodoMutation).isPending
+        : ref.watch(createTodoMutation).isPending;
 
     return Container(
       decoration: BoxDecoration(
@@ -882,9 +882,12 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             description: '할 일을 위한 기본 태그 그룹입니다.',
           );
 
-          await ref
-              .read(tag_providers.tagMutationsProvider.notifier)
-              .createGroup(defaultGroup);
+          await tag_providers.createTagGroupMutation.run(
+            ref,
+            (tsx) => tsx
+                .get(tag_providers.tagGroupsRawProvider.notifier)
+                .createGroup(defaultGroup),
+          );
 
           // 생성 후 다시 태그 그룹 데이터 가져오기
           final updatedAsync = await ref.refresh(
@@ -926,15 +929,18 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           deadline: _selectedDeadline,
         );
 
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .update(
-              widget.todo!.id,
-              updateData,
-              options: description.isEmpty
-                  ? explicitNulls(['description'])
-                  : null,
-            );
+        await updateTodoMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(todoMutationsProvider.notifier)
+              .update(
+                widget.todo!.id,
+                updateData,
+                options: description.isEmpty
+                    ? explicitNulls(['description'])
+                    : null,
+              ),
+        );
 
         if (mounted) {
           navigator.pop();
@@ -966,7 +972,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           parentId: widget.defaultParentId,
         );
 
-        await ref.read(todoMutationsProvider.notifier).create(createData);
+        await createTodoMutation.run(
+          ref,
+          (tsx) => tsx.get(todoMutationsProvider.notifier).create(createData),
+        );
 
         if (mounted) {
           navigator.pop();

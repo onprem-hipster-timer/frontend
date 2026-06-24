@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
@@ -49,9 +49,10 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(tagMutationsProvider);
-    final isLoading = mutations.isLoading;
     final isEditMode = widget.tagGroup != null;
+    final isLoading = isEditMode
+        ? ref.watch(updateTagGroupMutation).isPending
+        : ref.watch(createTagGroupMutation).isPending;
 
     // [Fix] viewInsets 패딩을 가장 바깥 Padding에만 적용한다.
     // ─ 이전 구조: Container > Padding(viewInsets) > SingleChildScrollView
@@ -319,15 +320,18 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
           description: description.isEmpty ? null : description,
         );
 
-        await ref
-            .read(tagMutationsProvider.notifier)
-            .updateGroup(
-              widget.tagGroup!.id,
-              updateData,
-              options: description.isEmpty
-                  ? explicitNulls(['description'])
-                  : null,
-            );
+        await updateTagGroupMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(tagGroupsRawProvider.notifier)
+              .updateGroup(
+                widget.tagGroup!.id,
+                updateData,
+                options: description.isEmpty
+                    ? explicitNulls(['description'])
+                    : null,
+              ),
+        );
 
         if (mounted) {
           navigator.pop();
@@ -355,7 +359,11 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
               : _descriptionController.text.trim(),
         );
 
-        await ref.read(tagMutationsProvider.notifier).createGroup(createData);
+        await createTagGroupMutation.run(
+          ref,
+          (tsx) =>
+              tsx.get(tagGroupsRawProvider.notifier).createGroup(createData),
+        );
 
         if (mounted) {
           navigator.pop();

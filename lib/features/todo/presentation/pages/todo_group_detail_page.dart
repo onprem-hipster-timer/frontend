@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/features/tag/presentation/providers/tag_providers.dart';
+import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
@@ -26,7 +26,10 @@ class TodoGroupDetailPage extends ConsumerWidget {
 
     // 특정 그룹의 할 일들만 가져오기
     final todoTreeAsync = ref.watch(todoTreeProvider(groupId));
-    final mutationState = ref.watch(todoMutationsProvider);
+    final isTodoMutating =
+        ref.watch(createTodoMutation).isPending ||
+        ref.watch(updateTodoMutation).isPending ||
+        ref.watch(deleteTodoMutation).isPending;
 
     // 그룹 정보 가져오기
     final groupAsync = ref.watch(tagGroupsProvider);
@@ -53,7 +56,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
           ),
 
           // 로딩 오버레이 (뮤테이션 중)
-          if (mutationState.isLoading)
+          if (isTodoMutating)
             Container(
               color: Theme.of(
                 context,
@@ -412,7 +415,10 @@ class TodoGroupDetailPage extends ConsumerWidget {
 
     if (confirmed && context.mounted) {
       try {
-        await ref.read(tagMutationsProvider.notifier).deleteGroup(group.id);
+        await deleteTagGroupMutation.run(
+          ref,
+          (tsx) => tsx.get(tagGroupsRawProvider.notifier).deleteGroup(group.id),
+        );
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:momeet/core/utils/time_formatters.dart';
 
 /// 캘린더 일정 커스텀 위젯 빌더
 ///
@@ -164,7 +165,7 @@ class ScheduleAppointmentBuilder {
       child: Row(
         children: [
           Text(
-            _formatTime(appointment.startTime),
+            formatTime(appointment.startTime),
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 10,
@@ -233,15 +234,8 @@ class ScheduleAppointmentBuilder {
     return luminance > 0.5 ? Colors.black87 : Colors.white;
   }
 
-  /// 시간 형식 포맷
-  static String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
   /// 시간 범위 형식
   static String _formatTimeRange(DateTime start, DateTime end) {
-    return '${_formatTime(start)} - ${_formatTime(end)}';
+    return '${formatTime(start)} - ${formatTime(end)}';
   }
 }

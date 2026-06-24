@@ -197,13 +197,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.login.path,
         name: AppRoute.login.name,
-        builder: (context, state) => const LoginPage(),
+        // extra: 로그인↔회원가입 폼 전환 시 이어받는 이메일(인메모리)
+        builder: (context, state) => LoginPage(
+          initialEmail: state.extra is String ? state.extra as String : null,
+        ),
       ),
 
       GoRoute(
         path: AppRoute.signup.path,
         name: AppRoute.signup.name,
-        builder: (context, state) => const SignupPage(),
+        // extra: 로그인↔회원가입 폼 전환 시 이어받는 이메일(인메모리)
+        builder: (context, state) => SignupPage(
+          initialEmail: state.extra is String ? state.extra as String : null,
+        ),
       ),
 
       GoRoute(

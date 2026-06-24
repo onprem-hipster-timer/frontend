@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Todo & Schedule Mutations
+- Todo·Schedule CUD 흐름을 Riverpod `Mutation` API 기반 command 패턴으로 전환
+  - 기존 mutation notifier의 `AsyncValue` 로딩/성공/실패 상태 관리를 제거하고, REST 호출 및 관련 provider invalidation 책임만 유지
+  - `mutation.run(..., (tsx) => tsx.get(...notifier).xxx())` 호출 패턴으로 통일해 작업 중 provider 생존과 완료 후 캐시 갱신을 보장
+  - Todo 생성/수정/삭제/상태변경/부모변경, Schedule 생성/수정/삭제/이동/리사이즈/TODO 변환 호출부를 새 패턴으로 전환
+- Todo 삭제 실패 처리를 bool 반환 대신 원래 예외를 전파하는 방식으로 통일
+
+### Added
+
+#### Tests
+- Todo·Schedule mutation 도메인별 테스트 추가
+  - CUD REST API 호출 검증
+  - provider invalidation 후 재조회 검증
+  - `Mutation` 성공/실패 상태 및 원래 예외 전파 검증
+
+### Removed
+
+#### Tests
+- ref.mounted 가드 기반 공용 dispose 안전성 테스트 제거
+  - Mutation 기반 도메인 테스트로 검증 범위 대체
+
+---
+
+## [v2026.06.16-ad57845] - 2026-06-16
+
+### Changed
+
 #### Timer WebSocket
 - 백엔드 Timer WebSocket 스펙 재검토 반영
   - `timer.friend_activity` payload에 `display_name`(nullable) 필드 추가
@@ -106,5 +133,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.04.04-bedf04d...HEAD
+[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.16-ad57845...HEAD
+[v2026.06.16-ad57845]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.04.04-bedf04d...v2026.06.16-ad57845
 [v2026.04.04-bedf04d]: https://github.com/onprem-hipster-timer/frontend/compare/main...v2026.04.04-bedf04d

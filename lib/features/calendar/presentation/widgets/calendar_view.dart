@@ -406,13 +406,16 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final newEndTime = newStartTime.add(duration);
 
     // API 호출로 일정 이동
-    ref
-        .read(scheduleMutationsProvider.notifier)
-        .moveSchedule(
-          appointmentId,
-          newStartTime: newStartTime,
-          newEndTime: newEndTime,
-        );
+    updateScheduleMutation.run(
+      ref,
+      (tsx) => tsx
+          .get(scheduleMutationsProvider.notifier)
+          .moveSchedule(
+            appointmentId,
+            newStartTime: newStartTime,
+            newEndTime: newEndTime,
+          ),
+    );
   }
 
   /// 리사이즈 완료 콜백
@@ -424,13 +427,16 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     if (appointmentId == null) return; // 일정만 리사이즈 가능
 
     // API 호출로 일정 리사이즈
-    ref
-        .read(scheduleMutationsProvider.notifier)
-        .resizeSchedule(
-          appointmentId,
-          newStartTime: details.startTime,
-          newEndTime: details.endTime!,
-        );
+    updateScheduleMutation.run(
+      ref,
+      (tsx) => tsx
+          .get(scheduleMutationsProvider.notifier)
+          .resizeSchedule(
+            appointmentId,
+            newStartTime: details.startTime,
+            newEndTime: details.endTime!,
+          ),
+    );
   }
 
   /// 에러 뷰

@@ -67,7 +67,7 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(scheduleMutationsProvider);
+    final isLoading = ref.watch(createScheduleMutation).isPending;
 
     return AlertDialog(
       title: const Text('새 일정 만들기'),
@@ -195,16 +195,14 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
       actions: [
         // 취소 버튼
         TextButton(
-          onPressed: mutations.isLoading
-              ? null
-              : () => Navigator.of(context).pop(),
+          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
 
         // 저장 버튼
         FilledButton(
-          onPressed: mutations.isLoading ? null : _handleSave,
-          child: mutations.isLoading
+          onPressed: isLoading ? null : _handleSave,
+          child: isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,
@@ -319,9 +317,12 @@ class _ScheduleCreateDialogState extends ConsumerState<ScheduleCreateDialog> {
       );
 
       // API 호출
-      await ref
-          .read(scheduleMutationsProvider.notifier)
-          .createSchedule(scheduleCreate);
+      await createScheduleMutation.run(
+        ref,
+        (tsx) => tsx
+            .get(scheduleMutationsProvider.notifier)
+            .createSchedule(scheduleCreate),
+      );
 
       // 성공 시 다이얼로그 닫기
       if (mounted) {
