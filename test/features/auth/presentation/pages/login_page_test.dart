@@ -174,4 +174,50 @@ void main() {
       expect(find.text('비밀번호를 입력해주세요'), findsOneWidget);
     });
   });
+
+  // ============================================================
+  // 폼 전환 시 이메일 이어받기 (initialEmail)
+  // ============================================================
+  group('이메일 이어받기 (initialEmail)', () {
+    String fieldText(WidgetTester tester, int index) => tester
+        .widget<EditableText>(find.byType(EditableText).at(index))
+        .controller
+        .text;
+
+    testWidgets('initialEmail이 주어지면 이메일 필드에 채워진다', (tester) async {
+      await tester.pumpWidget(
+        pumpApp(
+          const LoginPage(initialEmail: 'carry@over.com'),
+          overrides: [
+            supabaseClientProvider.overrideWithValue(harness.mockSupabase),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('carry@over.com'), findsOneWidget);
+      expect(fieldText(tester, 0), 'carry@over.com');
+    });
+
+    testWidgets('비밀번호는 이어받지 않아 비어 있다', (tester) async {
+      await tester.pumpWidget(
+        pumpApp(
+          const LoginPage(initialEmail: 'carry@over.com'),
+          overrides: [
+            supabaseClientProvider.overrideWithValue(harness.mockSupabase),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(fieldText(tester, 1), '');
+    });
+
+    testWidgets('initialEmail이 없으면 이메일 필드가 비어 있다', (tester) async {
+      await tester.pumpWidget(buildLoginPage());
+      await tester.pumpAndSettle();
+
+      expect(fieldText(tester, 0), '');
+    });
+  });
 }

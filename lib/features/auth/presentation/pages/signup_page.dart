@@ -7,7 +7,13 @@ import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
-  const SignupPage({super.key});
+  const SignupPage({super.key, this.initialEmail});
+
+  /// 로그인 폼에서 전환해 올 때 이어받는 이메일.
+  ///
+  /// URL이 아닌 라우터 `extra`(인메모리)로 전달돼 재입력 부담을 줄입니다.
+  /// 비밀번호는 보안상 이어받지 않습니다.
+  final String? initialEmail;
 
   @override
   ConsumerState<SignupPage> createState() => _SignupPageState();
@@ -21,6 +27,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.text = widget.initialEmail ?? '';
+  }
 
   @override
   void dispose() {
@@ -57,7 +69,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  context.go(AppRoute.login.path);
+                  context.go(
+                    AppRoute.login.path,
+                    extra: _emailController.text.trim(),
+                  );
                 },
                 child: const Text('확인'),
               ),
@@ -207,7 +222,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 children: [
                   const Text('이미 계정이 있으신가요?'),
                   TextButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () => context.go(
+                      AppRoute.login.path,
+                      extra: _emailController.text.trim(),
+                    ),
                     child: const Text('로그인'),
                   ),
                 ],
