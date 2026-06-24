@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
+import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
+import '../../../../helpers/auth_router.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/supabase_mocks.dart';
 
@@ -199,10 +201,17 @@ void main() {
       expect(fieldText(tester, 0), 'carry@over.com');
     });
 
-    testWidgets('비밀번호는 이어받지 않아 비어 있다', (tester) async {
+    testWidgets('initialEmail이 없으면 이메일 필드가 비어 있다', (tester) async {
+      await tester.pumpWidget(buildLoginPage());
+      await tester.pumpAndSettle();
+
+      expect(fieldText(tester, 0), '');
+    });
+
+    testWidgets('로그인 → 회원가입 전환 시 이메일만 넘어가고 비밀번호는 안 넘어간다', (tester) async {
       await tester.pumpWidget(
-        pumpApp(
-          const LoginPage(initialEmail: 'carry@over.com'),
+        pumpAuthFlow(
+          initialLocation: '/login',
           overrides: [
             supabaseClientProvider.overrideWithValue(harness.mockSupabase),
           ],
@@ -210,14 +219,32 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(fieldText(tester, 1), '');
-    });
-
-    testWidgets('initialEmail이 없으면 이메일 필드가 비어 있다', (tester) async {
-      await tester.pumpWidget(buildLoginPage());
+      // 로그인 폼에 이메일 + 비밀번호를 모두 입력
+      await tester.enterText(find.byType(EditableText).at(0), 'carry@over.com');
+      await tester.enterText(find.byType(EditableText).at(1), 'secret-pw');
       await tester.pumpAndSettle();
 
-      expect(fieldText(tester, 0), '');
+      // "회원가입" 전환 버튼 → 회원가입 폼으로 이동
+      await tester.tap(find.widgetWithText(TextButton, '회원가입'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SignupPage), findsOneWidget);
+
+      String signupField(int index) => tester
+          .widget<EditableText>(
+            find
+                .descendant(
+                  of: find.byType(SignupPage),
+                  matching: find.byType(EditableText),
+                )
+                .at(index),
+          )
+          .controller
+          .text;
+
+      expect(signupField(0), 'carry@over.com'); // 이메일 이어받음
+      expect(signupField(1), ''); // 비밀번호는 전달 안 됨
+      expect(signupField(2), ''); // 비밀번호 확인도 전달 안 됨
     });
   });
 }
