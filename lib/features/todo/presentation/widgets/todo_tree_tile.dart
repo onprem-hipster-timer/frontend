@@ -124,9 +124,12 @@ class TodoTreeTile extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final draggedTodo = details.data;
         // 부모 변경 API 호출
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeParent(draggedTodo.id, node.todo.id);
+        await updateTodoMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(todoMutationsProvider.notifier)
+              .changeParent(draggedTodo.id, node.todo.id),
+        );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;
@@ -482,9 +485,12 @@ class TodoRootDropTarget extends ConsumerWidget {
       onAcceptWithDetails: (details) async {
         final draggedTodo = details.data;
         // 부모를 null로 설정하여 루트로 이동
-        await ref
-            .read(todoMutationsProvider.notifier)
-            .changeParent(draggedTodo.id, null);
+        await updateTodoMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(todoMutationsProvider.notifier)
+              .changeParent(draggedTodo.id, null),
+        );
       },
       builder: (context, candidateData, rejectedData) {
         final isValidTarget = candidateData.isNotEmpty;

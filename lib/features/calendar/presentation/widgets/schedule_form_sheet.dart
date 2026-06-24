@@ -95,7 +95,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mutations = ref.watch(scheduleMutationsProvider);
+    final isLoading = widget.existingSchedule != null
+        ? ref.watch(updateScheduleMutation).isPending
+        : ref.watch(createScheduleMutation).isPending;
 
     return Padding(
       // 키보드가 올라왔을 때 UI가 가려지지 않도록 처리
@@ -316,7 +318,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                   // 취소 버튼
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: mutations.isLoading
+                      onPressed: isLoading
                           ? null
                           : () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
@@ -335,14 +337,14 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
                   Expanded(
                     flex: 2,
                     child: FilledButton(
-                      onPressed: mutations.isLoading ? null : _handleSubmit,
+                      onPressed: isLoading ? null : _handleSubmit,
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: mutations.isLoading
+                      child: isLoading
                           ? SizedBox(
                               width: 20,
                               height: 20,
@@ -493,15 +495,18 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           description: description.isEmpty ? null : description,
         );
 
-        await ref
-            .read(scheduleMutationsProvider.notifier)
-            .updateSchedule(
-              widget.existingSchedule!.id,
-              scheduleUpdate,
-              options: description.isEmpty
-                  ? explicitNulls(['description'])
-                  : null,
-            );
+        await updateScheduleMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(scheduleMutationsProvider.notifier)
+              .updateSchedule(
+                widget.existingSchedule!.id,
+                scheduleUpdate,
+                options: description.isEmpty
+                    ? explicitNulls(['description'])
+                    : null,
+              ),
+        );
 
         if (mounted) {
           navigator.pop();
@@ -530,9 +535,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
               : _descriptionController.text.trim(),
         );
 
-        await ref
-            .read(scheduleMutationsProvider.notifier)
-            .createSchedule(scheduleCreate);
+        await createScheduleMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(scheduleMutationsProvider.notifier)
+              .createSchedule(scheduleCreate),
+        );
 
         if (mounted) {
           navigator.pop();

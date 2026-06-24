@@ -52,9 +52,12 @@ class TodoStatusSelector extends ConsumerWidget {
       initialValue: todo.status,
       onSelected: (TodoStatus newStatus) async {
         if (newStatus != todo.status) {
-          await ref
-              .read(todoMutationsProvider.notifier)
-              .changeStatus(todo.id, newStatus);
+          await updateTodoMutation.run(
+            ref,
+            (tsx) => tsx
+                .get(todoMutationsProvider.notifier)
+                .changeStatus(todo.id, newStatus),
+          );
         }
       },
       itemBuilder: (BuildContext context) {

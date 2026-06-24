@@ -20,7 +20,10 @@ class TodoListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todoTreeAsync = ref.watch(todoTreeProvider(groupId));
-    final mutationState = ref.watch(todoMutationsProvider);
+    final isTodoMutating =
+        ref.watch(createTodoMutation).isPending ||
+        ref.watch(updateTodoMutation).isPending ||
+        ref.watch(deleteTodoMutation).isPending;
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +81,7 @@ class TodoListPage extends ConsumerWidget {
           ),
 
           // 로딩 오버레이 (뮤테이션 중)
-          if (mutationState.isLoading)
+          if (isTodoMutating)
             Container(
               color: Theme.of(
                 context,

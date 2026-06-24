@@ -1,6 +1,7 @@
 // Todo Feature - Providers
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/experimental/mutation.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -60,31 +61,23 @@ final allTodoTreeProvider = FutureProvider<TodoTree>((ref) async {
 /// Todo 뮤테이션 Notifier
 ///
 /// 생성, 수정, 삭제 작업을 처리하고 목록을 자동으로 갱신합니다.
-class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
+/// Todo CUD side-effect + 목록 invalidation을 담당하는 command Notifier.
+///
+/// UI 작업 상태(pending/error/success)는 이 클래스가 아니라 아래의 [Mutation]들이
+/// 담당한다(#66 전역 반영). 항상 `mutation.run(ref, (tsx) =>
+/// tsx.get(todoMutationsProvider.notifier).xxx())` 형태로 호출되며, tsx.get이 run
+/// 동안 이 notifier를 alive로 유지하므로 호출 화면이 먼저 dispose돼도 invalidate가
+/// 정상 실행된다. 그래서 메서드마다 ref.mounted 가드가 필요 없다.
+class TodoMutationsNotifier extends Notifier<void> {
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  void build() {}
 
   /// 새 Todo 생성
   Future<TodoRead> create(TodoCreate data) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final api = ref.read(todosApiProvider);
-      final response = await api.createTodoV1TodosPost(body: data);
-
-      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
-      // (Riverpod 3: UnmountedRefException 방지)
-      if (ref.mounted) {
-        ref.invalidate(todosProvider);
-        state = const AsyncValue.data(null);
-      }
-      return response;
-    } catch (e, st) {
-      if (ref.mounted) {
-        state = AsyncValue.error(e, st);
-      }
-      rethrow;
-    }
+    final api = ref.read(todosApiProvider);
+    final response = await api.createTodoV1TodosPost(body: data);
+    ref.invalidate(todosProvider);
+    return response;
   }
 
   /// Todo 수정
@@ -93,52 +86,21 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
     TodoUpdate data, {
     RequestOptions? options,
   }) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final api = ref.read(todosApiProvider);
-      final response = await api.updateTodoV1TodosTodoIdPatch(
-        todoId: todoId,
-        body: data,
-        options: options,
-      );
-
-      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
-      // (Riverpod 3: UnmountedRefException 방지)
-      if (ref.mounted) {
-        ref.invalidate(todosProvider);
-        state = const AsyncValue.data(null);
-      }
-      return response;
-    } catch (e, st) {
-      if (ref.mounted) {
-        state = AsyncValue.error(e, st);
-      }
-      rethrow;
-    }
+    final api = ref.read(todosApiProvider);
+    final response = await api.updateTodoV1TodosTodoIdPatch(
+      todoId: todoId,
+      body: data,
+      options: options,
+    );
+    ref.invalidate(todosProvider);
+    return response;
   }
 
   /// Todo 삭제
-  Future<bool> delete(String todoId) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final api = ref.read(todosApiProvider);
-      await api.deleteTodoV1TodosTodoIdDelete(todoId: todoId);
-
-      // async gap(await) 이후 provider가 dispose됐으면 ref/state를 만지지 않는다.
-      // (Riverpod 3: UnmountedRefException 방지)
-      if (ref.mounted) {
-        ref.invalidate(todosProvider);
-        state = const AsyncValue.data(null);
-      }
-      return true;
-    } catch (e, st) {
-      if (ref.mounted) {
-        state = AsyncValue.error(e, st);
-      }
-      return false;
-    }
+  Future<void> delete(String todoId) async {
+    final api = ref.read(todosApiProvider);
+    await api.deleteTodoV1TodosTodoIdDelete(todoId: todoId);
+    ref.invalidate(todosProvider);
   }
 
   /// 부모 변경 (드래그 앤 드롭)
@@ -158,11 +120,23 @@ class TodoMutationsNotifier extends Notifier<AsyncValue<void>> {
   }
 }
 
-/// Todo 뮤테이션 Provider
-final todoMutationsProvider =
-    NotifierProvider<TodoMutationsNotifier, AsyncValue<void>>(
-      TodoMutationsNotifier.new,
-    );
+/// Todo 뮤테이션 Provider (작업 실행 + 목록 invalidation; UI 상태는 아래 Mutation)
+final todoMutationsProvider = NotifierProvider<TodoMutationsNotifier, void>(
+  TodoMutationsNotifier.new,
+);
+
+// ============================================================
+// Mutations (UI operation state)
+// ============================================================
+
+/// Todo CUD의 UI 작업 상태(pending/error/success)를 담는 Mutation들.
+///
+/// 사용 예: `await createTodoMutation.run(ref, (tsx) =>
+/// tsx.get(todoMutationsProvider.notifier).create(data));`
+/// 상태 구독: `ref.watch(createTodoMutation).isPending`
+final createTodoMutation = Mutation<TodoRead>(label: 'createTodo');
+final updateTodoMutation = Mutation<TodoRead>(label: 'updateTodo');
+final deleteTodoMutation = Mutation<void>(label: 'deleteTodo');
 
 // ============================================================
 // UI 상태 Providers
