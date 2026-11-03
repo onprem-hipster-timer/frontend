@@ -1,6 +1,7 @@
 // WebSocket 타이머 API 클라이언트
 //
 // - 인증: Sec-WebSocket-Protocol: authorization.bearer.<jwt>
+//   (재)연결할 때마다 JWT를 새로 받는다. 끊긴 사이에 만료됐을 수 있다.
 // - 재연결: Rate limit(4029) 시 지수 백오프, 최대 5회
 // - 메시지: JSON, type + payload
 
@@ -18,21 +19,19 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// [createTimer], [pauseTimer], [resumeTimer], [stopTimer], [syncTimers]로 제어합니다.
 class TimerWsClient {
   TimerWsClient({
-    required String accessToken,
+    required Future<String?> Function() accessToken,
     String? timezone,
     this.maxReconnectAttempts = 5,
     @visibleForTesting bool autoConnect = true,
-  }) : _token = accessToken,
+  }) : _accessToken = accessToken,
        _timezone = timezone {
     if (autoConnect) _connect();
   }
 
-  final String _token;
+  /// 연결할 때마다 부르는 JWT 공급자. null이면 로그아웃한 것이라 연결하지 않는다.
+  final Future<String?> Function() _accessToken;
   final String? _timezone;
   final int maxReconnectAttempts;
-
-  @visibleForTesting
-  String get token => _token;
 
   /// Sec-WebSocket-Protocol 헤더에 사용되는 인증 서브프로토콜 목록
   @visibleForTesting
@@ -72,12 +71,23 @@ class TimerWsClient {
     return url;
   }
 
-  void _connect() {
+  Future<void> _connect() async {
     if (_disposed || _manualClose) return;
+
+    final String? token;
+    try {
+      token = await _accessToken();
+    } catch (e) {
+      // JWT를 받지 못함 (네트워크 오류 등): 연결이 끊긴 것처럼 다시 시도한다
+      _onError(e);
+      _reconnectWithBackoff(null);
+      return;
+    }
+    if (token == null || _disposed || _manualClose) return;
 
     final url = wsUrl(AppConfig.apiBaseUrl, timezone: _timezone);
     final uri = Uri.parse(url);
-    final protocols = authProtocols(_token);
+    final protocols = authProtocols(token);
 
     if (kDebugMode && AppConfig.enableDebugLogging) {
       debugPrint('🔌 [WS] Connecting to $url');
@@ -154,7 +164,11 @@ class TimerWsClient {
 
     if (closeCode == 1000) return;
 
-    // 1011, 4029 등: 지수 백오프 후 재연결
+    _reconnectWithBackoff(closeCode);
+  }
+
+  /// 1011, 4029 등: 지수 백오프 후 재연결
+  void _reconnectWithBackoff(int? closeCode) {
     if (_reconnectAttempts < maxReconnectAttempts) {
       final delay = _reconnectAttempts == 0
           ? 1000
