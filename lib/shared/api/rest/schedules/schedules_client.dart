@@ -9,6 +9,7 @@ import '../models/resource_scope.dart';
 import '../models/schedule_create.dart';
 import '../models/schedule_read.dart';
 import '../models/schedule_update.dart';
+import '../models/source_todo_policy.dart';
 import '../models/timer_read.dart';
 
 part 'schedules_client.g.dart';
@@ -132,15 +133,16 @@ abstract class SchedulesClient {
   /// - 일반 일정: schedule_id로 조회하여 삭제.
   /// - 가상 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송.
   ///
-  /// FastAPI Best Practices:.
-  /// - Service는 session을 받아서 CRUD 직접 사용.
-  /// - 가상 인스턴스인 경우 instance_start 쿼리 파라미터로 처리.
+  /// source-linked 일정인데 `source_todo_policy`가 누락되면 422를 반환합니다.
   ///
   /// [instanceStart] - 반복 일정 인스턴스 시작 시간 (ISO 8601 형식).
+  ///
+  /// [sourceTodoPolicy] - source Todo 처리 정책 — 이 일정이 Todo의 마감 투영(source-linked)인 경우 필수, 서버 기본값 없음. clear_deadline: Todo의 마감도 제거 / keep_deadline: 마감 유지.
   @DELETE('/v1/schedules/{schedule_id}')
   Future<void> deleteScheduleV1SchedulesScheduleIdDelete({
     @Path('schedule_id') required String scheduleId,
     @Query('instance_start') DateTime? instanceStart,
+    @Query('source_todo_policy') SourceTodoPolicy? sourceTodoPolicy,
     @DioOptions() RequestOptions? options,
   });
 

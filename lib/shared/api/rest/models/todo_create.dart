@@ -15,11 +15,11 @@ abstract class TodoCreate with _$TodoCreate {
   const factory TodoCreate({
     required String title,
     @JsonKey(name: 'tag_group_id') required String tagGroupId,
-    @Default(TodoStatus.unscheduled) TodoStatus? status,
     String? description,
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
     DateTime? deadline,
     @JsonKey(name: 'parent_id') String? parentId,
+    TodoStatus? status,
   }) = _TodoCreate;
 
   factory TodoCreate.fromJson(Map<String, Object?> json) =>

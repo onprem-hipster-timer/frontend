@@ -5,6 +5,7 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/linked_schedule_policy.dart';
 import '../models/resource_scope.dart';
 import '../models/timer_read.dart';
 import '../models/todo_create.dart';
@@ -24,9 +25,12 @@ abstract class TodosClient {
   ///
   /// Todo는 독립적인 엔티티입니다.
   /// deadline이 있으면 별도의 Schedule이 자동으로 생성됩니다.
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @POST('/v1/todos')
   Future<TodoRead> createTodoV1TodosPost({
     @Body() required TodoCreate body,
+    @Query('timezone') String? timezone,
     @DioOptions() RequestOptions? options,
   });
 
@@ -59,10 +63,13 @@ abstract class TodosClient {
   /// [tagIds] - 태그 ID 리스트 (AND 방식: 모든 지정 태그를 포함한 Todo만 반환).
   ///
   /// [groupIds] - 태그 그룹 ID 리스트 (해당 그룹에 속한 Todo 반환 - 직접 연결 또는 태그 기반).
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @GET('/v1/todos')
   Future<List<TodoRead>> readTodosV1TodosGet({
     @Query('tag_ids') List<String>? tagIds,
     @Query('group_ids') List<String>? groupIds,
+    @Query('timezone') String? timezone,
     @Query('scope') ResourceScope? scope = ResourceScope.mine,
     @DioOptions() RequestOptions? options,
   });
@@ -87,9 +94,12 @@ abstract class TodosClient {
   ///
   /// 본인 소유 Todo 또는 공유 접근 권한이 있는 Todo를 조회합니다.
   /// 접근 권한이 없으면 403 Forbidden을 반환합니다.
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @GET('/v1/todos/{todo_id}')
   Future<TodoRead> readTodoV1TodosTodoIdGet({
     @Path('todo_id') required String todoId,
+    @Query('timezone') String? timezone,
     @DioOptions() RequestOptions? options,
   });
 
@@ -101,21 +111,31 @@ abstract class TodosClient {
   ///
   /// deadline 변경 시:.
   /// - deadline 추가: 새 Schedule 생성.
-  /// - deadline 변경: 기존 Schedule 업데이트.
-  /// - deadline 제거: 기존 Schedule 삭제.
+  /// - deadline 변경: 기존 Schedule 시작 시간 이동 (길이 보존, 없으면 재생성).
+  /// - deadline 제거(null): 연결 Schedule이 있으면 linked_schedule_policy 필수.
+  ///   (delete: 삭제 / unlink: 연결만 해제).
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @PATCH('/v1/todos/{todo_id}')
   Future<TodoRead> updateTodoV1TodosTodoIdPatch({
     @Path('todo_id') required String todoId,
     @Body() required TodoUpdate body,
+    @Query('timezone') String? timezone,
     @DioOptions() RequestOptions? options,
   });
 
   /// Delete Todo.
   ///
   /// Todo 삭제.
+  ///
+  /// 연결된 투영 Schedule은 `linked_schedule_policy`에 따라 처리됩니다.
+  /// 연결 투영이 있는데 정책이 누락되면 422를 반환합니다.
+  ///
+  /// [linkedSchedulePolicy] - 연결 투영 Schedule 처리 정책 — 연결 투영이 있는 경우 필수, 서버 기본값 없음. delete: 투영 삭제 + 접근권한 정리 / unlink: 연결만 해제(일정 보존).
   @DELETE('/v1/todos/{todo_id}')
   Future<void> deleteTodoV1TodosTodoIdDelete({
     @Path('todo_id') required String todoId,
+    @Query('linked_schedule_policy') LinkedSchedulePolicy? linkedSchedulePolicy,
     @DioOptions() RequestOptions? options,
   });
 

@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'linked_schedule_policy.dart';
 import 'todo_status.dart';
 
 part 'todo_update.freezed.dart';
@@ -20,6 +21,8 @@ abstract class TodoUpdate with _$TodoUpdate {
     DateTime? deadline,
     @JsonKey(name: 'parent_id') String? parentId,
     TodoStatus? status,
+    @JsonKey(name: 'linked_schedule_policy')
+    LinkedSchedulePolicy? linkedSchedulePolicy,
   }) = _TodoUpdate;
 
   factory TodoUpdate.fromJson(Map<String, Object?> json) =>
