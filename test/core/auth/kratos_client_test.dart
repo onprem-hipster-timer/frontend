@@ -1,0 +1,341 @@
+// Kratos 클라이언트 테스트. 응답 모양은 로컬 Kratos v26.2.0 실측값을 따른다.
+
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/core/auth/kratos_client.dart';
+import 'package:momeet/core/auth/kratos_models.dart';
+
+class _FakeKratos implements HttpClientAdapter {
+  final requests = <RequestOptions>[];
+  ResponseBody Function(RequestOptions options) respond = (_) => _json(200, {});
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    return respond(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+ResponseBody _json(int status, Map<String, Object?> body) =>
+    ResponseBody.fromString(
+      jsonEncode(body),
+      status,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+
+Map<String, Object?> _flow(
+  String id, {
+  String state = 'choose_method',
+  List<Map<String, Object?>> messages = const [],
+  List<Map<String, Object?>> nodes = const [],
+}) => {
+  'id': id,
+  'state': state,
+  'ui': {'messages': messages, 'nodes': nodes},
+};
+
+Map<String, Object?> _message(int id, String type) => {
+  'id': id,
+  'type': type,
+  'text': 'text $id',
+};
+
+void main() {
+  late _FakeKratos fake;
+  late KratosClient client;
+
+  setUp(() {
+    fake = _FakeKratos();
+    final dio = createKratosDio('https://api.example.com/')
+      ..httpClientAdapter = fake;
+    client = KratosClient(dio);
+  });
+
+  group('플로우 생성과 조회', () {
+    test('/auth 아래 API 플로우를 만들고 세션 헤더는 붙이지 않는다', () async {
+      fake.respond = (_) => _json(200, _flow('f1'));
+
+      final flow = await client.createFlow(KratosFlowType.login);
+
+      final request = fake.requests.single;
+      expect(request.method, 'GET');
+      expect(
+        request.uri.toString(),
+        'https://api.example.com/auth/self-service/login/api',
+      );
+      expect(request.headers.containsKey('X-Session-Token'), isFalse);
+      expect(flow.id, 'f1');
+      expect(flow.state, 'choose_method');
+    });
+
+    test('재인증 로그인 플로우는 refresh=true와 X-Session-Token을 보낸다', () async {
+      fake.respond = (_) => _json(200, _flow('f1'));
+
+      await client.createFlow(
+        KratosFlowType.login,
+        sessionToken: 'ory_st_abc',
+        refresh: true,
+      );
+
+      final request = fake.requests.single;
+      expect(request.uri.queryParameters, {'refresh': 'true'});
+      expect(request.headers['X-Session-Token'], 'ory_st_abc');
+    });
+
+    test('기존 플로우를 ID로 불러온다', () async {
+      fake.respond = (_) => _json(
+        200,
+        _flow('v1', state: 'sent_email', messages: [_message(1080003, 'info')]),
+      );
+
+      final flow = await client.getFlow(KratosFlowType.verification, 'v1');
+
+      expect(
+        fake.requests.single.uri.toString(),
+        'https://api.example.com/auth/self-service/verification/flows?id=v1',
+      );
+      expect(flow.state, 'sent_email');
+      expect(flow.messages.single.id, 1080003);
+    });
+  });
+
+  group('플로우 제출', () {
+    test('flow 쿼리와 JSON 본문을 보내고 로그인 세션 토큰을 돌려준다', () async {
+      fake.respond = (_) => _json(200, {
+        'session_token': 'ory_st_abc',
+        'session': {'id': 's1'},
+        'continue_with': null,
+      });
+
+      final result = await client.submit(KratosFlowType.login, 'f1', {
+        'method': 'password',
+        'identifier': 'a@example.com',
+        'password': 'pw',
+      });
+
+      final request = fake.requests.single;
+      expect(request.method, 'POST');
+      expect(request.uri.path, '/auth/self-service/login');
+      expect(request.uri.queryParameters, {'flow': 'f1'});
+      expect(request.data, {
+        'method': 'password',
+        'identifier': 'a@example.com',
+        'password': 'pw',
+      });
+      expect(result.sessionToken, 'ory_st_abc');
+      expect(result.continueWith, isEmpty);
+    });
+
+    test('가입 결과에서 세션 토큰과 이메일 인증 플로우 ID를 꺼낸다', () async {
+      fake.respond = (_) => _json(200, {
+        'session_token': 'ory_st_new',
+        'continue_with': [
+          {
+            'action': 'show_verification_ui',
+            'flow': {'id': 'v1', 'verifiable_address': 'a@example.com'},
+          },
+          {
+            'action': 'set_ory_session_token',
+            'ory_session_token': 'ory_st_new',
+          },
+        ],
+      });
+
+      final result = await client.submit(KratosFlowType.registration, 'r1', {});
+
+      expect(result.sessionToken, 'ory_st_new');
+      expect(result.verificationFlowId, 'v1');
+    });
+
+    test('복구 코드가 맞으면 세션 토큰과 설정 플로우 ID를 꺼낸다', () async {
+      fake.respond = (_) => _json(200, {
+        ..._flow('r1', state: 'passed_challenge'),
+        'continue_with': [
+          {
+            'action': 'set_ory_session_token',
+            'ory_session_token': 'ory_st_rec',
+          },
+          {
+            'action': 'show_settings_ui',
+            'flow': {
+              'id': 's1',
+              'url': 'https://app.example.com/mypage?flow=s1',
+            },
+          },
+        ],
+      });
+
+      final result = await client.submit(KratosFlowType.recovery, 'r1', {
+        'method': 'code',
+        'code': '123456',
+      });
+
+      expect(result.recoverySessionToken, 'ory_st_rec');
+      expect(result.settingsFlowId, 's1');
+      expect(result.flow?.state, 'passed_challenge');
+    });
+
+    test('400 플로우의 오류 메시지를 KratosException으로 던진다', () async {
+      fake.respond = (_) =>
+          _json(400, _flow('f1', messages: [_message(4000006, 'error')]));
+
+      await expectLater(
+        client.submit(KratosFlowType.login, 'f1', {}),
+        throwsA(
+          isA<KratosException>()
+              .having((e) => e.statusCode, 'statusCode', 400)
+              .having((e) => e.messageId, 'messageId', 4000006),
+        ),
+      );
+    });
+
+    test('입력 칸의 오류 메시지도 모은다', () async {
+      fake.respond = (_) => _json(
+        400,
+        _flow(
+          'r1',
+          nodes: [
+            {
+              'attributes': {'name': 'password'},
+              'messages': [_message(4000032, 'error')],
+            },
+          ],
+        ),
+      );
+
+      await expectLater(
+        client.submit(KratosFlowType.registration, 'r1', {}),
+        throwsA(
+          isA<KratosException>().having(
+            (e) => e.messageId,
+            'messageId',
+            4000032,
+          ),
+        ),
+      );
+    });
+
+    test('200이어도 오류 메시지가 있으면 던진다 (코드 오입력)', () async {
+      fake.respond = (_) => _json(
+        200,
+        _flow(
+          'v1',
+          state: 'sent_email',
+          messages: [_message(4070006, 'error')],
+        ),
+      );
+
+      await expectLater(
+        client.submit(KratosFlowType.verification, 'v1', {
+          'method': 'code',
+          'code': '000000',
+        }),
+        throwsA(
+          isA<KratosException>().having(
+            (e) => e.messageId,
+            'messageId',
+            4070006,
+          ),
+        ),
+      );
+    });
+
+    test('성공 메시지만 있는 플로우는 그대로 돌려준다', () async {
+      fake.respond = (_) => _json(
+        200,
+        _flow(
+          'v1',
+          state: 'passed_challenge',
+          messages: [_message(1080002, 'success')],
+        ),
+      );
+
+      final result = await client.submit(KratosFlowType.verification, 'v1', {});
+
+      expect(result.flow?.state, 'passed_challenge');
+    });
+
+    test('만료된 플로우는 errorId와 use_flow_id를 담는다', () async {
+      fake.respond = (_) => _json(410, {
+        'error': {'id': 'self_service_flow_expired', 'code': 410},
+        'use_flow_id': 'f2',
+      });
+
+      await expectLater(
+        client.submit(KratosFlowType.login, 'f1', {}),
+        throwsA(
+          isA<KratosException>()
+              .having((e) => e.errorId, 'errorId', 'self_service_flow_expired')
+              .having((e) => e.useFlowId, 'useFlowId', 'f2'),
+        ),
+      );
+    });
+  });
+
+  group('세션', () {
+    test('whoami는 사용자와 백엔드용 JWT를 돌려준다', () async {
+      fake.respond = (_) => _json(200, {
+        'id': 'sess',
+        'tokenized': 'header.payload.signature',
+        'identity': {
+          'id': 'u1',
+          'created_at': '2026-11-03T17:45:17.132908Z',
+          'traits': {'email': 'A@example.com'},
+          'verifiable_addresses': [
+            {'value': 'a@example.com', 'verified': true, 'via': 'email'},
+          ],
+        },
+      });
+
+      final session = await client.whoami('ory_st_abc');
+
+      final request = fake.requests.single;
+      expect(request.uri.path, '/auth/sessions/whoami');
+      expect(request.uri.queryParameters, {'tokenize_as': 'api'});
+      expect(request.headers['X-Session-Token'], 'ory_st_abc');
+      expect(session!.accessToken, 'header.payload.signature');
+      expect(session.user.id, 'u1');
+      expect(session.user.email, 'A@example.com');
+      expect(session.user.emailVerified, isTrue);
+      expect(session.user.name, isNull);
+      expect(
+        session.user.createdAt,
+        DateTime.utc(2026, 11, 3, 17, 45, 17, 132, 908),
+      );
+    });
+
+    test('whoami 401은 null이다', () async {
+      fake.respond = (_) => _json(401, {
+        'error': {
+          'code': 401,
+          'reason': 'No valid session credentials found in the request.',
+        },
+      });
+
+      expect(await client.whoami('ory_st_gone'), isNull);
+    });
+
+    test('logout은 세션 토큰을 본문에 담아 DELETE한다', () async {
+      fake.respond = (_) => ResponseBody.fromString('', 204);
+
+      await client.logout('ory_st_abc');
+
+      final request = fake.requests.single;
+      expect(request.method, 'DELETE');
+      expect(request.uri.path, '/auth/self-service/logout/api');
+      expect(request.data, {'session_token': 'ory_st_abc'});
+    });
+  });
+}
