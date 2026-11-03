@@ -98,8 +98,6 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
 
   await for (final event in client.messageStream) {
     switch (event) {
-      case TimerWsConnected():
-        client.resetReconnectAttempts();
       case TimerWsTimerCreated(timer: final timer):
         ref.invalidate(timerHistoryProvider);
         yield timer;

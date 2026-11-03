@@ -1,11 +1,12 @@
 // WebSocket 타이머 API 클라이언트
 //
 // - 인증: Sec-WebSocket-Protocol: authorization.bearer.<jwt>
-// - 재연결: Rate limit(4029) 시 지수 백오프, 최대 5회
+// - 재연결: 인증 실패(1008)·의도적 종료 외 모든 끊김에 지수 백오프+지터로 무제한 재시도
 // - 메시지: JSON, type + payload
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:momeet/core/config/app_config.dart';
@@ -20,16 +21,44 @@ class TimerWsClient {
   TimerWsClient({
     required String accessToken,
     String? timezone,
-    this.maxReconnectAttempts = 5,
     @visibleForTesting bool autoConnect = true,
+    @visibleForTesting
+    WebSocketChannel Function(Uri uri, Iterable<String> protocols)?
+    connectChannel,
+    @visibleForTesting Random? random,
   }) : _token = accessToken,
-       _timezone = timezone {
+       _timezone = timezone,
+       _connectChannel = connectChannel ?? _defaultConnect,
+       _random = random ?? Random() {
     if (autoConnect) _connect();
   }
 
   final String _token;
   final String? _timezone;
-  final int maxReconnectAttempts;
+  final WebSocketChannel Function(Uri uri, Iterable<String> protocols)
+  _connectChannel;
+  final Random _random;
+
+  static WebSocketChannel _defaultConnect(
+    Uri uri,
+    Iterable<String> protocols,
+  ) => WebSocketChannel.connect(uri, protocols: protocols);
+
+  static const _initialReconnectDelay = Duration(seconds: 1);
+  static const _maxReconnectDelay = Duration(seconds: 30);
+
+  /// [attempt]번째(0부터) 재연결 대기 시간
+  ///
+  /// 1s → 2s → 4s … 상한 30s를 기준으로, [jitter](0~1)에 따라 그 50~100%를 쓴다.
+  /// 여러 클라이언트가 동시에 끊겨도 재접속 시점이 흩어지게 한다.
+  @visibleForTesting
+  static Duration reconnectDelay(int attempt, double jitter) {
+    final baseMs = min(
+      _maxReconnectDelay.inMilliseconds,
+      _initialReconnectDelay.inMilliseconds << min(attempt, 5),
+    );
+    return Duration(milliseconds: (baseMs * (0.5 + jitter / 2)).round());
+  }
 
   @visibleForTesting
   String get token => _token;
@@ -44,6 +73,7 @@ class TimerWsClient {
   StreamSubscription<dynamic>? _subscription;
   final _messageController = StreamController<TimerWsEvent>.broadcast();
   int _reconnectAttempts = 0;
+  Timer? _reconnectTimer;
   bool _disposed = false;
   bool _manualClose = false;
 
@@ -83,7 +113,7 @@ class TimerWsClient {
       debugPrint('🔌 [WS] Connecting to $url');
     }
 
-    _channel = WebSocketChannel.connect(uri, protocols: protocols);
+    _channel = _connectChannel(uri, protocols);
 
     _subscription = _channel!.stream.listen(
       _onData,
@@ -100,6 +130,9 @@ class TimerWsClient {
         : (data is List<int> ? utf8.decode(data) : data.toString());
     try {
       final event = parseTimerWsMessage(raw);
+      // 서버가 connected를 보내면 연결 성공으로 보고 백오프를 처음부터 다시 시작한다.
+      // 서버는 connected 직후 활성 타이머 sync_result를 보내므로 상태 복원은 그 메시지로 된다.
+      if (event is TimerWsConnected) _reconnectAttempts = 0;
       if (!_messageController.isClosed) {
         _messageController.add(event);
       }
@@ -132,11 +165,12 @@ class TimerWsClient {
 
     if (_disposed || _manualClose) return;
 
-    // Close code별 재연결 정책 (백엔드 스펙 기준)
+    // Close code별 재연결 정책
     // - 1008: 인증 실패 → 재연결 금지, 토큰 갱신 후 재시도 필요
-    // - 1011: 서버 내부 오류 → 지수 백오프 후 재시도
-    // - 4029: Rate Limit 초과 → 지수 백오프 후 재시도
-    // - 1000: 정상 종료 → 재연결 안 함
+    // - 그 외(1000, 1001, 1006, 1011, 4029, 코드 없음 등): 지수 백오프 후 재시도
+    //   서버(Cloud Run)는 요청 타임아웃·인스턴스 축소·교체 때 연결을 끊으므로
+    //   서버 쪽 끊김은 정상 동작으로 보고 다시 붙는다.
+    //   의도적 종료(disconnect/dispose)는 위에서 이미 걸러진다.
     if (closeCode == 1008) {
       if (kDebugMode && AppConfig.enableDebugLogging) {
         debugPrint('🔒 [WS] Authentication failed (1008), not reconnecting');
@@ -152,23 +186,14 @@ class TimerWsClient {
       return;
     }
 
-    if (closeCode == 1000) return;
-
-    // 1011, 4029 등: 지수 백오프 후 재연결
-    if (_reconnectAttempts < maxReconnectAttempts) {
-      final delay = _reconnectAttempts == 0
-          ? 1000
-          : (1000 * (1 << _reconnectAttempts)).clamp(1000, 60000);
-      if (kDebugMode && AppConfig.enableDebugLogging) {
-        debugPrint(
-          '🔌 [WS] Reconnecting in ${delay}ms (close code: $closeCode, attempt ${_reconnectAttempts + 1}/$maxReconnectAttempts)',
-        );
-      }
-      Future.delayed(Duration(milliseconds: delay), () {
-        _reconnectAttempts++;
-        _connect();
-      });
+    final delay = reconnectDelay(_reconnectAttempts, _random.nextDouble());
+    _reconnectAttempts++;
+    if (kDebugMode && AppConfig.enableDebugLogging) {
+      debugPrint(
+        '🔌 [WS] Reconnecting in ${delay.inMilliseconds}ms (close code: $closeCode, attempt $_reconnectAttempts)',
+      );
     }
+    _reconnectTimer = Timer(delay, _connect);
   }
 
   void _send(String type, Map<String, dynamic> payload) {
@@ -181,11 +206,6 @@ class TimerWsClient {
     if (kDebugMode && AppConfig.enableDebugLogging) {
       debugPrint('📤 [WS] Sent $type');
     }
-  }
-
-  /// 연결 성공 시 재연결 카운트 리셋 (서버에서 connected 수신 후 호출 권장)
-  void resetReconnectAttempts() {
-    _reconnectAttempts = 0;
   }
 
   /// 타이머 생성 및 시작
@@ -236,6 +256,8 @@ class TimerWsClient {
   /// 연결 종료 (재연결하지 않음)
   void disconnect() {
     _manualClose = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _subscription?.cancel();
     _subscription = null;
     _channel?.sink.close();
@@ -246,6 +268,8 @@ class TimerWsClient {
   void dispose() {
     _disposed = true;
     _manualClose = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _subscription?.cancel();
     _subscription = null;
     _channel?.sink.close();
