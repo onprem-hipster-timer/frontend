@@ -7,8 +7,8 @@
 // - Kratos 호출은 KratosClient를 거쳐 이 파일에서만 한다.
 
 import 'dart:async';
-import 'dart:convert';
 
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart' show JWT;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,17 +132,15 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   /// JWT의 exp가 [margin] 안에 닥치는지 본다. 읽을 수 없는 토큰은 만료된 것으로 본다.
+  ///
+  /// 서명은 검증하지 않는다. 앱은 갱신 시점만 정하고, 서명 검증은 backend가 한다.
   static bool _expiresWithin(String jwt, Duration margin) {
-    try {
-      final payload = base64Url.normalize(jwt.split('.')[1]);
-      final claims = jsonDecode(utf8.decode(base64Url.decode(payload))) as Map;
-      final exp = DateTime.fromMillisecondsSinceEpoch(
-        (claims['exp'] as num).toInt() * 1000,
-      );
-      return exp.isBefore(DateTime.now().add(margin));
-    } catch (_) {
-      return true;
-    }
+    final payload = JWT.tryDecode(jwt)?.payload;
+    final exp = payload is Map ? payload['exp'] : null;
+    if (exp is! num) return true;
+    return DateTime.fromMillisecondsSinceEpoch(
+      exp.toInt() * 1000,
+    ).isBefore(DateTime.now().add(margin));
   }
 
   /// 이메일/비밀번호로 로그인

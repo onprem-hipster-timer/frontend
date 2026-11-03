@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,13 +22,14 @@ final testUser = AuthUser(
   createdAt: DateTime.utc(2024, 1, 1),
 );
 
-/// 서명 없는 테스트 JWT. 앱은 서명을 보지 않고 exp만 읽는다.
-String testJwt({Duration expiresIn = const Duration(minutes: 10)}) {
-  String part(Map<String, Object?> json) =>
-      base64Url.encode(utf8.encode(jsonEncode(json))).replaceAll('=', '');
-  final exp = DateTime.now().add(expiresIn).millisecondsSinceEpoch ~/ 1000;
-  return '${part({'alg': 'ES256'})}.${part({'sub': testUser.id, 'exp': exp})}.sig';
-}
+var _testJwtSeq = 0;
+
+/// 테스트 JWT. 앱은 서명을 검증하지 않고 exp만 읽으므로 테스트 키로 서명한다.
+/// 매번 jti가 달라서 같은 시각에 만들어도 서로 다른 토큰이 된다.
+String testJwt({Duration expiresIn = const Duration(minutes: 10)}) => JWT({
+  'sub': testUser.id,
+  'jti': '${++_testJwtSeq}',
+}).sign(SecretKey('test-only'), expiresIn: expiresIn);
 
 /// Kratos가 오류 메시지로 거절한 응답
 KratosException kratosError(int messageId, {int statusCode = 400}) =>

@@ -119,6 +119,20 @@ void main() {
       expect(container.read(accessTokenProvider), renewed);
     });
 
+    test('읽을 수 없는 JWT는 만료된 것으로 보고 새로 받는다', () async {
+      harness = await KratosTestHarness.create();
+      harness.accessToken = 'not-a-jwt';
+      final container = await boot();
+      final renewed = testJwt();
+      harness.accessToken = renewed;
+
+      final token = await container
+          .read(authProvider.notifier)
+          .freshAccessToken();
+
+      expect(token, renewed);
+    });
+
     test('미인증이면 null이다', () async {
       harness = await KratosTestHarness.create(authenticated: false);
       final container = await boot();
