@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Auth
+- 인증을 Supabase에서 Ory Kratos로 이전 (backend `/auth` 프록시를 거친 API 플로우, 쿠키 없음)
+  - Kratos 세션 토큰은 SharedPreferences(웹은 localStorage)에 두고, 앱 상태에는 백엔드용 JWT(10분)만 둔다
+  - JWT는 요청 직전에 만료가 가까우면 새로 받고, 401이면 한 번 새로 받아 재시도한다
+  - WebSocket은 (재)연결할 때마다 최신 JWT를 쓰고, JWT 갱신만으로는 다시 연결하지 않는다
+  - 비밀번호 변경은 메일 코드 대신 현재 비밀번호로 재인증한다
+  - 가입 비밀번호 최소 길이를 Kratos 정책인 8자로 맞춤
+
 #### Todo & Schedule Mutations
 - Todo·Schedule CUD 흐름을 Riverpod `Mutation` API 기반 command 패턴으로 전환
   - 기존 mutation notifier의 `AsyncValue` 로딩/성공/실패 상태 관리를 제거하고, REST 호출 및 관련 provider invalidation 책임만 유지
@@ -18,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Auth
+- 이메일 인증 화면(`/verification`)과 인증 오류 화면(`/auth-error`)
+- 코드 기반 비밀번호 재설정 (이메일 → 6자리 코드 → 새 비밀번호)
+
 #### Tests
 - Todo·Schedule mutation 도메인별 테스트 추가
   - CUD REST API 호출 검증
@@ -25,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Mutation` 성공/실패 상태 및 원래 예외 전파 검증
 
 ### Removed
+
+#### Auth
+- `supabase`, `supabase_flutter` 의존성과 `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` 설정
 
 #### Tests
 - ref.mounted 가드 기반 공용 dispose 안전성 테스트 제거

@@ -66,7 +66,7 @@ lib/
 | API Generation | `openapi_generator_cli` | ^6.1.0 |
 | Calendar UI | `syncfusion_flutter_calendar` | ^32.1.25 |
 | Animations | `flutter_animate` | ^4.5.2 |
-| Auth | `supabase_flutter` | ^2.12.0 |
+| Auth | Ory Kratos API 플로우 (`dio`, backend `/auth` 프록시) | - |
 | Storage | `hive`, `shared_preferences` | ^2.2.3, ^2.5.4 |
 
 ## 📋 아키텍처 원칙
