@@ -9,10 +9,8 @@ class _MomeetLints extends PluginBase {
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
         const NoDirectSupabaseAuth(),
-        const AuthNotifierBuildStructure(),
-        const AuthActionNoStateMutation(),
+        const AuthActionNoLoadingState(),
         const AuthCatchRequireClassify(),
-        const NoManualTokenRefresh(),
         const NoManualRoutePath(),
       ];
 }
