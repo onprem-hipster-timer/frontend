@@ -17,6 +17,8 @@ const _actionMethodNames = {
   'verifyEmail',
   'signOut',
   'sendRecoveryCode',
+  'verifyRecoveryCode',
+  'completeRecovery',
   'changePassword',
 };
 

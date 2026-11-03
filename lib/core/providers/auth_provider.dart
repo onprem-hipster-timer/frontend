@@ -62,6 +62,9 @@ sealed class AuthStatus with _$AuthStatus {
 class AuthNotifier extends _$AuthNotifier {
   Future<String?>? _refreshing;
 
+  /// 복구 코드가 맞았을 때 받은 세션. 새 비밀번호를 저장할 때까지 메모리에만 둔다.
+  String? _recoverySessionToken;
+
   KratosClient get _kratos => ref.read(kratosClientProvider);
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
   String? get _sessionToken => _prefs.getString(sessionTokenKey);
@@ -268,6 +271,50 @@ class AuthNotifier extends _$AuthNotifier {
         'email': email,
       });
       return flow.id;
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 복구 코드를 확인한다. 새 비밀번호를 설정할 settings 플로우 ID를 돌려준다.
+  ///
+  /// 복구가 만든 세션은 저장하지 않는다. 코드만 확인하고 떠나면 비밀번호를 바꾸지 않은 채
+  /// 로그인 상태가 되기 때문이다.
+  Future<String> verifyRecoveryCode({
+    required String flowId,
+    required String code,
+  }) async {
+    try {
+      final result = await _kratos.submit(KratosFlowType.recovery, flowId, {
+        'method': 'code',
+        'code': code,
+      });
+      _recoverySessionToken = result.recoverySessionToken!;
+      return result.settingsFlowId!;
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 복구 세션으로 새 비밀번호를 저장하고 로그인 상태가 된다.
+  Future<void> completeRecovery({
+    required String settingsFlowId,
+    required String newPassword,
+  }) async {
+    try {
+      final sessionToken = _recoverySessionToken!;
+      await _kratos.submit(KratosFlowType.settings, settingsFlowId, {
+        'method': 'password',
+        'password': newPassword,
+      }, sessionToken: sessionToken);
+      _recoverySessionToken = null;
+      await _authenticateWith(sessionToken);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,

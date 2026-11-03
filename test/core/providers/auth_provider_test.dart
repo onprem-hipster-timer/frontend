@@ -26,6 +26,16 @@ void main() {
     return container;
   }
 
+  const recoveredResult = KratosSubmitResult(
+    continueWith: [
+      {'action': 'set_ory_session_token', 'ory_session_token': 'ory_st_rec'},
+      {
+        'action': 'show_settings_ui',
+        'flow': {'id': 's1'},
+      },
+    ],
+  );
+
   final networkError = DioException(
     requestOptions: RequestOptions(path: '/sessions/whoami'),
     type: DioExceptionType.connectionError,
@@ -375,6 +385,62 @@ void main() {
           'email': 'user@example.com',
         }),
       ).called(1);
+    });
+
+    test('복구 코드가 맞으면 설정 플로우 ID를 주고 세션은 아직 저장하지 않는다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubSubmit(KratosFlowType.recovery, recoveredResult);
+      final container = await boot();
+
+      final settingsFlowId = await container
+          .read(authProvider.notifier)
+          .verifyRecoveryCode(flowId: 'rec1', code: '123456');
+
+      expect(settingsFlowId, 's1');
+      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+    });
+
+    test('새 비밀번호를 복구 세션으로 저장한 뒤 그 세션으로 로그인한다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubSubmit(KratosFlowType.recovery, recoveredResult);
+      harness.stubSubmit(KratosFlowType.settings, const KratosSubmitResult());
+      final container = await boot();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.verifyRecoveryCode(flowId: 'rec1', code: '123456');
+
+      await notifier.completeRecovery(
+        settingsFlowId: 's1',
+        newPassword: 'new-pw-123',
+      );
+
+      verify(
+        () => harness.kratos.submit(KratosFlowType.settings, 's1', {
+          'method': 'password',
+          'password': 'new-pw-123',
+        }, sessionToken: 'ory_st_rec'),
+      ).called(1);
+      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_rec');
+      expect(container.read(authProvider), isA<AuthAuthenticated>());
+    });
+
+    test('복구 코드가 틀리면 AuthException이다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubSubmitError(KratosFlowType.recovery, kratosError(4060006));
+      final container = await boot();
+
+      await expectLater(
+        container
+            .read(authProvider.notifier)
+            .verifyRecoveryCode(flowId: 'rec1', code: '000000'),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            AuthErrorType.invalidCode.localized,
+          ),
+        ),
+      );
     });
 
     test('비밀번호 변경은 현재 비밀번호로 재인증한 뒤 새 비밀번호를 저장한다', () async {
