@@ -163,6 +163,25 @@ void main() {
       verify(() => harness.kratos.whoami(any())).called(1);
     });
 
+    test('갱신 중에 로그아웃하면 끝난 세션을 되살리지 않는다', () async {
+      harness = await KratosTestHarness.create();
+      final container = await boot();
+      final pending = Completer<KratosSession?>();
+      when(
+        () => harness.kratos.whoami(any()),
+      ).thenAnswer((_) => pending.future);
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+      final notifier = container.read(authProvider.notifier);
+
+      final refreshing = notifier.refreshAccessToken();
+      await notifier.signOut();
+      pending.complete(KratosSession(user: testUser, accessToken: testJwt()));
+
+      expect(await refreshing, isNull);
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      expect(harness.prefs.getString(sessionTokenKey), isNull);
+    });
+
     test('세션이 끝났으면 null을 주고 미인증이 된다', () async {
       harness = await KratosTestHarness.create();
       final container = await boot();

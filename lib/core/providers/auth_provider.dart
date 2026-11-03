@@ -65,6 +65,9 @@ class AuthNotifier extends _$AuthNotifier {
   /// 복구 코드가 맞았을 때 받은 세션. 새 비밀번호를 저장할 때까지 메모리에만 둔다.
   String? _recoverySessionToken;
 
+  /// 로그아웃 횟수. whoami를 기다리는 사이 로그아웃했는지 알아내는 데 쓴다.
+  int _signOuts = 0;
+
   KratosClient get _kratos => ref.read(kratosClientProvider);
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
   String? get _sessionToken => _prefs.getString(sessionTokenKey);
@@ -92,7 +95,10 @@ class AuthNotifier extends _$AuthNotifier {
 
   /// 세션 토큰으로 JWT를 받아 인증 상태가 된다. 세션이 끝났으면 토큰을 지우고 미인증이 된다.
   Future<String?> _authenticateWith(String sessionToken) async {
+    final signOutsBefore = _signOuts;
     final session = await _kratos.whoami(sessionToken);
+    // 기다리는 사이 로그아웃했으면 끝난 세션을 되살리지 않는다
+    if (_signOuts != signOutsBefore) return null;
     if (session == null) {
       await _prefs.remove(sessionTokenKey);
       state = const AuthStatus.unauthenticated();
@@ -251,6 +257,7 @@ class AuthNotifier extends _$AuthNotifier {
       final sessionToken = _sessionToken;
       if (sessionToken != null) await _kratos.logout(sessionToken);
       await _prefs.remove(sessionTokenKey);
+      _signOuts++;
       state = const AuthStatus.unauthenticated();
     } catch (e) {
       throw AuthException(
