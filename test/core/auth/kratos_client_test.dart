@@ -63,7 +63,7 @@ void main() {
     client = KratosClient(dio);
   });
 
-  group('플로우 생성과 조회', () {
+  group('플로우 생성', () {
     test('/auth 아래 API 플로우를 만들고 세션 헤더는 붙이지 않는다', () async {
       fake.respond = (_) => _json(200, _flow('f1'));
 
@@ -92,22 +92,6 @@ void main() {
       final request = fake.requests.single;
       expect(request.uri.queryParameters, {'refresh': 'true'});
       expect(request.headers['X-Session-Token'], 'ory_st_abc');
-    });
-
-    test('기존 플로우를 ID로 불러온다', () async {
-      fake.respond = (_) => _json(
-        200,
-        _flow('v1', state: 'sent_email', messages: [_message(1080003, 'info')]),
-      );
-
-      final flow = await client.getFlow(KratosFlowType.verification, 'v1');
-
-      expect(
-        fake.requests.single.uri.toString(),
-        'https://api.example.com/auth/self-service/verification/flows?id=v1',
-      );
-      expect(flow.state, 'sent_email');
-      expect(flow.messages.single.id, 1080003);
     });
   });
 

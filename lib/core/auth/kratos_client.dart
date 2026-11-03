@@ -49,20 +49,6 @@ class KratosClient {
     return KratosFlow.fromJson(_parse(response));
   }
 
-  /// 이미 있는 플로우를 불러온다 (메일 링크로 받은 flow ID 등).
-  Future<KratosFlow> getFlow(
-    KratosFlowType type,
-    String flowId, {
-    String? sessionToken,
-  }) async {
-    final response = await _dio.get<Object?>(
-      '/self-service/${type.name}/flows',
-      queryParameters: {'id': flowId},
-      options: _withSession(sessionToken),
-    );
-    return KratosFlow.fromJson(_parse(response));
-  }
-
   /// 플로우를 제출한다. 코드 오입력처럼 200으로 오는 오류도 [KratosException]으로 던진다.
   Future<KratosSubmitResult> submit(
     KratosFlowType type,

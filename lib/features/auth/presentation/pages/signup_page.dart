@@ -50,36 +50,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     });
 
     try {
-      await ref
-          .read(authProvider.notifier)
-          .signUpWithEmail(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('회원가입 성공'),
-            content: const Text('이메일 인증 링크가 전송되었습니다.\n이메일을 확인하고 로그인해주세요.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.go(
-                    AppRoute.login.path,
-                    extra: _emailController.text.trim(),
-                  );
-                },
-                child: const Text('확인'),
-              ),
-            ],
-          ),
-        );
-      }
+      final notifier = ref.read(authProvider.notifier);
+      final messenger = ScaffoldMessenger.of(context);
+      await notifier.signUpWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      messenger.showSnackBar(
+        const SnackBar(content: Text('가입되었습니다. 인증 코드를 이메일로 보냈습니다.')),
+      );
+      await notifier.completeSignUp();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

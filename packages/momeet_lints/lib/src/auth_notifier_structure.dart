@@ -12,9 +12,10 @@ const _buildRequiredMethods = ['build'];
 const _actionMethodNames = {
   'signInWithEmail',
   'signUpWithEmail',
+  'completeSignUp',
   'signOut',
-  'resetPassword',
-  'updatePassword',
+  'sendRecoveryCode',
+  'changePassword',
 };
 
 const _classifyRequiredMethodNames = _actionMethodNames;

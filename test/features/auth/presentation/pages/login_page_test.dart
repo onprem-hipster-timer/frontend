@@ -1,33 +1,27 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
 import '../../../../helpers/auth_router.dart';
+import '../../../../helpers/kratos_mocks.dart';
 import '../../../../helpers/pump_app.dart';
-import '../../../../helpers/supabase_mocks.dart';
 
 void main() {
-  late SupabaseTestHarness harness;
+  late KratosTestHarness harness;
 
-  setUp(() {
-    harness = SupabaseTestHarness()..init(authenticated: false);
-  });
+  setUpAll(registerKratosFallbacks);
 
-  tearDown(() {
-    harness.dispose();
+  setUp(() async {
+    harness = await KratosTestHarness.create(authenticated: false);
+    harness.stubCreateFlow(KratosFlowType.login, 'f1');
   });
 
   Widget buildLoginPage() {
-    return pumpApp(
-      const LoginPage(),
-      overrides: [
-        supabaseClientProvider.overrideWithValue(harness.mockSupabase),
-      ],
-    );
+    return pumpApp(const LoginPage(), overrides: harness.overrides);
   }
 
   /// 이메일 + 비밀번호를 입력하고 로그인 버튼을 누르는 헬퍼
@@ -47,12 +41,7 @@ void main() {
   // ============================================================
   group('로그인 실패 시 에러 배너', () {
     testWidgets('잘못된 비밀번호 입력 시 에러 배너가 표시된다', (tester) async {
-      when(
-        () => harness.mockGoTrue.signInWithPassword(
-          email: any(named: 'email'),
-          password: any(named: 'password'),
-        ),
-      ).thenThrow(supa.AuthException('Invalid login credentials'));
+      harness.stubSubmitError(KratosFlowType.login, kratosError(4000006));
 
       await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
@@ -62,13 +51,14 @@ void main() {
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
     });
 
-    testWidgets('이메일 미인증 에러 시 에러 배너가 표시된다', (tester) async {
-      when(
-        () => harness.mockGoTrue.signInWithPassword(
-          email: any(named: 'email'),
-          password: any(named: 'password'),
+    testWidgets('네트워크 오류 시 에러 배너가 표시된다', (tester) async {
+      harness.stubSubmitError(
+        KratosFlowType.login,
+        DioException(
+          requestOptions: RequestOptions(),
+          type: DioExceptionType.connectionError,
         ),
-      ).thenThrow(supa.AuthException('Email not confirmed'));
+      );
 
       await tester.pumpWidget(buildLoginPage());
       await tester.pumpAndSettle();
@@ -84,12 +74,7 @@ void main() {
   // ============================================================
   group('에러 해제', () {
     setUp(() {
-      when(
-        () => harness.mockGoTrue.signInWithPassword(
-          email: any(named: 'email'),
-          password: any(named: 'password'),
-        ),
-      ).thenThrow(supa.AuthException('Invalid login credentials'));
+      harness.stubSubmitError(KratosFlowType.login, kratosError(4000006));
     });
 
     testWidgets('이메일 필드 수정 시 에러가 사라진다', (tester) async {
@@ -145,12 +130,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('이메일을 입력해주세요'), findsOneWidget);
-      verifyNever(
-        () => harness.mockGoTrue.signInWithPassword(
-          email: any(named: 'email'),
-          password: any(named: 'password'),
-        ),
-      );
+      verifyNever(() => harness.kratos.createFlow(KratosFlowType.login));
     });
 
     testWidgets('@ 없는 이메일로 로그인 시 형식 에러가 표시된다', (tester) async {
@@ -190,9 +170,7 @@ void main() {
       await tester.pumpWidget(
         pumpApp(
           const LoginPage(initialEmail: 'carry@over.com'),
-          overrides: [
-            supabaseClientProvider.overrideWithValue(harness.mockSupabase),
-          ],
+          overrides: harness.overrides,
         ),
       );
       await tester.pumpAndSettle();
@@ -210,12 +188,7 @@ void main() {
 
     testWidgets('로그인 → 회원가입 전환 시 이메일만 넘어가고 비밀번호는 안 넘어간다', (tester) async {
       await tester.pumpWidget(
-        pumpAuthFlow(
-          initialLocation: '/login',
-          overrides: [
-            supabaseClientProvider.overrideWithValue(harness.mockSupabase),
-          ],
-        ),
+        pumpAuthFlow(initialLocation: '/login', overrides: harness.overrides),
       );
       await tester.pumpAndSettle();
 

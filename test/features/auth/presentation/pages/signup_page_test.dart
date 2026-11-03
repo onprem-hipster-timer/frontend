@@ -1,30 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 
 import '../../../../helpers/auth_router.dart';
+import '../../../../helpers/kratos_mocks.dart';
 import '../../../../helpers/pump_app.dart';
-import '../../../../helpers/supabase_mocks.dart';
 
 void main() {
-  late SupabaseTestHarness harness;
+  late KratosTestHarness harness;
 
-  setUp(() {
-    harness = SupabaseTestHarness()..init(authenticated: false);
-  });
-
-  tearDown(() {
-    harness.dispose();
+  setUp(() async {
+    harness = await KratosTestHarness.create(authenticated: false);
   });
 
   Widget buildSignupPage({String? initialEmail}) {
     return pumpApp(
       SignupPage(initialEmail: initialEmail),
-      overrides: [
-        supabaseClientProvider.overrideWithValue(harness.mockSupabase),
-      ],
+      overrides: harness.overrides,
     );
   }
 
@@ -54,12 +47,7 @@ void main() {
 
     testWidgets('회원가입 → 로그인 전환 시 이메일만 넘어가고 비밀번호는 안 넘어간다', (tester) async {
       await tester.pumpWidget(
-        pumpAuthFlow(
-          initialLocation: '/signup',
-          overrides: [
-            supabaseClientProvider.overrideWithValue(harness.mockSupabase),
-          ],
-        ),
+        pumpAuthFlow(initialLocation: '/signup', overrides: harness.overrides),
       );
       await tester.pumpAndSettle();
 

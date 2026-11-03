@@ -1,45 +1,52 @@
-// 인증 상태 관리 프로바이더 (Supabase)
+// 인증 상태 관리 프로바이더 (Ory Kratos)
 //
-// 이 파일은 다음을 관리합니다:
-// - Supabase 인증 상태
-// - JWT 토큰 관리
-// - 사용자 세션
-// - 로그인/로그아웃 로직
+// - 세션: Kratos 세션 토큰. SharedPreferences에 둔다(웹은 localStorage). 상태에는 넣지 않는다.
+// - 백엔드 인증: 세션 토큰으로 받은 JWT(유효 10분). 상태에는 이 JWT와 사용자만 둔다.
+// - JWT 갱신: 타이머 없이, 요청 직전에 만료가 가까운지 보고 다시 받는다(freshAccessToken).
+//   백그라운드 탭에서는 타이머가 멈추므로 타이머 방식은 쓰지 않는다.
+// - Kratos 호출은 KratosClient를 거쳐 이 파일에서만 한다.
 
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
-import 'package:momeet/core/config/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 part 'auth_provider.freezed.dart';
 part 'auth_provider.g.dart';
+
+/// 세션 토큰을 보관하는 SharedPreferences 키.
+///
+/// 웹에서는 localStorage의 `flutter.momeet.session_token`이 되며,
+/// web/index.html이 Flutter 부팅 전에 첫 화면(랜딩 여부)을 정할 때 읽는다.
+const sessionTokenKey = 'momeet.session_token';
 
 // ============================================================
 // 상태 모델
 // ============================================================
 
 /// 인증 상태
-///
-/// Supabase의 AuthState(이벤트 모델)와 구분하기 위해 AuthStatus로 명명합니다.
 @freezed
 sealed class AuthStatus with _$AuthStatus {
-  /// 인증 대기 중 (초기 로딩)
+  /// 저장된 세션을 확인하는 중 (앱 시작 시에만)
   const factory AuthStatus.loading() = AuthLoading;
 
-  /// 인증됨 (로그인함)
+  /// 인증됨. [accessToken]은 백엔드에 보낼 JWT다.
   const factory AuthStatus.authenticated({
-    required User user,
+    required AuthUser user,
     required String accessToken,
-    String? refreshToken,
   }) = AuthAuthenticated;
 
-  /// 미인증 (로그인하지 않음)
+  /// 미인증
   const factory AuthStatus.unauthenticated() = AuthUnauthenticated;
 
-  /// 에러
+  /// 앱 시작 시 세션을 확인하지 못함 (네트워크 오류 등)
   const factory AuthStatus.error({
     required String message,
     dynamic originalError,
@@ -47,118 +54,107 @@ sealed class AuthStatus with _$AuthStatus {
 }
 
 // ============================================================
-// Supabase 클라이언트 프로바이더
-// ============================================================
-
-/// Supabase 클라이언트 인스턴스 제공자
-///
-/// ⚠️ 주의: main.dart에서 초기화되어야 합니다.
-/// ```dart
-/// await Supabase.initialize(
-///   url: 'YOUR_SUPABASE_URL',
-///   anonKey: 'YOUR_SUPABASE_PUBLISHABLE_KEY',
-/// );
-/// ```
-@Riverpod(keepAlive: true)
-SupabaseClient supabaseClient(Ref ref) {
-  return Supabase.instance.client;
-}
-
-// ============================================================
 // 인증 상태 프로바이더
 // ============================================================
 
 /// 인증 상태를 관리하는 Notifier
-///
-/// 사용 예:
-/// ```dart
-/// final state = ref.watch(authProvider);
-/// state.maybeWhen(
-///   authenticated: (user, token, refreshToken) {
-///     debugPrint('로그인됨: ${user.email}');
-///   },
-///   unauthenticated: () {
-///     debugPrint('로그아웃됨');
-///   },
-///   loading: () => showLoader(),
-///   error: (message, error) => showError(message),
-///   orElse: () {},
-/// );
-/// ```
 @Riverpod(keepAlive: true)
 class AuthNotifier extends _$AuthNotifier {
+  Future<String?>? _refreshing;
+
+  KratosClient get _kratos => ref.read(kratosClientProvider);
+  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
+  String? get _sessionToken => _prefs.getString(sessionTokenKey);
+
   @override
   AuthStatus build() {
-    final supabase = ref.read(supabaseClientProvider);
+    final sessionToken = _sessionToken;
+    if (sessionToken == null) return const AuthStatus.unauthenticated();
 
-    final subscription = supabase.auth.onAuthStateChange.listen(
-      (data) {
-        final session = data.session;
+    Future.microtask(() => _restore(sessionToken));
+    return const AuthStatus.loading();
+  }
 
-        if (AppConfig.enableDebugLogging) {
-          debugPrint(
-            '🔀 [AUTH] ${data.event.name}, user: ${session?.user.email}',
-          );
-        }
-
-        switch (data.event) {
-          case AuthChangeEvent.initialSession:
-          case AuthChangeEvent.signedIn:
-          case AuthChangeEvent.tokenRefreshed:
-          case AuthChangeEvent.userUpdated:
-            if (session != null) {
-              state = AuthStatus.authenticated(
-                user: session.user,
-                accessToken: session.accessToken,
-                refreshToken: session.refreshToken,
-              );
-            } else {
-              state = const AuthStatus.unauthenticated();
-            }
-          case AuthChangeEvent.signedOut:
-            state = const AuthStatus.unauthenticated();
-          case AuthChangeEvent.passwordRecovery:
-          case AuthChangeEvent.mfaChallengeVerified:
-          // userDeleted: 백엔드에서 발행된 적 없는 구현 불가능 이벤트
-          // https://github.com/supabase/supabase/issues/10309
-          // ignore: deprecated_member_use
-          case AuthChangeEvent.userDeleted:
-            break;
-        }
-      },
-      onError: (error) {
-        if (AppConfig.enableDebugLogging) {
-          debugPrint('❌ [AUTH] Stream error: $error');
-        }
-        state = const AuthStatus.unauthenticated();
-      },
-    );
-
-    ref.onDispose(() => subscription.cancel());
-
-    // currentSession은 Supabase.initialize() 완료 후 동기적으로 사용 가능
-    final session = supabase.auth.currentSession;
-    if (session != null) {
-      return AuthStatus.authenticated(
-        user: session.user,
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
+  /// 앱 시작 시 저장된 세션을 복원한다. 네트워크 오류면 세션 토큰은 남겨 두고 다음 실행에서 다시 시도한다.
+  Future<void> _restore(String sessionToken) async {
+    try {
+      await _authenticateWith(sessionToken);
+    } catch (e) {
+      state = AuthStatus.error(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
       );
     }
-    return const AuthStatus.unauthenticated();
+  }
+
+  /// 세션 토큰으로 JWT를 받아 인증 상태가 된다. 세션이 끝났으면 토큰을 지우고 미인증이 된다.
+  Future<String?> _authenticateWith(String sessionToken) async {
+    final session = await _kratos.whoami(sessionToken);
+    if (session == null) {
+      await _prefs.remove(sessionTokenKey);
+      state = const AuthStatus.unauthenticated();
+      return null;
+    }
+    await _prefs.setString(sessionTokenKey, sessionToken);
+    state = AuthStatus.authenticated(
+      user: session.user,
+      accessToken: session.accessToken,
+    );
+    return session.accessToken;
+  }
+
+  /// 백엔드 요청에 쓸 JWT. 만료까지 1분이 안 남았으면 새로 받는다. 미인증이면 null.
+  Future<String?> freshAccessToken() async {
+    final current = state;
+    if (current is! AuthAuthenticated) return null;
+    if (!_expiresWithin(current.accessToken, const Duration(minutes: 1))) {
+      return current.accessToken;
+    }
+    return refreshAccessToken();
+  }
+
+  /// JWT를 새로 받는다. 동시에 여러 번 불려도 요청은 한 번만 보낸다.
+  ///
+  /// 세션이 끝났으면 미인증이 되고 null을 돌려준다. 네트워크 오류는 그대로 던진다.
+  Future<String?> refreshAccessToken() =>
+      _refreshing ??= _refresh().whenComplete(() => _refreshing = null);
+
+  Future<String?> _refresh() async {
+    final sessionToken = _sessionToken;
+    if (sessionToken == null) {
+      state = const AuthStatus.unauthenticated();
+      return null;
+    }
+    return _authenticateWith(sessionToken);
+  }
+
+  /// JWT의 exp가 [margin] 안에 닥치는지 본다. 읽을 수 없는 토큰은 만료된 것으로 본다.
+  static bool _expiresWithin(String jwt, Duration margin) {
+    try {
+      final payload = base64Url.normalize(jwt.split('.')[1]);
+      final claims = jsonDecode(utf8.decode(base64Url.decode(payload))) as Map;
+      final exp = DateTime.fromMillisecondsSinceEpoch(
+        (claims['exp'] as num).toInt() * 1000,
+      );
+      return exp.isBefore(DateTime.now().add(margin));
+    } catch (_) {
+      return true;
+    }
   }
 
   /// 이메일/비밀번호로 로그인
-  ///
-  /// 성공 시 onAuthStateChange 스트림이 signedIn 이벤트를 발행하여
-  /// 자동으로 authenticated 상태로 전환됩니다.
   Future<void> signInWithEmail({
     required String email,
     required String password,
   }) async {
     try {
-      final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signInWithPassword(email: email, password: password);
+      final flow = await _kratos.createFlow(KratosFlowType.login);
+      final result = await _kratos.submit(KratosFlowType.login, flow.id, {
+        'method': 'password',
+        'identifier': email,
+        'password': password,
+      });
+      await _authenticateWith(result.sessionToken!);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -167,17 +163,27 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 회원가입
+  /// 회원가입. 이메일 인증 플로우 ID를 돌려준다.
   ///
-  /// 이메일 인증이 필요한 경우 signedIn 이벤트가 발행되지 않으므로
-  /// 상태는 unauthenticated로 유지됩니다.
-  Future<void> signUpWithEmail({
+  /// 세션 토큰은 저장하지만 상태는 바꾸지 않는다. 바로 인증 상태가 되면 라우터가
+  /// 가입 화면에서 홈으로 보내 버리므로, 인증 화면을 거친 뒤 [completeSignUp]으로 바꾼다.
+  Future<String?> signUpWithEmail({
     required String email,
     required String password,
   }) async {
     try {
-      final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signUp(email: email, password: password);
+      final flow = await _kratos.createFlow(KratosFlowType.registration);
+      final result = await _kratos.submit(
+        KratosFlowType.registration,
+        flow.id,
+        {
+          'method': 'password',
+          'traits': {'email': email},
+          'password': password,
+        },
+      );
+      await _prefs.setString(sessionTokenKey, result.sessionToken!);
+      return result.verificationFlowId;
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -186,11 +192,26 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 로그아웃
+  /// 가입 때 저장한 세션으로 로그인 상태가 된다.
+  Future<void> completeSignUp() async {
+    try {
+      final sessionToken = _sessionToken;
+      if (sessionToken != null) await _authenticateWith(sessionToken);
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 로그아웃. 서버 세션을 끝내지 못하면 로그인 상태를 유지하고 예외를 던진다.
   Future<void> signOut() async {
     try {
-      final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.signOut();
+      final sessionToken = _sessionToken;
+      if (sessionToken != null) await _kratos.logout(sessionToken);
+      await _prefs.remove(sessionTokenKey);
+      state = const AuthStatus.unauthenticated();
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -199,11 +220,15 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 비밀번호 재설정 이메일 발송
-  Future<void> resetPassword(String email) async {
+  /// 비밀번호 복구 코드를 이메일로 보낸다. 복구 플로우 ID를 돌려준다.
+  Future<String> sendRecoveryCode(String email) async {
     try {
-      final supabase = ref.read(supabaseClientProvider);
-      await supabase.auth.resetPasswordForEmail(email);
+      final flow = await _kratos.createFlow(KratosFlowType.recovery);
+      await _kratos.submit(KratosFlowType.recovery, flow.id, {
+        'method': 'code',
+        'email': email,
+      });
+      return flow.id;
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -212,37 +237,38 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 비밀번호 변경 전 재인증용 일회용 코드를 이메일(또는 확인된 휴대전화)로 발송합니다.
+  /// 현재 비밀번호로 다시 인증한 뒤 새 비밀번호로 바꾼다.
   ///
-  /// [공식 문서](https://supabase.com/docs/reference/dart/auth-reauthentication)의
-  /// `reauthenticate()`에 해당합니다. 이후 `updatePasswordWithReauthNonce`로
-  /// 수신한 코드와 새 비밀번호를 함께 제출해야 합니다.
-  Future<void> requestPasswordChangeReauthentication() async {
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-      // currentUser null 체크는 router guard가 보장하므로 생략
-      await supabase.auth.reauthenticate();
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
-  }
-
-  /// 재인증 nonce(이메일/SMS로 수신)와 함께 비밀번호를 변경합니다.
-  ///
-  /// 반드시 [requestPasswordChangeReauthentication] 성공 후 호출하세요.
-  Future<void> updatePasswordWithReauthNonce({
+  /// Kratos는 최근(privileged_session_max_age, 15분) 인증한 세션만 설정을 바꾸게 하므로
+  /// 항상 재인증부터 한다.
+  Future<void> changePassword({
+    required String currentPassword,
     required String newPassword,
-    required String nonce,
   }) async {
     try {
-      final supabase = ref.read(supabaseClientProvider);
-      // currentUser null 체크는 router guard가 보장하므로 생략
-      await supabase.auth.updateUser(
-        UserAttributes(password: newPassword, nonce: nonce.trim()),
+      final current = state;
+      final sessionToken = _sessionToken;
+      if (current is! AuthAuthenticated || sessionToken == null) {
+        throw StateError('로그인 상태가 아닙니다');
+      }
+      final refresh = await _kratos.createFlow(
+        KratosFlowType.login,
+        sessionToken: sessionToken,
+        refresh: true,
       );
+      await _kratos.submit(KratosFlowType.login, refresh.id, {
+        'method': 'password',
+        'identifier': current.user.email,
+        'password': currentPassword,
+      }, sessionToken: sessionToken);
+      final settings = await _kratos.createFlow(
+        KratosFlowType.settings,
+        sessionToken: sessionToken,
+      );
+      await _kratos.submit(KratosFlowType.settings, settings.id, {
+        'method': 'password',
+        'password': newPassword,
+      }, sessionToken: sessionToken);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
@@ -256,42 +282,29 @@ class AuthNotifier extends _$AuthNotifier {
 // 헬퍼 프로바이더
 // ============================================================
 
-/// 현재 로그인 중인 사용자 정보 제공자
-///
-/// 사용 예:
-/// ```dart
-/// final user = ref.watch(currentUserProvider);
-/// if (user != null) {
-///   debugPrint('Email: ${user.email}');
-/// }
-/// ```
+/// 현재 로그인 중인 사용자
 @riverpod
-User? currentUser(Ref ref) {
+AuthUser? currentUser(Ref ref) {
   return ref
       .watch(authProvider)
-      .whenOrNull(authenticated: (user, token, refreshToken) => user);
+      .whenOrNull(authenticated: (user, accessToken) => user);
 }
 
-/// 현재 액세스 토큰 제공자
+/// 현재 백엔드용 JWT
 @riverpod
 String? accessToken(Ref ref) {
   return ref
       .watch(authProvider)
-      .whenOrNull(authenticated: (user, token, refreshToken) => token);
+      .whenOrNull(authenticated: (user, accessToken) => accessToken);
 }
 
 /// 인증 여부 확인
-///
-/// 사용 예:
-/// ```dart
-/// final isAuthenticated = ref.watch(isAuthenticatedProvider);
-/// ```
 @riverpod
 bool isAuthenticated(Ref ref) {
   return ref
       .watch(authProvider)
       .maybeWhen(
-        authenticated: (user, token, refreshToken) => true,
+        authenticated: (user, accessToken) => true,
         orElse: () => false,
       );
 }

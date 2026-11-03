@@ -32,7 +32,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     try {
       await ref
           .read(authProvider.notifier)
-          .resetPassword(_emailController.text.trim());
+          .sendRecoveryCode(_emailController.text.trim());
 
       if (mounted) {
         showDialog(
@@ -40,7 +40,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           useRootNavigator: true,
           builder: (context) => AlertDialog(
             title: const Text('이메일 전송 완료'),
-            content: const Text('비밀번호 재설정 링크가 이메일로 전송되었습니다.'),
+            content: const Text('비밀번호 재설정 코드를 이메일로 보냈습니다.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -78,7 +78,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '가입한 이메일 주소를 입력해주세요.\n비밀번호 재설정 링크를 보내드립니다.',
+              '가입한 이메일 주소를 입력해주세요.\n비밀번호 재설정 코드를 보내드립니다.',
               style: Theme.of(context).textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),
@@ -106,7 +106,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             ),
             const SizedBox(height: 32),
             AuthButton(
-              text: '링크 전송',
+              text: '코드 받기',
               onPressed: _handleResetPassword,
               isLoading: _isLoading,
               backgroundColor: Theme.of(context).colorScheme.primary,
