@@ -45,6 +45,10 @@ enum AppRoute {
   loading(path: '/loading', requiresAuth: false),
   securityWarning(path: '/security-warning', requiresAuth: false),
 
+  // 로그인 여부와 상관없이 머무는 페이지 (Kratos 메일 링크·오류로 들어옴)
+  verification(path: '/verification', requiresAuth: false, authNeutral: true),
+  authError(path: '/auth-error', requiresAuth: false, authNeutral: true),
+
   // 인증 필요 (보호된 페이지)
   calendar(path: '/'),
   scheduleDetail(path: '/schedule/detail'),
@@ -55,7 +59,11 @@ enum AppRoute {
   tags(path: '/tags'),
   mypage(path: '/mypage');
 
-  const AppRoute({required this.path, this.requiresAuth = true});
+  const AppRoute({
+    required this.path,
+    this.requiresAuth = true,
+    this.authNeutral = false,
+  });
 
   /// 라우트 경로
   final String path;
@@ -63,10 +71,19 @@ enum AppRoute {
   /// 인증 필요 여부 (기본값: true)
   final bool requiresAuth;
 
+  /// 인증된 사용자도 머무르는 공개 페이지인지 (기본값: false)
+  final bool authNeutral;
+
   /// 공개 라우트(인증 불필요) 경로 집합
   static final publicPaths = {
     for (final route in values)
       if (!route.requiresAuth) route.path,
+  };
+
+  /// 로그인 여부와 상관없이 리다이렉트하지 않는 경로 집합
+  static final neutralPaths = {
+    for (final route in values)
+      if (route.authNeutral) route.path,
   };
 
   /// 보호된 라우트의 경로 패턴 (RegExp) 목록
@@ -154,7 +171,10 @@ String? authRedirect({
   }
 
   // 3. 인증된 사용자가 공개 페이지에 있으면 원래 목적지 또는 메인 앱으로
-  if (isAuthenticated && isPublicRoute) {
+  //    (인증 화면처럼 로그인 여부와 상관없이 머무는 페이지는 제외)
+  if (isAuthenticated &&
+      isPublicRoute &&
+      !AppRoute.neutralPaths.contains(matchedLocation)) {
     if (redirectAfterLogin != null && redirectAfterLogin.isNotEmpty) {
       if (isValidRedirectPath(redirectAfterLogin)) {
         return redirectAfterLogin;
@@ -216,6 +236,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.forgotPassword.path,
         name: AppRoute.forgotPassword.name,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+
+      GoRoute(
+        path: AppRoute.verification.path,
+        name: AppRoute.verification.name,
+        // flow: 가입 화면이나 인증 메일 링크가 넘기는 인증 플로우 ID
+        // extra: 가입 화면이 넘기는 이메일(인메모리)
+        builder: (context, state) => VerificationPage(
+          flowId: state.uri.queryParameters['flow'],
+          email: state.extra is String ? state.extra as String : null,
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoute.authError.path,
+        name: AppRoute.authError.name,
+        builder: (context, state) => const AuthErrorPage(),
       ),
 
       // ============================================================

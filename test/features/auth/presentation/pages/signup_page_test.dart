@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/core/auth/kratos_client.dart';
+import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 
@@ -9,6 +12,8 @@ import '../../../../helpers/pump_app.dart';
 
 void main() {
   late KratosTestHarness harness;
+
+  setUpAll(registerKratosFallbacks);
 
   setUp(() async {
     harness = await KratosTestHarness.create(authenticated: false);
@@ -78,5 +83,38 @@ void main() {
       expect(loginField(0), 'carry@over.com'); // 이메일 이어받음
       expect(loginField(1), ''); // 비밀번호는 전달 안 됨
     });
+  });
+
+  // ============================================================
+  // 가입 성공 뒤 이동
+  // ============================================================
+  testWidgets('가입하면 인증 플로우와 이메일을 들고 인증 화면으로 간다', (tester) async {
+    harness.stubCreateFlow(KratosFlowType.registration, 'r1');
+    harness.stubSubmit(
+      KratosFlowType.registration,
+      const KratosSubmitResult(
+        sessionToken: 'ory_st_new',
+        continueWith: [
+          {
+            'action': 'show_verification_ui',
+            'flow': {'id': 'v1'},
+          },
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      pumpAuthFlow(initialLocation: '/signup', overrides: harness.overrides),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(EditableText).at(0), 'new@example.com');
+    await tester.enterText(find.byType(EditableText).at(1), 'secret-pw-123');
+    await tester.enterText(find.byType(EditableText).at(2), 'secret-pw-123');
+    await tester.tap(find.widgetWithText(FilledButton, '회원가입'));
+    await tester.pumpAndSettle();
+
+    final page = tester.widget<VerificationPage>(find.byType(VerificationPage));
+    expect(page.flowId, 'v1');
+    expect(page.email, 'new@example.com');
   });
 }

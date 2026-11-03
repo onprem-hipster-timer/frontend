@@ -205,6 +205,45 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// 이메일 인증 코드를 보낸다. 새 인증 플로우를 만들어 그 ID를 돌려준다.
+  Future<String> sendVerificationCode(String email) async {
+    try {
+      final flow = await _kratos.createFlow(KratosFlowType.verification);
+      await _kratos.submit(KratosFlowType.verification, flow.id, {
+        'method': 'code',
+        'email': email,
+      });
+      return flow.id;
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 이메일 인증 코드를 확인한다.
+  ///
+  /// 저장된 세션이 있으면 인증 결과(email_verified)가 담긴 JWT로 로그인 상태가 된다.
+  Future<void> verifyEmail({
+    required String flowId,
+    required String code,
+  }) async {
+    try {
+      await _kratos.submit(KratosFlowType.verification, flowId, {
+        'method': 'code',
+        'code': code,
+      });
+      final sessionToken = _sessionToken;
+      if (sessionToken != null) await _authenticateWith(sessionToken);
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
   /// 로그아웃. 서버 세션을 끝내지 못하면 로그인 상태를 유지하고 예외를 던진다.
   Future<void> signOut() async {
     try {

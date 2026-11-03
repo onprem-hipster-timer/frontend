@@ -251,6 +251,78 @@ void main() {
     });
   });
 
+  group('이메일 인증', () {
+    test('인증 코드를 보내고 새 인증 플로우 ID를 돌려준다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubCreateFlow(KratosFlowType.verification, 'v2');
+      harness.stubSubmit(
+        KratosFlowType.verification,
+        const KratosSubmitResult(),
+      );
+      final container = await boot();
+
+      final flowId = await container
+          .read(authProvider.notifier)
+          .sendVerificationCode('user@example.com');
+
+      expect(flowId, 'v2');
+      verify(
+        () => harness.kratos.submit(KratosFlowType.verification, 'v2', {
+          'method': 'code',
+          'email': 'user@example.com',
+        }),
+      ).called(1);
+    });
+
+    test('코드를 확인하면 저장된 세션으로 JWT를 다시 받는다', () async {
+      harness = await KratosTestHarness.create();
+      harness.stubSubmit(
+        KratosFlowType.verification,
+        const KratosSubmitResult(),
+      );
+      final container = await boot();
+      clearInteractions(harness.kratos);
+
+      await container
+          .read(authProvider.notifier)
+          .verifyEmail(flowId: 'v1', code: '123456');
+
+      verify(
+        () => harness.kratos.submit(KratosFlowType.verification, 'v1', {
+          'method': 'code',
+          'code': '123456',
+        }),
+      ).called(1);
+      verify(
+        () => harness.kratos.whoami(KratosTestHarness.sessionToken),
+      ).called(1);
+    });
+
+    test('코드가 틀리면 AuthException이고 JWT는 다시 받지 않는다', () async {
+      harness = await KratosTestHarness.create();
+      harness.stubSubmitError(
+        KratosFlowType.verification,
+        kratosError(4070006),
+      );
+      final container = await boot();
+      clearInteractions(harness.kratos);
+
+      await expectLater(
+        container
+            .read(authProvider.notifier)
+            .verifyEmail(flowId: 'v1', code: '000000'),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            AuthErrorType.invalidCode.localized,
+          ),
+        ),
+      );
+      verifyNever(() => harness.kratos.whoami(any()));
+    });
+  });
+
   group('로그아웃', () {
     test('세션을 끝내고 토큰을 지운 뒤 미인증이 된다', () async {
       harness = await KratosTestHarness.create();

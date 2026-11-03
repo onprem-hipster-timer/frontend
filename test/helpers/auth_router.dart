@@ -4,30 +4,49 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
+import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
+import 'package:momeet/router.dart';
 
-/// 로그인↔회원가입 전환(`extra`로 이메일 전달)을 end-to-end로 검증하기 위한
-/// 최소 라우터 + MaterialApp.router.
+/// 인증 화면 사이 이동(로그인↔회원가입의 `extra` 이메일 전달, 가입 → 이메일 인증 → 홈)을
+/// end-to-end로 검증하기 위한 최소 라우터 + MaterialApp.router.
 ///
-/// `lib/router.dart`의 login/signup 빌더 와이어링(`state.extra` 주입)을
-/// 그대로 미러링하므로, 실제 전환 버튼 → extra 전달 → initState 프리필
-/// 경로를 통째로 태울 수 있습니다.
+/// `lib/router.dart`의 인증 화면 빌더 와이어링(`state.extra`, `?flow=` 주입)과
+/// 라우트 이름을 그대로 미러링한다. 인증 리다이렉트는 적용하지 않는다.
+/// 홈(`/`)은 `home` 텍스트만 있는 자리표시자다.
 Widget pumpAuthFlow({
   required String initialLocation,
+  Object? initialExtra,
   List<Override> overrides = const [],
 }) {
   final router = GoRouter(
     initialLocation: initialLocation,
+    initialExtra: initialExtra,
     routes: [
       GoRoute(
-        path: '/login',
+        path: AppRoute.calendar.path,
+        name: AppRoute.calendar.name,
+        builder: (context, state) => const Scaffold(body: Text('home')),
+      ),
+      GoRoute(
+        path: AppRoute.login.path,
+        name: AppRoute.login.name,
         builder: (context, state) => LoginPage(
           initialEmail: state.extra is String ? state.extra as String : null,
         ),
       ),
       GoRoute(
-        path: '/signup',
+        path: AppRoute.signup.path,
+        name: AppRoute.signup.name,
         builder: (context, state) => SignupPage(
           initialEmail: state.extra is String ? state.extra as String : null,
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.verification.path,
+        name: AppRoute.verification.name,
+        builder: (context, state) => VerificationPage(
+          flowId: state.uri.queryParameters['flow'],
+          email: state.extra is String ? state.extra as String : null,
         ),
       ),
     ],

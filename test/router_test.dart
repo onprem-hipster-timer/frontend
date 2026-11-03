@@ -278,6 +278,34 @@ void main() {
     });
 
     // ----------------------------------------------------------
+    // 로그인 여부와 상관없이 머무는 페이지
+    // ----------------------------------------------------------
+    group('인증 화면 (authNeutral)', () {
+      test('인증 화면과 인증 오류 화면은 공개이면서 neutral이다', () {
+        for (final route in [AppRoute.verification, AppRoute.authError]) {
+          expect(route.requiresAuth, isFalse);
+          expect(route.authNeutral, isTrue);
+          expect(AppRoute.neutralPaths, contains(route.path));
+        }
+        expect(AppRoute.neutralPaths, isNot(contains(AppRoute.login.path)));
+      });
+
+      for (final isAuthenticated in [false, true]) {
+        for (final route in [AppRoute.verification, AppRoute.authError]) {
+          test('${isAuthenticated ? '인증' : '미인증'} 사용자가 ${route.path}에 있으면 '
+              '리다이렉트하지 않는다', () {
+            final result = authRedirect(
+              isAuthenticated: isAuthenticated,
+              isAuthLoading: false,
+              matchedLocation: route.path,
+            );
+            expect(result, isNull);
+          });
+        }
+      }
+    });
+
+    // ----------------------------------------------------------
     // 인증 상태
     // ----------------------------------------------------------
     group('인증 상태', () {

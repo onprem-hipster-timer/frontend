@@ -51,15 +51,22 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
     try {
       final notifier = ref.read(authProvider.notifier);
-      final messenger = ScaffoldMessenger.of(context);
-      await notifier.signUpWithEmail(
-        email: _emailController.text.trim(),
+      final email = _emailController.text.trim();
+      final verificationFlowId = await notifier.signUpWithEmail(
+        email: email,
         password: _passwordController.text,
       );
-      messenger.showSnackBar(
-        const SnackBar(content: Text('가입되었습니다. 인증 코드를 이메일로 보냈습니다.')),
-      );
-      await notifier.completeSignUp();
+
+      if (verificationFlowId == null) {
+        // 인증 메일이 없는 설정이면 바로 로그인 상태로
+        await notifier.completeSignUp();
+      } else if (mounted) {
+        context.goNamed(
+          AppRoute.verification.name,
+          queryParameters: {'flow': verificationFlowId},
+          extra: email,
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
