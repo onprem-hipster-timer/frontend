@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/core/auth/kratos_models.dart';
 import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
@@ -116,5 +117,19 @@ void main() {
     final page = tester.widget<VerificationPage>(find.byType(VerificationPage));
     expect(page.flowId, 'v1');
     expect(page.email, 'new@example.com');
+  });
+
+  testWidgets('비밀번호가 8자보다 짧으면 가입을 보내지 않는다', (tester) async {
+    await tester.pumpWidget(buildSignupPage());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(EditableText).at(0), 'new@example.com');
+    await tester.enterText(find.byType(EditableText).at(1), 'pw12345');
+    await tester.enterText(find.byType(EditableText).at(2), 'pw12345');
+    await tester.tap(find.widgetWithText(FilledButton, '회원가입'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsOneWidget);
+    verifyNever(() => harness.kratos.createFlow(KratosFlowType.registration));
   });
 }
