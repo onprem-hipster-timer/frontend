@@ -102,11 +102,18 @@ class KratosClient {
     if (status < 400 && errors.isEmpty) return json;
 
     final error = json['error'];
+    final details = error is Map ? error['details'] : null;
     throw KratosException(
       statusCode: status,
       errorId: error is Map ? error['id'] as String? : null,
       messages: errors,
       useFlowId: json['use_flow_id'] as String?,
+      // 인증 전 로그인 거절은 새 인증 플로우를 오류 상세의 continue_with로 준다
+      verificationFlowId: details is Map
+          ? KratosSubmitResult.fromJson({
+              'continue_with': details['continue_with'],
+            }).verificationFlowId
+          : null,
     );
   }
 }

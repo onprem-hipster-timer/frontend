@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/kratos_client.dart';
+import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 
@@ -219,5 +221,29 @@ void main() {
       expect(signupField(1), ''); // 비밀번호는 전달 안 됨
       expect(signupField(2), ''); // 비밀번호 확인도 전달 안 됨
     });
+  });
+
+  testWidgets('인증 전 로그인은 서버가 준 플로우와 이메일로 인증 화면을 연다', (tester) async {
+    harness.stubSubmitError(
+      KratosFlowType.login,
+      const KratosException(
+        statusCode: 403,
+        errorId: 'session_verified_address_required',
+        verificationFlowId: 'v9',
+      ),
+    );
+    await tester.pumpWidget(
+      pumpAuthFlow(initialLocation: '/login', overrides: harness.overrides),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'new@example.com');
+    await tester.enterText(find.byType(TextFormField).at(1), 'pw-12345678');
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    final page = tester.widget<VerificationPage>(find.byType(VerificationPage));
+    expect(page.flowId, 'v9');
+    expect(page.email, 'new@example.com');
   });
 }

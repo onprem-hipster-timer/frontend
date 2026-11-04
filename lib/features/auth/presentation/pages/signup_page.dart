@@ -57,10 +57,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         password: _passwordController.text,
       );
 
+      if (!mounted) return;
       if (verificationFlowId == null) {
-        // 인증 메일이 없는 설정이면 바로 로그인 상태로
-        await notifier.completeSignUp();
-      } else if (mounted) {
+        // 인증 메일이 없는 설정이면 바로 로그인 화면으로
+        context.goNamed(AppRoute.login.name, extra: email);
+      } else {
         context.goNamed(
           AppRoute.verification.name,
           queryParameters: {'flow': verificationFlowId},

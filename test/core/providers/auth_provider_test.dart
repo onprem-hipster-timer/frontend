@@ -255,7 +255,7 @@ void main() {
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
     });
 
-    test('가입은 세션 토큰만 저장하고 인증 플로우 ID를 돌려준다', () async {
+    test('가입은 세션을 저장하지 않고 인증 플로우 ID만 돌려준다', () async {
       harness = await KratosTestHarness.create(authenticated: false);
       harness.stubCreateFlow(KratosFlowType.registration, 'r1');
       harness.stubSubmit(
@@ -277,20 +277,39 @@ void main() {
           .signUpWithEmail(email: 'new@example.com', password: 'pw-12345678');
 
       expect(flowId, 'v1');
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_new');
+      expect(harness.prefs.getString(sessionTokenKey), isNull);
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
       verifyNever(() => harness.kratos.whoami(any()));
     });
 
-    test('completeSignUp은 저장된 세션으로 인증 상태가 된다', () async {
+    test('인증 전 로그인은 새 인증 플로우를 담은 EmailNotVerifiedException이다', () async {
       harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubCreateFlow(KratosFlowType.login, 'f1');
+      harness.stubSubmitError(
+        KratosFlowType.login,
+        const KratosException(
+          statusCode: 403,
+          errorId: 'session_verified_address_required',
+          verificationFlowId: 'v9',
+        ),
+      );
       final container = await boot();
-      await harness.prefs.setString(sessionTokenKey, 'ory_st_new');
 
-      await container.read(authProvider.notifier).completeSignUp();
-
-      verify(() => harness.kratos.whoami('ory_st_new')).called(1);
-      expect(container.read(authProvider), isA<AuthAuthenticated>());
+      await expectLater(
+        container
+            .read(authProvider.notifier)
+            .signInWithEmail(email: 'new@example.com', password: 'pw'),
+        throwsA(
+          isA<EmailNotVerifiedException>()
+              .having((e) => e.verificationFlowId, 'flow', 'v9')
+              .having(
+                (e) => e.message,
+                'message',
+                AuthErrorType.emailNotVerified.localized,
+              ),
+        ),
+      );
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
     });
   });
 

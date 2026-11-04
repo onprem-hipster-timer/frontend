@@ -51,6 +51,18 @@ void main() {
       );
     });
 
+    test('이메일 인증 전 로그인', () {
+      expect(
+        AuthErrorType.classify(
+          const KratosException(
+            statusCode: 403,
+            errorId: 'session_verified_address_required',
+          ),
+        ),
+        AuthErrorType.emailNotVerified,
+      );
+    });
+
     test('429', () {
       expect(
         AuthErrorType.classify(const KratosException(statusCode: 429)),

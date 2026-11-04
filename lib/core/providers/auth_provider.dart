@@ -14,6 +14,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/core/auth/kratos_client.dart';
+import 'package:momeet/core/auth/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
@@ -163,17 +164,23 @@ class AuthNotifier extends _$AuthNotifier {
       });
       await _authenticateWith(result.sessionToken!);
     } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
+      final type = AuthErrorType.classify(e);
+      if (type == AuthErrorType.emailNotVerified) {
+        throw EmailNotVerifiedException(
+          message: type.localized,
+          originalError: e,
+          verificationFlowId: e is KratosException
+              ? e.verificationFlowId
+              : null,
+        );
+      }
+      throw AuthException(message: type.localized, originalError: e);
     }
   }
 
   /// 회원가입. 이메일 인증 플로우 ID를 돌려준다.
   ///
-  /// 세션 토큰은 저장하지만 상태는 바꾸지 않는다. 바로 인증 상태가 되면 라우터가
-  /// 가입 화면에서 홈으로 보내 버리므로, 인증 화면을 거친 뒤 [completeSignUp]으로 바꾼다.
+  /// 이메일 인증 전에는 세션이 없다(Kratos가 가입 직후 세션을 주지 않음). 인증을 마친 뒤 로그인한다.
   Future<String?> signUpWithEmail({
     required String email,
     required String password,
@@ -189,21 +196,7 @@ class AuthNotifier extends _$AuthNotifier {
           'password': password,
         },
       );
-      await _prefs.setString(sessionTokenKey, result.sessionToken!);
       return result.verificationFlowId;
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
-  }
-
-  /// 가입 때 저장한 세션으로 로그인 상태가 된다.
-  Future<void> completeSignUp() async {
-    try {
-      final sessionToken = _sessionToken;
-      if (sessionToken != null) await _authenticateWith(sessionToken);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,

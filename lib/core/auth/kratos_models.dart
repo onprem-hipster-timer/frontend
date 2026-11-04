@@ -156,6 +156,7 @@ class KratosException implements Exception {
     this.errorId,
     this.messages = const [],
     this.useFlowId,
+    this.verificationFlowId,
   });
 
   final int statusCode;
@@ -168,6 +169,9 @@ class KratosException implements Exception {
 
   /// 플로우가 만료됐을 때 Kratos가 새로 만든 플로우 ID
   final String? useFlowId;
+
+  /// 이메일 인증 전 로그인(session_verified_address_required)일 때 Kratos가 새로 만든 인증 플로우 ID
+  final String? verificationFlowId;
 
   /// 첫 오류 메시지의 text ID
   int? get messageId => messages.isEmpty ? null : messages.first.id;

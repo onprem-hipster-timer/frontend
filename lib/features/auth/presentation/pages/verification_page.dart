@@ -1,7 +1,8 @@
 // 이메일 인증
 //
-// 가입 직후(가입 화면이 flow ID와 이메일을 넘김)나 인증 메일 링크(?flow=)로 들어온다.
+// 가입 직후, 인증 전 로그인 시도(서버가 새 플로우를 줌), 인증 메일 링크(?flow=)로 들어온다.
 // 앱은 API 플로우를 쓰므로 메일 링크를 열어도 인증이 끝나지 않는다. 메일의 6자리 코드를 입력받는다.
+// 이메일 인증 전에는 세션이 없으므로, 인증을 마치면 로그인 화면으로 보낸다.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,20 +97,16 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
     if (verified && mounted) _leave();
   }
 
-  /// 인증을 미루고 가입 때 만든 세션으로 들어간다.
-  Future<void> _later() async {
-    final resumed = await _run(
-      () => ref.read(authProvider.notifier).completeSignUp(),
-    );
-    if (resumed && mounted) _leave();
-  }
-
-  /// 로그인 상태면 홈으로, 아니면 로그인 화면으로 간다.
+  /// 로그인 상태면 홈으로, 아니면 이메일을 채운 로그인 화면으로 간다.
   void _leave() {
-    final route = ref.read(isAuthenticatedProvider)
-        ? AppRoute.calendar
-        : AppRoute.login;
-    context.goNamed(route.name);
+    if (ref.read(isAuthenticatedProvider)) {
+      context.goNamed(AppRoute.calendar.name);
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('이메일이 인증되었습니다. 로그인해주세요.')));
+    context.goNamed(AppRoute.login.name, extra: _emailController.text.trim());
   }
 
   @override
@@ -198,11 +195,6 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                   child: const Text('코드 다시 받기'),
                 ),
               ],
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _isLoading ? null : _later,
-                child: const Text('나중에 하기'),
-              ),
             ],
           ),
         ),

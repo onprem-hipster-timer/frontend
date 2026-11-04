@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
@@ -66,6 +67,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+    } on EmailNotVerifiedException catch (e) {
+      // 서버가 새 인증 플로우를 만들어 코드를 다시 보냈다. 그 플로우로 인증 화면을 연다
+      if (mounted) {
+        context.goNamed(
+          AppRoute.verification.name,
+          queryParameters: {
+            if (e.verificationFlowId != null) 'flow': e.verificationFlowId!,
+          },
+          extra: _emailController.text.trim(),
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _errorMessage = e.toString());

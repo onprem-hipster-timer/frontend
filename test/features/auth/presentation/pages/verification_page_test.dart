@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/core/auth/kratos_models.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
-import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 
 import '../../../../helpers/auth_router.dart';
 import '../../../../helpers/kratos_mocks.dart';
@@ -38,16 +35,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// 가입 직후 상황: 앱은 이미 미인증으로 떠 있고 세션 토큰만 저장된다.
-  /// (실제 앱은 시작할 때 라우터가 인증 상태를 먼저 만든다)
-  Future<void> storeSignUpSession(WidgetTester tester) async {
-    ProviderScope.containerOf(
-      tester.element(find.byType(VerificationPage)),
-    ).read(authProvider);
-    await harness.prefs.setString(sessionTokenKey, 'ory_st_new');
-  }
-
-  testWidgets('코드를 확인하면 가입 세션으로 로그인해 홈으로 간다', (tester) async {
+  testWidgets('인증하면 이메일을 채운 로그인 화면으로 간다 (인증 전엔 세션 없음)', (tester) async {
     harness.stubSubmit(
       KratosFlowType.verification,
       const KratosSubmitResult(
@@ -55,7 +43,6 @@ void main() {
       ),
     );
     await openVerification(tester, flow: 'v1', email: 'new@example.com');
-    await storeSignUpSession(tester);
 
     expect(find.textContaining('new@example.com'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField), '123456');
@@ -68,19 +55,27 @@ void main() {
         'code': '123456',
       }),
     ).called(1);
-    verify(() => harness.kratos.whoami('ory_st_new')).called(1);
-    expect(find.text('home'), findsOneWidget);
+    verifyNever(() => harness.kratos.whoami(any()));
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.text('new@example.com'), findsOneWidget);
+    expect(find.text('이메일이 인증되었습니다. 로그인해주세요.'), findsOneWidget);
   });
 
-  testWidgets('세션이 없으면 인증 뒤 로그인 화면으로 간다', (tester) async {
+  testWidgets('로그인 상태에서 인증하면 JWT를 다시 받아 홈으로 간다', (tester) async {
+    harness = await KratosTestHarness.create();
     harness.stubSubmit(KratosFlowType.verification, const KratosSubmitResult());
+    // 이메일 없이 열면 화면이 시작할 때 인증 상태를 읽어 세션을 먼저 복원한다 (실제 앱과 같은 순서)
     await openVerification(tester, flow: 'v1');
+    clearInteractions(harness.kratos);
 
     await tester.enterText(find.byType(TextFormField), '123456');
     await tester.tap(find.text('인증하기'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(LoginPage), findsOneWidget);
+    verify(
+      () => harness.kratos.whoami(KratosTestHarness.sessionToken),
+    ).called(1);
+    expect(find.text('home'), findsOneWidget);
   });
 
   testWidgets('코드가 틀리면 오류 배너를 보여준다', (tester) async {
@@ -120,16 +115,5 @@ void main() {
 
     expect(find.text('코드 받기'), findsOneWidget);
     expect(find.text('new@example.com'), findsOneWidget);
-  });
-
-  testWidgets('나중에 하기는 가입 세션으로 로그인해 홈으로 간다', (tester) async {
-    await openVerification(tester, flow: 'v1', email: 'new@example.com');
-    await storeSignUpSession(tester);
-
-    await tester.tap(find.text('나중에 하기'));
-    await tester.pumpAndSettle();
-
-    verify(() => harness.kratos.whoami('ory_st_new')).called(1);
-    expect(find.text('home'), findsOneWidget);
   });
 }

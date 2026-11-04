@@ -18,6 +18,7 @@ enum AuthErrorType {
   passwordTooSimilar,
   passwordBreached,
   invalidCode,
+  emailNotVerified,
   flowExpired,
   sessionRefreshRequired,
   tooManyRequests,
@@ -33,6 +34,8 @@ enum AuthErrorType {
           return flowExpired;
         case 'session_refresh_required':
           return sessionRefreshRequired;
+        case 'session_verified_address_required':
+          return emailNotVerified;
       }
       // Kratos text ID (로컬 Kratos v26.2.0에서 확인)
       return switch (error.messageId) {
@@ -75,6 +78,7 @@ enum AuthErrorType {
     passwordTooSimilar => '이메일과 비슷한 비밀번호는 쓸 수 없습니다',
     passwordBreached => '유출된 적이 있는 비밀번호입니다.\n다른 비밀번호를 사용해주세요',
     invalidCode => '코드가 올바르지 않거나 이미 사용되었습니다',
+    emailNotVerified => '이메일 인증이 필요합니다.\n메일로 보낸 코드를 입력해주세요',
     flowExpired => '요청 시간이 지났습니다.\n처음부터 다시 시도해주세요',
     sessionRefreshRequired => '보안을 위해 다시 로그인한 뒤 시도해주세요',
     tooManyRequests => '요청이 너무 많습니다.\n잠시 후 다시 시도해주세요',
@@ -92,6 +96,7 @@ enum AuthErrorType {
     passwordBreached =>
       'This password has appeared in a data breach.\nPlease choose another',
     invalidCode => 'The code is invalid or has already been used',
+    emailNotVerified => 'Please verify your email.\nEnter the code we sent you',
     flowExpired => 'The request expired.\nPlease start over',
     sessionRefreshRequired => 'Please sign in again and retry',
     tooManyRequests => 'Too many requests.\nPlease try again later',

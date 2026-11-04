@@ -12,7 +12,6 @@ const _buildRequiredMethods = ['build'];
 const _actionMethodNames = {
   'signInWithEmail',
   'signUpWithEmail',
-  'completeSignUp',
   'sendVerificationCode',
   'verifyEmail',
   'signOut',

@@ -251,6 +251,36 @@ void main() {
       expect(result.flow?.state, 'passed_challenge');
     });
 
+    test('인증 전 로그인 거절은 새 인증 플로우 ID를 담는다', () async {
+      fake.respond = (_) => _json(403, {
+        'error': {
+          'id': 'session_verified_address_required',
+          'code': 400,
+          'details': {
+            'continue_with': [
+              {
+                'action': 'show_verification_ui',
+                'flow': {'id': 'v9', 'verifiable_address': 'a@example.com'},
+              },
+            ],
+          },
+        },
+      });
+
+      await expectLater(
+        client.submit(KratosFlowType.login, 'f1', {}),
+        throwsA(
+          isA<KratosException>()
+              .having(
+                (e) => e.errorId,
+                'errorId',
+                'session_verified_address_required',
+              )
+              .having((e) => e.verificationFlowId, 'flow', 'v9'),
+        ),
+      );
+    });
+
     test('만료된 플로우는 errorId와 use_flow_id를 담는다', () async {
       fake.respond = (_) => _json(410, {
         'error': {'id': 'self_service_flow_expired', 'code': 410},

@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - JWT는 요청 직전에 만료가 가까우면 새로 받고, 401이면 한 번 새로 받아 재시도한다
   - WebSocket은 (재)연결할 때마다 최신 JWT를 쓰고, JWT 갱신만으로는 다시 연결하지 않는다
   - 비밀번호 변경은 메일 코드 대신 현재 비밀번호로 재인증한다
+  - 이메일 인증 전에는 로그인할 수 없다. 가입하면 인증 화면으로, 인증을 마치면 로그인 화면으로 간다.
+    인증 전 로그인 시도는 서버가 다시 보낸 코드로 인증 화면을 연다
   - 가입 비밀번호 최소 길이를 Kratos 정책인 8자로 맞춤
 
 #### Todo & Schedule Mutations
