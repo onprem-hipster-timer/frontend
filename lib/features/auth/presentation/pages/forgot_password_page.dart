@@ -1,14 +1,19 @@
-// 비밀번호 재설정
+// 비밀번호 재설정과 비밀번호 변경
 //
 // 이메일 → 메일로 받은 6자리 코드 → 새 비밀번호, 세 단계를 한 화면에서 진행한다.
-// 새 비밀번호를 저장하면 로그인 상태가 되고, 라우터가 홈으로 보낸다.
+// 새 비밀번호를 저장하면 로그인 상태가 되고 홈으로 간다.
+//
+// 로그인한 사용자의 비밀번호 변경도 이 화면에서 한다. 이메일은 고를 수 없고 계정 이메일로 코드를
+// 보낸다. 현재 비밀번호만으로는 바꿀 수 없다(backend가 메일 복구 세션이 아닌 변경을 거절한다).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 enum _Step { email, code, newPassword }
@@ -53,6 +58,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       final notifier = ref.read(authProvider.notifier);
       switch (_step) {
         case _Step.email:
+          // 로그인한 사용자는 계정 이메일로만 받는다
+          final accountEmail = ref.read(currentUserProvider)?.email;
+          if (accountEmail != null) _emailController.text = accountEmail;
           _recoveryFlowId = await notifier.sendRecoveryCode(
             _emailController.text.trim(),
           );
@@ -69,6 +77,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             settingsFlowId: _settingsFlowId!,
             newPassword: _passwordController.text,
           );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('비밀번호를 바꿨습니다. 다른 기기의 로그인은 끊겼습니다.')),
+            );
+            context.goNamed(AppRoute.calendar.name);
+          }
       }
     } catch (e) {
       if (mounted) {
@@ -87,7 +101,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final accountEmail = ref.watch(currentUserProvider)?.email;
     final (guide, buttonText) = switch (_step) {
+      _Step.email when accountEmail != null => (
+        '$accountEmail(으)로 비밀번호 변경 코드를 보내드립니다.',
+        '코드 받기',
+      ),
       _Step.email => ('가입한 이메일 주소를 입력해주세요.\n비밀번호 재설정 코드를 보내드립니다.', '코드 받기'),
       _Step.code => (
         '${_emailController.text.trim()}(으)로 보낸 6자리 코드를 입력해주세요.',
@@ -97,7 +116,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('비밀번호 재설정')),
+      appBar: AppBar(
+        title: Text(accountEmail != null ? '비밀번호 변경' : '비밀번호 재설정'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -116,6 +137,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ),
               const SizedBox(height: 32),
               ...switch (_step) {
+                _Step.email when accountEmail != null => const <Widget>[],
                 _Step.email => [
                   AuthTextField(
                     controller: _emailController,

@@ -92,11 +92,7 @@ class KratosTestHarness {
   /// [type] 플로우를 만들면 [flowId]를 돌려주게 한다.
   void stubCreateFlow(KratosFlowType type, String flowId) {
     when(
-      () => kratos.createFlow(
-        type,
-        sessionToken: any(named: 'sessionToken'),
-        refresh: any(named: 'refresh'),
-      ),
+      () => kratos.createFlow(type, sessionToken: any(named: 'sessionToken')),
     ).thenAnswer((_) async => KratosFlow(id: flowId));
   }
 

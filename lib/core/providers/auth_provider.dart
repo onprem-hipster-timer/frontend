@@ -360,6 +360,9 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   /// 복구 세션으로 새 비밀번호를 저장하고 로그인 상태가 된다.
+  ///
+  /// 비밀번호는 이 길로만 바꾼다. 로그인한 사용자도 메일로 받은 코드로 복구 세션을 만들어야 한다.
+  /// backend가 메일 복구 세션이 아닌 비밀번호 변경을 거절한다(새어 나간 비밀번호로 계정을 차지하지 못하게).
   Future<void> completeRecovery({
     required String settingsFlowId,
     required String newPassword,
@@ -372,46 +375,6 @@ class AuthNotifier extends _$AuthNotifier {
       }, sessionToken: sessionToken);
       _recoverySessionToken = null;
       await _authenticateWith(sessionToken);
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
-  }
-
-  /// 현재 비밀번호로 다시 인증한 뒤 새 비밀번호로 바꾼다.
-  ///
-  /// Kratos는 최근(privileged_session_max_age, 15분) 인증한 세션만 설정을 바꾸게 하므로
-  /// 항상 재인증부터 한다.
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    try {
-      final current = state;
-      final sessionToken = _sessionToken;
-      if (current is! AuthAuthenticated || sessionToken == null) {
-        throw StateError('로그인 상태가 아닙니다');
-      }
-      final refresh = await _kratos.createFlow(
-        KratosFlowType.login,
-        sessionToken: sessionToken,
-        refresh: true,
-      );
-      await _kratos.submit(KratosFlowType.login, refresh.id, {
-        'method': 'password',
-        'identifier': current.user.email,
-        'password': currentPassword,
-      }, sessionToken: sessionToken);
-      final settings = await _kratos.createFlow(
-        KratosFlowType.settings,
-        sessionToken: sessionToken,
-      );
-      await _kratos.submit(KratosFlowType.settings, settings.id, {
-        'method': 'password',
-        'password': newPassword,
-      }, sessionToken: sessionToken);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,

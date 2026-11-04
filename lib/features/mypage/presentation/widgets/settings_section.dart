@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/settings/settings.dart';
+import 'package:momeet/router.dart';
 
 /// 마이페이지 설정 섹션
 class SettingsSection extends ConsumerWidget {
@@ -83,9 +85,8 @@ class SettingsSection extends ConsumerWidget {
                   Icons.chevron_right,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                onTap: () {
-                  showPasswordChangeSheet(context);
-                },
+                // 메일로 받은 코드로만 바꾼다 (비밀번호 재설정 화면을 그대로 쓴다)
+                onTap: () => context.pushNamed(AppRoute.forgotPassword.name),
               ),
               const Divider(height: 1),
               ListTile(

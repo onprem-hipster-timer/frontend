@@ -18,7 +18,6 @@ const _actionMethodNames = {
   'sendRecoveryCode',
   'verifyRecoveryCode',
   'completeRecovery',
-  'changePassword',
   'startGoogleSignIn',
   'completeGoogleSignIn',
 };

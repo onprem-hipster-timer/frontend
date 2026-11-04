@@ -79,20 +79,6 @@ void main() {
       expect(flow.id, 'f1');
       expect(flow.state, 'choose_method');
     });
-
-    test('재인증 로그인 플로우는 refresh=true와 X-Session-Token을 보낸다', () async {
-      fake.respond = (_) => _json(200, _flow('f1'));
-
-      await client.createFlow(
-        KratosFlowType.login,
-        sessionToken: 'ory_st_abc',
-        refresh: true,
-      );
-
-      final request = fake.requests.single;
-      expect(request.uri.queryParameters, {'refresh': 'true'});
-      expect(request.headers['X-Session-Token'], 'ory_st_abc');
-    });
   });
 
   group('플로우 제출', () {

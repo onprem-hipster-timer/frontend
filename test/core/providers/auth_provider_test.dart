@@ -420,7 +420,7 @@ void main() {
     });
   });
 
-  group('복구와 비밀번호 변경', () {
+  group('비밀번호 복구', () {
     test('복구 코드를 보내고 복구 플로우 ID를 돌려준다', () async {
       harness = await KratosTestHarness.create(authenticated: false);
       harness.stubCreateFlow(KratosFlowType.recovery, 'rec1');
@@ -492,66 +492,6 @@ void main() {
             'message',
             AuthErrorType.invalidCode.localized,
           ),
-        ),
-      );
-    });
-
-    test('비밀번호 변경은 현재 비밀번호로 재인증한 뒤 새 비밀번호를 저장한다', () async {
-      harness = await KratosTestHarness.create();
-      harness.stubCreateFlow(KratosFlowType.login, 'refresh1');
-      harness.stubCreateFlow(KratosFlowType.settings, 'settings1');
-      harness.stubSubmit(KratosFlowType.login, const KratosSubmitResult());
-      harness.stubSubmit(KratosFlowType.settings, const KratosSubmitResult());
-      final container = await boot();
-
-      await container
-          .read(authProvider.notifier)
-          .changePassword(currentPassword: 'old-pw', newPassword: 'new-pw-123');
-
-      const token = KratosTestHarness.sessionToken;
-      verifyInOrder([
-        () => harness.kratos.createFlow(
-          KratosFlowType.login,
-          sessionToken: token,
-          refresh: true,
-        ),
-        () => harness.kratos.submit(KratosFlowType.login, 'refresh1', {
-          'method': 'password',
-          'identifier': 'user@example.com',
-          'password': 'old-pw',
-        }, sessionToken: token),
-        () => harness.kratos.createFlow(
-          KratosFlowType.settings,
-          sessionToken: token,
-        ),
-        () => harness.kratos.submit(KratosFlowType.settings, 'settings1', {
-          'method': 'password',
-          'password': 'new-pw-123',
-        }, sessionToken: token),
-      ]);
-    });
-
-    test('현재 비밀번호가 틀리면 새 비밀번호를 저장하지 않는다', () async {
-      harness = await KratosTestHarness.create();
-      harness.stubCreateFlow(KratosFlowType.login, 'refresh1');
-      harness.stubSubmitError(KratosFlowType.login, kratosError(4000006));
-      final container = await boot();
-
-      await expectLater(
-        container
-            .read(authProvider.notifier)
-            .changePassword(
-              currentPassword: 'wrong',
-              newPassword: 'new-pw-123',
-            ),
-        throwsA(isA<AuthException>()),
-      );
-      verifyNever(
-        () => harness.kratos.submit(
-          KratosFlowType.settings,
-          any(),
-          any(),
-          sessionToken: any(named: 'sessionToken'),
         ),
       );
     });

@@ -327,13 +327,13 @@ void main() {
         expect(result, AppRoute.calendar.path);
       });
 
-      test('인증된 사용자가 /forgot-password에 있으면 /로 리다이렉트한다', () {
+      test('인증된 사용자도 /forgot-password에 머문다 (메일 코드로 비밀번호 변경)', () {
         final result = authRedirect(
           isAuthenticated: true,
           isAuthLoading: false,
           matchedLocation: AppRoute.forgotPassword.path,
         );
-        expect(result, AppRoute.calendar.path);
+        expect(result, isNull);
       });
 
       test('인증된 사용자가 /에 있으면 리다이렉트하지 않는다', () {

@@ -40,7 +40,12 @@ enum AppRoute {
   // 인증 불필요 (공개 페이지)
   login(path: '/login', requiresAuth: false),
   signup(path: '/signup', requiresAuth: false),
-  forgotPassword(path: '/forgot-password', requiresAuth: false),
+  // 로그인한 사용자도 머문다: 비밀번호 변경도 메일 코드로 이 화면에서 한다
+  forgotPassword(
+    path: '/forgot-password',
+    requiresAuth: false,
+    authNeutral: true,
+  ),
   landing(path: '/landing', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
   securityWarning(path: '/security-warning', requiresAuth: false),
