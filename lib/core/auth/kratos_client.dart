@@ -36,17 +36,65 @@ class KratosClient {
   final Dio _dio;
 
   /// 새 플로우를 만든다. [refresh]는 로그인 플로우로 현재 세션을 재인증할 때 쓴다.
+  ///
+  /// [returnTo]를 주면 소셜 로그인용이다. Kratos는 로그인을 마친 브라우저를 [returnTo]에
+  /// `code`를 붙여 돌려보내고, 플로우의 교환 코드와 그 `code`로 세션 토큰을 받는다.
+  /// [returnTo]는 Kratos의 allowed_return_urls 안이어야 한다(밖이면 400).
   Future<KratosFlow> createFlow(
     KratosFlowType type, {
     String? sessionToken,
     bool refresh = false,
+    String? returnTo,
   }) async {
     final response = await _dio.get<Object?>(
       '/self-service/${type.name}/api',
-      queryParameters: {if (refresh) 'refresh': 'true'},
+      queryParameters: {
+        if (refresh) 'refresh': 'true',
+        if (returnTo != null) ...{
+          'return_session_token_exchange_code': 'true',
+          'return_to': returnTo,
+        },
+      },
       options: _withSession(sessionToken),
     );
     return KratosFlow.fromJson(_parse(response));
+  }
+
+  /// 소셜 로그인 제공자로 제출하고 브라우저를 보낼 제공자 주소를 받는다.
+  ///
+  /// Kratos는 422 browser_location_change_required의 redirect_browser_to로 이 주소를 준다.
+  Future<Uri> submitOidc(
+    KratosFlowType type,
+    String flowId,
+    String provider,
+  ) async {
+    final response = await _dio.post<Object?>(
+      '/self-service/${type.name}',
+      queryParameters: {'flow': flowId},
+      data: {'method': 'oidc', 'provider': provider},
+    );
+    final data = response.data;
+    if (response.statusCode == 422 &&
+        data is Map &&
+        data['redirect_browser_to'] is String) {
+      return Uri.parse(data['redirect_browser_to'] as String);
+    }
+    _parse(response);
+    throw KratosException(statusCode: response.statusCode ?? 0);
+  }
+
+  /// 소셜 로그인에서 돌아온 뒤 두 교환 코드로 세션 토큰을 받는다.
+  ///
+  /// [initCode]는 플로우를 만들 때 받은 코드, [returnToCode]는 돌아온 주소의 `code`다.
+  Future<String> exchangeSessionToken({
+    required String initCode,
+    required String returnToCode,
+  }) async {
+    final response = await _dio.get<Object?>(
+      '/sessions/token-exchange',
+      queryParameters: {'init_code': initCode, 'return_to_code': returnToCode},
+    );
+    return _parse(response)['session_token'] as String;
   }
 
   /// 플로우를 제출한다. 코드 오입력처럼 200으로 오는 오류도 [KratosException]으로 던진다.
