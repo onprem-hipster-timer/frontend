@@ -13,6 +13,9 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   plugins:
     - custom_lint
+  errors:
+    # 옛 방식 플러그인(custom_lint) 지원 종료 예고. 새 플러그인 시스템 이전은 #91
+    analysis_options_deprecated_plugins: ignore
   exclude:
     - lib/core/templates/**
     - lib/shared/api/rest/**
