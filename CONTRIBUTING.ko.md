@@ -134,7 +134,7 @@ fvm dart run custom_lint
 
 | 규칙 | 설명 |
 |------|------|
-| `no_direct_kratos_client` | `lib/core/auth/`와 `auth_provider.dart` 밖에서 `KratosClient` 사용 금지 |
+| `no_direct_kratos_client` | `lib/shared/api/kratos/`와 `auth_provider.dart` 밖에서 `KratosClient` 사용 금지 |
 | `auth_action_no_loading_state` | 액션 메서드에서 `AuthStatus.loading()` 사용 금지 |
 | `auth_catch_require_classify` | catch 블록에서 `AuthErrorType.classify` 사용 강제 |
 

@@ -13,7 +13,7 @@ bool _isTestFile(String path) {
 bool _isAuthLayer(String path) {
   final normalized = path.replaceAll('\\', '/');
   return normalized.endsWith(_authProviderFile) ||
-      normalized.contains('/lib/core/auth/');
+      normalized.contains('/lib/shared/api/kratos/');
 }
 
 const _kratosClientChecker = TypeChecker.fromName(
@@ -21,7 +21,7 @@ const _kratosClientChecker = TypeChecker.fromName(
   packageName: 'momeet',
 );
 
-/// 인증 계층(lib/core/auth/, auth_provider.dart) 밖에서 KratosClient를 쓰는 것을 금지합니다.
+/// 인증 계층(lib/shared/api/kratos/, auth_provider.dart) 밖에서 KratosClient를 쓰는 것을 금지합니다.
 ///
 /// 세션 토큰 보관과 인증 상태 전이를 한 곳에서만 하기 위해,
 /// 모든 인증 로직은 AuthNotifier(authProvider)를 통해서만 수행되어야 합니다.

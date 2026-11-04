@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:momeet/core/auth/kratos_client.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_client.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 

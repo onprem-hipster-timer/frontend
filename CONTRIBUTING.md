@@ -134,7 +134,7 @@ Rules enforced:
 
 | Rule | Description |
 |------|-------------|
-| `no_direct_kratos_client` | Disallow using `KratosClient` outside `lib/core/auth/` and `auth_provider.dart` |
+| `no_direct_kratos_client` | Disallow using `KratosClient` outside `lib/shared/api/kratos/` and `auth_provider.dart` |
 | `auth_action_no_loading_state` | Disallow `AuthStatus.loading()` in action methods |
 | `auth_catch_require_classify` | Require `AuthErrorType.classify` in catch blocks |
 

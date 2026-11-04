@@ -6,7 +6,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/config/app_config.dart';
 
 enum KratosFlowType { login, registration, verification, recovery, settings }
