@@ -19,6 +19,8 @@ const _actionMethodNames = {
   'verifyRecoveryCode',
   'completeRecovery',
   'changePassword',
+  'startGoogleSignIn',
+  'completeGoogleSignIn',
 };
 
 const _classifyRequiredMethodNames = _actionMethodNames;

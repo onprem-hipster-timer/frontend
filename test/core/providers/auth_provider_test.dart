@@ -8,6 +8,7 @@ import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/core/auth/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 import '../../helpers/kratos_mocks.dart';
@@ -553,6 +554,200 @@ void main() {
           sessionToken: any(named: 'sessionToken'),
         ),
       );
+    });
+  });
+
+  group('Google 로그인', () {
+    final returnTo = Uri.parse(
+      'https://app.example.com/login?redirect=%2Ftodo',
+    );
+    final googleUrl = Uri.parse('https://accounts.google.com/o/oauth2/v2/auth');
+
+    void stubGoogleFlow(KratosFlowType type) {
+      when(
+        () => harness.kratos.createFlow(type, returnTo: any(named: 'returnTo')),
+      ).thenAnswer(
+        (_) async =>
+            const KratosFlow(id: 'g1', sessionTokenExchangeCode: 'init-code'),
+      );
+      when(
+        () => harness.kratos.submitOidc(type, 'g1', 'google'),
+      ).thenAnswer((_) async => googleUrl);
+    }
+
+    test('시작하면 교환 코드를 저장하고 Google 주소를 돌려준다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      stubGoogleFlow(KratosFlowType.login);
+      final container = await boot();
+      final auth = container.read(authProvider.notifier);
+
+      final url = await auth.startGoogleSignIn(returnTo: returnTo);
+
+      expect(url, googleUrl);
+      verify(
+        () => harness.kratos.createFlow(
+          KratosFlowType.login,
+          returnTo: returnTo.toString(),
+        ),
+      ).called(1);
+      expect(harness.prefs.getString(googleSignInCodeKey), 'init-code');
+      expect(auth.hasPendingGoogleSignIn, isTrue);
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+    });
+
+    test('가입 화면에서 시작하면 가입 플로우를 쓴다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      stubGoogleFlow(KratosFlowType.registration);
+      final container = await boot();
+
+      await container
+          .read(authProvider.notifier)
+          .startGoogleSignIn(returnTo: returnTo, signUp: true);
+
+      verify(
+        () => harness.kratos.submitOidc(
+          KratosFlowType.registration,
+          'g1',
+          'google',
+        ),
+      ).called(1);
+    });
+
+    test('Google 주소를 받지 못하면 AuthException이다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      stubGoogleFlow(KratosFlowType.login);
+      when(
+        () => harness.kratos.submitOidc(KratosFlowType.login, 'g1', 'google'),
+      ).thenThrow(const KratosException(statusCode: 500));
+      final container = await boot();
+
+      expect(
+        () => container
+            .read(authProvider.notifier)
+            .startGoogleSignIn(returnTo: returnTo),
+        throwsA(isA<AuthException>()),
+      );
+    });
+
+    test('돌아온 코드로 세션 토큰을 받아 로그인하고 교환 코드는 지운다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      when(
+        () => harness.kratos.exchangeSessionToken(
+          initCode: 'init-code',
+          returnToCode: 'return-code',
+        ),
+      ).thenAnswer((_) async => 'ory_st_google');
+      final container = await boot();
+
+      await container
+          .read(authProvider.notifier)
+          .completeGoogleSignIn('return-code');
+
+      expect(container.read(authProvider), isA<AuthAuthenticated>());
+      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_google');
+      expect(harness.prefs.getString(googleSignInCodeKey), isNull);
+    });
+
+    test('코드가 맞지 않으면 AuthException이고 교환 코드는 지운다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      when(
+        () => harness.kratos.exchangeSessionToken(
+          initCode: any(named: 'initCode'),
+          returnToCode: any(named: 'returnToCode'),
+        ),
+      ).thenThrow(const KratosException(statusCode: 404));
+      final container = await boot();
+      final auth = container.read(authProvider.notifier);
+
+      await expectLater(
+        auth.completeGoogleSignIn('wrong'),
+        throwsA(isA<AuthException>()),
+      );
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(auth.hasPendingGoogleSignIn, isFalse);
+    });
+
+    test('이 브라우저가 시작하지 않은 로그인은 교환하지 않는다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      final container = await boot();
+      final auth = container.read(authProvider.notifier);
+
+      expect(auth.hasPendingGoogleSignIn, isFalse);
+      await expectLater(
+        auth.completeGoogleSignIn('return-code'),
+        throwsA(isA<AuthException>()),
+      );
+      verifyNever(
+        () => harness.kratos.exchangeSessionToken(
+          initCode: any(named: 'initCode'),
+          returnToCode: any(named: 'returnToCode'),
+        ),
+      );
+    });
+
+    group('Google 로그인 사용 가능 여부', () {
+      ProviderContainer container({required bool isWeb}) {
+        final c = ProviderContainer(
+          overrides: [
+            ...harness.overrides,
+            isWebProvider.overrideWithValue(isWeb),
+          ],
+        );
+        addTearDown(c.dispose);
+        return c;
+      }
+
+      test('웹이 아니면 서버에 묻지 않고 false다', () async {
+        harness = await KratosTestHarness.create(authenticated: false);
+
+        expect(
+          await container(
+            isWeb: false,
+          ).read(googleSignInAvailableProvider.future),
+          isFalse,
+        );
+        verifyNever(() => harness.kratos.createFlow(any()));
+      });
+
+      test('웹에서는 로그인 플로우에 google 버튼이 있을 때만 true다', () async {
+        harness = await KratosTestHarness.create(authenticated: false);
+        when(() => harness.kratos.createFlow(KratosFlowType.login)).thenAnswer(
+          (_) async => const KratosFlow(id: 'f1', oidcProviders: ['google']),
+        );
+        expect(
+          await container(
+            isWeb: true,
+          ).read(googleSignInAvailableProvider.future),
+          isTrue,
+        );
+
+        when(
+          () => harness.kratos.createFlow(KratosFlowType.login),
+        ).thenAnswer((_) async => const KratosFlow(id: 'f2'));
+        expect(
+          await container(
+            isWeb: true,
+          ).read(googleSignInAvailableProvider.future),
+          isFalse,
+        );
+      });
+
+      test('서버에 묻지 못하면 false다', () async {
+        harness = await KratosTestHarness.create(authenticated: false);
+        when(
+          () => harness.kratos.createFlow(KratosFlowType.login),
+        ).thenThrow(networkError);
+
+        expect(
+          await container(
+            isWeb: true,
+          ).read(googleSignInAvailableProvider.future),
+          isFalse,
+        );
+      });
     });
   });
 }

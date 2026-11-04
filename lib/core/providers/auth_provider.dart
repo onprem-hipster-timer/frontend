@@ -16,6 +16,7 @@ import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/core/auth/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
@@ -27,6 +28,12 @@ part 'auth_provider.g.dart';
 /// 웹에서는 localStorage의 `flutter.momeet.session_token`이 되며,
 /// web/index.html이 Flutter 부팅 전에 첫 화면(랜딩 여부)을 정할 때 읽는다.
 const sessionTokenKey = 'momeet.session_token';
+
+/// Google 로그인을 시작할 때 받은 교환 코드를 보관하는 키.
+///
+/// Google을 다녀오는 동안 페이지가 새로 뜨므로 메모리가 아니라 저장소에 둔다.
+/// 이 값이 있어야 돌아온 코드로 세션을 받을 수 있으므로, 남이 보낸 복귀 링크로는 로그인되지 않는다.
+const googleSignInCodeKey = 'momeet.google_sign_in_code';
 
 // ============================================================
 // 상태 모델
@@ -175,6 +182,58 @@ class AuthNotifier extends _$AuthNotifier {
         );
       }
       throw AuthException(message: type.localized, originalError: e);
+    }
+  }
+
+  /// 이 브라우저에서 시작한 Google 로그인이 돌아오기를 기다리는 중인지
+  bool get hasPendingGoogleSignIn =>
+      _prefs.getString(googleSignInCodeKey) != null;
+
+  /// Google 로그인을 시작한다. 브라우저를 보낼 Google 주소를 돌려준다.
+  ///
+  /// 로그인을 마치면 Kratos가 브라우저를 [returnTo]에 `code`를 붙여 돌려보낸다.
+  /// [signUp]이면 가입 플로우로 시작한다.
+  Future<Uri> startGoogleSignIn({
+    required Uri returnTo,
+    bool signUp = false,
+  }) async {
+    try {
+      final type = signUp ? KratosFlowType.registration : KratosFlowType.login;
+      final flow = await _kratos.createFlow(
+        type,
+        returnTo: returnTo.toString(),
+      );
+      await _prefs.setString(
+        googleSignInCodeKey,
+        flow.sessionTokenExchangeCode!,
+      );
+      return await _kratos.submitOidc(type, flow.id, 'google');
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// Google에서 돌아온 `code`로 세션을 받아 로그인한다. 교환 코드는 성공·실패와 상관없이 한 번만 쓴다.
+  Future<void> completeGoogleSignIn(String code) async {
+    try {
+      final initCode = _prefs.getString(googleSignInCodeKey);
+      await _prefs.remove(googleSignInCodeKey);
+      if (initCode == null) {
+        throw StateError('이 브라우저에서 시작한 Google 로그인이 아닙니다');
+      }
+      final sessionToken = await _kratos.exchangeSessionToken(
+        initCode: initCode,
+        returnToCode: code,
+      );
+      await _authenticateWith(sessionToken);
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
     }
   }
 
@@ -365,6 +424,23 @@ class AuthNotifier extends _$AuthNotifier {
 // ============================================================
 // 헬퍼 프로바이더
 // ============================================================
+
+/// Google 로그인을 쓸 수 있는지. 서버(Kratos)가 켰을 때만 true다.
+///
+/// 웹에서만 쓴다. Kratos가 로그인 뒤 돌려보내는 주소(allowed_return_urls)가 웹 앱 주소뿐이다.
+/// 서버가 켠 제공자는 로그인 플로우의 oidc 버튼으로 알 수 있다. 앱 실행 중 한 번만 묻는다.
+@Riverpod(keepAlive: true)
+Future<bool> googleSignInAvailable(Ref ref) async {
+  if (!ref.read(isWebProvider)) return false;
+  try {
+    final flow = await ref
+        .read(kratosClientProvider)
+        .createFlow(KratosFlowType.login);
+    return flow.oidcProviders.contains('google');
+  } catch (_) {
+    return false;
+  }
+}
 
 /// 현재 로그인 중인 사용자
 @riverpod
