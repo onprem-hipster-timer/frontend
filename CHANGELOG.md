@@ -31,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Auth
 - 이메일 인증 화면(`/verification`)과 인증 오류 화면(`/auth-error`)
 - 코드 기반 비밀번호 재설정 (이메일 → 6자리 코드 → 새 비밀번호)
+- 웹 Google 로그인 ("Google로 계속하기", 로그인·회원가입 화면)
+  - 서버(Kratos)가 Google을 켰을 때만 버튼이 보인다
+  - Google을 다녀온 브라우저는 로그인 화면(`/login?code=`)으로 돌아오고, 로그인 화면이 세션 토큰 교환으로 로그인을 마친다
+  - 로그인 뒤 원래 화면으로 가는 처리는 비밀번호 로그인과 같은 `redirect` 검사를 탄다
+  - 이 브라우저에서 시작하지 않은 복귀 링크는 교환하지 않고 보안 경고 화면으로 보낸다
+
+#### Security
+- 메일 인증 링크(`/verification?flow=`)와 Google 복귀 링크(`/login?code=`)의 값이 올바른 모양이 아니면 보안 경고 화면으로 보낸다
 
 #### Tests
 - Todo·Schedule mutation 도메인별 테스트 추가

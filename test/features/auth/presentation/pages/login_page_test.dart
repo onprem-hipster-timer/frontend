@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/kratos_client.dart';
 import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
@@ -245,5 +249,120 @@ void main() {
     final page = tester.widget<VerificationPage>(find.byType(VerificationPage));
     expect(page.flowId, 'v9');
     expect(page.email, 'new@example.com');
+  });
+
+  // ============================================================
+  // Google 로그인
+  // ============================================================
+  group('Google 로그인', () {
+    const googleCode = 'Zx81QwErTyUiOp0987654321AsDfGhJkLmNbVcXz';
+    late List<Uri> redirected;
+
+    List<Override> googleOverrides({bool available = true}) => [
+      ...harness.overrides,
+      googleSignInAvailableProvider.overrideWith((ref) async => available),
+      appOriginProvider.overrideWithValue('https://app.example.com'),
+      browserRedirectProvider.overrideWithValue((url) async {
+        redirected.add(url);
+      }),
+    ];
+
+    setUp(() => redirected = []);
+
+    testWidgets('서버가 Google을 켜지 않았으면 버튼이 없다', (tester) async {
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login',
+          overrides: googleOverrides(available: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Google로 계속하기'), findsNothing);
+    });
+
+    testWidgets('버튼을 누르면 redirect를 실은 로그인 화면을 복귀 주소로 Google에 보낸다', (
+      tester,
+    ) async {
+      harness.stubGoogleStart(KratosFlowType.login);
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login?redirect=%2Ftodo',
+          overrides: googleOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Google로 계속하기'));
+      // 브라우저가 Google로 떠나는 동안 진행 표시가 계속 돌므로 settle을 기다리지 않는다
+      await tester.pump();
+      await tester.pump();
+
+      verify(
+        () => harness.kratos.createFlow(
+          KratosFlowType.login,
+          returnTo: 'https://app.example.com/login?redirect=%2Ftodo',
+        ),
+      ).called(1);
+      expect(redirected, [KratosTestHarness.googleUrl]);
+    });
+
+    testWidgets('돌아온 code로 로그인을 마친다', (tester) async {
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      when(
+        () => harness.kratos.exchangeSessionToken(
+          initCode: 'init-code',
+          returnToCode: googleCode,
+        ),
+      ).thenAnswer((_) async => 'ory_st_google');
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login?code=$googleCode',
+          overrides: googleOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_google');
+      expect(harness.prefs.getString(googleSignInCodeKey), isNull);
+    });
+
+    testWidgets('이 브라우저가 시작하지 않은 복귀 링크는 보안 경고로 보낸다', (tester) async {
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login?code=$googleCode',
+          overrides: googleOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SecurityWarningPage), findsOneWidget);
+      verifyNever(
+        () => harness.kratos.exchangeSessionToken(
+          initCode: any(named: 'initCode'),
+          returnToCode: any(named: 'returnToCode'),
+        ),
+      );
+    });
+
+    testWidgets('교환에 실패하면 에러 배너를 보여 준다', (tester) async {
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      when(
+        () => harness.kratos.exchangeSessionToken(
+          initCode: any(named: 'initCode'),
+          returnToCode: any(named: 'returnToCode'),
+        ),
+      ).thenThrow(const KratosException(statusCode: 404));
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login?code=$googleCode',
+          overrides: googleOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(harness.prefs.getString(sessionTokenKey), isNull);
+    });
   });
 }

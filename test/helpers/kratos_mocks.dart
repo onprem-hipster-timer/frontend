@@ -112,6 +112,24 @@ class KratosTestHarness {
     ).thenAnswer((_) async => result);
   }
 
+  /// Google 로그인을 시작하면 Kratos가 돌려주는 Google 주소
+  static final googleUrl = Uri.parse(
+    'https://accounts.google.com/o/oauth2/v2/auth?client_id=test',
+  );
+
+  /// [type] 플로우로 Google 로그인을 시작하면 교환 코드 `init-code`와 [googleUrl]을 주게 한다.
+  void stubGoogleStart(KratosFlowType type) {
+    when(
+      () => kratos.createFlow(type, returnTo: any(named: 'returnTo')),
+    ).thenAnswer(
+      (_) async =>
+          const KratosFlow(id: 'g1', sessionTokenExchangeCode: 'init-code'),
+    );
+    when(
+      () => kratos.submitOidc(type, 'g1', 'google'),
+    ).thenAnswer((_) async => googleUrl);
+  }
+
   /// [type] 플로우 제출이 [error]를 던지게 한다.
   void stubSubmitError(KratosFlowType type, Object error) {
     when(

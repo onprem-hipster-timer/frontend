@@ -6,16 +6,23 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key, this.initialEmail});
+  const LoginPage({super.key, this.initialEmail, this.googleCode});
 
   /// 회원가입 폼에서 전환해 올 때 이어받는 이메일.
   ///
   /// URL이 아닌 라우터 `extra`(인메모리)로 전달돼 재입력 부담을 줄입니다.
   /// 비밀번호는 보안상 이어받지 않습니다.
   final String? initialEmail;
+
+  /// Google 로그인을 마치고 돌아올 때 Kratos가 붙여 주는 `code`.
+  ///
+  /// 있으면 이 화면이 로그인을 마친다. 로그인 뒤 이동은 다른 로그인과 같이 라우터가
+  /// `redirect`를 검사해 정한다.
+  final String? googleCode;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -35,6 +42,34 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _emailController.text = widget.initialEmail ?? '';
     _emailController.addListener(_clearError);
     _passwordController.addListener(_clearError);
+    final googleCode = widget.googleCode;
+    if (googleCode != null) {
+      _isLoading = true;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _completeGoogleSignIn(googleCode),
+      );
+    }
+  }
+
+  /// Google에서 돌아온 code로 로그인을 마친다.
+  ///
+  /// 이 브라우저에서 시작하지 않은 로그인이면 남이 보낸 링크일 수 있으므로 보안 경고로 보낸다.
+  Future<void> _completeGoogleSignIn(String code) async {
+    final auth = ref.read(authProvider.notifier);
+    if (!auth.hasPendingGoogleSignIn) {
+      context.goNamed(
+        AppRoute.securityWarning.name,
+        queryParameters: {'blocked': GoRouterState.of(context).uri.toString()},
+      );
+      return;
+    }
+    try {
+      await auth.completeGoogleSignIn(code);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _clearError() {
@@ -188,6 +223,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 isLoading: _isLoading,
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+
+              GoogleSignInButton(
+                onError: (message) => setState(() => _errorMessage = message),
               ),
 
               const SizedBox(height: 24),

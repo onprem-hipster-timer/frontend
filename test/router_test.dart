@@ -779,6 +779,60 @@ void main() {
         expect(result, blocked(AppRoute.verification.path, params));
       });
 
+      const googleCode = 'Zx81QwErTyUiOp0987654321AsDfGhJkLmNbVcXz';
+
+      test('Google 로그인에서 돌아온 code는 그대로 로그인 화면을 연다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.login.path,
+          queryParameters: {'code': googleCode},
+        );
+        expect(result, isNull);
+      });
+
+      test('code가 Kratos 코드 모양이 아니면 보안 경고로 보낸다', () {
+        for (final code in [
+          'short',
+          'has space in it 12345',
+          '<script>x</script>',
+        ]) {
+          final params = {'code': code};
+          final result = authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.login.path,
+            queryParameters: params,
+          );
+          expect(result, blocked(AppRoute.login.path, params), reason: code);
+        }
+      });
+
+      test('Google 로그인을 마치면 redirect 검사를 거쳐 원래 화면으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.login.path,
+          redirectAfterLogin: '/todo',
+          queryParameters: {'redirect': '/todo', 'code': googleCode},
+        );
+        expect(result, '/todo');
+      });
+
+      test('Google 로그인 뒤 redirect가 외부 주소면 보안 경고로 보낸다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.login.path,
+          redirectAfterLogin: '//evil.example',
+          queryParameters: {'redirect': '//evil.example', 'code': googleCode},
+        );
+        expect(
+          result,
+          '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent('//evil.example')}',
+        );
+      });
+
       test('다른 화면의 flow 값은 검사하지 않는다', () {
         final result = authRedirect(
           isAuthenticated: false,

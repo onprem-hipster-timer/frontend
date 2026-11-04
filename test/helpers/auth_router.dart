@@ -6,6 +6,7 @@ import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/router.dart';
+import 'package:momeet/shared/pages/security_warning_page.dart';
 
 /// 인증 화면 사이 이동(로그인↔회원가입의 `extra` 이메일 전달, 가입 → 이메일 인증 → 홈)을
 /// end-to-end로 검증하기 위한 최소 라우터 + MaterialApp.router.
@@ -32,6 +33,14 @@ Widget pumpAuthFlow({
         name: AppRoute.login.name,
         builder: (context, state) => LoginPage(
           initialEmail: state.extra is String ? state.extra as String : null,
+          googleCode: state.uri.queryParameters['code'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.securityWarning.path,
+        name: AppRoute.securityWarning.name,
+        builder: (context, state) => SecurityWarningPage(
+          attemptedUrl: state.uri.queryParameters['blocked'],
         ),
       ),
       GoRoute(
