@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 
+import '../../../helpers/fake_ws_server.dart';
+
 void main() {
   // ============================================================
   // TimerWsClient.wsUrl — 정적 메서드
@@ -91,24 +93,37 @@ void main() {
   });
 
   // ============================================================
-  // TimerWsClient 토큰 저장 — autoConnect: false
+  // TimerWsClient 연결마다 JWT 받기 — 로컬 WebSocket 서버
   // ============================================================
-  group('TimerWsClient 토큰 저장', () {
-    test('생성 시 전달된 토큰이 저장된다', () {
-      final client = TimerWsClient(accessToken: 'jwt-123', autoConnect: false);
+  group('TimerWsClient 연결마다 JWT 받기', () {
+    late FakeWsServer server;
+
+    setUp(() async => server = await FakeWsServer.start());
+    tearDown(() => server.close());
+
+    test('끊겨서 다시 연결할 때 JWT를 새로 받는다', () async {
+      var issued = 0;
+      final client = TimerWsClient(accessToken: () async => 'jwt-${++issued}');
       addTearDown(client.dispose);
 
-      expect(client.token, 'jwt-123');
+      await server.waitForConnections(1);
+      // 서버 내부 오류(1011)로 끊기면 1초 뒤 다시 연결한다
+      await server.sockets.single.close(1011, 'test');
+      await server.waitForConnections(2, timeout: const Duration(seconds: 3));
+
+      expect(server.protocols, [
+        'authorization.bearer.jwt-1',
+        'authorization.bearer.jwt-2',
+      ]);
     });
 
-    test('서로 다른 토큰으로 생성하면 각각 저장된다', () {
-      final client1 = TimerWsClient(accessToken: 'token-a', autoConnect: false);
-      final client2 = TimerWsClient(accessToken: 'token-b', autoConnect: false);
-      addTearDown(client1.dispose);
-      addTearDown(client2.dispose);
+    test('JWT가 없으면(로그아웃) 연결하지 않는다', () async {
+      final client = TimerWsClient(accessToken: () async => null);
+      addTearDown(client.dispose);
 
-      expect(client1.token, 'token-a');
-      expect(client2.token, 'token-b');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(server.protocols, isEmpty);
     });
   });
 
@@ -118,7 +133,7 @@ void main() {
   group('TimerWsClient dispose', () {
     test('dispose 후 messageStream이 닫힌다', () async {
       final client = TimerWsClient(
-        accessToken: 'test-token',
+        accessToken: () async => 'test-token',
         autoConnect: false,
       );
 
@@ -133,7 +148,7 @@ void main() {
 
     test('disconnect 후 isConnected가 false이다', () {
       final client = TimerWsClient(
-        accessToken: 'test-token',
+        accessToken: () async => 'test-token',
         autoConnect: false,
       );
       addTearDown(client.dispose);
@@ -145,7 +160,7 @@ void main() {
 
     test('autoConnect: false면 초기 상태에서 연결되지 않는다', () {
       final client = TimerWsClient(
-        accessToken: 'test-token',
+        accessToken: () async => 'test-token',
         autoConnect: false,
       );
       addTearDown(client.dispose);

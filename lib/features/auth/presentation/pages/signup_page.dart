@@ -5,6 +5,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key, this.initialEmail});
@@ -50,45 +51,26 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     });
 
     try {
-      await ref
-          .read(authProvider.notifier)
-          .signUpWithEmail(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+      final notifier = ref.read(authProvider.notifier);
+      final email = _emailController.text.trim();
+      final verificationFlowId = await notifier.signUpWithEmail(
+        email: email,
+        password: _passwordController.text,
+      );
 
-      if (mounted) {
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('회원가입 성공'),
-            content: const Text('이메일 인증 링크가 전송되었습니다.\n이메일을 확인하고 로그인해주세요.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.go(
-                    AppRoute.login.path,
-                    extra: _emailController.text.trim(),
-                  );
-                },
-                child: const Text('확인'),
-              ),
-            ],
-          ),
+      if (!mounted) return;
+      if (verificationFlowId == null) {
+        // 인증 메일이 없는 설정이면 바로 로그인 화면으로
+        context.goNamed(AppRoute.login.name, extra: email);
+      } else {
+        context.goNamed(
+          AppRoute.verification.name,
+          queryParameters: {'flow': verificationFlowId},
+          extra: email,
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
+      if (mounted) _showError(e.toString());
     } finally {
       if (mounted) {
         setState(() {
@@ -96,6 +78,15 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         });
       }
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
   }
 
   @override
@@ -169,8 +160,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         if (value == null || value.isEmpty) {
                           return '비밀번호를 입력해주세요';
                         }
-                        if (value.length < 6) {
-                          return '비밀번호는 6자 이상이어야 합니다';
+                        if (value.length < 8) {
+                          return '비밀번호는 8자 이상이어야 합니다';
                         }
                         return null;
                       },
@@ -216,6 +207,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
+              GoogleSignInButton(signUp: true, onError: _showError),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

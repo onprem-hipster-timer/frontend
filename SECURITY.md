@@ -53,15 +53,15 @@ When building and deploying Momeet Frontend:
 
 - [ ] Never commit `.env` files or API keys to version control
 - [ ] Use `assets/.env` for environment configuration (listed in `.gitignore`)
-- [ ] Keep Supabase credentials out of source code
+- [ ] Keep credentials and session tokens out of source code and logs
 - [ ] Run `fvm flutter pub get` only from trusted sources
 - [ ] Review third-party package updates before upgrading
 
 ### Authentication
 
-- Supabase auth tokens are managed by `supabase_flutter`
-- Never store raw tokens in `SharedPreferences` — use secure storage
-- Ensure token refresh logic handles expiration gracefully
+- Sign-in uses Ory Kratos API flows through the backend `/auth` proxy. Only `auth_provider.dart` talks to Kratos
+- The Kratos session token is kept in `SharedPreferences` (`localStorage` on web), so an XSS bug can leak it. Native builds should move it to secure storage before release
+- Only the short-lived backend JWT (10 minutes) is kept in app state. It is renewed right before requests that need it
 
 ### Data Storage
 
@@ -131,15 +131,15 @@ Momeet Frontend 빌드 및 배포 시:
 
 - [ ] `.env` 파일이나 API 키를 버전 관리에 커밋하지 않기
 - [ ] 환경 설정은 `assets/.env` 사용 (`.gitignore`에 등록)
-- [ ] Supabase 자격 증명을 소스 코드에 포함하지 않기
+- [ ] 자격 증명과 세션 토큰을 소스 코드와 로그에 남기지 않기
 - [ ] 신뢰할 수 있는 소스에서만 `fvm flutter pub get` 실행
 - [ ] 서드파티 패키지 업데이트 시 변경 사항 검토
 
 ### 인증
 
-- Supabase 인증 토큰은 `supabase_flutter`가 관리
-- `SharedPreferences`에 원시 토큰 저장 금지 — 보안 저장소 사용
-- 토큰 갱신 로직에서 만료를 적절히 처리
+- 로그인은 backend `/auth` 프록시를 거친 Ory Kratos API 플로우로 한다. Kratos 호출은 `auth_provider.dart`에서만 한다
+- Kratos 세션 토큰은 `SharedPreferences`(웹은 `localStorage`)에 두므로 XSS가 생기면 유출될 수 있다. 네이티브 빌드는 출시 전에 보안 저장소로 옮긴다
+- 앱 상태에는 짧은 백엔드용 JWT(10분)만 두고, 필요한 요청 직전에 갱신한다
 
 ### 데이터 저장
 

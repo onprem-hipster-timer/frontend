@@ -10,21 +10,27 @@ bool _isTestFile(String path) {
   return normalized.contains('/test/') || normalized.startsWith('test/');
 }
 
-const _goTrueChecker = TypeChecker.fromName(
-  'GoTrueClient',
-  packageName: 'gotrue',
+bool _isAuthLayer(String path) {
+  final normalized = path.replaceAll('\\', '/');
+  return normalized.endsWith(_authProviderFile) ||
+      normalized.contains('/lib/shared/api/kratos/');
+}
+
+const _kratosClientChecker = TypeChecker.fromName(
+  'KratosClient',
+  packageName: 'momeet',
 );
 
-/// auth_provider.dart 외부에서 Supabase 인증 API를 직접 호출하거나
-/// GoTrueClient 타입을 참조하는 것을 금지합니다.
+/// 인증 계층(lib/shared/api/kratos/, auth_provider.dart) 밖에서 KratosClient를 쓰는 것을 금지합니다.
 ///
-/// 모든 인증 로직은 AuthNotifier를 통해서만 수행되어야 합니다.
-class NoDirectSupabaseAuth extends DartLintRule {
-  const NoDirectSupabaseAuth() : super(code: _code);
+/// 세션 토큰 보관과 인증 상태 전이를 한 곳에서만 하기 위해,
+/// 모든 인증 로직은 AuthNotifier(authProvider)를 통해서만 수행되어야 합니다.
+class NoDirectKratosClient extends DartLintRule {
+  const NoDirectKratosClient() : super(code: _code);
 
   static const _code = LintCode(
-    name: 'no_direct_supabase_auth',
-    problemMessage: 'Supabase 인증 API를 직접 호출하지 마세요. '
+    name: 'no_direct_kratos_client',
+    problemMessage: 'KratosClient를 직접 쓰지 마세요. '
         'AuthNotifier(authProvider)를 통해서만 인증 로직을 수행해야 합니다.',
     errorSeverity: ErrorSeverity.WARNING,
   );
@@ -35,28 +41,20 @@ class NoDirectSupabaseAuth extends DartLintRule {
     ErrorReporter reporter,
     CustomLintContext context,
   ) {
-    if (resolver.path.endsWith(_authProviderFile)) return;
+    if (_isAuthLayer(resolver.path)) return;
     if (_isTestFile(resolver.path)) return;
 
     context.registry.addMethodInvocation((node) {
       final targetType = node.realTarget?.staticType;
       if (targetType != null &&
-          _goTrueChecker.isAssignableFromType(targetType)) {
-        reporter.atNode(node, _code);
-      }
-    });
-
-    context.registry.addPropertyAccess((node) {
-      final targetType = node.realTarget.staticType;
-      if (targetType != null &&
-          _goTrueChecker.isAssignableFromType(targetType)) {
+          _kratosClientChecker.isAssignableFromType(targetType)) {
         reporter.atNode(node, _code);
       }
     });
 
     context.registry.addNamedType((node) {
       final type = node.type;
-      if (type != null && _goTrueChecker.isExactlyType(type)) {
+      if (type != null && _kratosClientChecker.isExactlyType(type)) {
         reporter.atNode(node, _code);
       }
     });

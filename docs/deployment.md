@@ -75,13 +75,7 @@ checkout
 
 | 변수 | 용도 | 공개 여부 |
 |------|------|-----------|
-| `API_BASE_URL` | 백엔드 API 서버 URL | 클라이언트 공개 값 |
-| `SUPABASE_URL` | Supabase 프로젝트 URL | 클라이언트 공개 값 |
-| `SUPABASE_PUBLISHABLE_KEY` | Supabase 익명 접근 키 | 클라이언트 공개 값 |
-
-!!! info "클라이언트 공개 값"
-    위 값들은 Supabase가 클라이언트에 노출되도록 설계한 값입니다.
-    보안은 Supabase RLS(Row Level Security)가 담당합니다.
+| `API_BASE_URL` | 백엔드 API 서버 URL. 인증(Ory Kratos)도 `API_BASE_URL/auth`로 부른다 | 클라이언트 공개 값 |
 
 ### 레포에 커밋하지 않는 이유
 
@@ -137,9 +131,7 @@ SPA(Single Page Application) 라우팅을 위해 모든 경로를 `index.html`�
 
 | Variable | 용도 |
 |----------|------|
-| `API_BASE_URL` | 백엔드 API 서버 URL |
-| `SUPABASE_URL` | Supabase 프로젝트 URL |
-| `SUPABASE_PUBLISHABLE_KEY` | Supabase 익명 접근 키 |
+| `API_BASE_URL` | 백엔드 API 서버 URL (인증은 `API_BASE_URL/auth`) |
 
 !!! tip "환경변수 변경 시 재배포"
     GitHub vars를 변경해도 자동으로 재배포되지 않습니다.

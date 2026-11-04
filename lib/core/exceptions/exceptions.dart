@@ -31,6 +31,19 @@ class AuthException extends AppException {
     : super(message: message ?? _l('로그인이 필요합니다', 'Authentication required'));
 }
 
+/// 이메일 인증 전이라 로그인이 거절됨.
+///
+/// [verificationFlowId]는 서버가 새로 만든 인증 플로우다. 서버가 이 플로우로 코드를 다시 보냈다.
+class EmailNotVerifiedException extends AuthException {
+  EmailNotVerifiedException({
+    super.message,
+    super.originalError,
+    this.verificationFlowId,
+  });
+
+  final String? verificationFlowId;
+}
+
 /// 인증 토큰 만료 예외
 class TokenExpiredException extends AuthException {
   TokenExpiredException({String? message, super.originalError})

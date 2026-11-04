@@ -40,10 +40,19 @@ enum AppRoute {
   // 인증 불필요 (공개 페이지)
   login(path: '/login', requiresAuth: false),
   signup(path: '/signup', requiresAuth: false),
-  forgotPassword(path: '/forgot-password', requiresAuth: false),
+  // 로그인한 사용자도 머문다: 비밀번호 변경도 메일 코드로 이 화면에서 한다
+  forgotPassword(
+    path: '/forgot-password',
+    requiresAuth: false,
+    authNeutral: true,
+  ),
   landing(path: '/landing', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
   securityWarning(path: '/security-warning', requiresAuth: false),
+
+  // 로그인 여부와 상관없이 머무는 페이지 (Kratos 메일 링크·오류로 들어옴)
+  verification(path: '/verification', requiresAuth: false, authNeutral: true),
+  authError(path: '/auth-error', requiresAuth: false, authNeutral: true),
 
   // 인증 필요 (보호된 페이지)
   calendar(path: '/'),
@@ -55,7 +64,11 @@ enum AppRoute {
   tags(path: '/tags'),
   mypage(path: '/mypage');
 
-  const AppRoute({required this.path, this.requiresAuth = true});
+  const AppRoute({
+    required this.path,
+    this.requiresAuth = true,
+    this.authNeutral = false,
+  });
 
   /// 라우트 경로
   final String path;
@@ -63,10 +76,19 @@ enum AppRoute {
   /// 인증 필요 여부 (기본값: true)
   final bool requiresAuth;
 
+  /// 인증된 사용자도 머무르는 공개 페이지인지 (기본값: false)
+  final bool authNeutral;
+
   /// 공개 라우트(인증 불필요) 경로 집합
   static final publicPaths = {
     for (final route in values)
       if (!route.requiresAuth) route.path,
+  };
+
+  /// 로그인 여부와 상관없이 리다이렉트하지 않는 경로 집합
+  static final neutralPaths = {
+    for (final route in values)
+      if (route.authNeutral) route.path,
   };
 
   /// 보호된 라우트의 경로 패턴 (RegExp) 목록
@@ -120,6 +142,36 @@ bool isValidRedirectPath(String path) {
   return true;
 }
 
+/// Kratos 플로우 ID 모양 (UUID)
+final _kratosFlowId = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+/// Google 로그인에서 돌아올 때 Kratos가 붙이는 code 모양
+final _kratosReturnCode = RegExp(r'^[A-Za-z0-9_-]{16,256}$');
+
+/// Kratos가 보내는 링크(메일 인증, Google 로그인 복귀)의 값이 올바른 모양인지 (위조 링크 차단)
+///
+/// - 메일 인증 링크는 Kratos를 거쳐 `/verification?flow=<플로우 ID>`로 들어온다.
+/// - Google 로그인은 `/login?code=<코드>`로 돌아온다.
+/// - Google 이메일로 이미 가입된 계정이 있으면 `/login?flow=<플로우 ID>`로 돌아온다(계정 연결).
+///
+/// 누구나 이 주소를 만들어 보낼 수 있으므로 값의 모양을 확인한다.
+@visibleForTesting
+bool isValidAuthLink(String path, Map<String, String> queryParameters) {
+  if (path == AppRoute.verification.path) {
+    final flow = queryParameters['flow'];
+    return flow == null || _kratosFlowId.hasMatch(flow);
+  }
+  if (path == AppRoute.login.path) {
+    final code = queryParameters['code'];
+    final flow = queryParameters['flow'];
+    return (code == null || _kratosReturnCode.hasMatch(code)) &&
+        (flow == null || _kratosFlowId.hasMatch(flow));
+  }
+  return true;
+}
+
 /// 인증 상태에 따른 리다이렉트 로직 (순수 함수 — 테스트 가능)
 ///
 /// 반환값이 null이면 리다이렉트 없음.
@@ -128,6 +180,7 @@ String? authRedirect({
   required bool isAuthLoading,
   required String matchedLocation,
   String? redirectAfterLogin,
+  Map<String, String> queryParameters = const {},
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
@@ -143,6 +196,15 @@ String? authRedirect({
     return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
   }
 
+  // 1-2. 위조된 인증 링크면 보안 경고로 (로그인 여부와 상관없이)
+  if (!isValidAuthLink(matchedLocation, queryParameters)) {
+    final attempted = Uri(
+      path: matchedLocation,
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    ).toString();
+    return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(attempted)}';
+  }
+
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
   if (!isAuthenticated && !isPublicRoute) {
     // 2-1. 루트 경로는 랜딩 페이지로 (서비스 소개)
@@ -154,7 +216,10 @@ String? authRedirect({
   }
 
   // 3. 인증된 사용자가 공개 페이지에 있으면 원래 목적지 또는 메인 앱으로
-  if (isAuthenticated && isPublicRoute) {
+  //    (인증 화면처럼 로그인 여부와 상관없이 머무는 페이지는 제외)
+  if (isAuthenticated &&
+      isPublicRoute &&
+      !AppRoute.neutralPaths.contains(matchedLocation)) {
     if (redirectAfterLogin != null && redirectAfterLogin.isNotEmpty) {
       if (isValidRedirectPath(redirectAfterLogin)) {
         return redirectAfterLogin;
@@ -185,6 +250,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         isAuthLoading: ref.read(isAuthLoadingProvider),
         matchedLocation: state.matchedLocation,
         redirectAfterLogin: state.uri.queryParameters['redirect'],
+        queryParameters: state.uri.queryParameters,
       );
     },
 
@@ -198,8 +264,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.login.path,
         name: AppRoute.login.name,
         // extra: 로그인↔회원가입 폼 전환 시 이어받는 이메일(인메모리)
+        // code: Google 로그인에서 돌아올 때 Kratos가 붙이는 값
+        // flow: Google 이메일로 이미 가입된 계정이 있어 Kratos가 연결을 요청한 로그인 플로우
         builder: (context, state) => LoginPage(
           initialEmail: state.extra is String ? state.extra as String : null,
+          googleCode: state.uri.queryParameters['code'],
+          accountLinkFlowId: state.uri.queryParameters['flow'],
         ),
       ),
 
@@ -216,6 +286,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.forgotPassword.path,
         name: AppRoute.forgotPassword.name,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+
+      GoRoute(
+        path: AppRoute.verification.path,
+        name: AppRoute.verification.name,
+        // flow: 가입 화면이나 인증 메일 링크가 넘기는 인증 플로우 ID
+        // extra: 가입 화면이 넘기는 이메일(인메모리)
+        builder: (context, state) => VerificationPage(
+          flowId: state.uri.queryParameters['flow'],
+          email: state.extra is String ? state.extra as String : null,
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoute.authError.path,
+        name: AppRoute.authError.name,
+        builder: (context, state) => const AuthErrorPage(),
       ),
 
       // ============================================================
