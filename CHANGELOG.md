@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Todo 생성/수정/삭제/상태변경/부모변경, Schedule 생성/수정/삭제/이동/리사이즈/TODO 변환 호출부를 새 패턴으로 전환
 - Todo 삭제 실패 처리를 bool 반환 대신 원래 예외를 전파하는 방식으로 통일
 
+#### Timer WebSocket
+- 연결이 끊기면 지수 백오프(1s부터 두 배, 상한 30s)와 지터로 횟수 제한 없이 다시 연결
+  - 인증 실패(1008)와 `disconnect`/`dispose` 외에는 close code와 상관없이 재접속(서버 요청 타임아웃·인스턴스 축소·교체 대응)
+  - `connected` 수신 시 클라이언트가 직접 백오프를 리셋하고, `resetReconnectAttempts`와 `maxReconnectAttempts`는 제거
+  - 재접속 뒤 상태는 서버가 연결 직후 보내는 활성 타이머 `timer.sync_result`로 복원
+
 ### Added
 
 #### Tests
@@ -23,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CUD REST API 호출 검증
   - provider invalidation 후 재조회 검증
   - `Mutation` 성공/실패 상태 및 원래 예외 전파 검증
+- Timer WebSocket 재접속 테스트 추가 (백오프 계산, close code별 재접속, 재접속 후 sync_result 수신, 1008·disconnect·dispose 시 재접속 안 함)
 
 ### Removed
 
