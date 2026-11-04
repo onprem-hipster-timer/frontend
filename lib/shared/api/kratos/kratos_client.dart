@@ -58,6 +58,15 @@ class KratosClient {
     return KratosFlow.fromJson(_parse(response));
   }
 
+  /// 만들어진 플로우를 조회한다. Kratos가 브라우저를 앱으로 보내며 넘긴 플로우를 읽을 때 쓴다.
+  Future<KratosFlow> getFlow(KratosFlowType type, String flowId) async {
+    final response = await _dio.get<Object?>(
+      '/self-service/${type.name}/flows',
+      queryParameters: {'id': flowId},
+    );
+    return KratosFlow.fromJson(_parse(response));
+  }
+
   /// 소셜 로그인 제공자로 제출하고 브라우저를 보낼 제공자 주소를 받는다.
   ///
   /// Kratos는 422 browser_location_change_required의 redirect_browser_to로 이 주소를 준다.

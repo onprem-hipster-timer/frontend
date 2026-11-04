@@ -690,4 +690,90 @@ void main() {
       });
     });
   });
+
+  group('기존 계정에 Google 연결', () {
+    const linkFlow = KratosFlow(
+      id: 'l1',
+      messages: [KratosMessage(id: 1010016, type: 'info', text: '')],
+      identifier: 'owner@example.com',
+    );
+
+    test('Kratos가 연결을 요청한 플로우면 연결할 계정 이메일을 돌려준다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubGetFlow(KratosFlowType.login, linkFlow);
+      final container = await boot();
+
+      expect(
+        await container
+            .read(authProvider.notifier)
+            .googleAccountLinkEmail('l1'),
+        'owner@example.com',
+      );
+    });
+
+    test('연결 요청이 아닌 플로우면 null이다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubGetFlow(
+        KratosFlowType.login,
+        const KratosFlow(id: 'l1', identifier: 'owner@example.com'),
+      );
+      final container = await boot();
+
+      expect(
+        await container
+            .read(authProvider.notifier)
+            .googleAccountLinkEmail('l1'),
+        isNull,
+      );
+    });
+
+    test('그 플로우에 비밀번호를 내 로그인하고 Google 로그인 대기를 지운다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      harness.stubSubmit(
+        KratosFlowType.login,
+        const KratosSubmitResult(sessionToken: 'ory_st_linked'),
+      );
+      final container = await boot();
+
+      await container
+          .read(authProvider.notifier)
+          .completeGoogleAccountLink(
+            flowId: 'l1',
+            email: 'owner@example.com',
+            password: 'Owner-Pass-123',
+          );
+
+      verify(
+        () => harness.kratos.submit(KratosFlowType.login, 'l1', {
+          'method': 'password',
+          'identifier': 'owner@example.com',
+          'password': 'Owner-Pass-123',
+        }),
+      ).called(1);
+      verifyNever(() => harness.kratos.createFlow(KratosFlowType.login));
+      expect(container.read(authProvider), isA<AuthAuthenticated>());
+      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_linked');
+      expect(harness.prefs.getString(googleSignInCodeKey), isNull);
+    });
+
+    test('비밀번호가 틀리면 AuthException이고 대기는 남긴다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      harness.stubSubmitError(KratosFlowType.login, kratosError(4000006));
+      final container = await boot();
+
+      await expectLater(
+        container
+            .read(authProvider.notifier)
+            .completeGoogleAccountLink(
+              flowId: 'l1',
+              email: 'owner@example.com',
+              password: 'wrong',
+            ),
+        throwsA(isA<AuthException>()),
+      );
+      expect(harness.prefs.getString(googleSignInCodeKey), 'init-code');
+    });
+  });
 }

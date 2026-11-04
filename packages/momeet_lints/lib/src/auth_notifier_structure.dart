@@ -20,6 +20,8 @@ const _actionMethodNames = {
   'completeRecovery',
   'startGoogleSignIn',
   'completeGoogleSignIn',
+  'googleAccountLinkEmail',
+  'completeGoogleAccountLink',
 };
 
 const _classifyRequiredMethodNames = _actionMethodNames;
