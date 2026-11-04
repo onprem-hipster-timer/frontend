@@ -3,10 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
+import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_dialog.dart';
 import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
+
+/// 서버에 보낼 상태. UNSCHEDULED/SCHEDULED는 서버가 마감일 유무로 정하는 값이라
+/// 보내지 않는다(보내서 실제와 다르면 422). 사용자가 고르는 상태는 완료·취소뿐이다.
+@visibleForTesting
+TodoStatus? todoStatusForRequest(TodoStatus selected) =>
+    isActiveTodoStatus(selected) ? null : selected;
+
+/// 완료·취소가 아닌 "진행 중" 상태인지 (미예정과 예정됨을 하나로 본다)
+bool isActiveTodoStatus(TodoStatus status) =>
+    status == TodoStatus.unscheduled || status == TodoStatus.scheduled;
 
 /// Todo 생성/수정 폼 시트
 ///
@@ -229,33 +240,41 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: TodoStatus.values.map((status) {
-              final isSelected = _selectedStatus == status;
+            // 미예정·예정됨은 서버가 마감일로 정하므로 "진행 중" 하나로 보여 준다
+            children:
+                const [
+                  TodoStatus.unscheduled,
+                  TodoStatus.done,
+                  TodoStatus.cancelled,
+                ].map((status) {
+                  final isSelected = status == TodoStatus.unscheduled
+                      ? isActiveTodoStatus(_selectedStatus)
+                      : _selectedStatus == status;
 
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(_getStatusLabel(status)),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedStatus = status;
-                      });
-                    }
-                  },
-                  avatar: Icon(
-                    _getStatusIcon(status),
-                    size: 18,
-                    color: isSelected
-                        ? theme.colorScheme.onPrimary
-                        : _getStatusColor(status),
-                  ),
-                  selectedColor: _getStatusColor(status),
-                  checkmarkColor: theme.colorScheme.onPrimary,
-                ),
-              );
-            }).toList(),
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(_getStatusLabel(status)),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _selectedStatus = status;
+                          });
+                        }
+                      },
+                      avatar: Icon(
+                        _getStatusIcon(status),
+                        size: 18,
+                        color: isSelected
+                            ? theme.colorScheme.onPrimary
+                            : _getStatusColor(status),
+                      ),
+                      selectedColor: _getStatusColor(status),
+                      checkmarkColor: theme.colorScheme.onPrimary,
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
@@ -921,13 +940,34 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       if (_isEditMode) {
         // 수정 모드
         final description = _descriptionController.text.trim();
+        final removesDeadline =
+            widget.todo!.deadline != null && _selectedDeadline == null;
+
+        // 마감일을 지우면 연결된 캘린더 일정 처리를 사용자가 정해야 한다
+        // (SCHEDULED = 연결 일정이 있다는 서버 표시)
+        LinkedSchedulePolicy? linkedSchedulePolicy;
+        if (removesDeadline &&
+            widget.todo!.status == TodoStatus.scheduled &&
+            mounted) {
+          linkedSchedulePolicy = await showLinkedSchedulePolicyDialog(
+            context,
+            todoTitle: widget.todo!.title,
+          );
+          if (linkedSchedulePolicy == null) return;
+        }
+
         final updateData = TodoUpdate(
           title: _titleController.text.trim(),
           description: description.isEmpty ? null : description,
-          status: _selectedStatus,
+          status: todoStatusForRequest(_selectedStatus),
           tagIds: _selectedTagIds.toList(),
           deadline: _selectedDeadline,
+          linkedSchedulePolicy: linkedSchedulePolicy,
         );
+        final nullFields = [
+          if (description.isEmpty) 'description',
+          if (removesDeadline) 'deadline',
+        ];
 
         await updateTodoMutation.run(
           ref,
@@ -936,9 +976,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
               .update(
                 widget.todo!.id,
                 updateData,
-                options: description.isEmpty
-                    ? explicitNulls(['description'])
-                    : null,
+                options: nullFields.isEmpty ? null : explicitNulls(nullFields),
               ),
         );
 
@@ -963,7 +1001,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         final createData = TodoCreate(
           title: _titleController.text.trim(),
           tagGroupId: _selectedTagGroupId,
-          status: _selectedStatus,
+          status: todoStatusForRequest(_selectedStatus),
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
@@ -1027,9 +1065,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   String _getStatusLabel(TodoStatus status) {
     switch (status) {
       case TodoStatus.unscheduled:
-        return '미예정';
       case TodoStatus.scheduled:
-        return '예정됨';
+        return '진행 중';
       case TodoStatus.done:
         return '완료';
       case TodoStatus.cancelled:

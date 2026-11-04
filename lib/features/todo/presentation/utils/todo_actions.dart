@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
+import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
-import 'package:momeet/shared/api/rest/models/todo_read.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
 /// 할 일 관련 공통 액션 유틸리티
@@ -38,10 +39,21 @@ class TodoActions {
     );
 
     if (confirmed == true && context.mounted) {
+      // 연결된 캘린더 일정(SCHEDULED)이 있으면 처리 정책을 받아야 서버가 삭제한다
+      LinkedSchedulePolicy? policy;
+      if (todo.status == TodoStatus.scheduled) {
+        policy = await showLinkedSchedulePolicyDialog(
+          context,
+          todoTitle: todo.title,
+        );
+        if (policy == null || !context.mounted) return;
+      }
       try {
         await deleteTodoMutation.run(
           ref,
-          (tsx) => tsx.get(todoMutationsProvider.notifier).delete(todo.id),
+          (tsx) => tsx
+              .get(todoMutationsProvider.notifier)
+              .delete(todo.id, linkedSchedulePolicy: policy),
         );
 
         if (context.mounted) {

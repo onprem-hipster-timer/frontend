@@ -5,6 +5,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'schedule_state.dart';
+import 'source_todo_policy.dart';
 
 part 'schedule_update.freezed.dart';
 part 'schedule_update.g.dart';
@@ -21,8 +22,8 @@ abstract class ScheduleUpdate with _$ScheduleUpdate {
     @JsonKey(name: 'recurrence_end') DateTime? recurrenceEnd,
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
     @JsonKey(name: 'tag_group_id') String? tagGroupId,
-    @JsonKey(name: 'source_todo_id') String? sourceTodoId,
     ScheduleState? state,
+    @JsonKey(name: 'source_todo_policy') SourceTodoPolicy? sourceTodoPolicy,
   }) = _ScheduleUpdate;
 
   factory ScheduleUpdate.fromJson(Map<String, Object?> json) =>
