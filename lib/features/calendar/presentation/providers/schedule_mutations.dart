@@ -72,10 +72,17 @@ class ScheduleMutations extends _$ScheduleMutations {
   /// 일정 삭제
   ///
   /// [id] 삭제할 일정 ID
-  Future<void> deleteSchedule(String id) async {
+  /// [sourceTodoPolicy] 할 일 마감일에서 만들어진 일정이면 필수 (없으면 서버가 422)
+  Future<void> deleteSchedule(
+    String id, {
+    SourceTodoPolicy? sourceTodoPolicy,
+  }) async {
     try {
       final api = ref.read(schedulesApiProvider);
-      await api.deleteScheduleV1SchedulesScheduleIdDelete(scheduleId: id);
+      await api.deleteScheduleV1SchedulesScheduleIdDelete(
+        scheduleId: id,
+        sourceTodoPolicy: sourceTodoPolicy,
+      );
       ref.invalidate(currentSchedulesProvider);
       debugPrint('일정이 성공적으로 삭제되었습니다: $id');
     } catch (error) {

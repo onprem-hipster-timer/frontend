@@ -10,7 +10,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.11.0-0175C2?style=flat-square&logo=dart&logoColor=white)](https://dart.dev)
 [![FVM](https://img.shields.io/badge/FVM-Managed-5B4F9B?style=flat-square&logo=dart&logoColor=white)](https://fvm.app)
 [![Riverpod](https://img.shields.io/badge/Riverpod-3.x-00B0FF?style=flat-square)](https://riverpod.dev)
-[![Supabase](https://img.shields.io/badge/Supabase-Auth-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
+[![Ory Kratos](https://img.shields.io/badge/Ory_Kratos-Auth-5528FF?style=flat-square)](https://www.ory.sh/kratos/)
 [![Retrofit](https://img.shields.io/badge/Retrofit-API_Client-FF6F00?style=flat-square)](https://pub.dev/packages/retrofit)
 [![Freezed](https://img.shields.io/badge/Freezed-Codegen-blue?style=flat-square)](https://pub.dev/packages/freezed)
 [![Android](https://img.shields.io/badge/Android-Supported-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
@@ -78,8 +78,8 @@ FVM으로 Flutter 버전을 관리하며, macOS와 Windows 양쪽에서 개발�
 | ⏱️ **Timer** | 일정 연동 시간 추적 (포모도로 스타일) | Retrofit API client |
 | ✅ **Todo** | 계층형 할 일 관리, 상태 추적 | Freezed models |
 | 🏷️ **Tags** | 태그 그룹으로 일정 · 타이머 · 할 일 연결 | Tag group CRUD |
-| 👥 **Friends** | 친구 요청 · 수락 · 공유 워크플로 | Supabase + REST |
-| 🔐 **Auth** | Supabase 인증 (로그인 · 회원가입) | `supabase_flutter` |
+| 👥 **Friends** | 친구 요청 · 수락 · 공유 워크플로 | REST |
+| 🔐 **Auth** | Ory Kratos 인증 (로그인 · 회원가입 · 이메일 인증 · 비밀번호 재설정) | Kratos API 플로우 |
 | 🎨 **UI/UX** | Material Design + 애니메이션 | `flutter_animate` |
 
 ---
@@ -293,7 +293,7 @@ lib/
 | **상태 관리** | Riverpod 3.x + riverpod_generator |
 | **라우팅** | GoRouter |
 | **HTTP 클라이언트** | Dio + Retrofit |
-| **인증** | Supabase Flutter |
+| **인증** | Ory Kratos (API 플로우, 세션 토큰 → 백엔드용 JWT) |
 | **코드 생성** | Freezed, json_serializable, retrofit_generator, riverpod_generator |
 | **로컬 저장소** | Hive, SharedPreferences |
 | **캘린더** | Syncfusion Flutter Calendar |

@@ -40,8 +40,6 @@ jobs:
           mkdir -p assets
           cat <<EOF > assets/.env
           API_BASE_URL=${{ vars.API_BASE_URL }}
-          SUPABASE_URL=${{ vars.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           EOF
 
       - name: Run code generation

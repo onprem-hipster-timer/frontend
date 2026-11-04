@@ -40,8 +40,6 @@ dependencies:
   hive_flutter: ^1.1.0
 
   # Authorization
-  supabase: ^2.12.2
-  supabase_flutter: ^2.14.2
 
   # UI utilities
   flutter_animate: ^4.5.2
@@ -56,6 +54,8 @@ dependencies:
   web_socket_channel: ^3.0.3
   timezone: ^0.11.0
   flutter_timezone: ^5.0.2
+  dart_jsonwebtoken: ^3.4.1
+  url_launcher: ^6.3.3
 
 
 dev_dependencies:

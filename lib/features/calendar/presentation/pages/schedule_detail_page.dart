@@ -8,6 +8,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart';
+import 'package:momeet/features/calendar/presentation/utils/source_todo_policy_dialog.dart';
 import 'package:momeet/features/calendar/presentation/widgets/info_row.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
@@ -419,7 +420,17 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       destructive: true,
     );
 
-    if (!confirmed) return;
+    if (!confirmed || !context.mounted) return;
+
+    // 할 일 마감일에서 만들어진 일정이면 원본 할 일 처리를 사용자가 정해야 한다
+    SourceTodoPolicy? sourceTodoPolicy;
+    if (schedule.sourceTodoId != null) {
+      sourceTodoPolicy = await showSourceTodoPolicyDialog(
+        context,
+        scheduleTitle: schedule.title,
+      );
+      if (sourceTodoPolicy == null) return;
+    }
 
     setState(() => _pendingAction = _PendingAction.delete);
     try {
@@ -427,7 +438,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
         ref,
         (tsx) => tsx
             .get(scheduleMutationsProvider.notifier)
-            .deleteSchedule(schedule.id),
+            .deleteSchedule(schedule.id, sourceTodoPolicy: sourceTodoPolicy),
       );
 
       if (context.mounted) {

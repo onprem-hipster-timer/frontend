@@ -195,17 +195,27 @@
     </div>
   </div>
 
+  <!-- Kratos가 보내는 화면 주소(메일 링크의 /verification?flow=… 등)는 경로형이고 앱은 해시 라우팅이다.
+       아래 스크립트가 해시를 읽기 전에 /#/verification?flow=… 꼴로 옮긴다. -->
+  <script>
+    (function() {
+      var kratosUiPaths = ['/login', '/signup', '/verification', '/forgot-password', '/mypage', '/auth-error'];
+      if (!window.location.hash && kratosUiPaths.indexOf(window.location.pathname) >= 0) {
+        history.replaceState(null, '', '/#' + window.location.pathname + window.location.search);
+      }
+    })();
+  </script>
+
   <!-- Shared state: route detection + session check (single source of truth) -->
   <script>
     (function() {
-      function hasSupabaseSession() {
-        return Object.keys(localStorage).some(function(k) {
-          return k.startsWith('sb-') && k.endsWith('-auth-token');
-        });
+      // AuthNotifier가 SharedPreferences(localStorage, flutter. 접두사)에 두는 Kratos 세션 토큰
+      function hasSession() {
+        return localStorage.getItem('flutter.momeet.session_token') !== null;
       }
       // 명시적 /landing 은 항상 랜딩으로 표시한다.
       //   Flutter 라우터가 미인증을 확정하고 /landing 으로 보낸 신호이므로,
-      //   만료된 토큰 키가 localStorage 에 남아 있어도(= hasSupabaseSession() true)
+      //   끝난 세션의 토큰이 localStorage 에 남아 있어도(= hasSession() true)
       //   랜딩을 보여줘야 한다. 그렇지 않으면 토글이 동작하지 않아 빈 화면에 도달한다. (#64)
       function isExplicitLandingHash(hash) {
         return hash === '#/landing' || hash === '#/landing/';
@@ -216,7 +226,7 @@
       }
       function isLandingHash(hash) {
         return isExplicitLandingHash(hash)
-            || (isRootHash(hash) && !hasSupabaseSession());
+            || (isRootHash(hash) && !hasSession());
       }
       window.__momeet = {
         isLanding: isLandingHash(window.location.hash),

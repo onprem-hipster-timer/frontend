@@ -134,9 +134,7 @@ fvm dart run custom_lint
 
 | 규칙 | 설명 |
 |------|------|
-| `no_direct_supabase_auth` | `auth_provider.dart` 외부에서 Supabase 인증 API 직접 호출 금지 |
-| `auth_notifier_build_structure` | `AuthNotifier.build()`에 필수 구조 누락 감지 |
-| `auth_action_no_state_mutation` | 액션 메서드에서 `state` 직접 변경 금지 |
+| `no_direct_kratos_client` | `lib/shared/api/kratos/`와 `auth_provider.dart` 밖에서 `KratosClient` 사용 금지 |
 | `auth_action_no_loading_state` | 액션 메서드에서 `AuthStatus.loading()` 사용 금지 |
 | `auth_catch_require_classify` | catch 블록에서 `AuthErrorType.classify` 사용 강제 |
 

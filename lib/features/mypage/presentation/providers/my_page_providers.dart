@@ -104,11 +104,7 @@ final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
     return null;
   }
 
-  // Supabase User 객체에서 생성일 파싱
-  // user.createdAt은 String이므로 DateTime.parse()를 사용
-  final createdAt = DateTime.parse(user.createdAt);
-
-  return UserProfile(email: user.email ?? '', createdAt: createdAt);
+  return UserProfile(email: user.email, createdAt: user.createdAt);
 });
 
 /// 할 일 통계 데이터 프로바이더

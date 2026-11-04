@@ -1,5 +1,5 @@
 import 'package:custom_lint_builder/custom_lint_builder.dart';
-import 'package:momeet_lints/src/no_direct_supabase_auth.dart';
+import 'package:momeet_lints/src/no_direct_kratos_client.dart';
 import 'package:momeet_lints/src/auth_notifier_structure.dart';
 import 'package:momeet_lints/src/no_manual_route_path.dart';
 
@@ -8,11 +8,9 @@ PluginBase createPlugin() => _MomeetLints();
 class _MomeetLints extends PluginBase {
   @override
   List<LintRule> getLintRules(CustomLintConfigs configs) => [
-        const NoDirectSupabaseAuth(),
-        const AuthNotifierBuildStructure(),
-        const AuthActionNoStateMutation(),
+        const NoDirectKratosClient(),
+        const AuthActionNoLoadingState(),
         const AuthCatchRequireClassify(),
-        const NoManualTokenRefresh(),
         const NoManualRoutePath(),
       ];
 }

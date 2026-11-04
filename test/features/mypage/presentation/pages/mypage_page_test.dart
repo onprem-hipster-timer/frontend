@@ -1,32 +1,29 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
-import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/mypage/mypage.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
-import '../../../../helpers/supabase_mocks.dart';
+import '../../../../helpers/kratos_mocks.dart';
 
 // ============================================================
 // 테스트 헬퍼
 // ============================================================
 
-late SharedPreferences _testPrefs;
-
-Widget buildMyPage({required MockSupabaseClient mockSupabase}) {
+Widget buildMyPage(KratosTestHarness harness) {
   return ProviderScope(
-    overrides: [
-      supabaseClientProvider.overrideWithValue(mockSupabase),
-      sharedPreferencesProvider.overrideWithValue(_testPrefs),
-    ],
+    overrides: harness.overrides,
     child: const MaterialApp(home: MyPage()),
   );
 }
+
+final _networkError = DioException(
+  requestOptions: RequestOptions(path: '/self-service/logout/api'),
+  type: DioExceptionType.connectionError,
+);
 
 Future<void> scrollToLogoutButton(WidgetTester tester) async {
   await tester.scrollUntilVisible(
@@ -38,20 +35,15 @@ Future<void> scrollToLogoutButton(WidgetTester tester) async {
 }
 
 void main() {
-  late SupabaseTestHarness harness;
+  late KratosTestHarness harness;
 
   setUpAll(() async {
+    registerKratosFallbacks();
     await initializeDateFormatting('ko');
-    SharedPreferences.setMockInitialValues({});
-    _testPrefs = await SharedPreferences.getInstance();
   });
 
-  setUp(() {
-    harness = SupabaseTestHarness()..init();
-  });
-
-  tearDown(() {
-    harness.dispose();
+  setUp(() async {
+    harness = await KratosTestHarness.create();
   });
 
   // ============================================================
@@ -59,37 +51,37 @@ void main() {
   // ============================================================
   group('프로필 섹션', () {
     testWidgets('앱바에 마이페이지 타이틀이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       expect(find.text('마이페이지'), findsOneWidget);
     });
 
     testWidgets('사용자 이메일이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       expect(find.text('user@example.com'), findsOneWidget);
     });
 
     testWidgets('프로필 아이콘이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.person), findsOneWidget);
     });
 
     testWidgets('가입일이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('가입일:'), findsOneWidget);
     });
 
     testWidgets('세션이 없으면 사용자 정보 없음이 표시된다', (tester) async {
-      when(() => harness.mockGoTrue.currentSession).thenReturn(null);
+      harness = await KratosTestHarness.create(authenticated: false);
 
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       expect(find.text('user@example.com'), findsNothing);
@@ -101,7 +93,7 @@ void main() {
   // ============================================================
   group('설정 섹션', () {
     testWidgets('설정 섹션 타이틀이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
@@ -114,7 +106,7 @@ void main() {
     });
 
     testWidgets('다크 모드 토글이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
@@ -128,7 +120,7 @@ void main() {
     });
 
     testWidgets('타임존 설정 항목이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
@@ -142,7 +134,7 @@ void main() {
     });
 
     testWidgets('비밀번호 변경 항목이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
@@ -156,7 +148,7 @@ void main() {
     });
 
     testWidgets('로그아웃 항목이 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -170,7 +162,7 @@ void main() {
   // ============================================================
   group('로그아웃 플로우', () {
     testWidgets('로그아웃 버튼을 누르면 확인 다이얼로그가 표시된다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -181,7 +173,7 @@ void main() {
     });
 
     testWidgets('확인 다이얼로그에서 취소하면 로그아웃되지 않는다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -191,11 +183,11 @@ void main() {
       await tester.tap(find.text('취소'));
       await tester.pumpAndSettle();
 
-      verifyNever(() => harness.mockGoTrue.signOut());
+      verifyNever(() => harness.kratos.logout(any()));
     });
 
     testWidgets('확인 다이얼로그 바깥을 탭하면 로그아웃되지 않는다', (tester) async {
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -208,13 +200,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('정말 로그아웃하시겠습니까?'), findsNothing);
-      verifyNever(() => harness.mockGoTrue.signOut());
+      verifyNever(() => harness.kratos.logout(any()));
     });
 
     testWidgets('확인 다이얼로그에서 확인하면 signOut이 호출된다', (tester) async {
-      when(() => harness.mockGoTrue.signOut()).thenAnswer((_) async {});
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -224,15 +216,15 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      verify(() => harness.mockGoTrue.signOut()).called(1);
+      verify(
+        () => harness.kratos.logout(KratosTestHarness.sessionToken),
+      ).called(1);
     });
 
-    testWidgets('signOut 성공 시 스트림이 signedOut을 발행하면 미인증 상태로 전환된다', (
-      tester,
-    ) async {
-      when(() => harness.mockGoTrue.signOut()).thenAnswer((_) async {});
+    testWidgets('signOut 성공 시 미인증 상태로 전환된다', (tester) async {
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
 
       expect(find.text('user@example.com'), findsOneWidget);
@@ -244,20 +236,13 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      harness.authStreamController.add(
-        supa.AuthState(supa.AuthChangeEvent.signedOut, null),
-      );
-      await tester.pumpAndSettle();
-
       expect(find.text('user@example.com'), findsNothing);
     });
 
     testWidgets('signOut 실패 시 에러 배너가 표시된다', (tester) async {
-      when(
-        () => harness.mockGoTrue.signOut(),
-      ).thenThrow(supa.AuthException('Network error'));
+      when(() => harness.kratos.logout(any())).thenThrow(_networkError);
 
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -274,11 +259,9 @@ void main() {
     });
 
     testWidgets('에러 배너의 X 버튼을 누르면 에러가 사라진다', (tester) async {
-      when(
-        () => harness.mockGoTrue.signOut(),
-      ).thenThrow(supa.AuthException('Network error'));
+      when(() => harness.kratos.logout(any())).thenThrow(_networkError);
 
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -308,14 +291,12 @@ void main() {
 
     testWidgets('signOut 실패 후 재시도하면 signOut이 다시 호출된다', (tester) async {
       var callCount = 0;
-      when(() => harness.mockGoTrue.signOut()).thenAnswer((_) async {
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {
         callCount++;
-        if (callCount == 1) {
-          throw supa.AuthException('Network error');
-        }
+        if (callCount == 1) throw _networkError;
       });
 
-      await tester.pumpWidget(buildMyPage(mockSupabase: harness.mockSupabase));
+      await tester.pumpWidget(buildMyPage(harness));
       await tester.pumpAndSettle();
       await scrollToLogoutButton(tester);
 
@@ -335,7 +316,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      verify(() => harness.mockGoTrue.signOut()).called(2);
+      verify(() => harness.kratos.logout(any())).called(2);
     });
   });
 }

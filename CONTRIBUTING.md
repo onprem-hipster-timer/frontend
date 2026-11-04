@@ -134,9 +134,7 @@ Rules enforced:
 
 | Rule | Description |
 |------|-------------|
-| `no_direct_supabase_auth` | Disallow direct Supabase auth API calls outside `auth_provider.dart` |
-| `auth_notifier_build_structure` | Detect missing required structure in `AuthNotifier.build()` |
-| `auth_action_no_state_mutation` | Disallow direct `state` mutation in action methods |
+| `no_direct_kratos_client` | Disallow using `KratosClient` outside `lib/shared/api/kratos/` and `auth_provider.dart` |
 | `auth_action_no_loading_state` | Disallow `AuthStatus.loading()` in action methods |
 | `auth_catch_require_classify` | Require `AuthErrorType.classify` in catch blocks |
 

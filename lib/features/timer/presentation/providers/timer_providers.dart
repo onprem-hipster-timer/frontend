@@ -19,14 +19,19 @@ part 'timer_providers.g.dart';
 
 /// 타이머 WebSocket 클라이언트
 ///
-/// 로그인된 경우에만 non-null. 토큰이 없거나 비어 있으면 null.
+/// 로그인된 경우에만 non-null. JWT가 아니라 사용자 ID를 지켜보므로, JWT가 갱신될 때마다
+/// 소켓을 다시 열지 않는다. 클라이언트가 (재)연결할 때마다 최신 JWT를 받아 쓴다.
 /// 기기 타임존을 쿼리로 전달해 서버 응답 타임스탬프를 해당 타임존으로 받습니다.
 final timerWsClientProvider = Provider<TimerWsClient?>((ref) {
-  final token = ref.watch(accessTokenProvider);
-  if (token == null || token.isEmpty) return null;
+  final userId = ref.watch(currentUserProvider.select((user) => user?.id));
+  if (userId == null) return null;
 
+  final auth = ref.read(authProvider.notifier);
   final timezone = deviceTimezoneOffsetString();
-  final client = TimerWsClient(accessToken: token, timezone: timezone);
+  final client = TimerWsClient(
+    accessToken: auth.freshAccessToken,
+    timezone: timezone,
+  );
   ref.onDispose(() => client.dispose());
 
   return client;
