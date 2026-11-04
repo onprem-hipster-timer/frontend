@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
-import 'package:momeet/features/auth/presentation/pages/forgot_password_page.dart';
 
+import '../../../../helpers/auth_router.dart';
 import '../../../../helpers/kratos_mocks.dart';
-import '../../../../helpers/pump_app.dart';
 
 void main() {
   late KratosTestHarness harness;
@@ -23,7 +21,10 @@ void main() {
 
   Future<void> openPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      pumpApp(const ForgotPasswordPage(), overrides: harness.overrides),
+      pumpAuthFlow(
+        initialLocation: '/forgot-password',
+        overrides: harness.overrides,
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -43,7 +44,7 @@ void main() {
     ],
   );
 
-  testWidgets('이메일, 코드, 새 비밀번호 순서로 재설정하고 로그인 상태가 된다', (tester) async {
+  testWidgets('이메일, 코드, 새 비밀번호 순서로 재설정하고 로그인해 홈으로 간다', (tester) async {
     harness.stubSubmit(KratosFlowType.recovery, recovered);
     harness.stubSubmit(KratosFlowType.settings, const KratosSubmitResult());
     await openPage(tester);
@@ -73,10 +74,37 @@ void main() {
         'password': 'new-pw-123',
       }, sessionToken: 'ory_st_rec'),
     ]);
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(ForgotPasswordPage)),
-    );
-    expect(container.read(isAuthenticatedProvider), isTrue);
+    expect(harness.prefs.getString(sessionTokenKey), 'ory_st_rec');
+    expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('로그인 상태의 비밀번호 변경은 계정 이메일로 받은 코드로만 한다', (tester) async {
+    harness = await KratosTestHarness.create();
+    harness.stubCreateFlow(KratosFlowType.recovery, 'rec1');
+    harness.stubSubmit(KratosFlowType.recovery, recovered);
+    harness.stubSubmit(KratosFlowType.settings, const KratosSubmitResult());
+    await openPage(tester);
+
+    // 이메일을 고를 수 없고, 로그인한 계정 이메일로 코드를 보낸다
+    expect(find.text('비밀번호 변경'), findsWidgets);
+    expect(find.byType(TextFormField), findsNothing);
+    expect(find.textContaining(testUser.email), findsOneWidget);
+    await submit(tester, '코드 받기');
+
+    await tester.enterText(find.byType(TextFormField), '123456');
+    await submit(tester, '확인');
+    await tester.enterText(find.byType(TextFormField).at(0), 'new-pw-123');
+    await tester.enterText(find.byType(TextFormField).at(1), 'new-pw-123');
+    await submit(tester, '비밀번호 변경');
+
+    verify(
+      () => harness.kratos.submit(KratosFlowType.recovery, 'rec1', {
+        'method': 'code',
+        'email': testUser.email,
+      }),
+    ).called(1);
+    expect(harness.prefs.getString(sessionTokenKey), 'ory_st_rec');
+    expect(find.text('home'), findsOneWidget);
   });
 
   testWidgets('코드가 틀리면 오류를 보여주고 코드 단계에 머문다', (tester) async {

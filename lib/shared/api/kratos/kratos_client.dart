@@ -35,7 +35,7 @@ class KratosClient {
 
   final Dio _dio;
 
-  /// 새 플로우를 만든다. [refresh]는 로그인 플로우로 현재 세션을 재인증할 때 쓴다.
+  /// 새 플로우를 만든다.
   ///
   /// [returnTo]를 주면 소셜 로그인용이다. Kratos는 로그인을 마친 브라우저를 [returnTo]에
   /// `code`를 붙여 돌려보내고, 플로우의 교환 코드와 그 `code`로 세션 토큰을 받는다.
@@ -43,19 +43,26 @@ class KratosClient {
   Future<KratosFlow> createFlow(
     KratosFlowType type, {
     String? sessionToken,
-    bool refresh = false,
     String? returnTo,
   }) async {
     final response = await _dio.get<Object?>(
       '/self-service/${type.name}/api',
       queryParameters: {
-        if (refresh) 'refresh': 'true',
         if (returnTo != null) ...{
           'return_session_token_exchange_code': 'true',
           'return_to': returnTo,
         },
       },
       options: _withSession(sessionToken),
+    );
+    return KratosFlow.fromJson(_parse(response));
+  }
+
+  /// 만들어진 플로우를 조회한다. Kratos가 브라우저를 앱으로 보내며 넘긴 플로우를 읽을 때 쓴다.
+  Future<KratosFlow> getFlow(KratosFlowType type, String flowId) async {
+    final response = await _dio.get<Object?>(
+      '/self-service/${type.name}/flows',
+      queryParameters: {'id': flowId},
     );
     return KratosFlow.fromJson(_parse(response));
   }

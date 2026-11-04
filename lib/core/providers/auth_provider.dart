@@ -237,6 +237,48 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Google 로그인이 같은 이메일의 기존 계정을 만나 Kratos가 연결을 요청한 로그인 플로우면,
+  /// 연결할 계정 이메일을 돌려준다. 연결 요청이 아니면 null.
+  ///
+  /// Kratos는 이때 브라우저를 로그인 화면(`/login?flow=`)으로 보낸다.
+  Future<String?> googleAccountLinkEmail(String flowId) async {
+    try {
+      final flow = await _kratos.getFlow(KratosFlowType.login, flowId);
+      return flow.asksToLinkAccount ? flow.identifier : null;
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 기존 계정의 비밀번호로 로그인해 Google 계정을 연결한다.
+  ///
+  /// Kratos가 연결을 요청한 그 로그인 플로우에 내야 연결된다. 플로우가 가리키는 계정이 아니면
+  /// Kratos가 거절한다(4010009). 같은 이메일의 Google만 연결되므로, 비밀번호가 새도
+  /// 남의 Google을 붙일 수 없다. 마치면 Google 로그인 대기를 지운다.
+  Future<void> completeGoogleAccountLink({
+    required String flowId,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final result = await _kratos.submit(KratosFlowType.login, flowId, {
+        'method': 'password',
+        'identifier': email,
+        'password': password,
+      });
+      await _prefs.remove(googleSignInCodeKey);
+      await _authenticateWith(result.sessionToken!);
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
   /// 회원가입. 이메일 인증 플로우 ID를 돌려준다.
   ///
   /// 이메일 인증 전에는 세션이 없다(Kratos가 가입 직후 세션을 주지 않음). 인증을 마친 뒤 로그인한다.
@@ -360,6 +402,9 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   /// 복구 세션으로 새 비밀번호를 저장하고 로그인 상태가 된다.
+  ///
+  /// 비밀번호는 이 길로만 바꾼다. 로그인한 사용자도 메일로 받은 코드로 복구 세션을 만들어야 한다.
+  /// backend가 메일 복구 세션이 아닌 비밀번호 변경을 거절한다(새어 나간 비밀번호로 계정을 차지하지 못하게).
   Future<void> completeRecovery({
     required String settingsFlowId,
     required String newPassword,
@@ -372,46 +417,6 @@ class AuthNotifier extends _$AuthNotifier {
       }, sessionToken: sessionToken);
       _recoverySessionToken = null;
       await _authenticateWith(sessionToken);
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
-  }
-
-  /// 현재 비밀번호로 다시 인증한 뒤 새 비밀번호로 바꾼다.
-  ///
-  /// Kratos는 최근(privileged_session_max_age, 15분) 인증한 세션만 설정을 바꾸게 하므로
-  /// 항상 재인증부터 한다.
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    try {
-      final current = state;
-      final sessionToken = _sessionToken;
-      if (current is! AuthAuthenticated || sessionToken == null) {
-        throw StateError('로그인 상태가 아닙니다');
-      }
-      final refresh = await _kratos.createFlow(
-        KratosFlowType.login,
-        sessionToken: sessionToken,
-        refresh: true,
-      );
-      await _kratos.submit(KratosFlowType.login, refresh.id, {
-        'method': 'password',
-        'identifier': current.user.email,
-        'password': currentPassword,
-      }, sessionToken: sessionToken);
-      final settings = await _kratos.createFlow(
-        KratosFlowType.settings,
-        sessionToken: sessionToken,
-      );
-      await _kratos.submit(KratosFlowType.settings, settings.id, {
-        'method': 'password',
-        'password': newPassword,
-      }, sessionToken: sessionToken);
     } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,

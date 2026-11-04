@@ -92,11 +92,7 @@ class KratosTestHarness {
   /// [type] 플로우를 만들면 [flowId]를 돌려주게 한다.
   void stubCreateFlow(KratosFlowType type, String flowId) {
     when(
-      () => kratos.createFlow(
-        type,
-        sessionToken: any(named: 'sessionToken'),
-        refresh: any(named: 'refresh'),
-      ),
+      () => kratos.createFlow(type, sessionToken: any(named: 'sessionToken')),
     ).thenAnswer((_) async => KratosFlow(id: flowId));
   }
 
@@ -128,6 +124,11 @@ class KratosTestHarness {
     when(
       () => kratos.submitOidc(type, 'g1', 'google'),
     ).thenAnswer((_) async => googleUrl);
+  }
+
+  /// [type] 플로우를 조회하면 [flow]를 돌려주게 한다.
+  void stubGetFlow(KratosFlowType type, KratosFlow flow) {
+    when(() => kratos.getFlow(type, flow.id)).thenAnswer((_) async => flow);
   }
 
   /// [type] 플로우 제출이 [error]를 던지게 한다.

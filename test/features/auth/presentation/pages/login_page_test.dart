@@ -365,4 +365,73 @@ void main() {
       expect(harness.prefs.getString(sessionTokenKey), isNull);
     });
   });
+
+  // ============================================================
+  // 같은 이메일의 기존 계정에 Google 연결
+  // ============================================================
+  group('기존 계정에 Google 연결', () {
+    const flowId = '3f1e2d4c-5b6a-4789-9abc-def012345678';
+    const linkFlow = KratosFlow(
+      id: flowId,
+      messages: [KratosMessage(id: 1010016, type: 'info', text: '')],
+      identifier: 'owner@example.com',
+    );
+
+    Future<void> openLinkPage(WidgetTester tester) async {
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login?flow=$flowId&redirect=%2Ftodo',
+          overrides: harness.overrides,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('연결할 계정 이메일을 보여 주고 그 플로우에 비밀번호를 낸다', (tester) async {
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      harness.stubGetFlow(KratosFlowType.login, linkFlow);
+      harness.stubSubmit(
+        KratosFlowType.login,
+        const KratosSubmitResult(sessionToken: 'ory_st_linked'),
+      );
+      await openLinkPage(tester);
+
+      expect(find.textContaining('owner@example.com'), findsOneWidget);
+      // 이메일은 고를 수 없고 비밀번호 칸만 있다
+      expect(find.byType(TextFormField), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), 'Owner-Pass-123');
+      await tester.tap(find.text('로그인하고 Google 연결'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => harness.kratos.submit(KratosFlowType.login, flowId, {
+          'method': 'password',
+          'identifier': 'owner@example.com',
+          'password': 'Owner-Pass-123',
+        }),
+      ).called(1);
+      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_linked');
+    });
+
+    testWidgets('이 브라우저가 시작하지 않은 연결 링크는 보안 경고로 보낸다', (tester) async {
+      harness.stubGetFlow(KratosFlowType.login, linkFlow);
+      await openLinkPage(tester);
+
+      expect(find.byType(SecurityWarningPage), findsOneWidget);
+      verifyNever(() => harness.kratos.getFlow(any(), any()));
+    });
+
+    testWidgets('연결 요청이 아닌 플로우면 오류를 보이고 보통 로그인 화면을 둔다', (tester) async {
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      harness.stubGetFlow(
+        KratosFlowType.login,
+        const KratosFlow(id: flowId, identifier: 'owner@example.com'),
+      );
+      await openLinkPage(tester);
+
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.byType(TextFormField), findsNWidgets(2));
+    });
+  });
 }

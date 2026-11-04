@@ -79,20 +79,6 @@ void main() {
       expect(flow.id, 'f1');
       expect(flow.state, 'choose_method');
     });
-
-    test('재인증 로그인 플로우는 refresh=true와 X-Session-Token을 보낸다', () async {
-      fake.respond = (_) => _json(200, _flow('f1'));
-
-      await client.createFlow(
-        KratosFlowType.login,
-        sessionToken: 'ory_st_abc',
-        refresh: true,
-      );
-
-      final request = fake.requests.single;
-      expect(request.uri.queryParameters, {'refresh': 'true'});
-      expect(request.headers['X-Session-Token'], 'ory_st_abc');
-    });
   });
 
   group('플로우 제출', () {
@@ -476,6 +462,51 @@ void main() {
           isA<KratosException>().having((e) => e.statusCode, 'status', 404),
         ),
       );
+    });
+  });
+
+  group('기존 계정 연결 (같은 이메일)', () {
+    // Google 로그인이 같은 이메일의 비밀번호 계정을 만나면 Kratos가 만드는 로그인 플로우 (v26.2.0 실측)
+    Map<String, Object?> linkFlow({bool asksToLink = true}) => _flow(
+      'l1',
+      messages: [if (asksToLink) _message(1010016, 'info')],
+      nodes: [
+        {
+          'group': 'default',
+          'attributes': {
+            'name': 'identifier',
+            'type': 'hidden',
+            'value': 'owner@example.com',
+          },
+          'messages': <Object>[],
+        },
+        {
+          'group': 'password',
+          'attributes': {'name': 'password', 'type': 'password'},
+          'messages': <Object>[],
+        },
+      ],
+    );
+
+    test('로그인 플로우를 조회해 연결 요청과 연결할 계정 이메일을 꺼낸다', () async {
+      fake.respond = (_) => _json(200, linkFlow());
+
+      final flow = await client.getFlow(KratosFlowType.login, 'l1');
+
+      final request = fake.requests.single;
+      expect(request.method, 'GET');
+      expect(request.uri.path, '/auth/self-service/login/flows');
+      expect(request.uri.queryParameters, {'id': 'l1'});
+      expect(flow.asksToLinkAccount, isTrue);
+      expect(flow.identifier, 'owner@example.com');
+    });
+
+    test('연결 안내가 없는 플로우는 연결 요청이 아니다', () async {
+      fake.respond = (_) => _json(200, linkFlow(asksToLink: false));
+
+      final flow = await client.getFlow(KratosFlowType.login, 'l1');
+
+      expect(flow.asksToLinkAccount, isFalse);
     });
   });
 }

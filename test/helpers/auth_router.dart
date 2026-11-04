@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
+import 'package:momeet/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
@@ -34,7 +35,13 @@ Widget pumpAuthFlow({
         builder: (context, state) => LoginPage(
           initialEmail: state.extra is String ? state.extra as String : null,
           googleCode: state.uri.queryParameters['code'],
+          accountLinkFlowId: state.uri.queryParameters['flow'],
         ),
+      ),
+      GoRoute(
+        path: AppRoute.forgotPassword.path,
+        name: AppRoute.forgotPassword.name,
+        builder: (context, state) => const ForgotPasswordPage(),
       ),
       GoRoute(
         path: AppRoute.securityWarning.path,
