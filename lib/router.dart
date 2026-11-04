@@ -154,6 +154,7 @@ final _kratosReturnCode = RegExp(r'^[A-Za-z0-9_-]{16,256}$');
 ///
 /// - 메일 인증 링크는 Kratos를 거쳐 `/verification?flow=<플로우 ID>`로 들어온다.
 /// - Google 로그인은 `/login?code=<코드>`로 돌아온다.
+/// - Google 이메일로 이미 가입된 계정이 있으면 `/login?flow=<플로우 ID>`로 돌아온다(계정 연결).
 ///
 /// 누구나 이 주소를 만들어 보낼 수 있으므로 값의 모양을 확인한다.
 @visibleForTesting
@@ -164,7 +165,9 @@ bool isValidAuthLink(String path, Map<String, String> queryParameters) {
   }
   if (path == AppRoute.login.path) {
     final code = queryParameters['code'];
-    return code == null || _kratosReturnCode.hasMatch(code);
+    final flow = queryParameters['flow'];
+    return (code == null || _kratosReturnCode.hasMatch(code)) &&
+        (flow == null || _kratosFlowId.hasMatch(flow));
   }
   return true;
 }
@@ -262,9 +265,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.login.name,
         // extra: 로그인↔회원가입 폼 전환 시 이어받는 이메일(인메모리)
         // code: Google 로그인에서 돌아올 때 Kratos가 붙이는 값
+        // flow: Google 이메일로 이미 가입된 계정이 있어 Kratos가 연결을 요청한 로그인 플로우
         builder: (context, state) => LoginPage(
           initialEmail: state.extra is String ? state.extra as String : null,
           googleCode: state.uri.queryParameters['code'],
+          accountLinkFlowId: state.uri.queryParameters['flow'],
         ),
       ),
 

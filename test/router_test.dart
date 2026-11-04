@@ -833,11 +833,33 @@ void main() {
         );
       });
 
+      test('기존 계정 연결 링크(/login?flow=)는 플로우 ID 모양일 때만 연다', () {
+        expect(
+          authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.login.path,
+            queryParameters: {'flow': flowId, 'no_org_ui': 'true'},
+          ),
+          isNull,
+        );
+        final params = {'flow': '../settings'};
+        expect(
+          authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.login.path,
+            queryParameters: params,
+          ),
+          blocked(AppRoute.login.path, params),
+        );
+      });
+
       test('다른 화면의 flow 값은 검사하지 않는다', () {
         final result = authRedirect(
           isAuthenticated: false,
           isAuthLoading: false,
-          matchedLocation: AppRoute.login.path,
+          matchedLocation: AppRoute.signup.path,
           queryParameters: {'flow': 'anything'},
         );
         expect(result, isNull);

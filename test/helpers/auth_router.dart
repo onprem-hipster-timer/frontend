@@ -35,6 +35,7 @@ Widget pumpAuthFlow({
         builder: (context, state) => LoginPage(
           initialEmail: state.extra is String ? state.extra as String : null,
           googleCode: state.uri.queryParameters['code'],
+          accountLinkFlowId: state.uri.queryParameters['flow'],
         ),
       ),
       GoRoute(

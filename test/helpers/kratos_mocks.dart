@@ -126,6 +126,11 @@ class KratosTestHarness {
     ).thenAnswer((_) async => googleUrl);
   }
 
+  /// [type] 플로우를 조회하면 [flow]를 돌려주게 한다.
+  void stubGetFlow(KratosFlowType type, KratosFlow flow) {
+    when(() => kratos.getFlow(type, flow.id)).thenAnswer((_) async => flow);
+  }
+
   /// [type] 플로우 제출이 [error]를 던지게 한다.
   void stubSubmitError(KratosFlowType type, Object error) {
     when(

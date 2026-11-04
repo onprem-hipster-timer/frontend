@@ -10,7 +10,12 @@ import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key, this.initialEmail, this.googleCode});
+  const LoginPage({
+    super.key,
+    this.initialEmail,
+    this.googleCode,
+    this.accountLinkFlowId,
+  });
 
   /// 회원가입 폼에서 전환해 올 때 이어받는 이메일.
   ///
@@ -24,6 +29,11 @@ class LoginPage extends ConsumerStatefulWidget {
   /// `redirect`를 검사해 정한다.
   final String? googleCode;
 
+  /// Google 이메일로 이미 가입된 계정이 있을 때 Kratos가 넘기는 로그인 플로우 ID.
+  ///
+  /// 있으면 그 계정 이메일을 고정하고 비밀번호를 받아, 로그인하면서 Google을 계정에 연결한다.
+  final String? accountLinkFlowId;
+
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
@@ -35,6 +45,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+
+  /// Google을 연결할 기존 계정 이메일. 있으면 계정 연결 화면이다.
+  String? _linkEmail;
 
   @override
   void initState() {
@@ -49,22 +62,53 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         (_) => _completeGoogleSignIn(googleCode),
       );
     }
+    final linkFlowId = widget.accountLinkFlowId;
+    if (googleCode == null && linkFlowId != null) {
+      _isLoading = true;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _loadAccountLink(linkFlowId),
+      );
+    }
+  }
+
+  /// 이 브라우저에서 시작한 Google 로그인이 아니면 남이 보낸 링크일 수 있으므로 보안 경고로 보낸다.
+  bool _blockUnstartedGoogleSignIn() {
+    if (ref.read(authProvider.notifier).hasPendingGoogleSignIn) return false;
+    context.goNamed(
+      AppRoute.securityWarning.name,
+      queryParameters: {'blocked': GoRouterState.of(context).uri.toString()},
+    );
+    return true;
   }
 
   /// Google에서 돌아온 code로 로그인을 마친다.
-  ///
-  /// 이 브라우저에서 시작하지 않은 로그인이면 남이 보낸 링크일 수 있으므로 보안 경고로 보낸다.
   Future<void> _completeGoogleSignIn(String code) async {
     final auth = ref.read(authProvider.notifier);
-    if (!auth.hasPendingGoogleSignIn) {
-      context.goNamed(
-        AppRoute.securityWarning.name,
-        queryParameters: {'blocked': GoRouterState.of(context).uri.toString()},
-      );
-      return;
-    }
+    if (_blockUnstartedGoogleSignIn()) return;
     try {
       await auth.completeGoogleSignIn(code);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Kratos가 기존 계정 연결을 요청한 플로우를 읽어 연결할 계정 이메일을 보여 준다.
+  Future<void> _loadAccountLink(String flowId) async {
+    if (_blockUnstartedGoogleSignIn()) return;
+    try {
+      final email = await ref
+          .read(authProvider.notifier)
+          .googleAccountLinkEmail(flowId);
+      if (!mounted) return;
+      setState(() {
+        if (email == null) {
+          _errorMessage = '연결 요청이 만료되었거나 올바르지 않습니다. Google로 다시 로그인해주세요.';
+        } else {
+          _linkEmail = email;
+        }
+      });
     } catch (e) {
       if (mounted) setState(() => _errorMessage = e.toString());
     } finally {
@@ -96,12 +140,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     try {
-      await ref
-          .read(authProvider.notifier)
-          .signInWithEmail(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+      final linkEmail = _linkEmail;
+      if (linkEmail != null) {
+        await ref
+            .read(authProvider.notifier)
+            .completeGoogleAccountLink(
+              flowId: widget.accountLinkFlowId!,
+              email: linkEmail,
+              password: _passwordController.text,
+            );
+      } else {
+        await ref
+            .read(authProvider.notifier)
+            .signInWithEmail(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
+      }
     } on EmailNotVerifiedException catch (e) {
       // 서버가 새 인증 플로우를 만들어 코드를 다시 보냈다. 그 플로우로 인증 화면을 연다
       if (mounted) {
@@ -157,23 +212,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    AuthTextField(
-                      controller: _emailController,
-                      label: '이메일',
-                      hint: 'example@email.com',
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: Icons.email_outlined,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '이메일을 입력해주세요';
-                        }
-                        if (!value.contains('@')) {
-                          return '올바른 이메일 형식이 아닙니다';
-                        }
-                        return null;
-                      },
-                    ),
+                    if (_linkEmail case final linkEmail?)
+                      _AccountLinkNotice(email: linkEmail)
+                    else
+                      AuthTextField(
+                        controller: _emailController,
+                        label: '이메일',
+                        hint: 'example@email.com',
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        prefixIcon: Icons.email_outlined,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '이메일을 입력해주세요';
+                          }
+                          if (!value.contains('@')) {
+                            return '올바른 이메일 형식이 아닙니다';
+                          }
+                          return null;
+                        },
+                      ),
                     const SizedBox(height: 16),
                     AuthTextField(
                       controller: _passwordController,
@@ -218,16 +276,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ErrorBanner(message: _errorMessage, onDismiss: _clearError),
 
               AuthButton(
-                text: '로그인',
+                text: _linkEmail == null ? '로그인' : '로그인하고 Google 연결',
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
 
-              GoogleSignInButton(
-                onError: (message) => setState(() => _errorMessage = message),
-              ),
+              if (_linkEmail == null)
+                GoogleSignInButton(
+                  onError: (message) => setState(() => _errorMessage = message),
+                ),
 
               const SizedBox(height: 24),
               Row(
@@ -246,6 +305,39 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 기존 계정 연결 안내: 어느 계정에 Google을 연결하는지 보여 준다 (이메일은 바꿀 수 없다)
+class _AccountLinkNotice extends StatelessWidget {
+  const _AccountLinkNotice({required this.email});
+
+  final String email;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withAlpha(77),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.link_rounded, color: colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$email(으)로 이미 가입된 계정이 있습니다.\n'
+              '이 계정의 비밀번호로 로그인하면 Google 계정이 연결되고, 다음부터 Google로 로그인할 수 있습니다.',
+            ),
+          ),
+        ],
       ),
     );
   }

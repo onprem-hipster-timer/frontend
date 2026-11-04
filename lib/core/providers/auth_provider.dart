@@ -237,6 +237,48 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Google 로그인이 같은 이메일의 기존 계정을 만나 Kratos가 연결을 요청한 로그인 플로우면,
+  /// 연결할 계정 이메일을 돌려준다. 연결 요청이 아니면 null.
+  ///
+  /// Kratos는 이때 브라우저를 로그인 화면(`/login?flow=`)으로 보낸다.
+  Future<String?> googleAccountLinkEmail(String flowId) async {
+    try {
+      final flow = await _kratos.getFlow(KratosFlowType.login, flowId);
+      return flow.asksToLinkAccount ? flow.identifier : null;
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
+  /// 기존 계정의 비밀번호로 로그인해 Google 계정을 연결한다.
+  ///
+  /// Kratos가 연결을 요청한 그 로그인 플로우에 내야 연결된다. 플로우가 가리키는 계정이 아니면
+  /// Kratos가 거절한다(4010009). 같은 이메일의 Google만 연결되므로, 비밀번호가 새도
+  /// 남의 Google을 붙일 수 없다. 마치면 Google 로그인 대기를 지운다.
+  Future<void> completeGoogleAccountLink({
+    required String flowId,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final result = await _kratos.submit(KratosFlowType.login, flowId, {
+        'method': 'password',
+        'identifier': email,
+        'password': password,
+      });
+      await _prefs.remove(googleSignInCodeKey);
+      await _authenticateWith(result.sessionToken!);
+    } catch (e) {
+      throw AuthException(
+        message: AuthErrorType.classify(e).localized,
+        originalError: e,
+      );
+    }
+  }
+
   /// 회원가입. 이메일 인증 플로우 ID를 돌려준다.
   ///
   /// 이메일 인증 전에는 세션이 없다(Kratos가 가입 직후 세션을 주지 않음). 인증을 마친 뒤 로그인한다.
