@@ -1,7 +1,7 @@
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:dio/dio.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 
 /// 인증 오류 유형. Kratos의 메시지 ID·오류 ID와 네트워크 오류를 분류한다.
 ///

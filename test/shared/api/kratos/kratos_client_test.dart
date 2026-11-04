@@ -5,8 +5,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/core/auth/kratos_client.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_client.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 
 class _FakeKratos implements HttpClientAdapter {
   final requests = <RequestOptions>[];
@@ -78,20 +78,6 @@ void main() {
       expect(request.headers.containsKey('X-Session-Token'), isFalse);
       expect(flow.id, 'f1');
       expect(flow.state, 'choose_method');
-    });
-
-    test('재인증 로그인 플로우는 refresh=true와 X-Session-Token을 보낸다', () async {
-      fake.respond = (_) => _json(200, _flow('f1'));
-
-      await client.createFlow(
-        KratosFlowType.login,
-        sessionToken: 'ory_st_abc',
-        refresh: true,
-      );
-
-      final request = fake.requests.single;
-      expect(request.uri.queryParameters, {'refresh': 'true'});
-      expect(request.headers['X-Session-Token'], 'ory_st_abc');
     });
   });
 
@@ -350,6 +336,177 @@ void main() {
       expect(request.method, 'DELETE');
       expect(request.uri.path, '/auth/self-service/logout/api');
       expect(request.data, {'session_token': 'ory_st_abc'});
+    });
+  });
+
+  group('Google 로그인 (교환 코드)', () {
+    const returnTo = 'https://app.example.com/oauth-callback?redirect=%2Ftodo';
+    const googleUrl =
+        'https://accounts.google.com/o/oauth2/v2/auth?client_id=c&state=s';
+
+    test('return_to를 주면 교환 코드를 요청하고 플로우에서 꺼낸다', () async {
+      fake.respond = (_) => _json(200, {
+        ..._flow(
+          'f1',
+          nodes: [
+            {
+              'group': 'oidc',
+              'attributes': {
+                'name': 'provider',
+                'value': 'google',
+                'type': 'submit',
+              },
+              'messages': <Object>[],
+            },
+          ],
+        ),
+        'session_token_exchange_code': 'init-code',
+      });
+
+      final flow = await client.createFlow(
+        KratosFlowType.login,
+        returnTo: returnTo,
+      );
+
+      expect(fake.requests.single.uri.queryParameters, {
+        'return_session_token_exchange_code': 'true',
+        'return_to': returnTo,
+      });
+      expect(flow.sessionTokenExchangeCode, 'init-code');
+      expect(flow.oidcProviders, ['google']);
+    });
+
+    test('Google을 켜지 않은 플로우는 OIDC 제공자가 없다', () async {
+      fake.respond = (_) => _json(200, _flow('f1'));
+
+      final flow = await client.createFlow(KratosFlowType.login);
+
+      expect(flow.oidcProviders, isEmpty);
+      expect(flow.sessionTokenExchangeCode, isNull);
+    });
+
+    test('OIDC 제출의 422 응답에서 Google로 보낼 주소를 꺼낸다', () async {
+      fake.respond = (_) => _json(422, {
+        'error': {
+          'id': 'browser_location_change_required',
+          'code': 422,
+          'reason':
+              'In order to complete this flow please redirect the browser',
+        },
+        'redirect_browser_to': googleUrl,
+      });
+
+      final url = await client.submitOidc(KratosFlowType.login, 'f1', 'google');
+
+      final request = fake.requests.single;
+      expect(request.method, 'POST');
+      expect(request.uri.path, '/auth/self-service/login');
+      expect(request.uri.queryParameters, {'flow': 'f1'});
+      expect(request.data, {'method': 'oidc', 'provider': 'google'});
+      expect(url, Uri.parse(googleUrl));
+    });
+
+    test('Google 주소 없이 실패하면 KratosException을 던진다', () async {
+      fake.respond = (_) => _json(500, {
+        'error': {'id': 'invalid_configuration', 'code': 500},
+      });
+
+      expect(
+        () => client.submitOidc(KratosFlowType.login, 'f1', 'google'),
+        throwsA(
+          isA<KratosException>().having(
+            (e) => e.errorId,
+            'errorId',
+            'invalid_configuration',
+          ),
+        ),
+      );
+    });
+
+    test('교환 코드 두 개로 세션 토큰을 받는다', () async {
+      fake.respond = (_) => _json(200, {
+        'session_token': 'ory_st_google',
+        'session': {'id': 's1'},
+      });
+
+      final sessionToken = await client.exchangeSessionToken(
+        initCode: 'init-code',
+        returnToCode: 'return-code',
+      );
+
+      final request = fake.requests.single;
+      expect(request.method, 'GET');
+      expect(request.uri.path, '/auth/sessions/token-exchange');
+      expect(request.uri.queryParameters, {
+        'init_code': 'init-code',
+        'return_to_code': 'return-code',
+      });
+      expect(sessionToken, 'ory_st_google');
+    });
+
+    test('맞지 않는 교환 코드는 404 KratosException이다', () async {
+      fake.respond = (_) => _json(404, {
+        'error': {
+          'code': 404,
+          'status': 'Not Found',
+          'reason': 'no session yet for this "code"',
+        },
+      });
+
+      expect(
+        () => client.exchangeSessionToken(
+          initCode: 'init-code',
+          returnToCode: 'wrong',
+        ),
+        throwsA(
+          isA<KratosException>().having((e) => e.statusCode, 'status', 404),
+        ),
+      );
+    });
+  });
+
+  group('기존 계정 연결 (같은 이메일)', () {
+    // Google 로그인이 같은 이메일의 비밀번호 계정을 만나면 Kratos가 만드는 로그인 플로우 (v26.2.0 실측)
+    Map<String, Object?> linkFlow({bool asksToLink = true}) => _flow(
+      'l1',
+      messages: [if (asksToLink) _message(1010016, 'info')],
+      nodes: [
+        {
+          'group': 'default',
+          'attributes': {
+            'name': 'identifier',
+            'type': 'hidden',
+            'value': 'owner@example.com',
+          },
+          'messages': <Object>[],
+        },
+        {
+          'group': 'password',
+          'attributes': {'name': 'password', 'type': 'password'},
+          'messages': <Object>[],
+        },
+      ],
+    );
+
+    test('로그인 플로우를 조회해 연결 요청과 연결할 계정 이메일을 꺼낸다', () async {
+      fake.respond = (_) => _json(200, linkFlow());
+
+      final flow = await client.getFlow(KratosFlowType.login, 'l1');
+
+      final request = fake.requests.single;
+      expect(request.method, 'GET');
+      expect(request.uri.path, '/auth/self-service/login/flows');
+      expect(request.uri.queryParameters, {'id': 'l1'});
+      expect(flow.asksToLinkAccount, isTrue);
+      expect(flow.identifier, 'owner@example.com');
+    });
+
+    test('연결 안내가 없는 플로우는 연결 요청이 아니다', () async {
+      fake.respond = (_) => _json(200, linkFlow(asksToLink: false));
+
+      final flow = await client.getFlow(KratosFlowType.login, 'l1');
+
+      expect(flow.asksToLinkAccount, isFalse);
     });
   });
 }

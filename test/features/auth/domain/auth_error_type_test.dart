@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 import '../../../helpers/kratos_mocks.dart';

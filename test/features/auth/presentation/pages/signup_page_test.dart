@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:momeet/core/auth/kratos_client.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_client.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
@@ -131,5 +133,38 @@ void main() {
 
     expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsOneWidget);
     verifyNever(() => harness.kratos.createFlow(KratosFlowType.registration));
+  });
+
+  testWidgets('Google 버튼은 가입 플로우로 시작하고 로그인 화면으로 돌아오게 한다', (tester) async {
+    final redirected = <Uri>[];
+    harness.stubGoogleStart(KratosFlowType.registration);
+    await tester.pumpWidget(
+      pumpAuthFlow(
+        initialLocation: '/signup',
+        overrides: [
+          ...harness.overrides,
+          googleSignInAvailableProvider.overrideWith((ref) async => true),
+          appOriginProvider.overrideWithValue('https://app.example.com'),
+          browserRedirectProvider.overrideWithValue((url) async {
+            redirected.add(url);
+          }),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Google로 계속하기'));
+    await tester.tap(find.text('Google로 계속하기'));
+    // 브라우저가 Google로 떠나는 동안 진행 표시가 계속 돌므로 settle을 기다리지 않는다
+    await tester.pump();
+    await tester.pump();
+
+    verify(
+      () => harness.kratos.createFlow(
+        KratosFlowType.registration,
+        returnTo: 'https://app.example.com/login',
+      ),
+    ).called(1);
+    expect(redirected, [KratosTestHarness.googleUrl]);
   });
 }

@@ -45,19 +45,75 @@ class KratosMessage {
 
 /// self-service 플로우의 ID와 진행 상태
 class KratosFlow {
-  const KratosFlow({required this.id, this.state, this.messages = const []});
+  const KratosFlow({
+    required this.id,
+    this.state,
+    this.messages = const [],
+    this.oidcProviders = const [],
+    this.sessionTokenExchangeCode,
+    this.identifier,
+  });
 
   factory KratosFlow.fromJson(Map<String, Object?> json) => KratosFlow(
     id: json['id'] as String,
     state: json['state'] as String?,
     messages: KratosMessage.allFrom(json),
+    oidcProviders: _oidcProviders(json),
+    sessionTokenExchangeCode: json['session_token_exchange_code'] as String?,
+    identifier: _nodeValue(json, 'identifier'),
   );
+
+  /// Kratos text ID 1010016: Google로 로그인하려는 이메일이 이미 다른 로그인 수단으로 가입돼 있다.
+  /// 이 로그인 플로우에 그 계정으로 로그인하면 Google이 계정에 연결된다 (v26.2.0 실측).
+  static const linkAccountMessageId = 1010016;
 
   final String id;
 
   /// 예: choose_method, sent_email, passed_challenge, show_form, success
   final String? state;
   final List<KratosMessage> messages;
+
+  /// 서버가 켠 소셜 로그인 제공자 (예: google). 폼의 oidc 버튼에서 읽는다.
+  final List<String> oidcProviders;
+
+  /// Google 로그인에서 돌아온 뒤 세션 토큰과 바꿀 코드 (return_to를 준 플로우만)
+  final String? sessionTokenExchangeCode;
+
+  /// 로그인 플로우에 정해진 계정 식별자 (기존 계정 연결 플로우에서 연결할 계정 이메일)
+  final String? identifier;
+
+  /// Kratos가 기존 계정에 로그인해 소셜 계정을 연결하라고 요청한 로그인 플로우인지
+  bool get asksToLinkAccount =>
+      messages.any((message) => message.id == linkAccountMessageId);
+
+  static String? _nodeValue(Map<String, Object?> json, String name) {
+    final ui = json['ui'];
+    final nodes = ui is Map ? ui['nodes'] : null;
+    if (nodes is! List) return null;
+    for (final node in nodes) {
+      if (node case {
+        'attributes': {'name': final String n, 'value': final String value},
+      } when n == name) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  static List<String> _oidcProviders(Map<String, Object?> json) {
+    final ui = json['ui'];
+    final nodes = ui is Map ? ui['nodes'] : null;
+    return [
+      if (nodes is List)
+        for (final node in nodes)
+          if (node is Map && node['group'] == 'oidc')
+            if (node['attributes'] case {
+              'name': 'provider',
+              'value': final String provider,
+            })
+              provider,
+    ];
+  }
 }
 
 /// 플로우 제출 결과

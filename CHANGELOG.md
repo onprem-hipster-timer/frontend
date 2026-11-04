@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Kratos 세션 토큰은 SharedPreferences(웹은 localStorage)에 두고, 앱 상태에는 백엔드용 JWT(10분)만 둔다
   - JWT는 요청 직전에 만료가 가까우면 새로 받고, 401이면 한 번 새로 받아 재시도한다
   - WebSocket은 (재)연결할 때마다 최신 JWT를 쓰고, JWT 갱신만으로는 다시 연결하지 않는다
-  - 비밀번호 변경은 메일 코드 대신 현재 비밀번호로 재인증한다
+  - 비밀번호 변경도 메일로 받은 코드로 한다(비밀번호 재설정 화면). 현재 비밀번호만으로는 바꿀 수 없어서,
+    비밀번호가 새도 메일 확인 없이 비밀번호를 바꿔 계정을 차지하지 못한다
   - 이메일 인증 전에는 로그인할 수 없다. 가입하면 인증 화면으로, 인증을 마치면 로그인 화면으로 간다.
     인증 전 로그인 시도는 서버가 다시 보낸 코드로 인증 화면을 연다
   - 가입 비밀번호 최소 길이를 Kratos 정책인 8자로 맞춤
@@ -31,6 +32,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Auth
 - 이메일 인증 화면(`/verification`)과 인증 오류 화면(`/auth-error`)
 - 코드 기반 비밀번호 재설정 (이메일 → 6자리 코드 → 새 비밀번호)
+- 웹 Google 로그인 ("Google로 계속하기", 로그인·회원가입 화면)
+  - 서버(Kratos)가 Google을 켰을 때만 버튼이 보인다
+  - Google을 다녀온 브라우저는 로그인 화면(`/login?code=`)으로 돌아오고, 로그인 화면이 세션 토큰 교환으로 로그인을 마친다
+  - 로그인 뒤 원래 화면으로 가는 처리는 비밀번호 로그인과 같은 `redirect` 검사를 탄다
+  - 이 브라우저에서 시작하지 않은 복귀 링크는 교환하지 않고 보안 경고 화면으로 보낸다
+  - Google 이메일로 이미 가입된 계정이 있으면 로그인 화면(`/login?flow=`)이 그 계정 이메일을 고정해 비밀번호를 받고, 로그인하면서 Google을 계정에 연결한다
+    (같은 이메일의 Google만 연결되므로 비밀번호가 새도 남의 Google을 붙일 수 없다)
+
+#### Security
+- 메일 인증 링크(`/verification?flow=`)와 Google 복귀 링크(`/login?code=`)의 값이 올바른 모양이 아니면 보안 경고 화면으로 보낸다
 
 #### Tests
 - Todo·Schedule mutation 도메인별 테스트 추가

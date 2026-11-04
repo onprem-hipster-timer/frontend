@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momeet/core/auth/auth_user.dart';
-import 'package:momeet/core/auth/kratos_client.dart';
-import 'package:momeet/core/auth/kratos_models.dart';
+import 'package:momeet/shared/api/kratos/kratos_client.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
@@ -92,11 +92,7 @@ class KratosTestHarness {
   /// [type] 플로우를 만들면 [flowId]를 돌려주게 한다.
   void stubCreateFlow(KratosFlowType type, String flowId) {
     when(
-      () => kratos.createFlow(
-        type,
-        sessionToken: any(named: 'sessionToken'),
-        refresh: any(named: 'refresh'),
-      ),
+      () => kratos.createFlow(type, sessionToken: any(named: 'sessionToken')),
     ).thenAnswer((_) async => KratosFlow(id: flowId));
   }
 
@@ -110,6 +106,29 @@ class KratosTestHarness {
         sessionToken: any(named: 'sessionToken'),
       ),
     ).thenAnswer((_) async => result);
+  }
+
+  /// Google 로그인을 시작하면 Kratos가 돌려주는 Google 주소
+  static final googleUrl = Uri.parse(
+    'https://accounts.google.com/o/oauth2/v2/auth?client_id=test',
+  );
+
+  /// [type] 플로우로 Google 로그인을 시작하면 교환 코드 `init-code`와 [googleUrl]을 주게 한다.
+  void stubGoogleStart(KratosFlowType type) {
+    when(
+      () => kratos.createFlow(type, returnTo: any(named: 'returnTo')),
+    ).thenAnswer(
+      (_) async =>
+          const KratosFlow(id: 'g1', sessionTokenExchangeCode: 'init-code'),
+    );
+    when(
+      () => kratos.submitOidc(type, 'g1', 'google'),
+    ).thenAnswer((_) async => googleUrl);
+  }
+
+  /// [type] 플로우를 조회하면 [flow]를 돌려주게 한다.
+  void stubGetFlow(KratosFlowType type, KratosFlow flow) {
+    when(() => kratos.getFlow(type, flow.id)).thenAnswer((_) async => flow);
   }
 
   /// [type] 플로우 제출이 [error]를 던지게 한다.
