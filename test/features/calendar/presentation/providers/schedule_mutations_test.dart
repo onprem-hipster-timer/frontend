@@ -92,6 +92,7 @@ void main() {
         () => api.deleteScheduleV1SchedulesScheduleIdDelete(
           scheduleId: any(named: 'scheduleId'),
           instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: any(named: 'sourceTodoPolicy'),
           options: any(named: 'options'),
         ),
       ).thenAnswer((_) async {});
@@ -107,6 +108,35 @@ void main() {
         () => api.deleteScheduleV1SchedulesScheduleIdDelete(
           scheduleId: 's1',
           instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: null,
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+    });
+
+    test('deleteSchedule은 원본 할 일 정책을 쿼리로 넘긴다', () async {
+      when(
+        () => api.deleteScheduleV1SchedulesScheduleIdDelete(
+          scheduleId: any(named: 'scheduleId'),
+          instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: any(named: 'sourceTodoPolicy'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final c = makeContainer();
+      await c
+          .read(scheduleMutationsProvider.notifier)
+          .deleteSchedule(
+            's1',
+            sourceTodoPolicy: SourceTodoPolicy.keepDeadline,
+          );
+
+      verify(
+        () => api.deleteScheduleV1SchedulesScheduleIdDelete(
+          scheduleId: 's1',
+          instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: SourceTodoPolicy.keepDeadline,
           options: any(named: 'options'),
         ),
       ).called(1);
@@ -168,6 +198,7 @@ void main() {
         () => api.deleteScheduleV1SchedulesScheduleIdDelete(
           scheduleId: any(named: 'scheduleId'),
           instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: any(named: 'sourceTodoPolicy'),
           options: any(named: 'options'),
         ),
       ).thenAnswer((_) async {});
@@ -189,6 +220,7 @@ void main() {
         () => api.deleteScheduleV1SchedulesScheduleIdDelete(
           scheduleId: any(named: 'scheduleId'),
           instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: any(named: 'sourceTodoPolicy'),
           options: any(named: 'options'),
         ),
       ).thenThrow(Exception('delete-failed'));

@@ -113,6 +113,7 @@ void main() {
       when(
         () => api.deleteTodoV1TodosTodoIdDelete(
           todoId: any(named: 'todoId'),
+          linkedSchedulePolicy: any(named: 'linkedSchedulePolicy'),
           options: any(named: 'options'),
         ),
       ).thenAnswer((_) async {});
@@ -123,6 +124,31 @@ void main() {
       verify(
         () => api.deleteTodoV1TodosTodoIdDelete(
           todoId: 'todo-1',
+          linkedSchedulePolicy: null,
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+    });
+
+    test('delete는 연결 일정 정책을 쿼리로 넘긴다', () async {
+      stubList();
+      when(
+        () => api.deleteTodoV1TodosTodoIdDelete(
+          todoId: any(named: 'todoId'),
+          linkedSchedulePolicy: any(named: 'linkedSchedulePolicy'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final container = makeContainer();
+      await container
+          .read(todoMutationsProvider.notifier)
+          .delete('todo-1', linkedSchedulePolicy: LinkedSchedulePolicy.unlink);
+
+      verify(
+        () => api.deleteTodoV1TodosTodoIdDelete(
+          todoId: 'todo-1',
+          linkedSchedulePolicy: LinkedSchedulePolicy.unlink,
           options: any(named: 'options'),
         ),
       ).called(1);
@@ -135,6 +161,7 @@ void main() {
       when(
         () => api.deleteTodoV1TodosTodoIdDelete(
           todoId: any(named: 'todoId'),
+          linkedSchedulePolicy: any(named: 'linkedSchedulePolicy'),
           options: any(named: 'options'),
         ),
       ).thenAnswer((_) async {});
@@ -155,6 +182,7 @@ void main() {
       when(
         () => api.deleteTodoV1TodosTodoIdDelete(
           todoId: any(named: 'todoId'),
+          linkedSchedulePolicy: any(named: 'linkedSchedulePolicy'),
           options: any(named: 'options'),
         ),
       ).thenAnswer((_) async {});
@@ -179,6 +207,7 @@ void main() {
       when(
         () => api.deleteTodoV1TodosTodoIdDelete(
           todoId: any(named: 'todoId'),
+          linkedSchedulePolicy: any(named: 'linkedSchedulePolicy'),
           options: any(named: 'options'),
         ),
       ).thenThrow(Exception('delete-failed'));
