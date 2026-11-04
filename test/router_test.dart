@@ -713,5 +713,81 @@ void main() {
         }
       });
     });
+
+    // ----------------------------------------------------------
+    // Kratos가 보내는 링크 (메일 인증) 위조 검사
+    // ----------------------------------------------------------
+    group('인증 링크 검사', () {
+      const flowId = '3f1e2d4c-5b6a-4789-9abc-def012345678';
+
+      String blocked(String path, Map<String, String> params) =>
+          '${AppRoute.securityWarning.path}?blocked='
+          '${Uri.encodeComponent(Uri(path: path, queryParameters: params).toString())}';
+
+      test('Kratos 플로우 ID(UUID)가 담긴 인증 링크는 그대로 연다', () {
+        for (final isAuthenticated in [false, true]) {
+          final result = authRedirect(
+            isAuthenticated: isAuthenticated,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.verification.path,
+            queryParameters: {'flow': flowId},
+          );
+          expect(result, isNull);
+        }
+      });
+
+      test('flow 없이 연 인증 화면은 그대로 연다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.verification.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('flow가 플로우 ID 모양이 아니면 보안 경고로 보낸다', () {
+        for (final flow in [
+          'abc',
+          '../../self-service/settings',
+          '<script>alert(1)</script>',
+          '$flowId/extra',
+          'https://evil.example',
+        ]) {
+          final params = {'flow': flow};
+          final result = authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.verification.path,
+            queryParameters: params,
+          );
+          expect(
+            result,
+            blocked(AppRoute.verification.path, params),
+            reason: flow,
+          );
+        }
+      });
+
+      test('로그인한 사용자도 위조된 인증 링크면 보안 경고로 보낸다', () {
+        final params = {'flow': 'not-a-flow'};
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.verification.path,
+          queryParameters: params,
+        );
+        expect(result, blocked(AppRoute.verification.path, params));
+      });
+
+      test('다른 화면의 flow 값은 검사하지 않는다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.login.path,
+          queryParameters: {'flow': 'anything'},
+        );
+        expect(result, isNull);
+      });
+    });
   });
 }

@@ -137,6 +137,24 @@ bool isValidRedirectPath(String path) {
   return true;
 }
 
+/// Kratos 플로우 ID 모양 (UUID)
+final _kratosFlowId = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+/// Kratos가 보내는 링크(메일 인증)의 값이 올바른 모양인지 (위조 링크 차단)
+///
+/// 메일 인증 링크는 Kratos를 거쳐 `/verification?flow=<플로우 ID>`로 들어온다.
+/// 누구나 이 주소를 만들어 보낼 수 있으므로 값의 모양을 확인한다.
+@visibleForTesting
+bool isValidAuthLink(String path, Map<String, String> queryParameters) {
+  if (path == AppRoute.verification.path) {
+    final flow = queryParameters['flow'];
+    return flow == null || _kratosFlowId.hasMatch(flow);
+  }
+  return true;
+}
+
 /// 인증 상태에 따른 리다이렉트 로직 (순수 함수 — 테스트 가능)
 ///
 /// 반환값이 null이면 리다이렉트 없음.
@@ -145,6 +163,7 @@ String? authRedirect({
   required bool isAuthLoading,
   required String matchedLocation,
   String? redirectAfterLogin,
+  Map<String, String> queryParameters = const {},
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
@@ -158,6 +177,15 @@ String? authRedirect({
   // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
   if (matchedLocation == AppRoute.loading.path) {
     return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
+  }
+
+  // 1-2. 위조된 인증 링크면 보안 경고로 (로그인 여부와 상관없이)
+  if (!isValidAuthLink(matchedLocation, queryParameters)) {
+    final attempted = Uri(
+      path: matchedLocation,
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    ).toString();
+    return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(attempted)}';
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
@@ -205,6 +233,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         isAuthLoading: ref.read(isAuthLoadingProvider),
         matchedLocation: state.matchedLocation,
         redirectAfterLogin: state.uri.queryParameters['redirect'],
+        queryParameters: state.uri.queryParameters,
       );
     },
 
