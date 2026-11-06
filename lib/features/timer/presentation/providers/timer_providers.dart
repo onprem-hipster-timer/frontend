@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/utils/timezone_utils.dart';
 import 'package:momeet/features/timer/data/timer_repository_impl.dart';
@@ -162,10 +163,11 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
 // Timer Ticker Provider (Local UI Ticker)
 // ============================================================
 
-/// 활성 타이머의 표시 경과 시간 ([displayElapsed])을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
+/// 활성 타이머의 표시 경과 시간 ([displayElapsed], 서버 시각 기준)을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
 @riverpod
 Stream<Duration> timerTicker(Ref ref) async* {
   final activeTimerAsync = ref.watch(activeTimerProvider);
+  final clock = ref.watch(serverClockProvider);
 
   await for (final _ in Stream.periodic(const Duration(seconds: 1))) {
     final activeTimer = activeTimerAsync.when(
@@ -176,7 +178,7 @@ Stream<Duration> timerTicker(Ref ref) async* {
 
     yield activeTimer == null
         ? Duration.zero
-        : displayElapsed(activeTimer, DateTime.now());
+        : displayElapsed(activeTimer, clock.now());
   }
 }
 

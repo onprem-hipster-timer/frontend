@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
@@ -84,9 +85,10 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
   ref.watch(timer_feature.activeTimerProvider);
 
   final activeTimers = await ref.watch(activeTimersProvider.future);
+  final clock = ref.watch(serverClockProvider);
 
   yield* Stream.periodic(const Duration(seconds: 1), (_) {
-    final now = DateTime.now();
+    final now = clock.now();
     final activeStates = <String, ActiveTimerState>{};
 
     for (final timer in activeTimers) {

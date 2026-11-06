@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -715,7 +716,7 @@ class TimerHistoryItem extends ConsumerWidget {
 
     final bool useLiveTicker =
         timer.status == TimerStatus.running && timer.id == activeTimer?.id;
-    final elapsed = displayElapsed(timer, DateTime.now());
+    final elapsed = displayElapsed(timer, ref.watch(serverClockProvider).now());
     final Duration duration = useLiveTicker
         ? tickerAsync.when(
             data: (d) => d,
