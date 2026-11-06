@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
@@ -714,13 +715,14 @@ class TimerHistoryItem extends ConsumerWidget {
 
     final bool useLiveTicker =
         timer.status == TimerStatus.running && timer.id == activeTimer?.id;
+    final elapsed = displayElapsed(timer, DateTime.now());
     final Duration duration = useLiveTicker
         ? tickerAsync.when(
             data: (d) => d,
-            loading: () => Duration(seconds: timer.elapsedTime),
-            error: (_, _) => Duration(seconds: timer.elapsedTime),
+            loading: () => elapsed,
+            error: (_, _) => elapsed,
           )
-        : Duration(seconds: timer.elapsedTime);
+        : elapsed;
 
     final isActive =
         timer.status == TimerStatus.running ||

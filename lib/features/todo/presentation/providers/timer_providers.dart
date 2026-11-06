@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart'
     as timer_feature;
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
@@ -89,30 +90,19 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
     final activeStates = <String, ActiveTimerState>{};
 
     for (final timer in activeTimers) {
-      if (timer.status == TimerStatus.running && timer.startedAt != null) {
-        final elapsedSinceStart = now.difference(timer.startedAt!).inSeconds;
-        final totalElapsed = timer.elapsedTime + elapsedSinceStart;
-
-        activeStates[timer.todoId ??
-            timer.scheduleId ??
-            timer.id] = ActiveTimerState(
-          timerId: timer.id,
-          elapsedSeconds: totalElapsed,
-          status: timer.status,
-          startedAt: timer.startedAt,
-          pausedAt: timer.pausedAt,
-        );
-      } else if (timer.status == TimerStatus.paused) {
-        activeStates[timer.todoId ??
-            timer.scheduleId ??
-            timer.id] = ActiveTimerState(
-          timerId: timer.id,
-          elapsedSeconds: timer.elapsedTime,
-          status: timer.status,
-          startedAt: timer.startedAt,
-          pausedAt: timer.pausedAt,
-        );
+      if (timer.status != TimerStatus.running &&
+          timer.status != TimerStatus.paused) {
+        continue;
       }
+      activeStates[timer.todoId ??
+          timer.scheduleId ??
+          timer.id] = ActiveTimerState(
+        timerId: timer.id,
+        elapsedSeconds: displayElapsed(timer, now).inSeconds,
+        status: timer.status,
+        startedAt: timer.startedAt,
+        pausedAt: timer.pausedAt,
+      );
     }
 
     return activeStates;

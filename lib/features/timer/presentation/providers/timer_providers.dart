@@ -7,6 +7,7 @@ import 'package:momeet/core/utils/timezone_utils.dart';
 import 'package:momeet/features/timer/data/timer_repository_impl.dart';
 import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -161,11 +162,7 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
 // Timer Ticker Provider (Local UI Ticker)
 // ============================================================
 
-/// 실시간 타이머 틱 제공
-///
-/// - RUNNING: 서버 `elapsed_time` + (now - paused_at이 없으면 now - started_at 보정분)을 1초마다 갱신
-/// - PAUSED: 서버 `elapsed_time`을 그대로 유지 (0으로 리셋하지 않음)
-/// - null/기타: Duration.zero
+/// 활성 타이머의 표시 경과 시간 ([displayElapsed])을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
 @riverpod
 Stream<Duration> timerTicker(Ref ref) async* {
   final activeTimerAsync = ref.watch(activeTimerProvider);
@@ -177,12 +174,9 @@ Stream<Duration> timerTicker(Ref ref) async* {
       error: (error, stack) => null,
     );
 
-    yield calculateElapsed(
-      status: activeTimer?.status,
-      elapsedTime: activeTimer?.elapsedTime ?? 0,
-      startedAt: activeTimer?.startedAt,
-      pausedAt: activeTimer?.pausedAt,
-    );
+    yield activeTimer == null
+        ? Duration.zero
+        : displayElapsed(activeTimer, DateTime.now());
   }
 }
 
@@ -362,39 +356,6 @@ List<TimerRead> sortTimerHistory(List<TimerRead> timers) {
     return bStarted.compareTo(aStarted);
   });
   return sorted;
-}
-
-// ============================================================
-// Timer Elapsed Calculation (순수 함수 — 테스트 용이)
-// ============================================================
-
-/// 타이머의 현재 경과 시간을 계산합니다.
-///
-/// - [status]가 null이면 Duration.zero
-/// - PAUSED / COMPLETED 등 비실행 상태: [elapsedTime] 그대로
-/// - RUNNING: [elapsedTime] + (now - [resumedAt]) 보정
-Duration calculateElapsed({
-  required TimerStatus? status,
-  required int elapsedTime,
-  DateTime? startedAt,
-  DateTime? pausedAt,
-  DateTime? now,
-}) {
-  if (status == null) return Duration.zero;
-
-  if (status != TimerStatus.running) {
-    return Duration(seconds: elapsedTime);
-  }
-
-  final currentTime = now ?? DateTime.now().toUtc();
-  final resumedAt = pausedAt ?? startedAt;
-  if (resumedAt == null) {
-    return Duration(seconds: elapsedTime);
-  }
-
-  final currentSegment = currentTime.difference(resumedAt).inSeconds;
-  final totalSeconds = elapsedTime + currentSegment;
-  return Duration(seconds: totalSeconds.clamp(0, double.infinity).toInt());
 }
 
 // ============================================================
