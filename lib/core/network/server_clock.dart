@@ -44,8 +44,9 @@ class ServerClock {
   }
 }
 
-/// `/v1/timers` 응답의 `Date` 헤더를 [ServerClock]에 넘기는 Interceptor. 헤더가 없는 응답은 건너뛴다.
+/// `/v1/timers`와 그 하위 경로 응답의 `Date` 헤더를 [ServerClock]에 넘기는 Interceptor.
 ///
+/// 헤더가 없거나 형식이 맞지 않는 응답은 건너뛰고, 요청은 그대로 진행한다.
 /// 보낸 시각을 요청 직전에 재므로 Interceptor 중 마지막에 붙인다.
 class ServerClockInterceptor extends Interceptor {
   ServerClockInterceptor(this._clock);
@@ -56,7 +57,7 @@ class ServerClockInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (options.path.contains('/v1/timers')) {
+    if (_isTimerPath(options.path)) {
       options.extra[_sentAtKey] = DateTime.now();
     }
     handler.next(options);
@@ -65,15 +66,28 @@ class ServerClockInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final sentAt = response.requestOptions.extra[_sentAtKey];
-    final date = response.headers.value('date');
-    if (sentAt is DateTime && date != null) {
+    final serverDate = _parseDate(response.headers.value('date'));
+    if (sentAt is DateTime && serverDate != null) {
       _clock.addSample(
-        serverDate: parseHttpDate(date),
+        serverDate: serverDate,
         sentAt: sentAt,
         receivedAt: DateTime.now(),
       );
     }
     handler.next(response);
+  }
+
+  static bool _isTimerPath(String path) =>
+      path == '/v1/timers' || path.startsWith('/v1/timers/');
+
+  /// RFC 1123 형식이 아니면 null
+  static DateTime? _parseDate(String? value) {
+    if (value == null) return null;
+    try {
+      return parseHttpDate(value);
+    } on FormatException {
+      return null;
+    }
   }
 }
 
