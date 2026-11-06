@@ -19,15 +19,15 @@ class TimerPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lastError = ref.watch(timerWsLastErrorProvider);
 
-    ref.listen<AsyncValue<TimerWsFriendActivity>>(timerFriendActivityProvider, (
+    ref.listen<AsyncValue<TimerWsTimerEvent>>(timerFriendActivityProvider, (
       _,
       next,
     ) {
-      next.whenData((activity) {
+      next.whenData((event) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendActivityMessage(activity))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(friendActivityMessage(event))));
       });
     });
 
@@ -59,22 +59,20 @@ class TimerPage extends ConsumerWidget {
   }
 }
 
-/// 친구 활동 이벤트(`timer.friend_activity`)를 SnackBar 문구로 변환한다.
+/// 친구의 타이머 이벤트를 SnackBar 문구로 변환한다.
 ///
-/// 백엔드 `TimerAction` 공식 값(start/pause/resume/stop)만 매핑하고,
-/// 그 외 미정의 action은 generic fallback 문구로 처리한다.
-/// `displayName`이 없거나 빈 문자열이면 `친구`로 대체한다.
-String friendActivityMessage(TimerWsFriendActivity activity) {
-  final displayName = activity.displayName?.trim();
-  final friendName = displayName == null || displayName.isEmpty
-      ? '친구'
-      : displayName;
-  final timerTitle = activity.timerTitle?.trim();
+/// `payload.action` 중 start/pause/resume/stop만 매핑하고,
+/// 그 외 action은 generic fallback 문구로 처리한다.
+/// `payload.actor_name`이 없거나 빈 문자열이면 `친구`로 대체한다.
+String friendActivityMessage(TimerWsTimerEvent event) {
+  final actorName = event.payload.actorName?.trim();
+  final friendName = actorName == null || actorName.isEmpty ? '친구' : actorName;
+  final timerTitle = event.payload.timer?.title?.trim();
   final target = timerTitle == null || timerTitle.isEmpty
       ? '타이머'
       : '$timerTitle 타이머';
 
-  return switch (activity.action) {
+  return switch (event.payload.action) {
     'start' => '$friendName님이 $target를 시작했습니다',
     'pause' => '$friendName님이 $target를 일시정지했습니다',
     'resume' => '$friendName님이 $target를 재개했습니다',
@@ -241,7 +239,7 @@ class TimerDashboard extends ConsumerWidget {
         );
 
     if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
-      ref.invalidate(activeTimerProvider);
+      ref.invalidate(myActiveTimersProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
@@ -259,7 +257,6 @@ class TimerDashboard extends ConsumerWidget {
       await ref
           .read(timerControllerProvider.notifier)
           .stopTimer(timerId: activeTimer.id);
-      ref.invalidate(activeTimerProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

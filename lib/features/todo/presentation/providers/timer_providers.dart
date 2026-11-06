@@ -42,15 +42,10 @@ Future<List<TimerRead>> timers(
   }
 }
 
-/// 활성 타이머만 조회 (RUNNING, PAUSED 상태)
+/// 활성 타이머 (RUNNING, PAUSED 상태). 실시간 이벤트가 반영된 [timer_feature.myActiveTimersProvider]를 쓴다
 @riverpod
-Future<List<TimerRead>> activeTimers(Ref ref) async {
-  return ref.watch(
-    timersProvider(
-      status: [TimerStatus.running.json!, TimerStatus.paused.json!],
-    ).future,
-  );
-}
+Future<List<TimerRead>> activeTimers(Ref ref) =>
+    ref.watch(timer_feature.myActiveTimersProvider.future);
 
 /// Todo별 타이머 집계 데이터
 @riverpod
@@ -77,13 +72,9 @@ Future<TodoTimerAggregation?> todoTimerAggregation(
 
 /// 활성 타이머 실시간 스트림
 ///
-/// Timer feature의 [timer_feature.activeTimerProvider](WS 기반)를 watch하여
-/// WS 이벤트 수신 시 스트림이 재시작됩니다.
+/// [activeTimersProvider]가 바뀌면 스트림이 재시작됩니다.
 @riverpod
 Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
-  // WS 이벤트를 변경 신호로 watch — 이벤트마다 스트림 재시작
-  ref.watch(timer_feature.activeTimerProvider);
-
   final activeTimers = await ref.watch(activeTimersProvider.future);
   final clock = ref.watch(serverClockProvider);
 

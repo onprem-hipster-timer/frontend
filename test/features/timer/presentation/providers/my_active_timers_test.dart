@@ -1,0 +1,188 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/api/ws/timer_ws_client.dart';
+import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
+
+import '../../../../helpers/fake_timer_repository.dart';
+import '../../../../helpers/timer_fixtures.dart';
+
+/// 서버 이벤트를 테스트에서 직접 흘려보내는 클라이언트
+class _FakeWsClient extends Fake implements TimerWsClient {
+  final events = StreamController<TimerWsEvent>.broadcast();
+
+  @override
+  Stream<TimerWsEvent> get messageStream => events.stream;
+}
+
+const _me = 'user-me';
+
+TimerRead _timer(String id, TimerStatus status, {required int minute}) =>
+    makeTimer(
+      id: id,
+      status: status,
+      startedAt: DateTime.utc(2026, 11, 6, 10),
+    ).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 10, minute));
+
+int _seq = 0;
+
+TimerWsTimerEvent _event(TimerRead timer, {String fromUser = _me}) =>
+    TimerWsTimerEvent(
+      id: 'm${_seq++}',
+      type: 'timer.updated',
+      fromUser: fromUser,
+      timestamp: timer.updatedAt,
+      payload: TimerWsEventPayload(action: 'update', timer: timer),
+    );
+
+TimerWsTimerEvent _deleted(String timerId) => TimerWsTimerEvent(
+  id: 'm${_seq++}',
+  type: 'timer.deleted',
+  fromUser: _me,
+  timestamp: DateTime.utc(2026, 11, 6, 11),
+  payload: TimerWsEventPayload(action: 'delete', timerId: timerId),
+);
+
+void main() {
+  late FakeTimerRepository repository;
+  late _FakeWsClient client;
+
+  setUp(() {
+    repository = FakeTimerRepository();
+    client = _FakeWsClient();
+  });
+
+  Future<ProviderContainer> boot() async {
+    final container = ProviderContainer(
+      overrides: [
+        timerRepositoryProvider.overrideWithValue(repository),
+        timerWsClientProvider.overrideWithValue(client),
+        currentUserProvider.overrideWithValue(
+          AuthUser(
+            id: _me,
+            email: 'me@example.com',
+            emailVerified: true,
+            createdAt: DateTime.utc(2026),
+          ),
+        ),
+        timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(myActiveTimersProvider, (_, _) {});
+    await container.read(myActiveTimersProvider.future);
+    return container;
+  }
+
+  List<TimerRead> active(ProviderContainer container) =>
+      container.read(myActiveTimersProvider).requireValue;
+
+  Future<void> emit(TimerWsEvent event) async {
+    client.events.add(event);
+    await pumpEventQueue();
+  }
+
+  test('처음에 REST로 내 활성 타이머를 가져온다', () async {
+    repository.listActive = () async => [
+      _timer('t1', TimerStatus.running, minute: 1),
+    ];
+
+    final container = await boot();
+
+    expect(active(container).single.id, 't1');
+    expect(container.read(activeTimerProvider).value?.id, 't1');
+  });
+
+  test('내 이벤트를 반영하고 updated_at이 이전인 이벤트는 버린다', () async {
+    repository.listActive = () async => [
+      _timer('t1', TimerStatus.running, minute: 1),
+    ];
+    final container = await boot();
+
+    await emit(_event(_timer('t1', TimerStatus.paused, minute: 3)));
+    await emit(_event(_timer('t1', TimerStatus.running, minute: 2)));
+
+    expect(active(container).single.status, TimerStatus.paused);
+  });
+
+  test('친구의 이벤트는 반영하지 않는다', () async {
+    final container = await boot();
+
+    await emit(
+      _event(_timer('f1', TimerStatus.running, minute: 1), fromUser: 'friend'),
+    );
+
+    expect(active(container), isEmpty);
+    expect(container.read(activeTimerProvider).value, isNull);
+  });
+
+  test('timer.deleted면 빼고, 그 뒤에 온 같은 ID 이벤트는 버린다', () async {
+    repository.listActive = () async => [
+      _timer('t1', TimerStatus.running, minute: 1),
+    ];
+    final container = await boot();
+
+    await emit(_deleted('t1'));
+    await emit(_event(_timer('t1', TimerStatus.running, minute: 9)));
+
+    expect(active(container), isEmpty);
+  });
+
+  test('(재)연결되면 REST로 다시 맞춘다', () async {
+    repository.listActive = () async => [
+      _timer('t1', TimerStatus.running, minute: 1),
+    ];
+    final container = await boot();
+
+    repository.listActive = () async => [
+      _timer('t2', TimerStatus.paused, minute: 2),
+    ];
+    await emit(const TimerWsConnected());
+
+    expect(repository.calls.where((c) => c == 'list'), hasLength(2));
+    expect(active(container).map((t) => t.id), ['t2']);
+  });
+
+  test('다시 맞추는 동안 들어온 이벤트는 맞춘 뒤에 반영한다', () async {
+    final container = await boot();
+    final snapshot = Completer<List<TimerRead>>();
+    repository.listActive = () => snapshot.future;
+
+    await emit(const TimerWsConnected());
+    await emit(_event(_timer('t2', TimerStatus.running, minute: 5)));
+    // 이벤트보다 먼저 만든 목록이라 t2가 없다
+    snapshot.complete([]);
+    await pumpEventQueue();
+
+    expect(active(container).map((t) => t.id), ['t2']);
+  });
+
+  test('명령 응답을 바로 반영하고, 그보다 이전 이벤트는 버린다', () async {
+    repository.listActive = () async => [
+      _timer('t1', TimerStatus.running, minute: 1),
+    ];
+    repository.respond = (id, status) => _timer(id, status, minute: 3);
+    final container = await boot();
+
+    await container
+        .read(timerControllerProvider.notifier)
+        .pauseTimer(timerId: 't1');
+    expect(active(container).single.status, TimerStatus.paused);
+
+    await emit(_event(_timer('t1', TimerStatus.running, minute: 2)));
+    expect(active(container).single.status, TimerStatus.paused);
+  });
+
+  test('연결 오류를 에러 배너 상태로 넘긴다', () async {
+    final container = await boot();
+
+    await emit(const TimerWsError(code: 'CONNECTION_ERROR', message: 'x'));
+
+    expect(container.read(timerWsLastErrorProvider)?.code, 'CONNECTION_ERROR');
+  });
+}

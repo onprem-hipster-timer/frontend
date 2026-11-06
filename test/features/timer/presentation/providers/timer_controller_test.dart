@@ -1,73 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
+import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
-/// 타이머 명령 REST 호출을 기록하는 리포지토리
-class _FakeTimerRepository implements TimerRepository {
-  final calls = <String>[];
-  TimerCreate? created;
-  Object? error;
-
-  TimerRead _respond(String call, TimerStatus status) {
-    calls.add(call);
-    if (error != null) throw error!;
-    return makeTimer(id: 'timer-1', status: status);
-  }
-
-  @override
-  Future<TimerRead> createTimer(TimerCreate data) async {
-    created = data;
-    return _respond('create', TimerStatus.running);
-  }
-
-  @override
-  Future<TimerRead> pauseTimer(String timerId) async =>
-      _respond('pause:$timerId', TimerStatus.paused);
-
-  @override
-  Future<TimerRead> resumeTimer(String timerId) async =>
-      _respond('resume:$timerId', TimerStatus.running);
-
-  @override
-  Future<TimerRead> stopTimer(String timerId) async =>
-      _respond('stop:$timerId', TimerStatus.completed);
-
-  @override
-  Future<TimerRead?> getActiveTimer() async => null;
-
-  @override
-  Future<List<TimerRead>> getTimerHistory() async => [];
-
-  @override
-  Future<List<TimerRead>> listTimers({
-    List<String>? status,
-    String? type,
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async => [];
-
-  @override
-  Future<TimerRead> updateTimer(String timerId, TimerUpdate data) =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> deleteTimer(String timerId) => throw UnimplementedError();
-}
-
 void main() {
-  late _FakeTimerRepository repository;
+  late FakeTimerRepository repository;
 
-  setUp(() => repository = _FakeTimerRepository());
+  setUp(() => repository = FakeTimerRepository());
 
   ProviderContainer boot({TimerRead? active}) {
     final container = ProviderContainer(
       overrides: [
         timerRepositoryProvider.overrideWithValue(repository),
-        activeTimerProvider.overrideWith((ref) => Stream.value(active)),
+        activeTimerProvider.overrideWithValue(AsyncData(active)),
         timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
       ],
     );
@@ -105,7 +53,6 @@ void main() {
     final container = boot(
       active: makeTimer(id: 'active-1', status: TimerStatus.running),
     );
-    await container.read(activeTimerProvider.future);
 
     await controller(container).pauseTimer();
 
