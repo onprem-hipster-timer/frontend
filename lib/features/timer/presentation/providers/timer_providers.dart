@@ -86,7 +86,7 @@ final timerFriendActivityProvider =
 
 /// 활성 타이머 조회 (실시간)
 ///
-/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated / sync_result) payload로만 갱신합니다.
+/// 초기 1회 REST 조회 후, WebSocket 이벤트(timer.created / updated) payload로만 갱신합니다.
 @riverpod
 Stream<TimerRead?> activeTimer(Ref ref) async* {
   final repository = ref.watch(timerRepositoryProvider);
@@ -111,8 +111,7 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
         ref.invalidate(timerHistoryProvider);
         yield timer;
       case TimerWsTimerUpdated(timer: final timer):
-        // timer.sync 단건 조회 응답에서 대상이 없거나, 완료/취소 상태가 오면
-        // 활성 타이머 없음으로 간주해 null을 흘려보낸다.
+        // 완료/취소 상태가 오면 활성 타이머 없음으로 간주해 null을 흘려보낸다.
         ref.invalidate(timerHistoryProvider);
         if (timer == null ||
             timer.status == TimerStatus.completed ||
@@ -120,19 +119,6 @@ Stream<TimerRead?> activeTimer(Ref ref) async* {
           yield null;
         } else {
           yield timer;
-        }
-      case TimerWsSyncResult():
-        ref.invalidate(timerHistoryProvider);
-        if (event.timers.isEmpty) {
-          yield null;
-        } else {
-          final sorted = List<TimerRead>.from(event.timers)
-            ..sort((a, b) {
-              final aStart = a.startedAt ?? a.createdAt;
-              final bStart = b.startedAt ?? b.createdAt;
-              return bStart.compareTo(aStart);
-            });
-          yield sorted.first;
         }
       case TimerWsError():
         ref.read(timerWsLastErrorProvider.notifier).setError(event);
@@ -186,20 +172,15 @@ Stream<Duration> timerTicker(Ref ref) async* {
 // Timer Controller (Mutation)
 // ============================================================
 
-const _wsNotConnectedError = 'WebSocket에 연결되어 있지 않습니다. 로그인 후 다시 시도하세요.';
-
 /// 타이머 제어 로직
 ///
-/// 타이머 시작/정지 등의 CUD 작업을 담당합니다.
+/// 타이머 시작/정지 등의 명령을 REST로 보낸다. 바뀐 상태는 실시간 이벤트로도 들어온다.
 @riverpod
 class TimerController extends _$TimerController {
   @override
   FutureOr<void> build() {}
 
   /// 타이머 시작
-  ///
-  /// WebSocket으로 timer.create 전송. 서버가 timer.created를 보내면
-  /// activeTimer 스트림이 payload로 즉시 갱신됩니다.
   Future<void> startTimer({
     String? relatedTodoId,
     String? title,
@@ -209,18 +190,18 @@ class TimerController extends _$TimerController {
     state = const AsyncValue.loading();
 
     try {
-      final ws = ref.read(timerWsClientProvider);
-      if (ws != null && ws.isConnected) {
-        ws.createTimer(
-          todoId: relatedTodoId,
-          scheduleId: scheduleId,
-          title: title ?? '새 작업',
-          allocatedDuration: allocatedDurationSeconds ?? 3600,
-        );
-        state = const AsyncValue.data(null);
-        return;
-      }
-      throw Exception(_wsNotConnectedError);
+      await ref
+          .read(timerRepositoryProvider)
+          .createTimer(
+            TimerCreate(
+              todoId: relatedTodoId,
+              scheduleId: scheduleId,
+              title: title ?? '새 작업',
+              allocatedDuration: allocatedDurationSeconds ?? 3600,
+            ),
+          );
+      ref.invalidate(timerHistoryProvider);
+      state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -247,15 +228,9 @@ class TimerController extends _$TimerController {
         throw Exception('정지할 활성 타이머가 없습니다');
       }
 
-      final ws = ref.read(timerWsClientProvider);
-      if (ws != null && ws.isConnected) {
-        ws.stopTimer(id);
-        ref.invalidate(timerHistoryProvider);
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      throw Exception(_wsNotConnectedError);
+      await ref.read(timerRepositoryProvider).stopTimer(id);
+      ref.invalidate(timerHistoryProvider);
+      state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -285,14 +260,9 @@ class TimerController extends _$TimerController {
         throw Exception('일시정지할 실행 중인 타이머가 없습니다');
       }
 
-      final ws = ref.read(timerWsClientProvider);
-      if (ws != null && ws.isConnected) {
-        ws.pauseTimer(id);
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      throw Exception(_wsNotConnectedError);
+      await ref.read(timerRepositoryProvider).pauseTimer(id);
+      ref.invalidate(timerHistoryProvider);
+      state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
@@ -322,14 +292,9 @@ class TimerController extends _$TimerController {
         throw Exception('재개할 일시정지된 타이머가 없습니다');
       }
 
-      final ws = ref.read(timerWsClientProvider);
-      if (ws != null && ws.isConnected) {
-        ws.resumeTimer(id);
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      throw Exception(_wsNotConnectedError);
+      await ref.read(timerRepositoryProvider).resumeTimer(id);
+      ref.invalidate(timerHistoryProvider);
+      state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;

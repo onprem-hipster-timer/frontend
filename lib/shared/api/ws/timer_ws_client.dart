@@ -15,8 +15,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// 타이머 WebSocket 클라이언트
 ///
-/// 연결 후 [messageStream]으로 서버 이벤트를 구독하고,
-/// [createTimer], [pauseTimer], [resumeTimer], [stopTimer], [syncTimers]로 제어합니다.
+/// 연결 후 [messageStream]으로 서버 이벤트를 구독합니다. 타이머 명령은 REST로 보냅니다.
 class TimerWsClient {
   TimerWsClient({
     required Future<String?> Function() accessToken,
@@ -185,66 +184,9 @@ class TimerWsClient {
     }
   }
 
-  void _send(String type, Map<String, dynamic> payload) {
-    if (!isConnected || _channel == null) {
-      if (kDebugMode) debugPrint('⚠️ [WS] Not connected, cannot send $type');
-      return;
-    }
-    final msg = jsonEncode({'type': type, 'payload': payload});
-    _channel!.sink.add(msg);
-    if (kDebugMode && AppConfig.enableDebugLogging) {
-      debugPrint('📤 [WS] Sent $type');
-    }
-  }
-
   /// 연결 성공 시 재연결 카운트 리셋 (서버에서 connected 수신 후 호출 권장)
   void resetReconnectAttempts() {
     _reconnectAttempts = 0;
-  }
-
-  /// 타이머 생성 및 시작
-  ///
-  /// [allocatedDuration]은 서버에서 필수(양수, 초 단위)입니다.
-  void createTimer({
-    required int allocatedDuration,
-    String? title,
-    String? description,
-    String? scheduleId,
-    String? todoId,
-    List<String>? tagIds,
-  }) {
-    final payload = TimerCreatePayload(
-      allocatedDuration: allocatedDuration,
-      title: title,
-      description: description,
-      scheduleId: scheduleId,
-      todoId: todoId,
-      tagIds: tagIds,
-    );
-    _send('timer.create', payload.toJson());
-  }
-
-  /// 타이머 일시정지
-  void pauseTimer(String timerId) {
-    _send('timer.pause', TimerIdPayload(timerId: timerId).toJson());
-  }
-
-  /// 타이머 재개
-  void resumeTimer(String timerId) {
-    _send('timer.resume', TimerIdPayload(timerId: timerId).toJson());
-  }
-
-  /// 타이머 중지
-  void stopTimer(String timerId) {
-    _send('timer.stop', TimerIdPayload(timerId: timerId).toJson());
-  }
-
-  /// 활성 타이머 동기화 요청
-  void syncTimers({String? timerId, String scope = 'active'}) {
-    _send(
-      'timer.sync',
-      TimerSyncPayload(timerId: timerId, scope: scope).toJson(),
-    );
   }
 
   /// 연결 종료 (재연결하지 않음)

@@ -55,6 +55,42 @@ class TimerRepositoryImpl implements TimerRepository {
   }
 
   @override
+  Future<TimerRead> createTimer(TimerCreate data) async {
+    return _client.createTimerV1TimersPost(
+      body: data,
+      includeTodo: true,
+      includeSchedule: true,
+    );
+  }
+
+  @override
+  Future<TimerRead> pauseTimer(String timerId) async {
+    return _client.pauseTimerV1TimersTimerIdPausePatch(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+    );
+  }
+
+  @override
+  Future<TimerRead> resumeTimer(String timerId) async {
+    return _client.resumeTimerV1TimersTimerIdResumePatch(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+    );
+  }
+
+  @override
+  Future<TimerRead> stopTimer(String timerId) async {
+    return _client.stopTimerV1TimersTimerIdStopPost(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+    );
+  }
+
+  @override
   Future<TimerRead> updateTimer(String timerId, TimerUpdate data) async {
     return _client.updateTimerV1TimersTimerIdPatch(
       timerId: timerId,

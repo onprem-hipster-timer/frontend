@@ -21,6 +21,18 @@ abstract class TimerRepository {
     DateTime? endDate,
   });
 
+  /// 타이머 생성 및 시작. 시작된 타이머를 돌려준다.
+  Future<TimerRead> createTimer(TimerCreate data);
+
+  /// 타이머 일시정지 (RUNNING → PAUSED)
+  Future<TimerRead> pauseTimer(String timerId);
+
+  /// 타이머 재개 (PAUSED → RUNNING)
+  Future<TimerRead> resumeTimer(String timerId);
+
+  /// 타이머 종료 (RUNNING·PAUSED → COMPLETED)
+  Future<TimerRead> stopTimer(String timerId);
+
   /// 타이머 메타데이터 업데이트
   Future<TimerRead> updateTimer(String timerId, TimerUpdate data);
 
