@@ -31,4 +31,11 @@ void main() {
   test('타이머가 아닌 요청에는 붙이지 않는다', () {
     expect(intercept('/v1/todos').queryParameters, isNot(contains('timezone')));
   });
+
+  test('/v1/timers로 시작하는 다른 리소스 이름에는 붙이지 않는다', () {
+    expect(
+      intercept('/v1/timersheets').queryParameters,
+      isNot(contains('timezone')),
+    );
+  });
 }
