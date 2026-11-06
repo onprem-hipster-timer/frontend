@@ -3,13 +3,17 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 앱이 가진 내 타이머
 ///
 /// REST 응답과 실시간 이벤트를 같은 규칙으로 반영한다.
-/// - `updated_at`이 가진 값보다 이전이면 버리고, 같거나 나중이면 반영한다
+/// - `updated_at`이 본 적 있는 값보다 이전이면 버리고, 같거나 나중이면 반영한다.
+///   다시 맞추기로 목록에서 뺀 타이머의 `updated_at`도 기억한다
 /// - 삭제된 타이머 ID는 기록해 두고, 그 뒤에 오는 같은 ID는 버린다
 ///
 /// 규칙: backend docs/development/realtime-adapter.ko.md 5장
 /// 테스트: test/features/timer/domain/timer_ledger_test.dart
 class TimerLedger {
   final _timers = <String, TimerRead>{};
+
+  /// 타이머별로 본 가장 나중 `updated_at`
+  final _updatedAt = <String, DateTime>{};
   final _deleted = <String>{};
 
   /// 활성(RUNNING·PAUSED) 타이머. 최근에 시작한 순
@@ -20,8 +24,9 @@ class TimerLedger {
   /// [timer]를 반영한다.
   void apply(TimerRead timer) {
     if (_deleted.contains(timer.id)) return;
-    final held = _timers[timer.id];
-    if (held != null && timer.updatedAt.isBefore(held.updatedAt)) return;
+    final seen = _updatedAt[timer.id];
+    if (seen != null && timer.updatedAt.isBefore(seen)) return;
+    _updatedAt[timer.id] = timer.updatedAt;
     _timers[timer.id] = timer;
   }
 

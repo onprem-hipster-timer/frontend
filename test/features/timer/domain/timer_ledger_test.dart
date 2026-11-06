@@ -86,6 +86,22 @@ void main() {
       expect(ledger.active.map((t) => t.id), ['t2']);
     });
 
+    test('목록에서 뺀 타이머라도 그보다 이전 이벤트는 버린다', () {
+      ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 5));
+      ledger.resync([]);
+      ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 3));
+
+      expect(ledger.active, isEmpty);
+    });
+
+    test('목록에서 뺀 타이머라도 더 나중 이벤트는 다시 넣는다', () {
+      ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 5));
+      ledger.resync([]);
+      ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 7));
+
+      expect(ledger.active.single.id, 't1');
+    });
+
     test('목록의 타이머에도 updated_at 규칙을 쓴다', () {
       ledger.apply(_timer('t1', TimerStatus.paused, updatedMinute: 5));
       ledger.resync([_timer('t1', TimerStatus.running, updatedMinute: 4)]);
