@@ -23,6 +23,7 @@ part 'timer_providers.g.dart';
 ///
 /// 로그인된 경우에만 non-null. JWT가 아니라 사용자 ID를 지켜보므로, JWT가 갱신될 때마다
 /// 소켓을 다시 열지 않는다. 클라이언트가 (재)연결할 때마다 최신 JWT를 받아 쓴다.
+/// 앱이 포그라운드로 돌아오면 끊긴 연결을 백오프를 기다리지 않고 다시 연다.
 final timerWsClientProvider = Provider<TimerWsClient?>((ref) {
   final userId = ref.watch(currentUserProvider.select((user) => user?.id));
   if (userId == null) return null;
@@ -32,7 +33,11 @@ final timerWsClientProvider = Provider<TimerWsClient?>((ref) {
     accessToken: auth.freshAccessToken,
     refreshAccessToken: auth.refreshAccessToken,
   );
-  ref.onDispose(() => client.dispose());
+  final lifecycle = AppLifecycleListener(onResume: client.reconnectNow);
+  ref.onDispose(() {
+    lifecycle.dispose();
+    client.dispose();
+  });
 
   return client;
 });
