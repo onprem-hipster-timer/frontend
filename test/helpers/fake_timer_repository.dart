@@ -55,9 +55,6 @@ class FakeTimerRepository implements TimerRepository {
   }
 
   @override
-  Future<TimerRead?> getActiveTimer() async => null;
-
-  @override
   Future<List<TimerRead>> getTimerHistory() async => [];
 
   @override

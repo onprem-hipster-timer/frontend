@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -10,19 +9,6 @@ class TimerRepositoryImpl implements TimerRepository {
   final TimersClient _client;
 
   TimerRepositoryImpl(this._client);
-
-  @override
-  Future<TimerRead?> getActiveTimer() async {
-    try {
-      return await _client.getUserActiveTimerV1TimersActiveGet(
-        includeTodo: true,
-        includeSchedule: true,
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return null;
-      rethrow;
-    }
-  }
 
   @override
   Future<List<TimerRead>> getTimerHistory() async {
