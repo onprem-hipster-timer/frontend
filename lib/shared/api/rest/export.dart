@@ -53,6 +53,7 @@ export 'models/tag_stat.dart';
 export 'models/tag_update.dart';
 export 'models/time_slot_create.dart';
 export 'models/time_slot_read.dart';
+export 'models/timer_create.dart';
 export 'models/timer_read.dart';
 export 'models/timer_status.dart';
 export 'models/timer_update.dart';
