@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
@@ -389,6 +392,103 @@ void main() {
   });
 
   // ============================================================
+  // TimerPage — 연결된 Todo의 상태 (일시정지 후 바로 바꾸기)
+  // ============================================================
+  group('연결된 Todo 상태', () {
+    late _MockTodosClient todosApi;
+
+    setUpAll(() => registerFallbackValue(TodoUpdate()));
+
+    setUp(() {
+      todosApi = _MockTodosClient();
+      when(
+        () => todosApi.updateTodoV1TodosTodoIdPatch(
+          todoId: any(named: 'todoId'),
+          body: any(named: 'body'),
+          timezone: any(named: 'timezone'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async => makeTodo().copyWith(status: TodoStatus.done));
+    });
+
+    TimerRead withTodo(TimerStatus status) => makeTimer(
+      id: 'timer-1',
+      status: status,
+    ).copyWith(todoId: 'todo-1', todo: makeTodo());
+
+    Future<_FakeTimerController> pump(
+      WidgetTester tester,
+      TimerRead timer,
+    ) async {
+      final controller = _FakeTimerController();
+      await _pumpTimerPage(
+        tester,
+        timer: timer,
+        controller: controller,
+        overrides: [todosApiProvider.overrideWithValue(todosApi)],
+      );
+      return controller;
+    }
+
+    testWidgets('일시정지면 Todo 상태 선택기를 보여 주고 완료를 고르면 Todo만 바꾼다', (tester) async {
+      final controller = await pump(tester, withTodo(TimerStatus.paused));
+
+      await tester.tap(find.byType(TodoStatusSelector));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(PopupMenuItem<TodoStatus>),
+          matching: find.text(TodoStatus.done.label),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final body =
+          verify(
+                () => todosApi.updateTodoV1TodosTodoIdPatch(
+                  todoId: 'todo-1',
+                  body: captureAny(named: 'body'),
+                  timezone: any(named: 'timezone'),
+                  options: any(named: 'options'),
+                ),
+              ).captured.single
+              as TodoUpdate;
+      expect(body.status, TodoStatus.done);
+      expect(controller.stopCalled, isFalse);
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('실행 중이면 Todo 상태 아이콘만 보여 준다', (tester) async {
+      await pump(tester, withTodo(TimerStatus.running));
+
+      expect(find.byType(TodoStatusSelector), findsNothing);
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byType(CurrentTaskDisplay),
+          matching: find.byIcon(TodoStatus.unscheduled.icon),
+        ),
+      );
+      expect(
+        icon.color,
+        TodoStatus.unscheduled.color(tester.element(find.byType(TimerPage))),
+      );
+    });
+
+    testWidgets('연결된 Todo가 없으면 상태를 보여 주지 않는다', (tester) async {
+      await pump(tester, makeTimer(id: 'timer-1', status: TimerStatus.paused));
+
+      expect(find.byType(TodoStatusSelector), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(CurrentTaskDisplay),
+          matching: find.byIcon(TodoStatus.unscheduled.icon),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
+  // ============================================================
   // TimerPage — 새 작업 시작 다이얼로그의 집중 시간
   // ============================================================
   group('새 작업 시작 집중 시간', () {
@@ -436,15 +536,19 @@ Future<void> _pumpTimerPage(
   required TimerRead? timer,
   List<TimerRead>? history,
   required _FakeTimerController controller,
+  List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
     pumpApp(
       const TimerPage(),
-      overrides: _timerOverrides(
-        timer: timer,
-        history: history ?? [?timer],
-        controller: controller,
-      ),
+      overrides: [
+        ..._timerOverrides(
+          timer: timer,
+          history: history ?? [?timer],
+          controller: controller,
+        ),
+        ...overrides,
+      ],
     ),
   );
   await tester.pumpAndSettle();
@@ -504,6 +608,8 @@ Finder _historyCompleteButton() {
   );
   return find.ancestor(of: iconInButton, matching: find.byType(IconButton));
 }
+
+class _MockTodosClient extends Mock implements TodosClient {}
 
 class _FakeTimerController extends TimerController {
   bool stopCalled = false;

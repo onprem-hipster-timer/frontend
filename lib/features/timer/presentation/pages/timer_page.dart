@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -380,6 +381,7 @@ class DigitalClock extends StatelessWidget {
 /// 현재 작업 표시 위젯
 ///
 /// 집중 시간이 끝나면([timeUp]) 상태를 '시간 종료'로 표시합니다.
+/// 연결된 Todo가 있으면 제목 옆에 Todo 상태를 표시하고, 일시정지 중에는 그 자리에서 바꿀 수 있습니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
   final bool timeUp;
@@ -419,6 +421,8 @@ class CurrentTaskDisplay extends StatelessWidget {
     final statusColor = timeUp || timer!.status != TimerStatus.running
         ? theme.colorScheme.error
         : theme.colorScheme.primary;
+    final todo = timer!.todo;
+    final todoIconSize = compact ? 20.0 : 24.0;
 
     return Column(
       children: [
@@ -440,16 +444,35 @@ class CurrentTaskDisplay extends StatelessWidget {
           ),
         ),
         SizedBox(height: compact ? 4 : 8),
-        Text(
-          taskName,
-          style:
-              (compact
-                      ? theme.textTheme.titleMedium
-                      : theme.textTheme.titleLarge)
-                  ?.copyWith(fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (todo != null) ...[
+              if (timer!.status == TimerStatus.paused)
+                TodoStatusSelector(todo: todo, iconSize: todoIconSize)
+              else
+                Icon(
+                  todo.status.icon,
+                  color: todo.status.color(context),
+                  size: todoIconSize,
+                  semanticLabel: todo.status.label,
+                ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Text(
+                taskName,
+                style:
+                    (compact
+                            ? theme.textTheme.titleMedium
+                            : theme.textTheme.titleLarge)
+                        ?.copyWith(fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         if (!compact && timer!.startedAt != null) ...[
           const SizedBox(height: 4),
