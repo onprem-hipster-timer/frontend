@@ -40,6 +40,14 @@ class AppConfig {
     return url;
   }
 
+  /// 타이머 실시간 소켓 경로. backend의 `REALTIME_BACKEND`와 같은 값을 넣는다.
+  ///
+  /// `inprocess`(기본): `/v1/ws/timers`, `cloudflare`: `/realtime/ws`
+  static String get realtimeWsPath => switch (_readEnv('REALTIME_BACKEND')) {
+    'cloudflare' => '/realtime/ws',
+    _ => '/v1/ws/timers',
+  };
+
   /// HTTP 연결 타임아웃
   static Duration get connectTimeout {
     final seconds =

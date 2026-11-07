@@ -7,7 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Changed
+
+#### Timer
+- 타이머 시작·일시정지·재개·정지를 REST(`POST /v1/timers`, `PATCH /v1/timers/{id}/pause`·`resume`, `POST /v1/timers/{id}/stop`)로 보낸다
+- 타이머 REST 요청에 `timezone=UTC`를 붙인다
+- 경과 시간 표시를 `displayElapsed` 하나로 통일 (RUNNING: `elapsed_time + (now - started_at)`, 그 외: `elapsed_time`)
+  - 타이머 화면, 일정 상세의 타이머 목록, Todo 목록이 같은 계산을 쓴다
+  - `now`는 타이머 REST 응답의 `Date` 헤더로 보정한 서버 기준 시각이다
+- 타이머 화면은 남은 시간(`allocated_duration - displayElapsed`, 0 아래로 내려가지 않음)을 센다
+  - 0이 되면 `00:00:00`과 '시간 종료'로 표시한다. 타이머는 사용자가 완료할 때까지 RUNNING으로 남는다
+  - 타이머 목록의 진행 중·일시정지 항목도 남은 시간, 끝난 항목은 경과 시간을 보여 준다
+- 새 타이머의 기본 집중 시간(`allocated_duration`)을 25분으로. 새 작업 시작에서 1~600분을 입력하거나 15·25·45·60분 칩으로 채운다
+- 타이머 화면의 정지를 '완료'로 표시 (버튼, 확인 다이얼로그, 알림). 일시정지·재개는 확인 없이 바로 보낸다
+
+#### Timer WebSocket
+- 소켓을 수신 전용으로 바꿈. 클라이언트는 45초마다 `ping`만 보낸다
+- 소켓 주소를 `REALTIME_BACKEND`(`inprocess`: `/v1/ws/timers`, `cloudflare`: `/realtime/ws`)로 고른다
+- 서버 메시지를 이벤트 봉투(`id`·`type`·`from_user`·`timestamp`·`payload`)로 받는다
+  - 같은 `id`는 한 번만 반영하고, `updated_at`이 가진 값보다 이전인 타이머는 버린다 (REST 응답에도 같은 규칙)
+  - `timer.deleted`를 받은 타이머는 이후 이벤트로 되살리지 않는다
+  - 이벤트는 타이머 자체 필드만 갱신하고, 관계 필드(일정·Todo 등)는 REST로 채운다
+    (처음 보는 타이머, 연결이 바뀐 타이머, `update` 이벤트는 `GET /v1/timers/{id}`로 다시 받는다)
+  - (재)연결마다 REST로 활성 타이머를 다시 맞춘다
+- 닫힘 코드별 재연결: `1008`은 JWT를 한 번 새로 받아 다시 연결하고 또 거부되면 멈춘다, `4000`은 바로,
+  그 외는 지수 백오프(1s부터 두 배, 상한 30s)와 지터로 횟수 제한 없이 다시 연결한다
+- 앱이 포그라운드로 돌아오면 끊긴 소켓을 바로 다시 연결한다
+- 친구 알림은 `from_user`가 내가 아닌 이벤트의 `actor_name`·`action`으로 띄운다
+
+#### API
+- OpenAPI 스펙 v2026.11.07-5ef2872 반영 및 API 클라이언트 재생성
+
+### Added
+
+#### Timer
+- 타이머 화면의 작업 제목 옆에 연결된 Todo의 상태 아이콘. 일시정지 중에는 그 자리에서 상태를 바꾼다
+  - `PATCH /v1/todos/{id}`만 보낸다. Todo가 완료·취소되면 서버가 타이머를 끝내고 `timer.updated`로 알린다
+  - 바꾼 상태는 PATCH 응답으로 바로 보여 준다. 다른 기기에서 바뀐 Todo는 타이머를 다시 읽을 때 반영하고 Todo 목록도 다시 읽게 한다
+
+#### Todo
+- Todo 목록에 하위 Todo를 포함한 누적 집중 시간
+  - 끝난(COMPLETED) 타이머의 경과 시간에 진행 중·일시정지 타이머의 `displayElapsed`를 더해 1초마다 갱신한다
+  - 취소한 타이머는 더하지 않는다. 활성 타이머가 끝나면 타이머 목록을 다시 읽는다
+- Todo·일정 삭제 시 서버가 연결 타이머 처리(`linked_timer_policy`)를 요구하면 '연결만 해제'·'타이머 삭제' 중 골라 다시 삭제한다
+
+#### Config
+- `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
+
+### Removed
+
+#### Timer WebSocket
+- WebSocket 명령(`timer.create`·`pause`·`resume`·`stop`·`sync`)과 `timer.sync_result`·`timer.friend_activity` 처리
+- 소켓 연결의 `timezone` 쿼리
+
+### Fixed
+
+#### Timer WebSocket
+- 소켓이 다시 연결되면 연결 오류 배너를 지운다
+- 관계 필드를 채우는 `GET /v1/timers/{id}`가 실패하면 2·4·8초 뒤 다시 받는다. 그 사이 다른 REST 응답으로 채워졌거나 지워진 타이머는 다시 받지 않는다
+
+#### Todo
+- 누적 집중 시간의 타이머 목록 조회(`GET /v1/timers`)도 타이머 REST 요청으로 보내 `timezone=UTC`를 붙이고 응답의 `Date` 헤더로 서버 시각을 맞춘다
 
 ---
 

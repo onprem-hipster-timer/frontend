@@ -5,11 +5,6 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// Presentation 레이어는 이 인터페이스에만 의존하며,
 /// 실제 데이터 소스(REST API, WebSocket, 캐시 등)는 Data 레이어에서 구현합니다.
 abstract class TimerRepository {
-  /// 현재 사용자의 활성 타이머 조회 (RUNNING 또는 PAUSED)
-  ///
-  /// 활성 타이머가 없으면 null 반환.
-  Future<TimerRead?> getActiveTimer();
-
   /// 타이머 히스토리 조회 (RUNNING, PAUSED, COMPLETED)
   Future<List<TimerRead>> getTimerHistory();
 
@@ -20,6 +15,21 @@ abstract class TimerRepository {
     DateTime? startDate,
     DateTime? endDate,
   });
+
+  /// 타이머 하나를 일정·Todo를 포함해 조회
+  Future<TimerRead> getTimer(String timerId);
+
+  /// 타이머 생성 및 시작. 시작된 타이머를 돌려준다.
+  Future<TimerRead> createTimer(TimerCreate data);
+
+  /// 타이머 일시정지 (RUNNING → PAUSED)
+  Future<TimerRead> pauseTimer(String timerId);
+
+  /// 타이머 재개 (PAUSED → RUNNING)
+  Future<TimerRead> resumeTimer(String timerId);
+
+  /// 타이머 종료 (RUNNING·PAUSED → COMPLETED)
+  Future<TimerRead> stopTimer(String timerId);
 
   /// 타이머 메타데이터 업데이트
   Future<TimerRead> updateTimer(String timerId, TimerUpdate data);

@@ -5,6 +5,7 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/linked_timer_policy.dart';
 import '../models/resource_scope.dart';
 import '../models/schedule_create.dart';
 import '../models/schedule_read.dart';
@@ -133,16 +134,20 @@ abstract class SchedulesClient {
   /// - 일반 일정: schedule_id로 조회하여 삭제.
   /// - 가상 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송.
   ///
-  /// source-linked 일정인데 `source_todo_policy`가 누락되면 422를 반환합니다.
+  /// source-linked 일정인데 `source_todo_policy`가 누락되거나, 연결 타이머가 있는데.
+  /// `linked_timer_policy`가 누락되면 422를 반환합니다.
   ///
   /// [instanceStart] - 반복 일정 인스턴스 시작 시간 (ISO 8601 형식).
   ///
   /// [sourceTodoPolicy] - source Todo 처리 정책 — 이 일정이 Todo의 마감 투영(source-linked)인 경우 필수, 서버 기본값 없음. clear_deadline: Todo의 마감도 제거 / keep_deadline: 마감 유지.
+  ///
+  /// [linkedTimerPolicy] - 연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행). 마지막 반복 인스턴스 삭제로 원본이 지워질 때는 생략하면 unlink.
   @DELETE('/v1/schedules/{schedule_id}')
   Future<void> deleteScheduleV1SchedulesScheduleIdDelete({
     @Path('schedule_id') required String scheduleId,
     @Query('instance_start') DateTime? instanceStart,
     @Query('source_todo_policy') SourceTodoPolicy? sourceTodoPolicy,
+    @Query('linked_timer_policy') LinkedTimerPolicy? linkedTimerPolicy,
     @DioOptions() RequestOptions? options,
   });
 

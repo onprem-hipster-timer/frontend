@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
@@ -49,14 +50,22 @@ class TodoActions {
         if (policy == null || !context.mounted) return;
       }
       try {
-        await deleteTodoMutation.run(
-          ref,
-          (tsx) => tsx
-              .get(todoMutationsProvider.notifier)
-              .delete(todo.id, linkedSchedulePolicy: policy),
+        final deleted = await deleteAskingLinkedTimerPolicy(
+          context,
+          itemTitle: todo.title,
+          delete: (timerPolicy) => deleteTodoMutation.run(
+            ref,
+            (tsx) => tsx
+                .get(todoMutationsProvider.notifier)
+                .delete(
+                  todo.id,
+                  linkedSchedulePolicy: policy,
+                  linkedTimerPolicy: timerPolicy,
+                ),
+          ),
         );
 
-        if (context.mounted) {
+        if (deleted && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('${todo.title}이(가) 삭제되었습니다'),

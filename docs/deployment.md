@@ -76,6 +76,7 @@ checkout
 | 변수 | 용도 | 공개 여부 |
 |------|------|-----------|
 | `API_BASE_URL` | 백엔드 API 서버 URL. 인증(Ory Kratos)도 `API_BASE_URL/auth`로 부른다 | 클라이언트 공개 값 |
+| `REALTIME_BACKEND` | 타이머 실시간 소켓 모드. backend의 `REALTIME_BACKEND`와 같은 값을 넣는다. `inprocess`(기본): `/v1/ws/timers`, `cloudflare`: `/realtime/ws` | 클라이언트 공개 값 |
 
 ### 레포에 커밋하지 않는 이유
 
@@ -132,6 +133,7 @@ SPA(Single Page Application) 라우팅을 위해 모든 경로를 `index.html`�
 | Variable | 용도 |
 |----------|------|
 | `API_BASE_URL` | 백엔드 API 서버 URL (인증은 `API_BASE_URL/auth`) |
+| `REALTIME_BACKEND` | 타이머 실시간 소켓 모드 (`inprocess` 또는 `cloudflare`, 비우면 `inprocess`) |
 
 !!! tip "환경변수 변경 시 재배포"
     GitHub vars를 변경해도 자동으로 재배포되지 않습니다.
