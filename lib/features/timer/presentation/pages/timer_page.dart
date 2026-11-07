@@ -81,17 +81,17 @@ String friendActivityMessage(TimerWsTimerEvent event) {
   };
 }
 
-const _stopTimerConfirmTitle = '타이머 종료';
+const _stopTimerConfirmTitle = '작업 완료';
 const _stopTimerConfirmContent =
-    '정말 종료하시겠습니까?\n정지할 경우 다시 시작이 불가합니다.\n일시 정지를 이용해 주세요.';
+    '작업을 완료하시겠습니까?\n완료한 타이머는 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
 
-/// 타이머 정지 확인 다이얼로그. 사용자가 종료를 확인하면 true.
+/// 타이머 완료 확인 다이얼로그. 사용자가 완료를 확인하면 true.
 Future<bool> _confirmStopTimer(BuildContext context) {
   return showConfirmDialog(
     context,
     title: _stopTimerConfirmTitle,
     content: _stopTimerConfirmContent,
-    confirmText: '종료',
+    confirmText: '완료',
     destructive: true,
   );
 }
@@ -258,7 +258,7 @@ class TimerDashboard extends ConsumerWidget {
     );
   }
 
-  /// 타이머 정지
+  /// 타이머 완료 (정지)
   void _stopTimer(BuildContext context, WidgetRef ref) async {
     final activeTimer = ref
         .read(activeTimerProvider)
@@ -290,7 +290,7 @@ class TimerDashboard extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('타이머가 정지되었습니다'),
+            content: const Text('작업을 완료했습니다'),
             action: SnackBarAction(
               label: '새 타이머 시작',
               onPressed: () {
@@ -305,7 +305,7 @@ class TimerDashboard extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('타이머 정지 실패: ${error.toString()}'),
+            content: Text('완료 실패: ${error.toString()}'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -510,16 +510,16 @@ class TimerControlButton extends StatelessWidget {
         ),
       );
     } else if (activeTimer!.status == TimerStatus.running) {
-      // 위계: 자주 쓰는 일시정지를 큰 주 버튼(primary), 비가역 정지는
+      // 위계: 자주 쓰는 일시정지를 큰 주 버튼(primary), 비가역 완료는
       // 작은 보조 버튼(error)으로 + 간격을 넓혀 오탭을 방지한다.
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FloatingActionButton.small(
             onPressed: onStop,
-            tooltip: '정지',
+            tooltip: '완료',
             backgroundColor: theme.colorScheme.error,
-            child: Icon(Icons.stop, color: theme.colorScheme.onError),
+            child: Icon(Icons.check, color: theme.colorScheme.onError),
           ),
           const SizedBox(width: 40),
           FloatingActionButton(
@@ -535,9 +535,9 @@ class TimerControlButton extends StatelessWidget {
         children: [
           FloatingActionButton.small(
             onPressed: onStop,
-            tooltip: '정지',
+            tooltip: '완료',
             backgroundColor: theme.colorScheme.error,
-            child: Icon(Icons.stop, color: theme.colorScheme.onError),
+            child: Icon(Icons.check, color: theme.colorScheme.onError),
           ),
           const SizedBox(width: 40),
           FloatingActionButton(
@@ -675,7 +675,7 @@ class TimerHistoryList extends ConsumerWidget {
 
 /// 타이머 히스토리 항목
 ///
-/// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·정지 버튼을 제공합니다.
+/// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·완료 버튼을 제공합니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
@@ -866,7 +866,7 @@ class TimerHistoryItem extends ConsumerWidget {
                     ),
                   ),
                 IconButton(
-                  icon: Icon(Icons.stop, color: theme.colorScheme.error),
+                  icon: Icon(Icons.check, color: theme.colorScheme.error),
                   onPressed: () async {
                     final confirmed = await _confirmStopTimer(context);
                     if (!context.mounted || !confirmed) return;
@@ -876,10 +876,10 @@ class TimerHistoryItem extends ConsumerWidget {
                       action: () => ref
                           .read(timerControllerProvider.notifier)
                           .stopTimer(timerId: timer.id),
-                      errorLabel: '정지',
+                      errorLabel: '완료',
                     );
                   },
-                  tooltip: '정지',
+                  tooltip: '완료',
                 ),
               ],
             ],

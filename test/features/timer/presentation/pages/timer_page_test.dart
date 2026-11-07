@@ -13,8 +13,9 @@ import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
-const _confirmTitle = '타이머 종료';
-const _confirmContent = '정말 종료하시겠습니까?\n정지할 경우 다시 시작이 불가합니다.\n일시 정지를 이용해 주세요.';
+const _confirmTitle = '작업 완료';
+const _confirmContent =
+    '작업을 완료하시겠습니까?\n완료한 타이머는 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
 
 void main() {
   TimerWsTimerEvent activity({
@@ -176,22 +177,22 @@ void main() {
   });
 
   // ============================================================
-  // TimerPage — 정지 확인 모달 (대시보드 + 히스토리)
+  // TimerPage — 완료 확인 모달 (대시보드 + 히스토리)
   // ============================================================
-  group('TimerPage stop confirmation', () {
-    testWidgets('정지 버튼을 탭하면 확인 다이얼로그를 표시한다', (tester) async {
+  group('TimerPage 완료 확인', () {
+    testWidgets('완료 버튼을 탭하면 확인 다이얼로그를 표시한다', (tester) async {
       final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
       final controller = _FakeTimerController();
 
       await _pumpTimerPage(tester, timer: timer, controller: controller);
 
-      await tester.tap(_dashboardFabByIcon(Icons.stop));
+      await tester.tap(_dashboardFabByIcon(Icons.check));
       await tester.pumpAndSettle();
 
       expect(find.text(_confirmTitle), findsOneWidget);
       expect(find.text(_confirmContent), findsOneWidget);
       expect(find.widgetWithText(TextButton, '취소'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, '종료'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, '완료'), findsOneWidget);
     });
 
     testWidgets('취소를 탭하면 다이얼로그를 닫고 정지하지 않는다', (tester) async {
@@ -200,7 +201,7 @@ void main() {
 
       await _pumpTimerPage(tester, timer: timer, controller: controller);
 
-      await tester.tap(_dashboardFabByIcon(Icons.stop));
+      await tester.tap(_dashboardFabByIcon(Icons.check));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TextButton, '취소'));
       await tester.pumpAndSettle();
@@ -209,44 +210,84 @@ void main() {
       expect(controller.stopCalled, isFalse);
     });
 
-    testWidgets('종료를 탭하면 정지하고 새 타이머 시작 액션을 표시한다', (tester) async {
+    testWidgets('완료를 탭하면 정지하고 새 타이머 시작 액션을 표시한다', (tester) async {
       final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
       final controller = _FakeTimerController();
 
       await _pumpTimerPage(tester, timer: timer, controller: controller);
 
-      await tester.tap(_dashboardFabByIcon(Icons.stop));
+      await tester.tap(_dashboardFabByIcon(Icons.check));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '종료'));
+      await tester.tap(find.widgetWithText(FilledButton, '완료'));
       await tester.pumpAndSettle();
 
       expect(controller.stopCalled, isTrue);
       // 확인 시점에 캡처한 활성 타이머 id로 정지해야 한다 (async race 방지).
       expect(controller.stoppedTimerId, 'timer-1');
-      expect(find.text('타이머가 정지되었습니다'), findsOneWidget);
+      expect(find.text('작업을 완료했습니다'), findsOneWidget);
       expect(find.text('새 타이머 시작'), findsOneWidget);
     });
 
-    testWidgets('RUNNING 상태에서 일시정지는 큰 FAB이고 정지는 작은 FAB이다', (tester) async {
+    testWidgets('RUNNING 상태에서 일시정지는 큰 FAB이고 완료는 작은 FAB이다', (tester) async {
       final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
       final controller = _FakeTimerController();
 
       await _pumpTimerPage(tester, timer: timer, controller: controller);
 
-      final stopSize = tester.getSize(_dashboardFabByIcon(Icons.stop));
+      final completeSize = tester.getSize(_dashboardFabByIcon(Icons.check));
       final pauseSize = tester.getSize(_dashboardFabByIcon(Icons.pause));
 
-      expect(pauseSize.width, greaterThan(stopSize.width));
-      expect(pauseSize.height, greaterThan(stopSize.height));
+      expect(pauseSize.width, greaterThan(completeSize.width));
+      expect(pauseSize.height, greaterThan(completeSize.height));
     });
 
-    testWidgets('히스토리 목록 정지 버튼도 확인 다이얼로그를 거친다', (tester) async {
+    testWidgets('대시보드와 타이머 목록의 완료 버튼은 툴팁이 완료다', (tester) async {
       final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
       final controller = _FakeTimerController();
 
       await _pumpTimerPage(tester, timer: timer, controller: controller);
 
-      await tester.tap(_historyStopButton());
+      expect(find.byTooltip('완료'), findsNWidgets(2));
+      expect(find.byTooltip('정지'), findsNothing);
+    });
+
+    testWidgets('일시정지는 확인 없이 바로 보낸다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(
+        tester,
+        timer: makeTimer(id: 'timer-1', status: TimerStatus.running),
+        controller: controller,
+      );
+      await tester.tap(_dashboardFabByIcon(Icons.pause));
+      await tester.pump();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(controller.paused, isTrue);
+    });
+
+    testWidgets('재개는 확인 없이 바로 보낸다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(
+        tester,
+        timer: makeTimer(id: 'timer-1', status: TimerStatus.paused),
+        controller: controller,
+      );
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pump();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(controller.resumed, isTrue);
+    });
+
+    testWidgets('히스토리 목록 완료 버튼도 확인 다이얼로그를 거친다', (tester) async {
+      final timer = makeTimer(id: 'timer-1', status: TimerStatus.running);
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: timer, controller: controller);
+
+      await tester.tap(_historyCompleteButton());
       await tester.pumpAndSettle();
 
       expect(find.text(_confirmTitle), findsOneWidget);
@@ -456,10 +497,10 @@ Finder _historyItem(String timerId) => find.byWidgetPredicate(
   (widget) => widget is TimerHistoryItem && widget.timer.id == timerId,
 );
 
-Finder _historyStopButton() {
+Finder _historyCompleteButton() {
   final iconInButton = find.descendant(
     of: find.byType(IconButton),
-    matching: find.byIcon(Icons.stop),
+    matching: find.byIcon(Icons.check),
   );
   return find.ancestor(of: iconInButton, matching: find.byType(IconButton));
 }
@@ -468,6 +509,8 @@ class _FakeTimerController extends TimerController {
   bool stopCalled = false;
   String? stoppedTimerId;
   int? startedAllocatedDurationSeconds;
+  bool paused = false;
+  bool resumed = false;
 
   @override
   FutureOr<void> build() {}
@@ -479,10 +522,10 @@ class _FakeTimerController extends TimerController {
   }
 
   @override
-  Future<void> pauseTimer({String? timerId}) async {}
+  Future<void> pauseTimer({String? timerId}) async => paused = true;
 
   @override
-  Future<void> resumeTimer({String? timerId}) async {}
+  Future<void> resumeTimer({String? timerId}) async => resumed = true;
 
   @override
   Future<void> startTimer({
