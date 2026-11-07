@@ -73,15 +73,18 @@ class ScheduleMutations extends _$ScheduleMutations {
   ///
   /// [id] 삭제할 일정 ID
   /// [sourceTodoPolicy] 할 일 마감일에서 만들어진 일정이면 필수 (없으면 서버가 422)
+  /// [linkedTimerPolicy] 연결된 타이머가 있으면 필수 (없으면 서버가 422)
   Future<void> deleteSchedule(
     String id, {
     SourceTodoPolicy? sourceTodoPolicy,
+    LinkedTimerPolicy? linkedTimerPolicy,
   }) async {
     try {
       final api = ref.read(schedulesApiProvider);
       await api.deleteScheduleV1SchedulesScheduleIdDelete(
         scheduleId: id,
         sourceTodoPolicy: sourceTodoPolicy,
+        linkedTimerPolicy: linkedTimerPolicy,
       );
       ref.invalidate(currentSchedulesProvider);
       debugPrint('일정이 성공적으로 삭제되었습니다: $id');

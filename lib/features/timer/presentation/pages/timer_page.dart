@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -81,19 +83,39 @@ String friendActivityMessage(TimerWsTimerEvent event) {
   };
 }
 
-const _stopTimerConfirmTitle = '타이머 종료';
+const _stopTimerConfirmTitle = '작업 완료';
 const _stopTimerConfirmContent =
-    '정말 종료하시겠습니까?\n정지할 경우 다시 시작이 불가합니다.\n일시 정지를 이용해 주세요.';
+    '작업을 완료하시겠습니까?\n완료한 타이머는 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
 
-/// 타이머 정지 확인 다이얼로그. 사용자가 종료를 확인하면 true.
+/// 타이머 완료 확인 다이얼로그. 사용자가 완료를 확인하면 true.
 Future<bool> _confirmStopTimer(BuildContext context) {
   return showConfirmDialog(
     context,
     title: _stopTimerConfirmTitle,
     content: _stopTimerConfirmContent,
-    confirmText: '종료',
+    confirmText: '완료',
     destructive: true,
   );
+}
+
+/// 새 작업 시작 다이얼로그에서 고를 수 있는 집중 시간
+const _focusDurationPresets = [
+  Duration(minutes: 15),
+  Duration(minutes: 25),
+  Duration(minutes: 45),
+  Duration(minutes: 60),
+];
+
+/// 새 작업 시작 다이얼로그에 입력할 수 있는 가장 긴 집중 시간 (분)
+const _maxFocusMinutes = 600;
+
+/// [text]가 1~[_maxFocusMinutes] 사이의 분이면 그 값, 아니면 null
+int? _focusMinutes(String text) {
+  final minutes = int.tryParse(text);
+  if (minutes == null || minutes < 1 || minutes > _maxFocusMinutes) {
+    return null;
+  }
+  return minutes;
 }
 
 /// 타이머 대시보드 (상단 영역)
@@ -108,6 +130,20 @@ class TimerDashboard extends ConsumerWidget {
     final activeTimerAsync = ref.watch(activeTimerProvider);
     final timerTicker = ref.watch(timerTickerProvider);
     final controllerState = ref.watch(timerControllerProvider);
+    final activeTimer = activeTimerAsync.when(
+      data: (timer) => timer,
+      loading: () => null,
+      error: (error, stack) => null,
+    );
+    final computed = activeTimer == null
+        ? Duration.zero
+        : displayRemaining(activeTimer, ref.watch(serverClockProvider).now());
+    final remaining = timerTicker.when(
+      data: (duration) => duration,
+      loading: () => computed,
+      error: (error, stack) => computed,
+    );
+    final timeUp = activeTimer != null && remaining == Duration.zero;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -132,30 +168,24 @@ class TimerDashboard extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              timerTicker.when(
-                data: (duration) =>
-                    DigitalClock(duration: duration, compact: compact),
-                loading: () =>
-                    DigitalClock(duration: Duration.zero, compact: compact),
-                error: (error, stack) =>
-                    DigitalClock(duration: Duration.zero, compact: compact),
+              DigitalClock(
+                duration: remaining,
+                timeUp: timeUp,
+                compact: compact,
               ),
               SizedBox(height: compact ? 8 : 12),
-              activeTimerAsync.when(
-                data: (activeTimer) =>
-                    CurrentTaskDisplay(timer: activeTimer, compact: compact),
-                loading: () =>
-                    CurrentTaskDisplay(timer: null, compact: compact),
-                error: (error, stack) =>
-                    CurrentTaskDisplay(timer: null, compact: compact),
+              CurrentTaskDisplay(
+                timer: activeTimer,
+                timeUp: timeUp,
+                compact: compact,
+                onTodoChanged: (todo) {
+                  if (!context.mounted) return;
+                  ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
+                },
               ),
               SizedBox(height: compact ? 10 : 16),
               TimerControlButton(
-                activeTimer: activeTimerAsync.when(
-                  data: (timer) => timer,
-                  loading: () => null,
-                  error: (error, stack) => null,
-                ),
+                activeTimer: activeTimer,
                 isLoading: controllerState.isLoading,
                 onStart: () => _showStartTimerDialog(context, ref),
                 onStop: () => _stopTimer(context, ref),
@@ -172,6 +202,9 @@ class TimerDashboard extends ConsumerWidget {
   /// 타이머 시작 다이얼로그 표시
   void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
+    final minutesController = TextEditingController(
+      text: '${defaultFocusDuration.inMinutes}',
+    );
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -188,6 +221,43 @@ class TimerDashboard extends ConsumerWidget {
                 border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 16),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: minutesController,
+              builder: (_, value, _) {
+                final minutes = _focusMinutes(value.text);
+                return Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (final preset in _focusDurationPresets)
+                      ChoiceChip(
+                        label: Text('${preset.inMinutes}분'),
+                        selected: preset.inMinutes == minutes,
+                        onSelected: (_) =>
+                            minutesController.text = '${preset.inMinutes}',
+                      ),
+                    SizedBox(
+                      width: 96,
+                      child: TextFormField(
+                        controller: minutesController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          suffixText: '분',
+                          border: const OutlineInputBorder(),
+                          errorText: minutes == null
+                              ? '1~$_maxFocusMinutes분'
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ],
         ),
         actions: [
@@ -195,40 +265,53 @@ class TimerDashboard extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('취소'),
           ),
-          FilledButton(
-            onPressed: () async {
-              final title = controller.text.trim().isEmpty
-                  ? '새 작업'
-                  : controller.text.trim();
-              Navigator.of(dialogContext).pop();
-              try {
-                await ref
-                    .read(timerControllerProvider.notifier)
-                    .startTimer(title: title);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('타이머를 시작했습니다')));
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('타이머 시작 실패: $e'),
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                    ),
-                  );
-                }
-              }
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: minutesController,
+            builder: (_, value, _) {
+              final minutes = _focusMinutes(value.text);
+              return FilledButton(
+                onPressed: minutes == null
+                    ? null
+                    : () async {
+                        final title = controller.text.trim().isEmpty
+                            ? '새 작업'
+                            : controller.text.trim();
+                        Navigator.of(dialogContext).pop();
+                        try {
+                          await ref
+                              .read(timerControllerProvider.notifier)
+                              .startTimer(
+                                title: title,
+                                allocatedDurationSeconds: minutes * 60,
+                              );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('타이머를 시작했습니다')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('타이머 시작 실패: $e'),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: const Text('시작'),
+              );
             },
-            child: const Text('시작'),
           ),
         ],
       ),
     );
   }
 
-  /// 타이머 정지
+  /// 타이머 완료 (정지)
   void _stopTimer(BuildContext context, WidgetRef ref) async {
     final activeTimer = ref
         .read(activeTimerProvider)
@@ -260,7 +343,7 @@ class TimerDashboard extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('타이머가 정지되었습니다'),
+            content: const Text('작업을 완료했습니다'),
             action: SnackBarAction(
               label: '새 타이머 시작',
               onPressed: () {
@@ -275,7 +358,7 @@ class TimerDashboard extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('타이머 정지 실패: ${error.toString()}'),
+            content: Text('완료 실패: ${error.toString()}'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -312,12 +395,18 @@ class TimerDashboard extends ConsumerWidget {
 
 /// 디지털 시계 위젯
 ///
-/// HH:MM:SS 형식으로 경과 시간을 크게 표시합니다.
+/// HH:MM:SS 형식으로 남은 시간을 크게 표시합니다. 집중 시간이 끝나면([timeUp]) 에러 색으로 표시합니다.
 class DigitalClock extends StatelessWidget {
   final Duration duration;
+  final bool timeUp;
   final bool compact;
 
-  const DigitalClock({super.key, required this.duration, this.compact = false});
+  const DigitalClock({
+    super.key,
+    required this.duration,
+    this.timeUp = false,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -330,7 +419,9 @@ class DigitalClock extends StatelessWidget {
         fontFamily: 'monospace', // 등폭 폰트 사용
         fontSize: compact ? 46 : 56,
         fontWeight: FontWeight.w300,
-        color: duration.inSeconds > 0
+        color: timeUp
+            ? theme.colorScheme.error
+            : duration.inSeconds > 0
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
         letterSpacing: compact ? 0 : 4,
@@ -340,14 +431,22 @@ class DigitalClock extends StatelessWidget {
 }
 
 /// 현재 작업 표시 위젯
+///
+/// 집중 시간이 끝나면([timeUp]) 상태를 '시간 종료'로 표시합니다.
+/// 연결된 Todo가 있으면 제목 옆에 Todo 상태를 표시하고, 일시정지 중에는 그 자리에서 바꿀 수 있습니다.
+/// 바꾼 뒤 서버가 돌려준 Todo로 [onTodoChanged]를 부릅니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
+  final bool timeUp;
   final bool compact;
+  final ValueChanged<TodoRead>? onTodoChanged;
 
   const CurrentTaskDisplay({
     super.key,
     required this.timer,
+    this.timeUp = false,
     this.compact = false,
+    this.onTodoChanged,
   });
 
   @override
@@ -369,10 +468,16 @@ class CurrentTaskDisplay extends StatelessWidget {
         timer!.schedule?.title ??
         '알 수 없는 작업';
 
-    final statusText = timer!.status == TimerStatus.running ? '실행 중' : '일시정지';
-    final statusColor = timer!.status == TimerStatus.running
-        ? theme.colorScheme.primary
-        : theme.colorScheme.error;
+    final statusText = timeUp
+        ? '시간 종료'
+        : timer!.status == TimerStatus.running
+        ? '실행 중'
+        : '일시정지';
+    final statusColor = timeUp || timer!.status != TimerStatus.running
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
+    final todo = timer!.todo;
+    final todoIconSize = compact ? 20.0 : 24.0;
 
     return Column(
       children: [
@@ -394,16 +499,39 @@ class CurrentTaskDisplay extends StatelessWidget {
           ),
         ),
         SizedBox(height: compact ? 4 : 8),
-        Text(
-          taskName,
-          style:
-              (compact
-                      ? theme.textTheme.titleMedium
-                      : theme.textTheme.titleLarge)
-                  ?.copyWith(fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (todo != null) ...[
+              if (timer!.status == TimerStatus.paused)
+                TodoStatusSelector(
+                  todo: todo,
+                  iconSize: todoIconSize,
+                  onChanged: onTodoChanged,
+                )
+              else
+                Icon(
+                  todo.status.icon,
+                  color: todo.status.color(context),
+                  size: todoIconSize,
+                  semanticLabel: todo.status.label,
+                ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Text(
+                taskName,
+                style:
+                    (compact
+                            ? theme.textTheme.titleMedium
+                            : theme.textTheme.titleLarge)
+                        ?.copyWith(fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         if (!compact && timer!.startedAt != null) ...[
           const SizedBox(height: 4),
@@ -464,16 +592,16 @@ class TimerControlButton extends StatelessWidget {
         ),
       );
     } else if (activeTimer!.status == TimerStatus.running) {
-      // 위계: 자주 쓰는 일시정지를 큰 주 버튼(primary), 비가역 정지는
+      // 위계: 자주 쓰는 일시정지를 큰 주 버튼(primary), 비가역 완료는
       // 작은 보조 버튼(error)으로 + 간격을 넓혀 오탭을 방지한다.
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FloatingActionButton.small(
             onPressed: onStop,
-            tooltip: '정지',
+            tooltip: '완료',
             backgroundColor: theme.colorScheme.error,
-            child: Icon(Icons.stop, color: theme.colorScheme.onError),
+            child: Icon(Icons.check, color: theme.colorScheme.onError),
           ),
           const SizedBox(width: 40),
           FloatingActionButton(
@@ -489,9 +617,9 @@ class TimerControlButton extends StatelessWidget {
         children: [
           FloatingActionButton.small(
             onPressed: onStop,
-            tooltip: '정지',
+            tooltip: '완료',
             backgroundColor: theme.colorScheme.error,
-            child: Icon(Icons.stop, color: theme.colorScheme.onError),
+            child: Icon(Icons.check, color: theme.colorScheme.onError),
           ),
           const SizedBox(width: 40),
           FloatingActionButton(
@@ -629,7 +757,7 @@ class TimerHistoryList extends ConsumerWidget {
 
 /// 타이머 히스토리 항목
 ///
-/// RUNNING/PAUSED일 때 실시간 경과 시간을 표시하고, 일시정지·재개·정지 버튼을 제공합니다.
+/// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·완료 버튼을 제공합니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
@@ -711,20 +839,23 @@ class TimerHistoryItem extends ConsumerWidget {
         ? formatTime(timer.endedAt!)
         : '--:--';
 
-    final bool useLiveTicker =
-        timer.status == TimerStatus.running && timer.id == activeTimer?.id;
-    final elapsed = displayElapsed(timer, ref.watch(serverClockProvider).now());
-    final Duration duration = useLiveTicker
-        ? tickerAsync.when(
-            data: (d) => d,
-            loading: () => elapsed,
-            error: (_, _) => elapsed,
-          )
-        : elapsed;
-
     final isActive =
         timer.status == TimerStatus.running ||
         timer.status == TimerStatus.paused;
+
+    final bool useLiveTicker =
+        timer.status == TimerStatus.running && timer.id == activeTimer?.id;
+    final now = ref.watch(serverClockProvider).now();
+    final shown = isActive
+        ? displayRemaining(timer, now)
+        : displayElapsed(timer, now);
+    final Duration duration = useLiveTicker
+        ? tickerAsync.when(
+            data: (d) => d,
+            loading: () => shown,
+            error: (_, _) => shown,
+          )
+        : shown;
     final isThisLoading = controllerLoading;
 
     return Card(
@@ -817,7 +948,7 @@ class TimerHistoryItem extends ConsumerWidget {
                     ),
                   ),
                 IconButton(
-                  icon: Icon(Icons.stop, color: theme.colorScheme.error),
+                  icon: Icon(Icons.check, color: theme.colorScheme.error),
                   onPressed: () async {
                     final confirmed = await _confirmStopTimer(context);
                     if (!context.mounted || !confirmed) return;
@@ -827,10 +958,10 @@ class TimerHistoryItem extends ConsumerWidget {
                       action: () => ref
                           .read(timerControllerProvider.notifier)
                           .stopTimer(timerId: timer.id),
-                      errorLabel: '정지',
+                      errorLabel: '완료',
                     );
                   },
-                  tooltip: '정지',
+                  tooltip: '완료',
                 ),
               ],
             ],

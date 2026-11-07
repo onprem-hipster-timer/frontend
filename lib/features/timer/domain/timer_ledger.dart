@@ -26,6 +26,9 @@ class TimerLedger {
       _timers.values.where(_isActive).toList()
         ..sort((a, b) => _startedOf(b).compareTo(_startedOf(a)));
 
+  /// 가진 [timerId] 타이머. 없으면 null
+  TimerRead? operator [](String timerId) => _timers[timerId];
+
   /// 관계를 포함해 읽은 REST 응답 [timer]를 반영한다.
   void apply(TimerRead timer) {
     if (!_accept(timer)) return;
@@ -61,6 +64,16 @@ class TimerLedger {
       _needsRead.add(timer.id);
     }
     return _needsRead.contains(timer.id);
+  }
+
+  /// 바뀐 [todo]를 그 Todo에 연결된 타이머에 반영한다.
+  ///
+  /// 타이머가 바뀐 것이 아니라 `updated_at` 규칙을 거치지 않는다.
+  void updateTodo(TodoRead todo) {
+    _timers.updateAll(
+      (_, timer) =>
+          timer.todoId == todo.id ? timer.copyWith(todo: todo) : timer,
+    );
   }
 
   /// 지운 타이머가 아니고 `updated_at`이 본 값보다 이전이 아니면 그 `updated_at`을 기억하고 true

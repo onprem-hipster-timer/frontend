@@ -240,4 +240,26 @@ abstract class TimersClient {
     TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
     @DioOptions() RequestOptions? options,
   });
+
+  /// Cancel Timer.
+  ///
+  /// 타이머 취소 (RUNNING·PAUSED → CANCELLED).
+  ///
+  /// [includeSchedule] - Schedule 정보 포함 여부 (기본값: false).
+  ///
+  /// [includeTodo] - Todo 정보 포함 여부 (기본값: false).
+  ///
+  /// [tagIncludeMode] - 태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속).
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
+  @POST('/v1/timers/{timer_id}/cancel')
+  Future<TimerRead> cancelTimerV1TimersTimerIdCancelPost({
+    @Path('timer_id') required String timerId,
+    @Query('timezone') String? timezone,
+    @Query('include_schedule') bool? includeSchedule = false,
+    @Query('include_todo') bool? includeTodo = false,
+    @Query('tag_include_mode')
+    TagIncludeMode? tagIncludeMode = TagIncludeMode.none,
+    @DioOptions() RequestOptions? options,
+  });
 }

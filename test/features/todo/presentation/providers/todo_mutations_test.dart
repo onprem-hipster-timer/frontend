@@ -153,6 +153,32 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('delete는 연결 타이머 정책을 쿼리로 넘긴다', () async {
+      stubList();
+      when(
+        () => api.deleteTodoV1TodosTodoIdDelete(
+          todoId: any(named: 'todoId'),
+          linkedSchedulePolicy: any(named: 'linkedSchedulePolicy'),
+          linkedTimerPolicy: any(named: 'linkedTimerPolicy'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final container = makeContainer();
+      await container
+          .read(todoMutationsProvider.notifier)
+          .delete('todo-1', linkedTimerPolicy: LinkedTimerPolicy.delete);
+
+      verify(
+        () => api.deleteTodoV1TodosTodoIdDelete(
+          todoId: 'todo-1',
+          linkedSchedulePolicy: null,
+          linkedTimerPolicy: LinkedTimerPolicy.delete,
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+    });
   });
 
   group('TodoMutationsNotifier - 캐시 갱신', () {

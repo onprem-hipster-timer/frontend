@@ -90,4 +90,45 @@ void main() {
       expect(displayElapsed(timer, now), const Duration(seconds: 30));
     });
   });
+
+  group('displayRemaining', () {
+    final startedAt = DateTime.utc(2026, 11, 6, 10, 0, 0);
+    final now = DateTime.utc(2026, 11, 6, 10, 0, 30);
+
+    test('allocated_duration에서 표시 경과 시간을 뺀다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 1500,
+        elapsedTime: 100,
+      );
+
+      expect(displayRemaining(timer, now), const Duration(seconds: 1370));
+    });
+
+    test('PAUSED면 저장된 경과 시간으로 계산한다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.paused,
+        startedAt: startedAt,
+        allocatedDuration: 1500,
+        elapsedTime: 300,
+      );
+
+      expect(displayRemaining(timer, now), const Duration(seconds: 1200));
+    });
+
+    test('경과 시간이 allocated_duration을 넘으면 0이다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 60,
+        elapsedTime: 50,
+      );
+
+      expect(displayRemaining(timer, now), Duration.zero);
+    });
+  });
 }
