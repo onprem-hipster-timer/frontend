@@ -256,11 +256,53 @@ void main() {
       expect(controller.stopCalled, isFalse);
     });
   });
+
+  // ============================================================
+  // TimerPage — 새 작업 시작 다이얼로그의 집중 시간
+  // ============================================================
+  group('새 작업 시작 집중 시간', () {
+    testWidgets('기본은 25분이고 그대로 시작하면 25분으로 시작한다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      final chip = tester.widget<ChoiceChip>(
+        find.widgetWithText(ChoiceChip, '25분'),
+      );
+      expect(chip.selected, isTrue);
+
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedAllocatedDurationSeconds, 25 * 60);
+    });
+
+    testWidgets('고른 집중 시간으로 시작한다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      for (final minutes in [15, 25, 45, 60]) {
+        expect(find.widgetWithText(ChoiceChip, '$minutes분'), findsOneWidget);
+      }
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '45분'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedAllocatedDurationSeconds, 45 * 60);
+    });
+  });
 }
 
 Future<void> _pumpTimerPage(
   WidgetTester tester, {
-  required TimerRead timer,
+  required TimerRead? timer,
   required _FakeTimerController controller,
 }) async {
   await tester.pumpWidget(
@@ -273,7 +315,7 @@ Future<void> _pumpTimerPage(
 }
 
 List<Override> _timerOverrides({
-  required TimerRead timer,
+  required TimerRead? timer,
   required _FakeTimerController controller,
 }) {
   return [
@@ -283,7 +325,7 @@ List<Override> _timerOverrides({
     ),
     activeTimerProvider.overrideWithValue(AsyncData(timer)),
     timerHistoryProvider.overrideWith(
-      (ref) => Future.value(<TimerRead>[timer]),
+      (ref) => Future.value(<TimerRead>[?timer]),
     ),
     timerTickerProvider.overrideWith((ref) => Stream.value(Duration.zero)),
     timerControllerProvider.overrideWith(() => controller),
@@ -312,6 +354,7 @@ Finder _historyStopButton() {
 class _FakeTimerController extends TimerController {
   bool stopCalled = false;
   String? stoppedTimerId;
+  int? startedAllocatedDurationSeconds;
 
   @override
   FutureOr<void> build() {}
@@ -334,5 +377,7 @@ class _FakeTimerController extends TimerController {
     String? title,
     String? scheduleId,
     int? allocatedDurationSeconds,
-  }) async {}
+  }) async {
+    startedAllocatedDurationSeconds = allocatedDurationSeconds;
+  }
 }

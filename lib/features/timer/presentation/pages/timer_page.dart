@@ -96,6 +96,14 @@ Future<bool> _confirmStopTimer(BuildContext context) {
   );
 }
 
+/// 새 작업 시작 다이얼로그에서 고를 수 있는 집중 시간
+const _focusDurationPresets = [
+  Duration(minutes: 15),
+  Duration(minutes: 25),
+  Duration(minutes: 45),
+  Duration(minutes: 60),
+];
+
 /// 타이머 대시보드 (상단 영역)
 ///
 /// 디지털 시계와 제어 버튼을 포함합니다.
@@ -172,6 +180,7 @@ class TimerDashboard extends ConsumerWidget {
   /// 타이머 시작 다이얼로그 표시
   void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
+    var focusDuration = defaultFocusDuration;
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -186,6 +195,20 @@ class TimerDashboard extends ConsumerWidget {
                 labelText: '작업명',
                 hintText: '어떤 작업을 시작할까요?',
                 border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            StatefulBuilder(
+              builder: (context, setState) => Wrap(
+                spacing: 8,
+                children: [
+                  for (final preset in _focusDurationPresets)
+                    ChoiceChip(
+                      label: Text('${preset.inMinutes}분'),
+                      selected: preset == focusDuration,
+                      onSelected: (_) => setState(() => focusDuration = preset),
+                    ),
+                ],
               ),
             ),
           ],
@@ -204,7 +227,10 @@ class TimerDashboard extends ConsumerWidget {
               try {
                 await ref
                     .read(timerControllerProvider.notifier)
-                    .startTimer(title: title);
+                    .startTimer(
+                      title: title,
+                      allocatedDurationSeconds: focusDuration.inSeconds,
+                    );
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
