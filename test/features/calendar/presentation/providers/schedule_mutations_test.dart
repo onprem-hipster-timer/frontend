@@ -142,6 +142,33 @@ void main() {
       ).called(1);
     });
 
+    test('deleteSchedule은 연결 타이머 정책을 쿼리로 넘긴다', () async {
+      when(
+        () => api.deleteScheduleV1SchedulesScheduleIdDelete(
+          scheduleId: any(named: 'scheduleId'),
+          instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: any(named: 'sourceTodoPolicy'),
+          linkedTimerPolicy: any(named: 'linkedTimerPolicy'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final c = makeContainer();
+      await c
+          .read(scheduleMutationsProvider.notifier)
+          .deleteSchedule('s1', linkedTimerPolicy: LinkedTimerPolicy.unlink);
+
+      verify(
+        () => api.deleteScheduleV1SchedulesScheduleIdDelete(
+          scheduleId: 's1',
+          instanceStart: any(named: 'instanceStart'),
+          sourceTodoPolicy: null,
+          linkedTimerPolicy: LinkedTimerPolicy.unlink,
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+    });
+
     test('convertToTodo', () async {
       when(
         () => api.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
