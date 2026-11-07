@@ -157,6 +157,14 @@ void main() {
     );
   });
 
+  test('updateTodo는 그 Todo에 연결된 타이머가 없으면 아무것도 바꾸지 않는다', () {
+    ledger.apply(_read('t1', TimerStatus.running, updatedMinute: 1));
+
+    ledger.updateTodo(makeTodo(id: 'todo-9'));
+
+    expect(ledger.active.single.todo, makeTodo());
+  });
+
   test('started_at이 없는 활성 타이머도 목록에 남는다', () {
     ledger.apply(
       makeTimer(

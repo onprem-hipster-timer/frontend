@@ -623,6 +623,23 @@ void main() {
       expect(controller.startedAllocatedDurationSeconds, 50 * 60);
     });
 
+    for (final (text, seconds) in [('007', 7 * 60), ('600', 600 * 60)]) {
+      testWidgets('분 "$text"도 그 값으로 시작한다', (tester) async {
+        final controller = _FakeTimerController();
+
+        await _pumpTimerPage(tester, timer: null, controller: controller);
+        await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextFormField), text);
+        await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+
+        expect(controller.startedAllocatedDurationSeconds, seconds);
+      });
+    }
+
     testWidgets('칩을 고르면 분 칸을 채우고, 그 뒤에 입력한 분으로 시작한다', (tester) async {
       final controller = _FakeTimerController();
 
