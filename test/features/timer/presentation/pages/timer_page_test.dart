@@ -528,6 +528,75 @@ void main() {
 
       expect(controller.startedAllocatedDurationSeconds, 45 * 60);
     });
+
+    testWidgets('분을 입력하면 그 시간으로 시작하고 고른 칩은 풀린다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), '50');
+      await tester.pump();
+
+      final chips = tester.widgetList<ChoiceChip>(find.byType(ChoiceChip));
+      expect(chips.where((chip) => chip.selected), isEmpty);
+
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedAllocatedDurationSeconds, 50 * 60);
+    });
+
+    testWidgets('칩을 고르면 분 칸을 채우고, 그 뒤에 입력한 분으로 시작한다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, '45분'));
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextFormField>(find.byType(TextFormField))
+            .controller
+            ?.text,
+        '45',
+      );
+
+      await tester.enterText(find.byType(TextFormField), '50');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedAllocatedDurationSeconds, 50 * 60);
+    });
+
+    testWidgets('분이 비었거나 1~600 밖이면 시작할 수 없다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      for (final text in ['', '0', '601']) {
+        await tester.enterText(find.byType(TextFormField), text);
+        await tester.pump();
+
+        final start = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, '시작'),
+        );
+        expect(start.onPressed, isNull, reason: text);
+        expect(find.text('1~600분'), findsOneWidget, reason: text);
+      }
+
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedAllocatedDurationSeconds, isNull);
+      expect(find.byType(AlertDialog), findsOneWidget);
+    });
   });
 }
 

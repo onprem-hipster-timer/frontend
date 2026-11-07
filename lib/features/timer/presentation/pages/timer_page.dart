@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -105,6 +106,18 @@ const _focusDurationPresets = [
   Duration(minutes: 60),
 ];
 
+/// 새 작업 시작 다이얼로그에 입력할 수 있는 가장 긴 집중 시간 (분)
+const _maxFocusMinutes = 600;
+
+/// [text]가 1~[_maxFocusMinutes] 사이의 분이면 그 값, 아니면 null
+int? _focusMinutes(String text) {
+  final minutes = int.tryParse(text);
+  if (minutes == null || minutes < 1 || minutes > _maxFocusMinutes) {
+    return null;
+  }
+  return minutes;
+}
+
 /// 타이머 대시보드 (상단 영역)
 ///
 /// 디지털 시계와 제어 버튼을 포함합니다.
@@ -185,7 +198,9 @@ class TimerDashboard extends ConsumerWidget {
   /// 타이머 시작 다이얼로그 표시
   void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
-    var focusDuration = defaultFocusDuration;
+    final minutesController = TextEditingController(
+      text: '${defaultFocusDuration.inMinutes}',
+    );
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -203,18 +218,41 @@ class TimerDashboard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            StatefulBuilder(
-              builder: (context, setState) => Wrap(
-                spacing: 8,
-                children: [
-                  for (final preset in _focusDurationPresets)
-                    ChoiceChip(
-                      label: Text('${preset.inMinutes}분'),
-                      selected: preset == focusDuration,
-                      onSelected: (_) => setState(() => focusDuration = preset),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: minutesController,
+              builder: (_, value, _) {
+                final minutes = _focusMinutes(value.text);
+                return Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (final preset in _focusDurationPresets)
+                      ChoiceChip(
+                        label: Text('${preset.inMinutes}분'),
+                        selected: preset.inMinutes == minutes,
+                        onSelected: (_) =>
+                            minutesController.text = '${preset.inMinutes}',
+                      ),
+                    SizedBox(
+                      width: 96,
+                      child: TextFormField(
+                        controller: minutesController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          suffixText: '분',
+                          border: const OutlineInputBorder(),
+                          errorText: minutes == null
+                              ? '1~$_maxFocusMinutes분'
+                              : null,
+                        ),
+                      ),
                     ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -223,36 +261,46 @@ class TimerDashboard extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('취소'),
           ),
-          FilledButton(
-            onPressed: () async {
-              final title = controller.text.trim().isEmpty
-                  ? '새 작업'
-                  : controller.text.trim();
-              Navigator.of(dialogContext).pop();
-              try {
-                await ref
-                    .read(timerControllerProvider.notifier)
-                    .startTimer(
-                      title: title,
-                      allocatedDurationSeconds: focusDuration.inSeconds,
-                    );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('타이머를 시작했습니다')));
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('타이머 시작 실패: $e'),
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                    ),
-                  );
-                }
-              }
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: minutesController,
+            builder: (_, value, _) {
+              final minutes = _focusMinutes(value.text);
+              return FilledButton(
+                onPressed: minutes == null
+                    ? null
+                    : () async {
+                        final title = controller.text.trim().isEmpty
+                            ? '새 작업'
+                            : controller.text.trim();
+                        Navigator.of(dialogContext).pop();
+                        try {
+                          await ref
+                              .read(timerControllerProvider.notifier)
+                              .startTimer(
+                                title: title,
+                                allocatedDurationSeconds: minutes * 60,
+                              );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('타이머를 시작했습니다')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('타이머 시작 실패: $e'),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: const Text('시작'),
+              );
             },
-            child: const Text('시작'),
           ),
         ],
       ),
