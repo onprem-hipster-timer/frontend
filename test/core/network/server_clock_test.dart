@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:momeet/core/network/server_clock.dart';
+import 'package:momeet/core/network/timer_request.dart';
 
 /// 정해진 `Date` 헤더로 응답하는 백엔드 (null이면 헤더 없음)
 class _FakeBackend implements HttpClientAdapter {
@@ -101,10 +102,10 @@ void main() {
         ..httpClientAdapter = _FakeBackend(() => date);
     });
 
-    test('타이머 응답의 Date 헤더로 서버 시각을 맞춘다', () async {
+    test('타이머 요청 응답의 Date 헤더로 서버 시각을 맞춘다', () async {
       date = formatHttpDate(DateTime.now().add(const Duration(hours: 1)));
 
-      await dio.get<dynamic>('/v1/timers');
+      await dio.fetch<dynamic>(timerRequest()..path = '/v1/timers');
 
       expect(clock.offset.inSeconds, inInclusiveRange(3600 - 2, 3600 + 2));
     });
@@ -112,15 +113,15 @@ void main() {
     test('Date 헤더가 없는 응답은 건너뛴다', () async {
       date = null;
 
-      await dio.get<dynamic>('/v1/timers');
+      await dio.fetch<dynamic>(timerRequest()..path = '/v1/timers');
 
       expect(clock.offset, Duration.zero);
     });
 
-    test('타이머가 아닌 경로의 응답은 쓰지 않는다', () async {
+    test('표시하지 않은 요청의 응답은 타이머 경로여도 쓰지 않는다', () async {
       date = formatHttpDate(DateTime.now().add(const Duration(hours: 1)));
 
-      await dio.get<dynamic>('/v1/todos');
+      await dio.get<dynamic>('/v1/timers');
 
       expect(clock.offset, Duration.zero);
     });

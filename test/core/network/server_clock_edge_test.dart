@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:momeet/core/network/server_clock.dart';
+import 'package:momeet/core/network/timer_request.dart';
 
 class _FakeBackend implements HttpClientAdapter {
   _FakeBackend(this.date, {this.statusCode = 200});
@@ -93,29 +93,11 @@ void main() {
     setUp(() => clock = ServerClock());
 
     test('Date 헤더가 깨져 있으면 건너뛰고 요청은 성공한다', () async {
-      final response = await dio(() => 'not a date').get<dynamic>('/v1/timers');
+      final response = await dio(
+        () => 'not a date',
+      ).fetch<dynamic>(timerRequest()..path = '/v1/timers');
 
       expect(response.statusCode, 200);
-      expect(clock.offset, Duration.zero);
-    });
-
-    test('타이머 명령 경로(/v1/timers/{id}/pause)의 응답도 쓴다', () async {
-      final ahead = formatHttpDate(
-        DateTime.now().add(const Duration(minutes: 10)),
-      );
-
-      await dio(() => ahead).patch<dynamic>('/v1/timers/t1/pause');
-
-      expect(clock.offset.inSeconds, inInclusiveRange(600 - 2, 600 + 2));
-    });
-
-    test('/v1/timers로 시작하는 다른 리소스 이름은 쓰지 않는다', () async {
-      final ahead = formatHttpDate(
-        DateTime.now().add(const Duration(minutes: 10)),
-      );
-
-      await dio(() => ahead).get<dynamic>('/v1/timersheets');
-
       expect(clock.offset, Duration.zero);
     });
   });

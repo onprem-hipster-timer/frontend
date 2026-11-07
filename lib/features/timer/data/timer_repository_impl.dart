@@ -1,3 +1,4 @@
+import 'package:momeet/core/network/timer_request.dart';
 import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -20,6 +21,7 @@ class TimerRepositoryImpl implements TimerRepository {
       ],
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -37,6 +39,7 @@ class TimerRepositoryImpl implements TimerRepository {
       endDate: endDate,
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -46,6 +49,7 @@ class TimerRepositoryImpl implements TimerRepository {
       body: data,
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -55,6 +59,7 @@ class TimerRepositoryImpl implements TimerRepository {
       timerId: timerId,
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -64,6 +69,7 @@ class TimerRepositoryImpl implements TimerRepository {
       timerId: timerId,
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -73,6 +79,7 @@ class TimerRepositoryImpl implements TimerRepository {
       timerId: timerId,
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -81,11 +88,15 @@ class TimerRepositoryImpl implements TimerRepository {
     return _client.updateTimerV1TimersTimerIdPatch(
       timerId: timerId,
       body: data,
+      options: timerRequest(),
     );
   }
 
   @override
   Future<void> deleteTimer(String timerId) async {
-    await _client.deleteTimerV1TimersTimerIdDelete(timerId: timerId);
+    await _client.deleteTimerV1TimersTimerIdDelete(
+      timerId: timerId,
+      options: timerRequest(),
+    );
   }
 }

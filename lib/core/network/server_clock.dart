@@ -3,6 +3,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:momeet/core/network/timer_request.dart';
 
 /// 서버 기준 현재 시각
 ///
@@ -44,7 +45,7 @@ class ServerClock {
   }
 }
 
-/// `/v1/timers`와 그 하위 경로 응답의 `Date` 헤더를 [ServerClock]에 넘기는 Interceptor.
+/// [timerRequest]로 표시한 요청의 응답 `Date` 헤더를 [ServerClock]에 넘기는 Interceptor.
 ///
 /// 헤더가 없거나 형식이 맞지 않는 응답은 건너뛰고, 요청은 그대로 진행한다.
 /// 보낸 시각을 요청 직전에 재므로 Interceptor 중 마지막에 붙인다.
@@ -57,7 +58,7 @@ class ServerClockInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (_isTimerPath(options.path)) {
+    if (isTimerRequest(options)) {
       options.extra[_sentAtKey] = DateTime.now();
     }
     handler.next(options);
@@ -76,9 +77,6 @@ class ServerClockInterceptor extends Interceptor {
     }
     handler.next(response);
   }
-
-  static bool _isTimerPath(String path) =>
-      path == '/v1/timers' || path.startsWith('/v1/timers/');
 
   /// RFC 1123 형식이 아니면 null
   static DateTime? _parseDate(String? value) {
