@@ -28,6 +28,17 @@ TimerRead _timer(String id, TimerStatus status, {required int minute}) =>
       startedAt: DateTime.utc(2026, 11, 6, 10),
     ).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 10, minute));
 
+/// Todo를 포함해 읽은 REST 응답
+TimerRead _read(String id, TimerStatus status, {required int minute}) => _timer(
+  id,
+  status,
+  minute: minute,
+).copyWith(todoId: 'todo-1', todo: makeTodo());
+
+/// Todo에 연결된 타이머의 이벤트 payload (관계 필드 없음)
+TimerRead _linked(String id, TimerStatus status, {required int minute}) =>
+    _timer(id, status, minute: minute).copyWith(todoId: 'todo-1');
+
 int _seq = 0;
 
 TimerWsTimerEvent _event(
@@ -104,6 +115,72 @@ void main() {
 
     expect(active(container).single.id, 't1');
     expect(container.read(activeTimerProvider).value?.id, 't1');
+  });
+
+  test('처음 보는 타이머의 이벤트(다른 기기의 timer.created)면 다시 읽어 관계 필드를 채운다', () async {
+    repository.getOne = (id) async => _read(id, TimerStatus.running, minute: 1);
+    final container = await boot();
+
+    await emit(
+      _event(
+        _linked('t1', TimerStatus.running, minute: 1),
+        type: 'timer.created',
+        action: 'start',
+      ),
+    );
+
+    expect(repository.calls, contains('get:t1'));
+    expect(active(container).single.todo, makeTodo());
+  });
+
+  test('다시 읽는 사이 더 나중 이벤트가 오면 이전 시각의 다시 읽은 결과는 버리고 한 번 더 읽는다', () async {
+    final first = Completer<TimerRead>();
+    final second = Completer<TimerRead>();
+    var call = 0;
+    repository.getOne = (_) => ++call == 1 ? first.future : second.future;
+    final container = await boot();
+
+    await emit(
+      _event(
+        _linked('t1', TimerStatus.running, minute: 1),
+        type: 'timer.created',
+        action: 'start',
+      ),
+    );
+    await emit(
+      _event(_linked('t1', TimerStatus.paused, minute: 3), action: 'pause'),
+    );
+    first.complete(_read('t1', TimerStatus.running, minute: 2));
+    await pumpEventQueue();
+
+    expect(active(container).single.status, TimerStatus.paused);
+    expect(active(container).single.todo, isNull);
+
+    second.complete(_read('t1', TimerStatus.paused, minute: 3));
+    await pumpEventQueue();
+
+    expect(repository.calls.where((c) => c == 'get:t1'), hasLength(2));
+    expect(active(container).single.todo, makeTodo());
+  });
+
+  test('다시 읽기가 실패하면 이벤트로 받은 타이머를 그대로 둔다', () async {
+    repository.listActive = () async => [
+      _read('t1', TimerStatus.running, minute: 1),
+    ];
+    repository.getOne = (_) async => throw Exception('500');
+    final container = await boot();
+
+    await emit(
+      _event(
+        _timer('t1', TimerStatus.paused, minute: 2).copyWith(todoId: 'todo-2'),
+      ),
+    );
+
+    final timer = active(container).single;
+    expect(repository.calls, contains('get:t1'));
+    expect(timer.status, TimerStatus.paused);
+    expect(timer.todoId, 'todo-2');
+    expect(timer.todo, isNull);
   });
 
   test('내 타이머가 끝났다는 이벤트가 오면 활성에서 빠진다', () async {

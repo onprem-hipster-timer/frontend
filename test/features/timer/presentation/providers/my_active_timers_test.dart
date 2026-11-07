@@ -29,6 +29,17 @@ TimerRead _timer(String id, TimerStatus status, {required int minute}) =>
       startedAt: DateTime.utc(2026, 11, 6, 10),
     ).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 10, minute));
 
+/// Todo를 포함해 읽은 REST 응답
+TimerRead _read(
+  String id,
+  TimerStatus status, {
+  required int minute,
+  String todoId = 'todo-1',
+}) => _timer(id, status, minute: minute).copyWith(
+  todoId: todoId,
+  todo: makeTodo(id: todoId),
+);
+
 int _seq = 0;
 
 TimerWsTimerEvent _event(TimerRead timer, {String fromUser = _me}) =>
@@ -177,6 +188,59 @@ void main() {
     await emit(_event(_timer('t1', TimerStatus.running, minute: 2)));
     expect(active(container).single.status, TimerStatus.paused);
   });
+
+  test('이벤트는 가진 todo를 두고 상태·경과 시간만 바꾼다', () async {
+    repository.listActive = () async => [
+      _read('t1', TimerStatus.running, minute: 1),
+    ];
+    final container = await boot();
+
+    await emit(
+      _event(
+        _timer(
+          't1',
+          TimerStatus.paused,
+          minute: 2,
+        ).copyWith(todoId: 'todo-1', elapsedTime: 90),
+      ),
+    );
+
+    final timer = active(container).single;
+    expect(timer.status, TimerStatus.paused);
+    expect(timer.elapsedTime, 90);
+    expect(timer.todo, makeTodo());
+    expect(repository.calls, isNot(contains('get:t1')));
+  });
+
+  test(
+    '다른 클라이언트가 todo_id를 바꾼 timer.updated면 todo를 비우고 그 타이머를 다시 읽는다',
+    () async {
+      repository.listActive = () async => [
+        _read('t1', TimerStatus.running, minute: 1),
+      ];
+      final reread = Completer<TimerRead>();
+      repository.getOne = (_) => reread.future;
+      final container = await boot();
+
+      await emit(
+        _event(
+          _timer(
+            't1',
+            TimerStatus.running,
+            minute: 2,
+          ).copyWith(todoId: 'todo-2'),
+        ),
+      );
+      expect(repository.calls, contains('get:t1'));
+      expect(active(container).single.todo, isNull);
+
+      reread.complete(
+        _read('t1', TimerStatus.running, minute: 2, todoId: 'todo-2'),
+      );
+      await pumpEventQueue();
+      expect(active(container).single.todo, makeTodo(id: 'todo-2'));
+    },
+  );
 
   test('연결 오류를 에러 배너 상태로 넘긴다', () async {
     final container = await boot();

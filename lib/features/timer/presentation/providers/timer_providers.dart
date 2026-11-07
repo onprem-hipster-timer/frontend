@@ -91,6 +91,7 @@ final timerFriendActivityProvider =
 /// 내 활성(RUNNING·PAUSED) 타이머. 최근에 시작한 순
 ///
 /// REST 조회, 내 실시간 이벤트(`from_user`가 나), 명령 응답을 [TimerLedger] 규칙으로 반영한다.
+/// 이벤트로 관계 필드(일정·Todo 등)가 비면 그 타이머를 REST로 다시 읽어 채운다.
 /// 소켓이 (재)연결될 때마다 REST로 다시 맞추고, 맞추는 동안 들어온 반영은 맞춘 뒤에 한다.
 ///
 /// 테스트: test/features/timer/presentation/providers/my_active_timers_test.dart
@@ -131,12 +132,22 @@ class MyActiveTimers extends _$MyActiveTimers {
           final timer = payload.timer;
           if (timer == null) {
             _ledger.delete(payload.timerId!);
-          } else {
-            _ledger.apply(timer);
+          } else if (_ledger.applyPartial(timer)) {
+            _read(timer.id);
           }
         });
       case TimerWsError():
         ref.read(timerWsLastErrorProvider.notifier).setError(event);
+    }
+  }
+
+  /// [timerId]를 관계를 포함해 다시 읽어 반영한다. 실패하면 가진 타이머를 그대로 둔다.
+  Future<void> _read(String timerId) async {
+    try {
+      final timer = await ref.read(timerRepositoryProvider).getTimer(timerId);
+      if (ref.mounted) apply(timer);
+    } catch (error) {
+      debugPrint('타이머 조회 실패: $error');
     }
   }
 
