@@ -189,6 +189,20 @@ void main() {
       expect(timer.todo, makeTodo());
     });
 
+    test('관계 필드가 바뀌었을 수 있으면 ID가 같아도 가진 관계 필드를 두고 다시 읽기를 요청한다', () {
+      ledger.apply(_read('t1', TimerStatus.running, updatedMinute: 1));
+
+      final needsRead = ledger.applyPartial(
+        _event('t1', TimerStatus.running, updatedMinute: 2),
+        relationsChanged: true,
+      );
+
+      final timer = ledger.active.single;
+      expect(needsRead, isTrue);
+      expect(timer.todo, makeTodo());
+      expect(timer.tags, [makeTag()]);
+    });
+
     test('처음 보는 타이머는 그대로 넣고 다시 읽기를 요청한다', () {
       final needsRead = ledger.applyPartial(
         _event('t1', TimerStatus.running, updatedMinute: 1),

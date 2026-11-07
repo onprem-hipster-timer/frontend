@@ -132,7 +132,11 @@ class MyActiveTimers extends _$MyActiveTimers {
           final timer = payload.timer;
           if (timer == null) {
             _ledger.delete(payload.timerId!);
-          } else if (_ledger.applyPartial(timer)) {
+          } else if (_ledger.applyPartial(
+            timer,
+            // 태그만 바꾼 PATCH도 이 action으로 오는데 이벤트에는 태그가 없다
+            relationsChanged: payload.action == 'update',
+          )) {
             _read(timer.id);
           }
         });

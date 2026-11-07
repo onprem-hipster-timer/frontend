@@ -18,8 +18,8 @@ class TimerLedger {
   final _updatedAt = <String, DateTime>{};
   final _deleted = <String>{};
 
-  /// 관계 필드를 REST로 아직 채우지 못한 타이머 ID
-  final _missingRelations = <String>{};
+  /// 관계 필드를 REST로 다시 읽어야 하는 타이머 ID
+  final _needsRead = <String>{};
 
   /// 활성(RUNNING·PAUSED) 타이머. 최근에 시작한 순
   List<TimerRead> get active =>
@@ -30,21 +30,22 @@ class TimerLedger {
   void apply(TimerRead timer) {
     if (!_accept(timer)) return;
     _timers[timer.id] = timer;
-    _missingRelations.remove(timer.id);
+    _needsRead.remove(timer.id);
   }
 
   /// 실시간 이벤트의 [timer]를 반영한다.
   ///
   /// 타이머 자체 필드만 바꾸고 가진 관계 필드는 둔다. `schedule_id`·`todo_id`가 바뀌었으면
   /// 가진 `schedule`·`todo`는 버린다. 처음 보는 타이머는 그대로 넣는다.
-  /// 관계 필드가 비어 있어 그 타이머를 REST로 다시 읽어 [apply]해야 하면 true를 돌려준다.
+  /// [relationsChanged]면 ID가 같아도 가진 관계 필드가 낡았다고 본다.
+  /// 관계 필드가 비었거나 낡아 그 타이머를 REST로 다시 읽어 [apply]해야 하면 true를 돌려준다.
   /// [apply]로 채우기 전까지는 이후 이벤트에도 true다.
-  bool applyPartial(TimerRead timer) {
+  bool applyPartial(TimerRead timer, {bool relationsChanged = false}) {
     if (!_accept(timer)) return false;
     final held = _timers[timer.id];
     if (held == null) {
       _timers[timer.id] = timer;
-      _missingRelations.add(timer.id);
+      _needsRead.add(timer.id);
       return true;
     }
     final scheduleChanged = timer.scheduleId != held.scheduleId;
@@ -56,11 +57,10 @@ class TimerLedger {
       schedule: scheduleChanged ? null : held.schedule,
       todo: todoChanged ? null : held.todo,
     );
-    if ((scheduleChanged && timer.scheduleId != null) ||
-        (todoChanged && timer.todoId != null)) {
-      _missingRelations.add(timer.id);
+    if (relationsChanged || scheduleChanged || todoChanged) {
+      _needsRead.add(timer.id);
     }
-    return _missingRelations.contains(timer.id);
+    return _needsRead.contains(timer.id);
   }
 
   /// 지운 타이머가 아니고 `updated_at`이 본 값보다 이전이 아니면 그 `updated_at`을 기억하고 true

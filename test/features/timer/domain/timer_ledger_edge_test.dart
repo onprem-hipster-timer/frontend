@@ -77,14 +77,15 @@ void main() {
     expect(ledger.active.single.status, TimerStatus.paused);
   });
 
-  test('이벤트에서 todo_id가 빠지면 todo만 버리고 다시 읽지 않는다', () {
+  test('연결된 Todo가 지워져 todo_id가 빠진 이벤트면 todo를 버리고 다시 읽기를 요청한다', () {
+    // Todo를 지우면 서버가 이벤트 없이 todo_id를 null로 바꾸므로 그 타이머의 다음 이벤트에서 알게 된다
     ledger.apply(_read('t1', TimerStatus.running, updatedMinute: 1));
 
     final needsRead = ledger.applyPartial(
-      _timer('t1', TimerStatus.running, updatedMinute: 2),
+      _timer('t1', TimerStatus.paused, updatedMinute: 2),
     );
 
-    expect(needsRead, isFalse);
+    expect(needsRead, isTrue);
     expect(ledger.active.single.todo, isNull);
   });
 

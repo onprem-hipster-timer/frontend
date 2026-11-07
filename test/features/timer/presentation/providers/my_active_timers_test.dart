@@ -10,6 +10,7 @@ import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
+import '../../../../helpers/schedule_fixtures.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
 /// 서버 이벤트를 테스트에서 직접 흘려보내는 클라이언트
@@ -42,14 +43,17 @@ TimerRead _read(
 
 int _seq = 0;
 
-TimerWsTimerEvent _event(TimerRead timer, {String fromUser = _me}) =>
-    TimerWsTimerEvent(
-      id: 'm${_seq++}',
-      type: 'timer.updated',
-      fromUser: fromUser,
-      timestamp: timer.updatedAt,
-      payload: TimerWsEventPayload(action: 'update', timer: timer),
-    );
+TimerWsTimerEvent _event(
+  TimerRead timer, {
+  String fromUser = _me,
+  String action = 'update',
+}) => TimerWsTimerEvent(
+  id: 'm${_seq++}',
+  type: 'timer.updated',
+  fromUser: fromUser,
+  timestamp: timer.updatedAt,
+  payload: TimerWsEventPayload(action: action, timer: timer),
+);
 
 TimerWsTimerEvent _deleted(String timerId) => TimerWsTimerEvent(
   id: 'm${_seq++}',
@@ -202,6 +206,7 @@ void main() {
           TimerStatus.paused,
           minute: 2,
         ).copyWith(todoId: 'todo-1', elapsedTime: 90),
+        action: 'pause',
       ),
     );
 
@@ -241,6 +246,25 @@ void main() {
       expect(active(container).single.todo, makeTodo(id: 'todo-2'));
     },
   );
+
+  test('action이 update인 이벤트는 링크가 같아도 그 타이머를 다시 읽는다', () async {
+    // 태그만 바꾼 PATCH도 이 이벤트로 오는데 이벤트에는 태그가 없다
+    repository.listActive = () async => [
+      _read('t1', TimerStatus.running, minute: 1),
+    ];
+    repository.getOne = (id) async =>
+        _read(id, TimerStatus.running, minute: 2).copyWith(tags: [makeTag()]);
+    final container = await boot();
+
+    await emit(
+      _event(
+        _timer('t1', TimerStatus.running, minute: 2).copyWith(todoId: 'todo-1'),
+      ),
+    );
+
+    expect(repository.calls, contains('get:t1'));
+    expect(active(container).single.tags, [makeTag()]);
+  });
 
   test('연결 오류를 에러 배너 상태로 넘긴다', () async {
     final container = await boot();
