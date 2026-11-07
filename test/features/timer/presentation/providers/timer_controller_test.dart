@@ -36,7 +36,7 @@ void main() {
     expect(repository.calls, ['create']);
     expect(repository.created?.todoId, 'todo-1');
     expect(repository.created?.title, '새 작업');
-    expect(repository.created?.allocatedDuration, 3600);
+    expect(repository.created?.allocatedDuration, 25 * 60);
   });
 
   test('id를 주면 그 타이머를 일시정지·재개·정지한다', () async {

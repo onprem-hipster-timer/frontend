@@ -254,6 +254,9 @@ Stream<Duration> timerTicker(Ref ref) async* {
 // Timer Controller (Mutation)
 // ============================================================
 
+/// 새 타이머의 기본 집중 시간 (`allocated_duration`)
+const defaultFocusDuration = Duration(minutes: 25);
+
 /// 타이머 제어 로직
 ///
 /// 타이머 시작/정지 등의 명령을 REST로 보내고, 응답을 [MyActiveTimers]에 반영한다.
@@ -287,7 +290,8 @@ class TimerController extends _$TimerController {
               todoId: relatedTodoId,
               scheduleId: scheduleId,
               title: title ?? '새 작업',
-              allocatedDuration: allocatedDurationSeconds ?? 3600,
+              allocatedDuration:
+                  allocatedDurationSeconds ?? defaultFocusDuration.inSeconds,
             ),
           );
       _apply(timer);
