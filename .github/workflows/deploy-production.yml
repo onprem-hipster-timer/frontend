@@ -40,6 +40,7 @@ jobs:
           mkdir -p assets
           cat <<EOF > assets/.env
           API_BASE_URL=${{ vars.API_BASE_URL }}
+          REALTIME_BACKEND=${{ vars.REALTIME_BACKEND }}
           EOF
 
       - name: Run code generation

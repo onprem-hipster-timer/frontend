@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Timer
+- 타이머 시작·일시정지·재개·정지를 REST(`POST /v1/timers`, `PATCH /v1/timers/{id}/pause`·`resume`, `POST /v1/timers/{id}/stop`)로 보낸다
+- 타이머 REST 요청에 `timezone=UTC`를 붙인다
+- 경과 시간 표시를 `displayElapsed` 하나로 통일 (RUNNING: `elapsed_time + (now - started_at)`, 그 외: `elapsed_time`)
+  - 타이머 화면, 일정 상세의 타이머 목록, Todo 목록이 같은 계산을 쓴다
+  - `now`는 타이머 REST 응답의 `Date` 헤더로 보정한 서버 기준 시각이다
+
+#### Timer WebSocket
+- 소켓을 수신 전용으로 바꿈. 클라이언트는 45초마다 `ping`만 보낸다
+- 소켓 주소를 `REALTIME_BACKEND`(`inprocess`: `/v1/ws/timers`, `cloudflare`: `/realtime/ws`)로 고른다
+- 서버 메시지를 이벤트 봉투(`id`·`type`·`from_user`·`timestamp`·`payload`)로 받는다
+  - 같은 `id`는 한 번만 반영하고, `updated_at`이 가진 값보다 이전인 타이머는 버린다 (REST 응답에도 같은 규칙)
+  - `timer.deleted`를 받은 타이머는 이후 이벤트로 되살리지 않는다
+  - 이벤트는 타이머 자체 필드만 갱신하고, 관계 필드(일정·Todo 등)는 REST로 채운다
+    (처음 보는 타이머, 연결이 바뀐 타이머, `update` 이벤트는 `GET /v1/timers/{id}`로 다시 받는다)
+  - (재)연결마다 REST로 활성 타이머를 다시 맞춘다
+- 닫힘 코드별 재연결: `1008`은 JWT를 한 번 새로 받아 다시 연결하고 또 거부되면 멈춘다, `4000`은 바로,
+  그 외는 지수 백오프(1s부터 두 배, 상한 30s)와 지터로 횟수 제한 없이 다시 연결한다
+- 앱이 포그라운드로 돌아오면 끊긴 소켓을 바로 다시 연결한다
+- 친구 알림은 `from_user`가 내가 아닌 이벤트의 `actor_name`·`action`으로 띄운다
+
+#### API
+- OpenAPI 스펙 v2026.11.06-039b759 반영 및 API 클라이언트 재생성
+
+### Added
+
+#### Config
+- `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
+
+### Removed
+
+#### Timer WebSocket
+- WebSocket 명령(`timer.create`·`pause`·`resume`·`stop`·`sync`)과 `timer.sync_result`·`timer.friend_activity` 처리
+- 소켓 연결의 `timezone` 쿼리
+
+---
+
+## [v2026.06.24-079c3c0] - 2026-06-24
+
+### Changed
+
 #### Auth
 - 인증을 Supabase에서 Ory Kratos로 이전 (backend `/auth` 프록시를 거친 API 플로우, 쿠키 없음)
   - Kratos 세션 토큰은 SharedPreferences(웹은 localStorage)에 두고, 앱 상태에는 백엔드용 JWT(10분)만 둔다
@@ -161,6 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.16-ad57845...HEAD
+[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.24-079c3c0...HEAD
+[v2026.06.24-079c3c0]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.16-ad57845...v2026.06.24-079c3c0
 [v2026.06.16-ad57845]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.04.04-bedf04d...v2026.06.16-ad57845
 [v2026.04.04-bedf04d]: https://github.com/onprem-hipster-timer/frontend/compare/main...v2026.04.04-bedf04d

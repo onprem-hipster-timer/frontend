@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// TimerWsClient가 실제로 붙는 로컬 WebSocket 서버.
 ///
-/// 연결마다 클라이언트가 보낸 서브프로토콜(인증 토큰)을 기록한다.
+/// 연결마다 클라이언트가 보낸 경로와 서브프로토콜(인증 토큰)을 기록하고, 받은 메시지를 모은다.
 /// 시작하면 API_BASE_URL을 이 서버 주소로 맞춘다.
 class FakeWsServer {
   FakeWsServer._(this._server);
@@ -14,7 +14,13 @@ class FakeWsServer {
 
   /// 연결 순서대로 받은 Sec-WebSocket-Protocol 값
   final protocols = <String>[];
+
+  /// 연결 순서대로 받은 요청 경로
+  final paths = <String>[];
   final sockets = <WebSocket>[];
+
+  /// 모든 연결에서 받은 메시지
+  final received = <Object?>[];
 
   static Future<FakeWsServer> start() async {
     final server = FakeWsServer._(
@@ -27,8 +33,9 @@ class FakeWsServer {
         protocolSelector: (requested) => requested.first,
       );
       server.protocols.add(protocol);
+      server.paths.add(request.uri.path);
       server.sockets.add(socket);
-      socket.listen((_) {});
+      socket.listen(server.received.add);
     });
     dotenv.testLoad(
       fileInput: 'API_BASE_URL=http://127.0.0.1:${server._server.port}',

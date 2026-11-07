@@ -16,14 +16,14 @@ import 'holidays/holidays_client.dart';
 import 'graph_ql/graph_ql_client.dart';
 import 'health/health_client.dart';
 
-/// onperm-hipster-timer-backend `vv2026.07.27-e541c2a`
+/// onperm-hipster-timer-backend `vv2026.11.06-039b759`
 class MoMeetClient {
   MoMeetClient(Dio dio, {String? baseUrl}) : _dio = dio, _baseUrl = baseUrl;
 
   final Dio _dio;
   final String? _baseUrl;
 
-  static String get version => 'v2026.07.27-e541c2a';
+  static String get version => 'v2026.11.06-039b759';
 
   SchedulesClient? _schedules;
   TimersClient? _timers;

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "onperm-hipster-timer-backend",
-    "version": "v2026.07.27-e541c2a"
+    "version": "v2026.11.06-039b759"
   },
   "paths": {
     "/v1/schedules": {
@@ -675,6 +675,106 @@
       }
     },
     "/v1/timers": {
+      "post": {
+        "tags": [
+          "Timers"
+        ],
+        "summary": "Create Timer",
+        "description": "새 타이머 생성 및 시작\n\nschedule_id, todo_id 모두 Optional:\n- 둘 다 없으면: 독립 타이머\n- schedule_id만: Schedule에 연결된 타이머\n- todo_id만: Todo에 연결된 타이머\n- 둘 다 있으면: Schedule과 Todo 모두에 연결된 타이머",
+        "operationId": "create_timer_v1_timers_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_schedule",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Schedule"
+            },
+            "description": "Schedule 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "include_todo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Todo"
+            },
+            "description": "Todo 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "tag_include_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TagIncludeMode",
+              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "default": "none"
+            },
+            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "title": "Timezone"
+            },
+            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimerCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "Timers"
@@ -1191,6 +1291,312 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/timers/{timer_id}/pause": {
+      "patch": {
+        "tags": [
+          "Timers"
+        ],
+        "summary": "Pause Timer",
+        "description": "타이머 일시정지 (RUNNING → PAUSED)",
+        "operationId": "pause_timer_v1_timers__timer_id__pause_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "timer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Timer Id"
+            }
+          },
+          {
+            "name": "include_schedule",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Schedule"
+            },
+            "description": "Schedule 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "include_todo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Todo"
+            },
+            "description": "Todo 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "tag_include_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TagIncludeMode",
+              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "default": "none"
+            },
+            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "title": "Timezone"
+            },
+            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/timers/{timer_id}/resume": {
+      "patch": {
+        "tags": [
+          "Timers"
+        ],
+        "summary": "Resume Timer",
+        "description": "타이머 재개 (PAUSED → RUNNING)",
+        "operationId": "resume_timer_v1_timers__timer_id__resume_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "timer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Timer Id"
+            }
+          },
+          {
+            "name": "include_schedule",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Schedule"
+            },
+            "description": "Schedule 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "include_todo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Todo"
+            },
+            "description": "Todo 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "tag_include_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TagIncludeMode",
+              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "default": "none"
+            },
+            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "title": "Timezone"
+            },
+            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/timers/{timer_id}/stop": {
+      "post": {
+        "tags": [
+          "Timers"
+        ],
+        "summary": "Stop Timer",
+        "description": "타이머 종료 (RUNNING·PAUSED → COMPLETED)",
+        "operationId": "stop_timer_v1_timers__timer_id__stop_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "timer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Timer Id"
+            }
+          },
+          {
+            "name": "include_schedule",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Schedule"
+            },
+            "description": "Schedule 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "include_todo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Todo"
+            },
+            "description": "Todo 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "tag_include_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TagIncludeMode",
+              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "default": "none"
+            },
+            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "title": "Timezone"
+            },
+            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerRead"
+                }
               }
             }
           },
@@ -5351,6 +5757,81 @@
         ],
         "title": "TimeSlotRead",
         "description": "시간 슬롯 조회 DTO"
+      },
+      "TimerCreate": {
+        "properties": {
+          "schedule_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Id"
+          },
+          "todo_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Todo Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "allocated_duration": {
+            "type": "integer",
+            "title": "Allocated Duration"
+          },
+          "tag_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allocated_duration"
+        ],
+        "title": "TimerCreate",
+        "description": "타이머 생성 DTO\n\nschedule_id와 todo_id 모두 Optional:\n- 둘 다 없으면: 독립 타이머\n- schedule_id만: Schedule에 연결된 타이머\n- todo_id만: Todo에 연결된 타이머\n- 둘 다 있으면: Schedule과 Todo 모두에 연결된 타이머"
       },
       "TimerRead": {
         "properties": {

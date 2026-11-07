@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
@@ -74,13 +76,13 @@ class ScheduleTimerSection extends ConsumerWidget {
   }
 }
 
-class _TimerRow extends StatelessWidget {
+class _TimerRow extends ConsumerWidget {
   final TimerRead timer;
 
   const _TimerRow({required this.timer});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final statusColor = getTimerStatusColor(timer.status);
     final statusText = getTimerStatusText(timer.status);
@@ -100,7 +102,9 @@ class _TimerRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            formatDuration(Duration(seconds: timer.elapsedTime)),
+            formatDuration(
+              displayElapsed(timer, ref.watch(serverClockProvider).now()),
+            ),
             style: theme.textTheme.bodySmall?.copyWith(
               fontFamily: 'monospace',
               color: Colors.grey[600],

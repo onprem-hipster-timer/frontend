@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
@@ -15,17 +16,24 @@ const _confirmTitle = '타이머 종료';
 const _confirmContent = '정말 종료하시겠습니까?\n정지할 경우 다시 시작이 불가합니다.\n일시 정지를 이용해 주세요.';
 
 void main() {
-  TimerWsFriendActivity activity({
+  TimerWsTimerEvent activity({
     String action = 'start',
     String? displayName,
     String? timerTitle,
   }) {
-    return TimerWsFriendActivity(
-      friendId: 'friend-1',
-      action: action,
-      timerId: 'timer-1',
-      timerTitle: timerTitle,
-      displayName: displayName,
+    return TimerWsTimerEvent(
+      id: 'msg-1',
+      type: 'timer.updated',
+      fromUser: 'friend-1',
+      timestamp: DateTime.utc(2026, 11, 6),
+      payload: TimerWsEventPayload(
+        action: action,
+        actorName: displayName,
+        timer: makeTimer(
+          id: 'timer-1',
+          status: TimerStatus.running,
+        ).copyWith(title: timerTitle),
+      ),
     );
   }
 
@@ -33,18 +41,18 @@ void main() {
   // friendActivityMessage — 문구 매핑 (순수 함수)
   // ============================================================
   group('friendActivityMessage', () {
-    group('displayName 처리', () {
-      test('displayName이 있으면 이름이 문구에 반영된다', () {
+    group('actor_name 처리', () {
+      test('actor_name이 있으면 이름이 문구에 반영된다', () {
         final msg = friendActivityMessage(activity(displayName: '홍길동'));
         expect(msg, contains('홍길동님이'));
       });
 
-      test('displayName이 null이면 "친구" fallback을 쓴다', () {
+      test('actor_name이 null이면 "친구" fallback을 쓴다', () {
         final msg = friendActivityMessage(activity());
         expect(msg, startsWith('친구님이'));
       });
 
-      test('displayName이 빈 문자열이면 "친구" fallback을 쓴다', () {
+      test('actor_name이 빈 문자열이면 "친구" fallback을 쓴다', () {
         final msg = friendActivityMessage(activity(displayName: '   '));
         expect(msg, startsWith('친구님이'));
       });
@@ -80,19 +88,17 @@ void main() {
       });
     });
 
-    group('미정의 action — generic fallback', () {
-      test('공식 스펙에서 제거된 create는 generic fallback으로 처리된다', () {
+    group('그 외 action — generic fallback', () {
+      test('update는 generic fallback으로 처리된다', () {
         expect(
-          friendActivityMessage(activity(action: 'create', displayName: '철수')),
+          friendActivityMessage(activity(action: 'update', displayName: '철수')),
           '철수님의 타이머 상태가 변경되었습니다',
         );
       });
 
-      test('공식 스펙에서 제거된 complete는 generic fallback으로 처리된다', () {
+      test('delete는 generic fallback으로 처리된다', () {
         expect(
-          friendActivityMessage(
-            activity(action: 'complete', displayName: '철수'),
-          ),
+          friendActivityMessage(activity(action: 'delete', displayName: '철수')),
           '철수님의 타이머 상태가 변경되었습니다',
         );
       });
@@ -119,9 +125,9 @@ void main() {
   // TimerPage — 친구 활동 수신 시 SnackBar 표시 (provider 동작)
   // ============================================================
   group('친구 활동 SnackBar', () {
-    late StreamController<TimerWsFriendActivity> controller;
+    late StreamController<TimerWsTimerEvent> controller;
 
-    setUp(() => controller = StreamController<TimerWsFriendActivity>());
+    setUp(() => controller = StreamController<TimerWsTimerEvent>());
     tearDown(() => controller.close());
 
     Widget buildPage() {
@@ -131,9 +137,7 @@ void main() {
           // UI-scoped 알림 스트림을 제어 가능한 컨트롤러로 대체
           timerFriendActivityProvider.overrideWith((ref) => controller.stream),
           // 실제 REST/WS·주기 타이머 호출을 막기 위한 대체
-          activeTimerProvider.overrideWith(
-            (ref) => Stream<TimerRead?>.value(null),
-          ),
+          activeTimerProvider.overrideWithValue(const AsyncData(null)),
           timerHistoryProvider.overrideWith(
             (ref) => Future.value(<TimerRead>[]),
           ),
@@ -156,7 +160,7 @@ void main() {
       expect(find.text('영희님이 타이머를 시작했습니다'), findsOneWidget);
     });
 
-    testWidgets('displayName이 없으면 SnackBar에 "친구" fallback이 표시된다', (
+    testWidgets('actor_name이 없으면 SnackBar에 "친구" fallback이 표시된다', (
       tester,
     ) async {
       await tester.pumpWidget(buildPage());
@@ -275,9 +279,9 @@ List<Override> _timerOverrides({
   return [
     // 친구 활동 리스너가 실제 WS/auth 체인을 건드리지 않도록 빈 스트림으로 격리
     timerFriendActivityProvider.overrideWith(
-      (ref) => const Stream<TimerWsFriendActivity>.empty(),
+      (ref) => const Stream<TimerWsTimerEvent>.empty(),
     ),
-    activeTimerProvider.overrideWith((ref) => Stream<TimerRead?>.value(timer)),
+    activeTimerProvider.overrideWithValue(AsyncData(timer)),
     timerHistoryProvider.overrideWith(
       (ref) => Future.value(<TimerRead>[timer]),
     ),
