@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/network/server_clock.dart';
+import 'package:momeet/core/network/timer_request.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
@@ -34,6 +35,7 @@ Future<List<TimerRead>> timers(
       endDate: endDate,
       includeTodo: true, // Todo 정보 포함
       includeSchedule: true, // Schedule 정보 포함
+      options: timerRequest(),
     );
 
     return response;
