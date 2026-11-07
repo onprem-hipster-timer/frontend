@@ -114,6 +114,49 @@ void main() {
     expect(ledger.active.single.todo, isNull);
   });
 
+  test('다시 맞추기 목록에 든 타이머는 그 뒤 이벤트에서 다시 읽지 않는다', () {
+    ledger.applyPartial(
+      _timer(
+        't1',
+        TimerStatus.running,
+        updatedMinute: 1,
+      ).copyWith(todoId: 'todo-1'),
+    );
+    ledger.resync([_read('t1', TimerStatus.running, updatedMinute: 1)]);
+
+    final needsRead = ledger.applyPartial(
+      _timer(
+        't1',
+        TimerStatus.paused,
+        updatedMinute: 2,
+      ).copyWith(todoId: 'todo-1'),
+    );
+
+    expect(needsRead, isFalse);
+    expect(ledger.active.single.todo, makeTodo());
+  });
+
+  test('다시 읽는 사이 지워진 타이머는 읽은 결과로 되살아나지 않는다', () {
+    ledger.applyPartial(_timer('t1', TimerStatus.running, updatedMinute: 1));
+    ledger.delete('t1');
+    ledger.apply(_read('t1', TimerStatus.running, updatedMinute: 1));
+
+    expect(ledger.active, isEmpty);
+  });
+
+  test('Todo 없는 타이머는 이벤트마다 다시 읽지 않는다', () {
+    ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
+
+    expect(
+      ledger.applyPartial(_timer('t1', TimerStatus.paused, updatedMinute: 2)),
+      isFalse,
+    );
+    expect(
+      ledger.applyPartial(_timer('t1', TimerStatus.running, updatedMinute: 3)),
+      isFalse,
+    );
+  });
+
   test('started_at이 없는 활성 타이머도 목록에 남는다', () {
     ledger.apply(
       makeTimer(
