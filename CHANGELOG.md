@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 서버 메시지를 이벤트 봉투(`id`·`type`·`from_user`·`timestamp`·`payload`)로 받는다
   - 같은 `id`는 한 번만 반영하고, `updated_at`이 가진 값보다 이전인 타이머는 버린다 (REST 응답에도 같은 규칙)
   - `timer.deleted`를 받은 타이머는 이후 이벤트로 되살리지 않는다
+  - 이벤트는 타이머 자체 필드만 갱신하고, 관계 필드(일정·Todo 등)는 REST로 채운다
+    (처음 보는 타이머, 연결이 바뀐 타이머, `update` 이벤트는 `GET /v1/timers/{id}`로 다시 받는다)
   - (재)연결마다 REST로 활성 타이머를 다시 맞춘다
 - 닫힘 코드별 재연결: `1008`은 JWT를 한 번 새로 받아 다시 연결하고 또 거부되면 멈춘다, `4000`은 바로,
   그 외는 지수 백오프(1s부터 두 배, 상한 30s)와 지터로 횟수 제한 없이 다시 연결한다
