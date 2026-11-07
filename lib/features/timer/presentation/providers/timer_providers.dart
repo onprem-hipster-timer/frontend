@@ -155,18 +155,33 @@ class MyActiveTimers extends _$MyActiveTimers {
     }
   }
 
-  /// [timerId]를 관계를 포함해 다시 읽어 반영한다. 실패하면 가진 타이머를 그대로 둔다.
+  /// 다시 읽기가 실패했을 때 다시 읽기 전에 기다리는 시간. 다 실패하면 다음 이벤트나 재연결까지 둔다
+  static const _readRetryDelays = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 8),
+  ];
+
+  /// [timerId]를 관계를 포함해 다시 읽어 반영한다.
   ///
+  /// 실패하면 가진 타이머를 그대로 두고 [_readRetryDelays]만큼 기다렸다 다시 읽는다.
+  /// 기다리는 사이 다른 REST 응답으로 채워졌거나 타이머가 빠졌으면 다시 읽지 않는다.
   /// 다시 읽은 todo가 가진 todo와 다르면 다른 곳에서 Todo가 바뀐 것이라 Todo 목록도 다시 읽게 한다.
   Future<void> _read(String timerId) async {
-    try {
-      final timer = await ref.read(timerRepositoryProvider).getTimer(timerId);
-      if (!ref.mounted) return;
-      final held = _ledger[timerId]?.todo;
-      if (held != null && held != timer.todo) ref.invalidate(todosProvider);
-      apply(timer);
-    } catch (error) {
-      debugPrint('타이머 조회 실패: $error');
+    for (var attempt = 0; ; attempt++) {
+      try {
+        final timer = await ref.read(timerRepositoryProvider).getTimer(timerId);
+        if (!ref.mounted) return;
+        final held = _ledger[timerId]?.todo;
+        if (held != null && held != timer.todo) ref.invalidate(todosProvider);
+        apply(timer);
+        return;
+      } catch (error) {
+        debugPrint('타이머 조회 실패: $error');
+        if (attempt == _readRetryDelays.length) return;
+      }
+      await Future<void>.delayed(_readRetryDelays[attempt]);
+      if (!ref.mounted || !_ledger.needsRead(timerId)) return;
     }
   }
 

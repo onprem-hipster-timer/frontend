@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/auth/auth_user.dart';
@@ -102,6 +103,23 @@ void main() {
     await pumpEventQueue();
   }
 
+  /// 가짜 시계 [async]에서 [boot]를 마친다
+  ProviderContainer bootOn(FakeAsync async) {
+    late ProviderContainer container;
+    boot().then((booted) => container = booted);
+    async.elapse(Duration.zero);
+    return container;
+  }
+
+  /// 가짜 시계 [async]에서 [event]를 보내고 반영될 때까지 돌린다
+  void emitOn(FakeAsync async, TimerWsEvent event) {
+    client.events.add(event);
+    async.elapse(Duration.zero);
+  }
+
+  int reads(String timerId) =>
+      repository.calls.where((c) => c == 'get:$timerId').length;
+
   test('내 timer.created 이벤트로 새 타이머가 활성에 들어온다', () async {
     final container = await boot();
 
@@ -181,6 +199,107 @@ void main() {
     expect(timer.status, TimerStatus.paused);
     expect(timer.todoId, 'todo-2');
     expect(timer.todo, isNull);
+  });
+
+  test('다시 읽기가 실패하면 2초 뒤 다시 읽어 관계 필드를 채운다', () {
+    fakeAsync((async) {
+      var call = 0;
+      repository.getOne = (id) async {
+        if (++call == 1) throw Exception('500');
+        return _read(id, TimerStatus.running, minute: 1);
+      };
+      final container = bootOn(async);
+
+      emitOn(
+        async,
+        _event(
+          _linked('t1', TimerStatus.running, minute: 1),
+          type: 'timer.created',
+          action: 'start',
+        ),
+      );
+      expect(active(container).single.todo, isNull);
+
+      async.elapse(const Duration(seconds: 2));
+
+      expect(reads('t1'), 2);
+      expect(active(container).single.todo, makeTodo());
+    });
+  });
+
+  test('다시 읽기가 계속 실패하면 2·4·8초 뒤 세 번 더 읽고 그만두며 이벤트로 받은 타이머를 둔다', () {
+    fakeAsync((async) {
+      final container = bootOn(async);
+
+      emitOn(
+        async,
+        _event(
+          _linked('t1', TimerStatus.running, minute: 1),
+          type: 'timer.created',
+          action: 'start',
+        ),
+      );
+      expect(reads('t1'), 1);
+      async.elapse(const Duration(milliseconds: 1999));
+      expect(reads('t1'), 1);
+      async.elapse(const Duration(milliseconds: 1));
+      expect(reads('t1'), 2);
+      async.elapse(const Duration(seconds: 4));
+      expect(reads('t1'), 3);
+      async.elapse(const Duration(seconds: 8));
+      expect(reads('t1'), 4);
+      async.elapse(const Duration(minutes: 1));
+      expect(reads('t1'), 4);
+
+      final timer = active(container).single;
+      expect(timer.status, TimerStatus.running);
+      expect(timer.todoId, 'todo-1');
+      expect(timer.todo, isNull);
+    });
+  });
+
+  test('다시 읽기를 기다리는 사이 명령 응답으로 채워지면 다시 읽지 않는다', () {
+    fakeAsync((async) {
+      repository.respond = (id, status) => _read(id, status, minute: 2);
+      final container = bootOn(async);
+
+      emitOn(
+        async,
+        _event(
+          _linked('t1', TimerStatus.running, minute: 1),
+          type: 'timer.created',
+          action: 'start',
+        ),
+      );
+      container
+          .read(timerControllerProvider.notifier)
+          .pauseTimer(timerId: 't1');
+      async.elapse(const Duration(minutes: 1));
+
+      expect(reads('t1'), 1);
+      expect(active(container).single.status, TimerStatus.paused);
+      expect(active(container).single.todo, makeTodo());
+    });
+  });
+
+  test('다시 읽기를 기다리는 사이 지워지면 다시 읽지 않는다', () {
+    fakeAsync((async) {
+      final container = bootOn(async);
+
+      emitOn(
+        async,
+        _event(
+          _linked('t1', TimerStatus.running, minute: 1),
+          type: 'timer.created',
+          action: 'start',
+        ),
+      );
+      emitOn(async, _deleted('t1'));
+      async.elapse(const Duration(minutes: 1));
+
+      expect(reads('t1'), 1);
+      expect(active(container), isEmpty);
+    });
   });
 
   test('내 타이머가 끝났다는 이벤트가 오면 활성에서 빠진다', () async {

@@ -29,6 +29,10 @@ class TimerLedger {
   /// 가진 [timerId] 타이머. 없으면 null
   TimerRead? operator [](String timerId) => _timers[timerId];
 
+  /// 가진 [timerId] 타이머를 관계를 포함해 다시 읽어 [apply]해야 하면 true
+  bool needsRead(String timerId) =>
+      _timers.containsKey(timerId) && _needsRead.contains(timerId);
+
   /// 관계를 포함해 읽은 REST 응답 [timer]를 반영한다.
   void apply(TimerRead timer) {
     if (!_accept(timer)) return;
