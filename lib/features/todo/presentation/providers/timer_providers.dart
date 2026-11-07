@@ -48,8 +48,18 @@ Future<List<TimerRead>> activeTimers(Ref ref) =>
     ref.watch(timer_feature.myActiveTimersProvider.future);
 
 /// Todo별 타이머 집계 데이터
+///
+/// 끝난(COMPLETED) 타이머의 경과 시간만 더한다. 활성 타이머는 [activeTimerStreamProvider]로 따로 센다.
+/// 활성 타이머가 끝나 활성 목록에서 빠지면 타이머 목록을 다시 읽는다.
+///
+/// 테스트: test/features/todo/presentation/providers/todo_timer_aggregation_test.dart
 @riverpod
 Future<Map<String, TodoTimerAggregation>> todoTimerAggregations(Ref ref) async {
+  ref.listen(activeTimersProvider, (previous, next) {
+    final before = {...?previous?.value?.map((timer) => timer.id)};
+    final after = {...?next.value?.map((timer) => timer.id)};
+    if (before.difference(after).isNotEmpty) ref.invalidate(timersProvider);
+  });
   final timers = await ref.watch(timersProvider().future);
   final todoTree = await ref.watch(allTodoTreeProvider.future);
 
@@ -109,8 +119,8 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
 /// Todo별 타이머 집계 데이터
 class TodoTimerAggregation {
   final String todoId;
-  final int totalElapsedSeconds; // 본인 + 하위 Todo의 총 시간
-  final int ownElapsedSeconds; // 본인만의 시간
+  final int totalElapsedSeconds; // 본인 + 하위 Todo의 끝난 타이머 총 시간
+  final int ownElapsedSeconds; // 본인의 끝난 타이머 시간
   final List<TimerRead> timers; // 연결된 타이머들
   final bool hasActiveTimer; // 활성 타이머 여부
   final String? activeTimerId; // 활성 타이머 ID
@@ -177,8 +187,10 @@ Map<String, TodoTimerAggregation> _aggregateTimersByTodo(
   for (final timer in timers) {
     if (timer.todoId != null) {
       todoTimers.putIfAbsent(timer.todoId!, () => []).add(timer);
-      todoOwnTime[timer.todoId!] =
-          (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
+      if (timer.status == TimerStatus.completed) {
+        todoOwnTime[timer.todoId!] =
+            (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
+      }
 
       if (timer.status == TimerStatus.running ||
           timer.status == TimerStatus.paused) {
