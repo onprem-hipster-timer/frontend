@@ -59,7 +59,7 @@ final timerRepositoryProvider = Provider<TimerRepository>((ref) {
 // Timer Data Providers
 // ============================================================
 
-/// 마지막 WebSocket 에러 (연결 오류·인증 실패 시 설정, UI에서 에러 배너로 표시·닫기 시 초기화)
+/// 마지막 WebSocket 에러 (연결 오류·인증 실패 시 설정, UI에서 에러 배너로 표시. 닫거나 다시 연결되면 초기화)
 class TimerWsLastErrorNotifier extends Notifier<TimerWsError?> {
   @override
   TimerWsError? build() => null;
@@ -132,6 +132,7 @@ class MyActiveTimers extends _$MyActiveTimers {
   void _onEvent(TimerWsEvent event, String? myId) {
     switch (event) {
       case TimerWsConnected():
+        ref.read(timerWsLastErrorProvider.notifier).setError(null);
         _resync().then((_) {
           if (ref.mounted) _publish();
         });

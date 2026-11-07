@@ -239,6 +239,16 @@ void main() {
     expect(active(container).single.status, TimerStatus.paused);
   });
 
+  test('다시 연결되면 에러 배너 상태를 지운다', () async {
+    final container = await boot();
+
+    await emit(const TimerWsError(code: 'CONNECTION_ERROR', message: 'x'));
+    expect(container.read(timerWsLastErrorProvider), isNotNull);
+
+    await emit(const TimerWsConnected());
+    expect(container.read(timerWsLastErrorProvider), isNull);
+  });
+
   test('명령 응답으로 끝난 타이머는 활성에서 빠진다', () async {
     repository.listActive = () async => [
       _timer('t1', TimerStatus.running, minute: 1),
