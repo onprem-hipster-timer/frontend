@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,34 +7,8 @@ import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
+import '../../../../helpers/linked_timer_policy_backend.dart';
 import '../../../../helpers/pump_app.dart';
-
-/// `linked_timer_policy` 없는 삭제는 422 `LinkedTimerPolicyRequiredError`, 있으면 204
-class _FakeBackend implements HttpClientAdapter {
-  final requests = <RequestOptions>[];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requests.add(options);
-    if (options.uri.queryParameters.containsKey('linked_timer_policy')) {
-      return ResponseBody.fromString('', 204);
-    }
-    return ResponseBody.fromString(
-      '{"status_code": 422, "error_type": "LinkedTimerPolicyRequiredError"}',
-      422,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
 
 void main() {
   final todo = TodoRead(
@@ -53,11 +25,11 @@ void main() {
     pathIds: const ['todo-1'],
   );
 
-  late _FakeBackend backend;
+  late LinkedTimerPolicyBackend backend;
 
   /// 삭제를 확인하고 연결 타이머 정책 다이얼로그가 뜰 때까지 진행한다.
   Future<void> deleteUntilTimerPolicyAsked(WidgetTester tester) async {
-    backend = _FakeBackend();
+    backend = LinkedTimerPolicyBackend();
     final dio = Dio(BaseOptions(baseUrl: 'https://api.test'))
       ..httpClientAdapter = backend;
     await tester.pumpWidget(
