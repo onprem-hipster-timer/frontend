@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 친구 알림은 `from_user`가 내가 아닌 이벤트의 `actor_name`·`action`으로 띄운다
 
 #### API
-- OpenAPI 스펙 v2026.11.06-039b759 반영 및 API 클라이언트 재생성
+- OpenAPI 스펙 v2026.11.07-5ef2872 반영 및 API 클라이언트 재생성
 
 ### Added
 
