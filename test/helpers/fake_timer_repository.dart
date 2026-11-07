@@ -19,6 +19,10 @@ class FakeTimerRepository implements TimerRepository {
   /// 활성 타이머 목록 조회(listTimers) 응답
   Future<List<TimerRead>> Function() listActive = () async => [];
 
+  /// 타이머 하나 조회(getTimer) 응답. 기본은 실패
+  Future<TimerRead> Function(String timerId) getOne = (timerId) async =>
+      throw Exception('404');
+
   TimerRead _command(String call, String timerId, TimerStatus status) {
     calls.add(call);
     if (error != null) throw error!;
@@ -52,6 +56,12 @@ class FakeTimerRepository implements TimerRepository {
   }) {
     calls.add('list');
     return listActive();
+  }
+
+  @override
+  Future<TimerRead> getTimer(String timerId) {
+    calls.add('get:$timerId');
+    return getOne(timerId);
   }
 
   @override

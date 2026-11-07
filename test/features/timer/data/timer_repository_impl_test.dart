@@ -9,7 +9,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../helpers/timer_fixtures.dart';
 
-/// 받은 요청을 기록하고, GET에는 빈 목록·그 외에는 타이머 하나로 응답하는 백엔드
+/// 받은 요청을 기록하고, 목록 GET에는 빈 목록·그 외에는 타이머 하나로 응답하는 백엔드
 class _FakeBackend implements HttpClientAdapter {
   final requests = <RequestOptions>[];
 
@@ -20,7 +20,7 @@ class _FakeBackend implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(options);
-    final body = options.method == 'GET'
+    final body = options.method == 'GET' && options.path == '/v1/timers'
         ? <Object>[]
         : makeTimer(id: 't1', status: TimerStatus.running).toJson();
     return ResponseBody.fromString(
@@ -45,6 +45,7 @@ void main() {
 
     await repository.getTimerHistory();
     await repository.listTimers();
+    await repository.getTimer('t1');
     await repository.createTimer(const TimerCreate(allocatedDuration: 60));
     await repository.pauseTimer('t1');
     await repository.resumeTimer('t1');
@@ -52,12 +53,26 @@ void main() {
     await repository.updateTimer('t1', const TimerUpdate(title: '제목'));
     await repository.deleteTimer('t1');
 
-    expect(backend.requests, hasLength(8));
+    expect(backend.requests, hasLength(9));
     expect(
       backend.requests
           .where((r) => !isTimerRequest(r))
           .map((r) => '${r.method} ${r.path}'),
       isEmpty,
     );
+  });
+
+  test('getTimer는 일정·Todo를 포함해 읽는다', () async {
+    final backend = _FakeBackend();
+    final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'))
+      ..httpClientAdapter = backend;
+    final repository = TimerRepositoryImpl(TimersClient(dio));
+
+    await repository.getTimer('t1');
+
+    final request = backend.requests.single;
+    expect(request.path, '/v1/timers/t1');
+    expect(request.queryParameters['include_schedule'], true);
+    expect(request.queryParameters['include_todo'], true);
   });
 }

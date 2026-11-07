@@ -44,6 +44,16 @@ class TimerRepositoryImpl implements TimerRepository {
   }
 
   @override
+  Future<TimerRead> getTimer(String timerId) async {
+    return _client.getTimerV1TimersTimerIdGet(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
+    );
+  }
+
+  @override
   Future<TimerRead> createTimer(TimerCreate data) async {
     return _client.createTimerV1TimersPost(
       body: data,

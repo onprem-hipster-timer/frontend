@@ -16,6 +16,9 @@ abstract class TimerRepository {
     DateTime? endDate,
   });
 
+  /// 타이머 하나를 일정·Todo를 포함해 조회
+  Future<TimerRead> getTimer(String timerId);
+
   /// 타이머 생성 및 시작. 시작된 타이머를 돌려준다.
   Future<TimerRead> createTimer(TimerCreate data);
 
