@@ -231,7 +231,7 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
 // Timer Ticker Provider (Local UI Ticker)
 // ============================================================
 
-/// 활성 타이머의 표시 경과 시간 ([displayElapsed], 서버 시각 기준)을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
+/// 활성 타이머의 표시 남은 시간 ([displayRemaining], 서버 시각 기준)을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
 @riverpod
 Stream<Duration> timerTicker(Ref ref) async* {
   final activeTimerAsync = ref.watch(activeTimerProvider);
@@ -246,7 +246,7 @@ Stream<Duration> timerTicker(Ref ref) async* {
 
     yield activeTimer == null
         ? Duration.zero
-        : displayElapsed(activeTimer, clock.now());
+        : displayRemaining(activeTimer, clock.now());
   }
 }
 

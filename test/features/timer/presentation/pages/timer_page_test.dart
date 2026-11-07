@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 
 import '../../../../helpers/pump_app.dart';
@@ -258,6 +259,95 @@ void main() {
   });
 
   // ============================================================
+  // TimerPage — 남은 시간 (대시보드 + 타이머 목록)
+  // ============================================================
+  group('남은 시간 표시', () {
+    testWidgets('대시보드는 할당 시간에서 경과 시간을 뺀 남은 시간을 보여 준다', (tester) async {
+      final timer = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 5 * 60,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: timer,
+        controller: _FakeTimerController(),
+      );
+
+      expect(_clockText(tester), '00:20:00');
+      expect(find.text('시간 종료'), findsNothing);
+    });
+
+    testWidgets('남은 시간이 0이면 00:00:00과 시간 종료를 보여 주고 모달은 띄우지 않는다', (
+      tester,
+    ) async {
+      final timer = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.running,
+        allocatedDuration: 60,
+        elapsedTime: 90,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: timer,
+        controller: _FakeTimerController(),
+      );
+
+      expect(_clockText(tester), '00:00:00');
+      expect(find.text('시간 종료'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      final clock = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(DigitalClock),
+          matching: find.byType(Text),
+        ),
+      );
+      final colors = Theme.of(tester.element(find.byType(DigitalClock)));
+      expect(clock.style?.color, colors.colorScheme.error);
+    });
+
+    testWidgets('타이머 목록의 진행 중 항목은 남은 시간, 완료 항목은 경과 시간이다', (tester) async {
+      final active = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 5 * 60,
+      );
+      final completed = makeTimer(
+        id: 'timer-2',
+        status: TimerStatus.completed,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 10 * 60,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: active,
+        history: [active, completed],
+        controller: _FakeTimerController(),
+      );
+
+      expect(
+        find.descendant(
+          of: _historyItem('timer-1'),
+          matching: find.text('00:20:00'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _historyItem('timer-2'),
+          matching: find.text('00:10:00'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  // ============================================================
   // TimerPage — 새 작업 시작 다이얼로그의 집중 시간
   // ============================================================
   group('새 작업 시작 집중 시간', () {
@@ -303,12 +393,17 @@ void main() {
 Future<void> _pumpTimerPage(
   WidgetTester tester, {
   required TimerRead? timer,
+  List<TimerRead>? history,
   required _FakeTimerController controller,
 }) async {
   await tester.pumpWidget(
     pumpApp(
       const TimerPage(),
-      overrides: _timerOverrides(timer: timer, controller: controller),
+      overrides: _timerOverrides(
+        timer: timer,
+        history: history ?? [?timer],
+        controller: controller,
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -316,6 +411,7 @@ Future<void> _pumpTimerPage(
 
 List<Override> _timerOverrides({
   required TimerRead? timer,
+  required List<TimerRead> history,
   required _FakeTimerController controller,
 }) {
   return [
@@ -324,10 +420,14 @@ List<Override> _timerOverrides({
       (ref) => const Stream<TimerWsTimerEvent>.empty(),
     ),
     activeTimerProvider.overrideWithValue(AsyncData(timer)),
-    timerHistoryProvider.overrideWith(
-      (ref) => Future.value(<TimerRead>[?timer]),
+    timerHistoryProvider.overrideWith((ref) => Future.value(history)),
+    timerTickerProvider.overrideWith(
+      (ref) => Stream.value(
+        timer == null
+            ? Duration.zero
+            : displayRemaining(timer, DateTime.utc(2026, 11, 6)),
+      ),
     ),
-    timerTickerProvider.overrideWith((ref) => Stream.value(Duration.zero)),
     timerControllerProvider.overrideWith(() => controller),
   ];
 }
@@ -342,6 +442,19 @@ Finder _dashboardFabByIcon(IconData icon) {
     matching: find.byType(FloatingActionButton),
   );
 }
+
+String? _clockText(WidgetTester tester) => tester
+    .widget<Text>(
+      find.descendant(
+        of: find.byType(DigitalClock),
+        matching: find.byType(Text),
+      ),
+    )
+    .data;
+
+Finder _historyItem(String timerId) => find.byWidgetPredicate(
+  (widget) => widget is TimerHistoryItem && widget.timer.id == timerId,
+);
 
 Finder _historyStopButton() {
   final iconInButton = find.descendant(

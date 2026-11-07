@@ -116,6 +116,20 @@ class TimerDashboard extends ConsumerWidget {
     final activeTimerAsync = ref.watch(activeTimerProvider);
     final timerTicker = ref.watch(timerTickerProvider);
     final controllerState = ref.watch(timerControllerProvider);
+    final activeTimer = activeTimerAsync.when(
+      data: (timer) => timer,
+      loading: () => null,
+      error: (error, stack) => null,
+    );
+    final computed = activeTimer == null
+        ? Duration.zero
+        : displayRemaining(activeTimer, ref.watch(serverClockProvider).now());
+    final remaining = timerTicker.when(
+      data: (duration) => duration,
+      loading: () => computed,
+      error: (error, stack) => computed,
+    );
+    final timeUp = activeTimer != null && remaining == Duration.zero;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -140,30 +154,20 @@ class TimerDashboard extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              timerTicker.when(
-                data: (duration) =>
-                    DigitalClock(duration: duration, compact: compact),
-                loading: () =>
-                    DigitalClock(duration: Duration.zero, compact: compact),
-                error: (error, stack) =>
-                    DigitalClock(duration: Duration.zero, compact: compact),
+              DigitalClock(
+                duration: remaining,
+                timeUp: timeUp,
+                compact: compact,
               ),
               SizedBox(height: compact ? 8 : 12),
-              activeTimerAsync.when(
-                data: (activeTimer) =>
-                    CurrentTaskDisplay(timer: activeTimer, compact: compact),
-                loading: () =>
-                    CurrentTaskDisplay(timer: null, compact: compact),
-                error: (error, stack) =>
-                    CurrentTaskDisplay(timer: null, compact: compact),
+              CurrentTaskDisplay(
+                timer: activeTimer,
+                timeUp: timeUp,
+                compact: compact,
               ),
               SizedBox(height: compact ? 10 : 16),
               TimerControlButton(
-                activeTimer: activeTimerAsync.when(
-                  data: (timer) => timer,
-                  loading: () => null,
-                  error: (error, stack) => null,
-                ),
+                activeTimer: activeTimer,
                 isLoading: controllerState.isLoading,
                 onStart: () => _showStartTimerDialog(context, ref),
                 onStop: () => _stopTimer(context, ref),
@@ -338,12 +342,18 @@ class TimerDashboard extends ConsumerWidget {
 
 /// 디지털 시계 위젯
 ///
-/// HH:MM:SS 형식으로 경과 시간을 크게 표시합니다.
+/// HH:MM:SS 형식으로 남은 시간을 크게 표시합니다. 집중 시간이 끝나면([timeUp]) 에러 색으로 표시합니다.
 class DigitalClock extends StatelessWidget {
   final Duration duration;
+  final bool timeUp;
   final bool compact;
 
-  const DigitalClock({super.key, required this.duration, this.compact = false});
+  const DigitalClock({
+    super.key,
+    required this.duration,
+    this.timeUp = false,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -356,7 +366,9 @@ class DigitalClock extends StatelessWidget {
         fontFamily: 'monospace', // 등폭 폰트 사용
         fontSize: compact ? 46 : 56,
         fontWeight: FontWeight.w300,
-        color: duration.inSeconds > 0
+        color: timeUp
+            ? theme.colorScheme.error
+            : duration.inSeconds > 0
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
         letterSpacing: compact ? 0 : 4,
@@ -366,13 +378,17 @@ class DigitalClock extends StatelessWidget {
 }
 
 /// 현재 작업 표시 위젯
+///
+/// 집중 시간이 끝나면([timeUp]) 상태를 '시간 종료'로 표시합니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
+  final bool timeUp;
   final bool compact;
 
   const CurrentTaskDisplay({
     super.key,
     required this.timer,
+    this.timeUp = false,
     this.compact = false,
   });
 
@@ -395,10 +411,14 @@ class CurrentTaskDisplay extends StatelessWidget {
         timer!.schedule?.title ??
         '알 수 없는 작업';
 
-    final statusText = timer!.status == TimerStatus.running ? '실행 중' : '일시정지';
-    final statusColor = timer!.status == TimerStatus.running
-        ? theme.colorScheme.primary
-        : theme.colorScheme.error;
+    final statusText = timeUp
+        ? '시간 종료'
+        : timer!.status == TimerStatus.running
+        ? '실행 중'
+        : '일시정지';
+    final statusColor = timeUp || timer!.status != TimerStatus.running
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
 
     return Column(
       children: [
@@ -655,7 +675,7 @@ class TimerHistoryList extends ConsumerWidget {
 
 /// 타이머 히스토리 항목
 ///
-/// RUNNING/PAUSED일 때 실시간 경과 시간을 표시하고, 일시정지·재개·정지 버튼을 제공합니다.
+/// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·정지 버튼을 제공합니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
@@ -737,20 +757,23 @@ class TimerHistoryItem extends ConsumerWidget {
         ? formatTime(timer.endedAt!)
         : '--:--';
 
-    final bool useLiveTicker =
-        timer.status == TimerStatus.running && timer.id == activeTimer?.id;
-    final elapsed = displayElapsed(timer, ref.watch(serverClockProvider).now());
-    final Duration duration = useLiveTicker
-        ? tickerAsync.when(
-            data: (d) => d,
-            loading: () => elapsed,
-            error: (_, _) => elapsed,
-          )
-        : elapsed;
-
     final isActive =
         timer.status == TimerStatus.running ||
         timer.status == TimerStatus.paused;
+
+    final bool useLiveTicker =
+        timer.status == TimerStatus.running && timer.id == activeTimer?.id;
+    final now = ref.watch(serverClockProvider).now();
+    final shown = isActive
+        ? displayRemaining(timer, now)
+        : displayElapsed(timer, now);
+    final Duration duration = useLiveTicker
+        ? tickerAsync.when(
+            data: (d) => d,
+            loading: () => shown,
+            error: (_, _) => shown,
+          )
+        : shown;
     final isThisLoading = controllerLoading;
 
     return Card(
