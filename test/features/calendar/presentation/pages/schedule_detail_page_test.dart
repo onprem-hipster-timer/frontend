@@ -1,11 +1,16 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 
+import '../../../../helpers/linked_timer_policy_backend.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/schedule_fixtures.dart';
 import '../../../../helpers/timer_fixtures.dart';
@@ -256,6 +261,73 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('매주 (월, 수, 금)'), findsOneWidget);
+    });
+  });
+
+  // ============================================================
+  // 삭제
+  // ============================================================
+  group('삭제', () {
+    testWidgets('서버가 연결 타이머 정책을 요구하면 고른 정책으로 다시 삭제하고 닫는다', (tester) async {
+      final backend = LinkedTimerPolicyBackend();
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.test'))
+        ..httpClientAdapter = backend;
+      final router = GoRouter(
+        initialLocation: '/detail',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const Scaffold(body: Text('목록')),
+            routes: [
+              GoRoute(
+                path: 'detail',
+                builder: (context, state) =>
+                    const ScheduleDetailPage(scheduleId: testScheduleId),
+              ),
+            ],
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            scheduleDetailProvider(
+              testScheduleId,
+            ).overrideWith((ref) => Future.value(testSchedule)),
+            scheduleTimersProvider(
+              testScheduleId,
+            ).overrideWith((ref) => Future.value(testTimers)),
+            schedulesApiProvider.overrideWithValue(SchedulesClient(dio)),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('삭제'),
+        ),
+      );
+      // 다이얼로그 뒤의 삭제 버튼 스피너가 계속 돌아 pumpAndSettle은 끝나지 않는다
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(backend.requests, hasLength(1));
+      expect(find.text('연결된 타이머 처리'), findsOneWidget);
+
+      await tester.tap(find.text('타이머 삭제'));
+      await tester.pumpAndSettle();
+
+      expect(backend.requests, hasLength(2));
+      expect(
+        backend.requests.last.uri.queryParameters['linked_timer_policy'],
+        'delete',
+      );
+      expect(find.text('목록'), findsOneWidget);
     });
   });
 }
