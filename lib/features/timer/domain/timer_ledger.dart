@@ -63,6 +63,16 @@ class TimerLedger {
     return _needsRead.contains(timer.id);
   }
 
+  /// 바뀐 [todo]를 그 Todo에 연결된 타이머에 반영한다.
+  ///
+  /// 타이머가 바뀐 것이 아니라 `updated_at` 규칙을 거치지 않는다.
+  void updateTodo(TodoRead todo) {
+    _timers.updateAll(
+      (_, timer) =>
+          timer.todoId == todo.id ? timer.copyWith(todo: todo) : timer,
+    );
+  }
+
   /// 지운 타이머가 아니고 `updated_at`이 본 값보다 이전이 아니면 그 `updated_at`을 기억하고 true
   bool _accept(TimerRead timer) {
     if (_deleted.contains(timer.id)) return false;

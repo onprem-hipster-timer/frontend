@@ -178,6 +178,10 @@ class TimerDashboard extends ConsumerWidget {
                 timer: activeTimer,
                 timeUp: timeUp,
                 compact: compact,
+                onTodoChanged: (todo) {
+                  if (!context.mounted) return;
+                  ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
+                },
               ),
               SizedBox(height: compact ? 10 : 16),
               TimerControlButton(
@@ -430,16 +434,19 @@ class DigitalClock extends StatelessWidget {
 ///
 /// 집중 시간이 끝나면([timeUp]) 상태를 '시간 종료'로 표시합니다.
 /// 연결된 Todo가 있으면 제목 옆에 Todo 상태를 표시하고, 일시정지 중에는 그 자리에서 바꿀 수 있습니다.
+/// 바꾼 뒤 서버가 돌려준 Todo로 [onTodoChanged]를 부릅니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
   final bool timeUp;
   final bool compact;
+  final ValueChanged<TodoRead>? onTodoChanged;
 
   const CurrentTaskDisplay({
     super.key,
     required this.timer,
     this.timeUp = false,
     this.compact = false,
+    this.onTodoChanged,
   });
 
   @override
@@ -497,7 +504,11 @@ class CurrentTaskDisplay extends StatelessWidget {
           children: [
             if (todo != null) ...[
               if (timer!.status == TimerStatus.paused)
-                TodoStatusSelector(todo: todo, iconSize: todoIconSize)
+                TodoStatusSelector(
+                  todo: todo,
+                  iconSize: todoIconSize,
+                  onChanged: onTodoChanged,
+                )
               else
                 Icon(
                   todo.status.icon,

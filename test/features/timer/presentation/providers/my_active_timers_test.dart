@@ -266,6 +266,23 @@ void main() {
     expect(active(container).single.tags, [makeTag()]);
   });
 
+  test('updateTodo는 그 Todo에 연결된 타이머의 todo만 바꾸고 REST를 부르지 않는다', () async {
+    repository.listActive = () async => [
+      _read('t1', TimerStatus.paused, minute: 1),
+      _read('t2', TimerStatus.running, minute: 2, todoId: 'todo-2'),
+    ];
+    final container = await boot();
+    final scheduled = makeTodo().copyWith(status: TodoStatus.scheduled);
+
+    container.read(myActiveTimersProvider.notifier).updateTodo(scheduled);
+
+    final timers = {for (final t in active(container)) t.id: t};
+    expect(timers['t1']!.todo, scheduled);
+    expect(timers['t1']!.updatedAt, DateTime.utc(2026, 11, 6, 10, 1));
+    expect(timers['t2']!.todo, makeTodo(id: 'todo-2'));
+    expect(repository.calls, ['list']);
+  });
+
   test('연결 오류를 에러 배너 상태로 넘긴다', () async {
     final container = await boot();
 

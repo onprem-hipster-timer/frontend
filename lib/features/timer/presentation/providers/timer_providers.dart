@@ -120,6 +120,14 @@ class MyActiveTimers extends _$MyActiveTimers {
   /// 명령의 REST 응답을 반영한다.
   void apply(TimerRead timer) => _change(() => _ledger.apply(timer));
 
+  /// Todo를 바꾼 REST 응답 [todo]를 그 Todo에 연결된 타이머에 반영한다.
+  ///
+  /// 타이머가 바뀐 것이 아니라 타이머 목록은 다시 읽지 않는다.
+  void updateTodo(TodoRead todo) {
+    _ledger.updateTodo(todo);
+    state = AsyncData(_ledger.active);
+  }
+
   void _onEvent(TimerWsEvent event, String? myId) {
     switch (event) {
       case TimerWsConnected():

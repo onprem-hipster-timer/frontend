@@ -5,14 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
+import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
@@ -456,6 +459,78 @@ void main() {
       expect(body.status, TodoStatus.done);
       expect(controller.stopCalled, isFalse);
       expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('예정됨을 고르면 타이머 이벤트 없이 바로 예정됨으로 보여 주고 Todo 목록을 다시 읽는다', (
+      tester,
+    ) async {
+      final scheduled = makeTodo().copyWith(status: TodoStatus.scheduled);
+      when(
+        () => todosApi.updateTodoV1TodosTodoIdPatch(
+          todoId: any(named: 'todoId'),
+          body: any(named: 'body'),
+          timezone: any(named: 'timezone'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async => scheduled);
+      // 실시간 이벤트 없이 REST로 받은 활성 타이머만 가진다
+      final repository = FakeTimerRepository()
+        ..listActive = () async => [withTodo(TimerStatus.paused)];
+      var todoListReads = 0;
+
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            timerFriendActivityProvider.overrideWith(
+              (ref) => const Stream<TimerWsTimerEvent>.empty(),
+            ),
+            timerRepositoryProvider.overrideWithValue(repository),
+            timerWsClientProvider.overrideWithValue(null),
+            currentUserProvider.overrideWithValue(null),
+            timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+            timerTickerProvider.overrideWith(
+              (ref) => Stream.value(const Duration(minutes: 60)),
+            ),
+            timerControllerProvider.overrideWith(_FakeTimerController.new),
+            todosApiProvider.overrideWithValue(todosApi),
+            todosProvider.overrideWith((ref, groupId) async {
+              todoListReads++;
+              return <TodoRead>[];
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // 열려 있는 Todo 목록
+      ProviderScope.containerOf(
+        tester.element(find.byType(TimerPage)),
+      ).listen(todosProvider(null), (_, _) {});
+      await tester.pumpAndSettle();
+      expect(todoListReads, 1);
+
+      await tester.tap(find.byType(TodoStatusSelector));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(PopupMenuItem<TodoStatus>),
+          matching: find.text(TodoStatus.scheduled.label),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byType(TodoStatusSelector),
+          matching: find.byIcon(TodoStatus.scheduled.icon),
+        ),
+      );
+      expect(
+        icon.color,
+        TodoStatus.scheduled.color(tester.element(find.byType(TimerPage))),
+      );
+      expect(todoListReads, 2);
+      expect(repository.calls, ['list']);
     });
 
     testWidgets('실행 중이면 Todo 상태 아이콘만 보여 준다', (tester) async {

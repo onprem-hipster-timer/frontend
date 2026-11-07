@@ -40,10 +40,14 @@ class TodoStatusSelector extends ConsumerWidget {
   /// 아이콘 크기 (기본값: 24.0)
   final double iconSize;
 
+  /// 상태를 바꾼 뒤 서버가 돌려준 Todo로 불린다.
+  final ValueChanged<TodoRead>? onChanged;
+
   const TodoStatusSelector({
     super.key,
     required this.todo,
     this.iconSize = 24.0,
+    this.onChanged,
   });
 
   @override
@@ -52,12 +56,13 @@ class TodoStatusSelector extends ConsumerWidget {
       initialValue: todo.status,
       onSelected: (TodoStatus newStatus) async {
         if (newStatus != todo.status) {
-          await updateTodoMutation.run(
+          final updated = await updateTodoMutation.run(
             ref,
             (tsx) => tsx
                 .get(todoMutationsProvider.notifier)
                 .changeStatus(todo.id, newStatus),
           );
+          onChanged?.call(updated);
         }
       },
       itemBuilder: (BuildContext context) {
