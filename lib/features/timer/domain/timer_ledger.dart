@@ -6,6 +6,8 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// - `updated_at`이 본 적 있는 값보다 이전이면 버리고, 같거나 나중이면 반영한다.
 ///   다시 맞추기로 목록에서 뺀 타이머의 `updated_at`도 기억한다
 /// - 삭제된 타이머 ID는 기록해 두고, 그 뒤에 오는 같은 ID는 버린다
+/// - 실시간 이벤트의 타이머에는 관계 필드(`tags`·`schedule`·`todo`·`is_shared`·`visibility_level`)가 없다.
+///   이벤트는 타이머 자체 필드만 바꾸고, 관계 필드는 관계를 포함해 읽은 REST 응답으로 채운다
 ///
 /// 규칙: backend docs/development/realtime-adapter.ko.md 5장
 /// 테스트: test/features/timer/domain/timer_ledger_test.dart
@@ -16,18 +18,58 @@ class TimerLedger {
   final _updatedAt = <String, DateTime>{};
   final _deleted = <String>{};
 
+  /// 관계 필드를 REST로 아직 채우지 못한 타이머 ID
+  final _missingRelations = <String>{};
+
   /// 활성(RUNNING·PAUSED) 타이머. 최근에 시작한 순
   List<TimerRead> get active =>
       _timers.values.where(_isActive).toList()
         ..sort((a, b) => _startedOf(b).compareTo(_startedOf(a)));
 
-  /// [timer]를 반영한다.
+  /// 관계를 포함해 읽은 REST 응답 [timer]를 반영한다.
   void apply(TimerRead timer) {
-    if (_deleted.contains(timer.id)) return;
-    final seen = _updatedAt[timer.id];
-    if (seen != null && timer.updatedAt.isBefore(seen)) return;
-    _updatedAt[timer.id] = timer.updatedAt;
+    if (!_accept(timer)) return;
     _timers[timer.id] = timer;
+    _missingRelations.remove(timer.id);
+  }
+
+  /// 실시간 이벤트의 [timer]를 반영한다.
+  ///
+  /// 타이머 자체 필드만 바꾸고 가진 관계 필드는 둔다. `schedule_id`·`todo_id`가 바뀌었으면
+  /// 가진 `schedule`·`todo`는 버린다. 처음 보는 타이머는 그대로 넣는다.
+  /// 관계 필드가 비어 있어 그 타이머를 REST로 다시 읽어 [apply]해야 하면 true를 돌려준다.
+  /// [apply]로 채우기 전까지는 이후 이벤트에도 true다.
+  bool applyPartial(TimerRead timer) {
+    if (!_accept(timer)) return false;
+    final held = _timers[timer.id];
+    if (held == null) {
+      _timers[timer.id] = timer;
+      _missingRelations.add(timer.id);
+      return true;
+    }
+    final scheduleChanged = timer.scheduleId != held.scheduleId;
+    final todoChanged = timer.todoId != held.todoId;
+    _timers[timer.id] = timer.copyWith(
+      tags: held.tags,
+      isShared: held.isShared,
+      visibilityLevel: held.visibilityLevel,
+      schedule: scheduleChanged ? null : held.schedule,
+      todo: todoChanged ? null : held.todo,
+    );
+    if ((scheduleChanged && timer.scheduleId != null) ||
+        (todoChanged && timer.todoId != null)) {
+      _missingRelations.add(timer.id);
+    }
+    return _missingRelations.contains(timer.id);
+  }
+
+  /// 지운 타이머가 아니고 `updated_at`이 본 값보다 이전이 아니면 그 `updated_at`을 기억하고 true
+  bool _accept(TimerRead timer) {
+    if (_deleted.contains(timer.id)) return false;
+    final seen = _updatedAt[timer.id];
+    if (seen != null && timer.updatedAt.isBefore(seen)) return false;
+    _updatedAt[timer.id] = timer.updatedAt;
+    return true;
   }
 
   /// [timerId]를 지운 것으로 기록한다.
