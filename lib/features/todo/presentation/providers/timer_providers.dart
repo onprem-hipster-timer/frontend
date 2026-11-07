@@ -82,13 +82,13 @@ Future<TodoTimerAggregation?> todoTimerAggregation(
 
 /// 활성 타이머 실시간 스트림
 ///
-/// [activeTimersProvider]가 바뀌면 스트림이 재시작됩니다.
+/// 구독하자마자 한 번 내고 이후 1초마다 냅니다. [activeTimersProvider]가 바뀌면 스트림이 재시작됩니다.
 @riverpod
 Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
   final activeTimers = await ref.watch(activeTimersProvider.future);
   final clock = ref.watch(serverClockProvider);
 
-  yield* Stream.periodic(const Duration(seconds: 1), (_) {
+  Map<String, ActiveTimerState> states() {
     final now = clock.now();
     final activeStates = <String, ActiveTimerState>{};
 
@@ -109,7 +109,10 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
     }
 
     return activeStates;
-  });
+  }
+
+  yield states();
+  yield* Stream.periodic(const Duration(seconds: 1), (_) => states());
 }
 
 // ============================================================
