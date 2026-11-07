@@ -98,6 +98,8 @@ class TimerRepositoryImpl implements TimerRepository {
     return _client.updateTimerV1TimersTimerIdPatch(
       timerId: timerId,
       body: data,
+      includeTodo: true,
+      includeSchedule: true,
       options: timerRequest(),
     );
   }

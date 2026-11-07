@@ -62,17 +62,31 @@ void main() {
     );
   });
 
-  test('getTimer는 일정·Todo를 포함해 읽는다', () async {
+  test('타이머를 돌려주는 요청은 모두 일정·Todo를 포함해 받는다', () async {
     final backend = _FakeBackend();
     final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com'))
       ..httpClientAdapter = backend;
     final repository = TimerRepositoryImpl(TimersClient(dio));
 
+    await repository.getTimerHistory();
+    await repository.listTimers();
     await repository.getTimer('t1');
+    await repository.createTimer(const TimerCreate(allocatedDuration: 60));
+    await repository.pauseTimer('t1');
+    await repository.resumeTimer('t1');
+    await repository.stopTimer('t1');
+    await repository.updateTimer('t1', const TimerUpdate(title: '제목'));
 
-    final request = backend.requests.single;
-    expect(request.path, '/v1/timers/t1');
-    expect(request.queryParameters['include_schedule'], true);
-    expect(request.queryParameters['include_todo'], true);
+    expect(backend.requests, hasLength(8));
+    expect(
+      backend.requests
+          .where(
+            (r) =>
+                r.queryParameters['include_schedule'] != true ||
+                r.queryParameters['include_todo'] != true,
+          )
+          .map((r) => '${r.method} ${r.path}'),
+      isEmpty,
+    );
   });
 }
