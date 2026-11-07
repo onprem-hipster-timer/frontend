@@ -7,7 +7,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/timer_fixtures.dart';
 
-TimerRead _timer(String id, TimerStatus status, String todoId, int elapsed) =>
+TimerRead _timer(String id, TimerStatus status, String? todoId, int elapsed) =>
     makeTimer(
       id: id,
       status: status,
@@ -89,5 +89,33 @@ void main() {
 
     await changeActive(container, []);
     expect(fetches, 2);
+  });
+
+  test('하나가 끝나고 동시에 다른 하나가 시작돼 개수가 같아도 다시 읽는다', () async {
+    active = [_timer('t1', TimerStatus.running, 'parent', 0)];
+    final container = boot();
+    await container.read(todoTimerAggregationsProvider.future);
+    expect(fetches, 1);
+
+    await changeActive(container, [
+      _timer('t2', TimerStatus.running, 'parent', 0),
+    ]);
+    expect(fetches, 2);
+  });
+
+  test('Todo 없는 타이머와 트리에 없는 Todo의 타이머는 집계를 깨뜨리지 않는다', () async {
+    history = [
+      _timer('t1', TimerStatus.completed, null, 600),
+      _timer('t2', TimerStatus.completed, 'ghost', 300),
+      _timer('t3', TimerStatus.completed, 'parent', 60),
+    ];
+    active = [_timer('t4', TimerStatus.running, 'ghost', 10)];
+    final container = boot();
+
+    final aggregations = await container.read(
+      todoTimerAggregationsProvider.future,
+    );
+
+    expect(aggregations['parent']?.totalElapsedSeconds, 60);
   });
 }
