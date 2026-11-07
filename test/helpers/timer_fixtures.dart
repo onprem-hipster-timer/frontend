@@ -20,3 +20,12 @@ TimerRead makeTimer({
     startedAt: startedAt,
   );
 }
+
+/// 테스트용 [TodoRead] 인스턴스를 생성하는 팩토리.
+TodoRead makeTodo({String id = 'todo-1'}) => TodoRead(
+  id: id,
+  title: '테스트 할 일',
+  tagGroupId: 'group-1',
+  status: TodoStatus.unscheduled,
+  createdAt: DateTime.utc(2026, 1, 1),
+);

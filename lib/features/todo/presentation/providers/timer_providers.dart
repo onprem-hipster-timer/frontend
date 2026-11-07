@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart'
     as timer_feature;
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
@@ -40,19 +42,24 @@ Future<List<TimerRead>> timers(
   }
 }
 
-/// 활성 타이머만 조회 (RUNNING, PAUSED 상태)
+/// 활성 타이머 (RUNNING, PAUSED 상태). 실시간 이벤트가 반영된 [timer_feature.myActiveTimersProvider]를 쓴다
 @riverpod
-Future<List<TimerRead>> activeTimers(Ref ref) async {
-  return ref.watch(
-    timersProvider(
-      status: [TimerStatus.running.json!, TimerStatus.paused.json!],
-    ).future,
-  );
-}
+Future<List<TimerRead>> activeTimers(Ref ref) =>
+    ref.watch(timer_feature.myActiveTimersProvider.future);
 
 /// Todo별 타이머 집계 데이터
+///
+/// 끝난(COMPLETED) 타이머의 경과 시간만 더한다. 활성 타이머는 [activeTimerStreamProvider]로 따로 센다.
+/// 활성 타이머가 끝나 활성 목록에서 빠지면 타이머 목록을 다시 읽는다.
+///
+/// 테스트: test/features/todo/presentation/providers/todo_timer_aggregation_test.dart
 @riverpod
 Future<Map<String, TodoTimerAggregation>> todoTimerAggregations(Ref ref) async {
+  ref.listen(activeTimersProvider, (previous, next) {
+    final before = {...?previous?.value?.map((timer) => timer.id)};
+    final after = {...?next.value?.map((timer) => timer.id)};
+    if (before.difference(after).isNotEmpty) ref.invalidate(timersProvider);
+  });
   final timers = await ref.watch(timersProvider().future);
   final todoTree = await ref.watch(allTodoTreeProvider.future);
 
@@ -75,48 +82,37 @@ Future<TodoTimerAggregation?> todoTimerAggregation(
 
 /// 활성 타이머 실시간 스트림
 ///
-/// Timer feature의 [timer_feature.activeTimerProvider](WS 기반)를 watch하여
-/// WS 이벤트 수신 시 스트림이 재시작됩니다.
+/// 구독하자마자 한 번 내고 이후 1초마다 냅니다. [activeTimersProvider]가 바뀌면 스트림이 재시작됩니다.
 @riverpod
 Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
-  // WS 이벤트를 변경 신호로 watch — 이벤트마다 스트림 재시작
-  ref.watch(timer_feature.activeTimerProvider);
-
   final activeTimers = await ref.watch(activeTimersProvider.future);
+  final clock = ref.watch(serverClockProvider);
 
-  yield* Stream.periodic(const Duration(seconds: 1), (_) {
-    final now = DateTime.now();
+  Map<String, ActiveTimerState> states() {
+    final now = clock.now();
     final activeStates = <String, ActiveTimerState>{};
 
     for (final timer in activeTimers) {
-      if (timer.status == TimerStatus.running && timer.startedAt != null) {
-        final elapsedSinceStart = now.difference(timer.startedAt!).inSeconds;
-        final totalElapsed = timer.elapsedTime + elapsedSinceStart;
-
-        activeStates[timer.todoId ??
-            timer.scheduleId ??
-            timer.id] = ActiveTimerState(
-          timerId: timer.id,
-          elapsedSeconds: totalElapsed,
-          status: timer.status,
-          startedAt: timer.startedAt,
-          pausedAt: timer.pausedAt,
-        );
-      } else if (timer.status == TimerStatus.paused) {
-        activeStates[timer.todoId ??
-            timer.scheduleId ??
-            timer.id] = ActiveTimerState(
-          timerId: timer.id,
-          elapsedSeconds: timer.elapsedTime,
-          status: timer.status,
-          startedAt: timer.startedAt,
-          pausedAt: timer.pausedAt,
-        );
+      if (timer.status != TimerStatus.running &&
+          timer.status != TimerStatus.paused) {
+        continue;
       }
+      activeStates[timer.todoId ??
+          timer.scheduleId ??
+          timer.id] = ActiveTimerState(
+        timerId: timer.id,
+        elapsedSeconds: displayElapsed(timer, now).inSeconds,
+        status: timer.status,
+        startedAt: timer.startedAt,
+        pausedAt: timer.pausedAt,
+      );
     }
 
     return activeStates;
-  });
+  }
+
+  yield states();
+  yield* Stream.periodic(const Duration(seconds: 1), (_) => states());
 }
 
 // ============================================================
@@ -126,8 +122,8 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
 /// Todo별 타이머 집계 데이터
 class TodoTimerAggregation {
   final String todoId;
-  final int totalElapsedSeconds; // 본인 + 하위 Todo의 총 시간
-  final int ownElapsedSeconds; // 본인만의 시간
+  final int totalElapsedSeconds; // 본인 + 하위 Todo의 끝난 타이머 총 시간
+  final int ownElapsedSeconds; // 본인의 끝난 타이머 시간
   final List<TimerRead> timers; // 연결된 타이머들
   final bool hasActiveTimer; // 활성 타이머 여부
   final String? activeTimerId; // 활성 타이머 ID
@@ -194,8 +190,10 @@ Map<String, TodoTimerAggregation> _aggregateTimersByTodo(
   for (final timer in timers) {
     if (timer.todoId != null) {
       todoTimers.putIfAbsent(timer.todoId!, () => []).add(timer);
-      todoOwnTime[timer.todoId!] =
-          (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
+      if (timer.status == TimerStatus.completed) {
+        todoOwnTime[timer.todoId!] =
+            (todoOwnTime[timer.todoId!] ?? 0) + timer.elapsedTime;
+      }
 
       if (timer.status == TimerStatus.running ||
           timer.status == TimerStatus.paused) {

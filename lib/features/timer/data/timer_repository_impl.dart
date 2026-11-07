@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+import 'package:momeet/core/network/timer_request.dart';
 import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -12,19 +12,6 @@ class TimerRepositoryImpl implements TimerRepository {
   TimerRepositoryImpl(this._client);
 
   @override
-  Future<TimerRead?> getActiveTimer() async {
-    try {
-      return await _client.getUserActiveTimerV1TimersActiveGet(
-        includeTodo: true,
-        includeSchedule: true,
-      );
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return null;
-      rethrow;
-    }
-  }
-
-  @override
   Future<List<TimerRead>> getTimerHistory() async {
     return _client.listTimersV1TimersGet(
       status: [
@@ -34,6 +21,7 @@ class TimerRepositoryImpl implements TimerRepository {
       ],
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -51,6 +39,57 @@ class TimerRepositoryImpl implements TimerRepository {
       endDate: endDate,
       includeTodo: true,
       includeSchedule: true,
+      options: timerRequest(),
+    );
+  }
+
+  @override
+  Future<TimerRead> getTimer(String timerId) async {
+    return _client.getTimerV1TimersTimerIdGet(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
+    );
+  }
+
+  @override
+  Future<TimerRead> createTimer(TimerCreate data) async {
+    return _client.createTimerV1TimersPost(
+      body: data,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
+    );
+  }
+
+  @override
+  Future<TimerRead> pauseTimer(String timerId) async {
+    return _client.pauseTimerV1TimersTimerIdPausePatch(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
+    );
+  }
+
+  @override
+  Future<TimerRead> resumeTimer(String timerId) async {
+    return _client.resumeTimerV1TimersTimerIdResumePatch(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
+    );
+  }
+
+  @override
+  Future<TimerRead> stopTimer(String timerId) async {
+    return _client.stopTimerV1TimersTimerIdStopPost(
+      timerId: timerId,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
@@ -59,11 +98,17 @@ class TimerRepositoryImpl implements TimerRepository {
     return _client.updateTimerV1TimersTimerIdPatch(
       timerId: timerId,
       body: data,
+      includeTodo: true,
+      includeSchedule: true,
+      options: timerRequest(),
     );
   }
 
   @override
   Future<void> deleteTimer(String timerId) async {
-    await _client.deleteTimerV1TimersTimerIdDelete(timerId: timerId);
+    await _client.deleteTimerV1TimersTimerIdDelete(
+      timerId: timerId,
+      options: timerRequest(),
+    );
   }
 }

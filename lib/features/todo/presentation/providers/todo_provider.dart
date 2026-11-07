@@ -97,15 +97,18 @@ class TodoMutationsNotifier extends Notifier<void> {
   }
 
   /// Todo 삭제
-  /// 삭제. 연결된 캘린더 일정이 있으면 [linkedSchedulePolicy]가 필요하다(없으면 서버가 422).
+  /// 삭제. 연결된 캘린더 일정이 있으면 [linkedSchedulePolicy], 연결된 타이머가 있으면
+  /// [linkedTimerPolicy]가 필요하다(없으면 서버가 422).
   Future<void> delete(
     String todoId, {
     LinkedSchedulePolicy? linkedSchedulePolicy,
+    LinkedTimerPolicy? linkedTimerPolicy,
   }) async {
     final api = ref.read(todosApiProvider);
     await api.deleteTodoV1TodosTodoIdDelete(
       todoId: todoId,
       linkedSchedulePolicy: linkedSchedulePolicy,
+      linkedTimerPolicy: linkedTimerPolicy,
     );
     ref.invalidate(todosProvider);
   }
