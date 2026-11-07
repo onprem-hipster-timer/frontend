@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -66,10 +67,12 @@ TimerWsTimerEvent _deleted(String timerId) => TimerWsTimerEvent(
 void main() {
   late FakeTimerRepository repository;
   late _FakeWsClient client;
+  late int todoListReads;
 
   setUp(() {
     repository = FakeTimerRepository();
     client = _FakeWsClient();
+    todoListReads = 0;
   });
 
   Future<ProviderContainer> boot() async {
@@ -86,6 +89,10 @@ void main() {
           ),
         ),
         timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+        todosProvider.overrideWith((ref, groupId) async {
+          todoListReads++;
+          return <TodoRead>[];
+        }),
       ],
     );
     addTearDown(container.dispose);
@@ -281,6 +288,47 @@ void main() {
     expect(timers['t1']!.updatedAt, DateTime.utc(2026, 11, 6, 10, 1));
     expect(timers['t2']!.todo, makeTodo(id: 'todo-2'));
     expect(repository.calls, ['list']);
+  });
+
+  test('update 이벤트로 다시 읽은 todo가 가진 todo와 다르면 Todo 목록을 한 번 다시 읽게 한다', () async {
+    repository.listActive = () async => [
+      _read('t1', TimerStatus.paused, minute: 1),
+    ];
+    final scheduled = makeTodo().copyWith(status: TodoStatus.scheduled);
+    repository.getOne = (id) async =>
+        _read(id, TimerStatus.paused, minute: 2).copyWith(todo: scheduled);
+    final container = await boot();
+    container.listen(todosProvider(null), (_, _) {});
+    await pumpEventQueue();
+    expect(todoListReads, 1);
+
+    await emit(
+      _event(
+        _timer('t1', TimerStatus.paused, minute: 2).copyWith(todoId: 'todo-1'),
+      ),
+    );
+
+    expect(active(container).single.todo, scheduled);
+    expect(todoListReads, 2);
+  });
+
+  test('다시 읽은 todo가 가진 todo와 같으면 Todo 목록을 다시 읽게 하지 않는다', () async {
+    repository.listActive = () async => [
+      _read('t1', TimerStatus.paused, minute: 1),
+    ];
+    repository.getOne = (id) async => _read(id, TimerStatus.paused, minute: 2);
+    final container = await boot();
+    container.listen(todosProvider(null), (_, _) {});
+    await pumpEventQueue();
+
+    await emit(
+      _event(
+        _timer('t1', TimerStatus.paused, minute: 2).copyWith(todoId: 'todo-1'),
+      ),
+    );
+
+    expect(repository.calls, contains('get:t1'));
+    expect(todoListReads, 1);
   });
 
   test('연결 오류를 에러 배너 상태로 넘긴다', () async {

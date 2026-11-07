@@ -7,6 +7,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/data/timer_repository_impl.dart';
 import 'package:momeet/features/timer/domain/timer_ledger.dart';
 import 'package:momeet/features/timer/domain/timer_repository.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
@@ -154,10 +155,15 @@ class MyActiveTimers extends _$MyActiveTimers {
   }
 
   /// [timerId]를 관계를 포함해 다시 읽어 반영한다. 실패하면 가진 타이머를 그대로 둔다.
+  ///
+  /// 다시 읽은 todo가 가진 todo와 다르면 다른 곳에서 Todo가 바뀐 것이라 Todo 목록도 다시 읽게 한다.
   Future<void> _read(String timerId) async {
     try {
       final timer = await ref.read(timerRepositoryProvider).getTimer(timerId);
-      if (ref.mounted) apply(timer);
+      if (!ref.mounted) return;
+      final held = _ledger[timerId]?.todo;
+      if (held != null && held != timer.todo) ref.invalidate(todosProvider);
+      apply(timer);
     } catch (error) {
       debugPrint('타이머 조회 실패: $error');
     }

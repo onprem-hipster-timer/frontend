@@ -26,6 +26,9 @@ class TimerLedger {
       _timers.values.where(_isActive).toList()
         ..sort((a, b) => _startedOf(b).compareTo(_startedOf(a)));
 
+  /// 가진 [timerId] 타이머. 없으면 null
+  TimerRead? operator [](String timerId) => _timers[timerId];
+
   /// 관계를 포함해 읽은 REST 응답 [timer]를 반영한다.
   void apply(TimerRead timer) {
     if (!_accept(timer)) return;
