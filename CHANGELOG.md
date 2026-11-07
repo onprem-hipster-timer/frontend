@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 타이머 화면은 남은 시간(`allocated_duration - displayElapsed`, 0 아래로 내려가지 않음)을 센다
   - 0이 되면 `00:00:00`과 '시간 종료'로 표시한다. 타이머는 사용자가 완료할 때까지 RUNNING으로 남는다
   - 타이머 목록의 진행 중·일시정지 항목도 남은 시간, 끝난 항목은 경과 시간을 보여 준다
-- 새 타이머의 기본 집중 시간(`allocated_duration`)을 25분으로. 새 작업 시작에서 15·25·45·60분 중 고른다
+- 새 타이머의 기본 집중 시간(`allocated_duration`)을 25분으로. 새 작업 시작에서 1~600분을 입력하거나 15·25·45·60분 칩으로 채운다
 - 타이머 화면의 정지를 '완료'로 표시 (버튼, 확인 다이얼로그, 알림). 일시정지·재개는 확인 없이 바로 보낸다
 
 #### Timer WebSocket
@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Timer
 - 타이머 화면의 작업 제목 옆에 연결된 Todo의 상태 아이콘. 일시정지 중에는 그 자리에서 상태를 바꾼다
   - `PATCH /v1/todos/{id}`만 보낸다. Todo가 완료·취소되면 서버가 타이머를 끝내고 `timer.updated`로 알린다
+  - 바꾼 상태는 PATCH 응답으로 바로 보여 준다. 다른 기기에서 바뀐 Todo는 타이머를 다시 읽을 때 반영하고 Todo 목록도 다시 읽게 한다
 
 #### Todo
 - Todo 목록에 하위 Todo를 포함한 누적 집중 시간
