@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "onperm-hipster-timer-backend",
-    "version": "v2026.11.06-039b759"
+    "version": "v2026.11.07-5ef2872"
   },
   "paths": {
     "/v1/schedules": {
@@ -375,7 +375,7 @@
           "Schedules"
         ],
         "summary": "Delete Schedule",
-        "description": "일정 삭제 (반복 일정 인스턴스 포함)\n\n일반 일정과 가상 인스턴스 모두 지원:\n- 일반 일정: schedule_id로 조회하여 삭제\n- 가상 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송\n\nsource-linked 일정인데 `source_todo_policy`가 누락되면 422를 반환합니다.",
+        "description": "일정 삭제 (반복 일정 인스턴스 포함)\n\n일반 일정과 가상 인스턴스 모두 지원:\n- 일반 일정: schedule_id로 조회하여 삭제\n- 가상 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송\n\nsource-linked 일정인데 `source_todo_policy`가 누락되거나, 연결 타이머가 있는데\n`linked_timer_policy`가 누락되면 422를 반환합니다.",
         "operationId": "delete_schedule_v1_schedules__schedule_id__delete",
         "security": [
           {
@@ -429,6 +429,24 @@
               "title": "Source Todo Policy"
             },
             "description": "source Todo 처리 정책 — 이 일정이 Todo의 마감 투영(source-linked)인 경우 필수, 서버 기본값 없음. clear_deadline: Todo의 마감도 제거 / keep_deadline: 마감 유지"
+          },
+          {
+            "name": "linked_timer_policy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LinkedTimerPolicy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행). 마지막 반복 인스턴스 삭제로 원본이 지워질 때는 생략하면 unlink",
+              "title": "Linked Timer Policy"
+            },
+            "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행). 마지막 반복 인스턴스 삭제로 원본이 지워질 때는 생략하면 unlink"
           }
         ],
         "responses": {
@@ -1613,6 +1631,108 @@
         }
       }
     },
+    "/v1/timers/{timer_id}/cancel": {
+      "post": {
+        "tags": [
+          "Timers"
+        ],
+        "summary": "Cancel Timer",
+        "description": "타이머 취소 (RUNNING·PAUSED → CANCELLED)",
+        "operationId": "cancel_timer_v1_timers__timer_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "timer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Timer Id"
+            }
+          },
+          {
+            "name": "include_schedule",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Schedule"
+            },
+            "description": "Schedule 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "include_todo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "default": false,
+              "title": "Include Todo"
+            },
+            "description": "Todo 정보 포함 여부 (기본값: false)"
+          },
+          {
+            "name": "tag_include_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TagIncludeMode",
+              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "default": "none"
+            },
+            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "title": "Timezone"
+            },
+            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimerRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tags/groups": {
       "get": {
         "tags": [
@@ -2452,7 +2572,7 @@
           "Todos"
         ],
         "summary": "Delete Todo",
-        "description": "Todo 삭제\n\n연결된 투영 Schedule은 `linked_schedule_policy`에 따라 처리됩니다.\n연결 투영이 있는데 정책이 누락되면 422를 반환합니다.",
+        "description": "Todo 삭제\n\n연결된 투영 Schedule은 `linked_schedule_policy`, 연결된 타이머는\n`linked_timer_policy`에 따라 처리됩니다. 연결 대상이 있는데 해당 정책이\n누락되면 422를 반환합니다.",
         "operationId": "delete_todo_v1_todos__todo_id__delete",
         "security": [
           {
@@ -2487,6 +2607,24 @@
               "title": "Linked Schedule Policy"
             },
             "description": "연결 투영 Schedule 처리 정책 — 연결 투영이 있는 경우 필수, 서버 기본값 없음. delete: 투영 삭제 + 접근권한 정리 / unlink: 연결만 해제(일정 보존)"
+          },
+          {
+            "name": "linked_timer_policy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LinkedTimerPolicy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행)",
+              "title": "Linked Timer Policy"
+            },
+            "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행)"
           }
         ],
         "responses": {
@@ -4450,6 +4588,15 @@
         ],
         "title": "LinkedSchedulePolicy",
         "description": "마감 취소·Todo 삭제 시 연결 Schedule의 수명주기 처리 정책. 서버 기본값은 없다."
+      },
+      "LinkedTimerPolicy": {
+        "type": "string",
+        "enum": [
+          "delete",
+          "unlink"
+        ],
+        "title": "LinkedTimerPolicy",
+        "description": "연결된 Todo·Schedule 삭제 시 연결 타이머 처리 정책. 서버 기본값은 없다."
       },
       "MeetingCreate": {
         "properties": {

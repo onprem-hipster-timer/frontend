@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../models/linked_schedule_policy.dart';
+import '../models/linked_timer_policy.dart';
 import '../models/resource_scope.dart';
 import '../models/timer_read.dart';
 import '../models/todo_create.dart';
@@ -128,14 +129,18 @@ abstract class TodosClient {
   ///
   /// Todo 삭제.
   ///
-  /// 연결된 투영 Schedule은 `linked_schedule_policy`에 따라 처리됩니다.
-  /// 연결 투영이 있는데 정책이 누락되면 422를 반환합니다.
+  /// 연결된 투영 Schedule은 `linked_schedule_policy`, 연결된 타이머는.
+  /// `linked_timer_policy`에 따라 처리됩니다. 연결 대상이 있는데 해당 정책이.
+  /// 누락되면 422를 반환합니다.
   ///
   /// [linkedSchedulePolicy] - 연결 투영 Schedule 처리 정책 — 연결 투영이 있는 경우 필수, 서버 기본값 없음. delete: 투영 삭제 + 접근권한 정리 / unlink: 연결만 해제(일정 보존).
+  ///
+  /// [linkedTimerPolicy] - 연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행).
   @DELETE('/v1/todos/{todo_id}')
   Future<void> deleteTodoV1TodosTodoIdDelete({
     @Path('todo_id') required String todoId,
     @Query('linked_schedule_policy') LinkedSchedulePolicy? linkedSchedulePolicy,
+    @Query('linked_timer_policy') LinkedTimerPolicy? linkedTimerPolicy,
     @DioOptions() RequestOptions? options,
   });
 
