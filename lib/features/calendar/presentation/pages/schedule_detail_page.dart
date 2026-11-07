@@ -12,6 +12,7 @@ import 'package:momeet/features/calendar/presentation/utils/source_todo_policy_d
 import 'package:momeet/features/calendar/presentation/widgets/info_row.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
+import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 
@@ -429,19 +430,27 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
         context,
         scheduleTitle: schedule.title,
       );
-      if (sourceTodoPolicy == null) return;
+      if (sourceTodoPolicy == null || !context.mounted) return;
     }
 
     setState(() => _pendingAction = _PendingAction.delete);
     try {
-      await deleteScheduleMutation.run(
-        ref,
-        (tsx) => tsx
-            .get(scheduleMutationsProvider.notifier)
-            .deleteSchedule(schedule.id, sourceTodoPolicy: sourceTodoPolicy),
+      final deleted = await deleteAskingLinkedTimerPolicy(
+        context,
+        itemTitle: schedule.title,
+        delete: (linkedTimerPolicy) => deleteScheduleMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(scheduleMutationsProvider.notifier)
+              .deleteSchedule(
+                schedule.id,
+                sourceTodoPolicy: sourceTodoPolicy,
+                linkedTimerPolicy: linkedTimerPolicy,
+              ),
+        ),
       );
 
-      if (context.mounted) {
+      if (deleted && context.mounted) {
         context.pop();
         _showSnackBar(context, message: '일정이 삭제되었습니다');
       }

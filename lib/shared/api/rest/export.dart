@@ -27,6 +27,7 @@ export 'models/friendship_status.dart';
 export 'models/http_validation_error.dart';
 export 'models/holiday_item.dart';
 export 'models/linked_schedule_policy.dart';
+export 'models/linked_timer_policy.dart';
 export 'models/meeting_create.dart';
 export 'models/meeting_read.dart';
 export 'models/meeting_result_read.dart';

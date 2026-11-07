@@ -16,3 +16,12 @@ Duration displayElapsed(TimerRead timer, DateTime now) {
   final running = now.difference(startedAt).inSeconds;
   return Duration(seconds: timer.elapsedTime + max(0, running));
 }
+
+/// 타이머의 표시 남은 시간
+///
+/// `allocated_duration`에서 [displayElapsed]를 뺀 값이고, 0 아래로 내려가지 않는다.
+Duration displayRemaining(TimerRead timer, DateTime now) {
+  final remaining =
+      Duration(seconds: timer.allocatedDuration) - displayElapsed(timer, now);
+  return remaining.isNegative ? Duration.zero : remaining;
+}

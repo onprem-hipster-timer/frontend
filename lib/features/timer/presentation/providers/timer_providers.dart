@@ -7,6 +7,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/data/timer_repository_impl.dart';
 import 'package:momeet/features/timer/domain/timer_ledger.dart';
 import 'package:momeet/features/timer/domain/timer_repository.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_client.dart';
@@ -120,6 +121,14 @@ class MyActiveTimers extends _$MyActiveTimers {
   /// 명령의 REST 응답을 반영한다.
   void apply(TimerRead timer) => _change(() => _ledger.apply(timer));
 
+  /// Todo를 바꾼 REST 응답 [todo]를 그 Todo에 연결된 타이머에 반영한다.
+  ///
+  /// 타이머가 바뀐 것이 아니라 타이머 목록은 다시 읽지 않는다.
+  void updateTodo(TodoRead todo) {
+    _ledger.updateTodo(todo);
+    state = AsyncData(_ledger.active);
+  }
+
   void _onEvent(TimerWsEvent event, String? myId) {
     switch (event) {
       case TimerWsConnected():
@@ -146,10 +155,15 @@ class MyActiveTimers extends _$MyActiveTimers {
   }
 
   /// [timerId]를 관계를 포함해 다시 읽어 반영한다. 실패하면 가진 타이머를 그대로 둔다.
+  ///
+  /// 다시 읽은 todo가 가진 todo와 다르면 다른 곳에서 Todo가 바뀐 것이라 Todo 목록도 다시 읽게 한다.
   Future<void> _read(String timerId) async {
     try {
       final timer = await ref.read(timerRepositoryProvider).getTimer(timerId);
-      if (ref.mounted) apply(timer);
+      if (!ref.mounted) return;
+      final held = _ledger[timerId]?.todo;
+      if (held != null && held != timer.todo) ref.invalidate(todosProvider);
+      apply(timer);
     } catch (error) {
       debugPrint('타이머 조회 실패: $error');
     }
@@ -231,7 +245,7 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
 // Timer Ticker Provider (Local UI Ticker)
 // ============================================================
 
-/// 활성 타이머의 표시 경과 시간 ([displayElapsed], 서버 시각 기준)을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
+/// 활성 타이머의 표시 남은 시간 ([displayRemaining], 서버 시각 기준)을 1초마다 갱신. 활성 타이머가 없으면 Duration.zero
 @riverpod
 Stream<Duration> timerTicker(Ref ref) async* {
   final activeTimerAsync = ref.watch(activeTimerProvider);
@@ -246,13 +260,16 @@ Stream<Duration> timerTicker(Ref ref) async* {
 
     yield activeTimer == null
         ? Duration.zero
-        : displayElapsed(activeTimer, clock.now());
+        : displayRemaining(activeTimer, clock.now());
   }
 }
 
 // ============================================================
 // Timer Controller (Mutation)
 // ============================================================
+
+/// 새 타이머의 기본 집중 시간 (`allocated_duration`)
+const defaultFocusDuration = Duration(minutes: 25);
 
 /// 타이머 제어 로직
 ///
@@ -287,7 +304,8 @@ class TimerController extends _$TimerController {
               todoId: relatedTodoId,
               scheduleId: scheduleId,
               title: title ?? '새 작업',
-              allocatedDuration: allocatedDurationSeconds ?? 3600,
+              allocatedDuration:
+                  allocatedDurationSeconds ?? defaultFocusDuration.inSeconds,
             ),
           );
       _apply(timer);
