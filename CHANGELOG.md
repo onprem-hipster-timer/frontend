@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Todo 목록에 하위 Todo를 포함한 누적 집중 시간
   - 끝난(COMPLETED) 타이머의 경과 시간에 진행 중·일시정지 타이머의 `displayElapsed`를 더해 1초마다 갱신한다
   - 취소한 타이머는 더하지 않는다. 활성 타이머가 끝나면 타이머 목록을 다시 읽는다
+- Todo·일정 삭제 시 서버가 연결 타이머 처리(`linked_timer_policy`)를 요구하면 '연결만 해제'·'타이머 삭제' 중 골라 다시 삭제한다
 
 #### Config
 - `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
