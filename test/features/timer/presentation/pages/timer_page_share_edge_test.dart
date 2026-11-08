@@ -795,6 +795,29 @@ void main() {
       }
     });
 
+    // 탭은 목록마다 따로 고른다. 좁은 화면의 목록 시트는 열 때마다 새 목록이다
+    testWidgets('넓은 화면에서 친구 타이머를 골랐어도 좁은 화면의 목록 시트는 내 타이머부터 보인다', (
+      tester,
+    ) async {
+      setSize(tester, const Size(1280, 800));
+      repository.listShared = () async => [
+        shared('shared-1', TimerStatus.completed, startedAt: now),
+      ];
+
+      await pump(tester);
+      await openFriendsTab(tester);
+      setSize(tester, const Size(360, 800));
+      await tester.pumpAndSettle();
+      await openHistorySheet(tester);
+
+      expect(historyItem('mine'), findsOneWidget);
+      expect(find.byType(SharedTimerItem), findsNothing);
+
+      await openFriendsTab(tester);
+
+      expect(sharedItem('shared-1'), findsOneWidget);
+    });
+
     for (final size in const [
       Size(360, 800),
       Size(360, 560),
