@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
@@ -152,28 +152,8 @@ Future<bool> _confirmStopTimer(BuildContext context) {
   );
 }
 
-/// 새 작업 시작 다이얼로그에서 고를 수 있는 집중 시간
-const _focusDurationPresets = [
-  Duration(minutes: 15),
-  Duration(minutes: 25),
-  Duration(minutes: 45),
-  Duration(minutes: 60),
-];
-
 /// 시간이 끝난 타이머를 한 번에 늘리는 시간
 const _extendBy = Duration(minutes: 5);
-
-/// 새 작업 시작 다이얼로그에 입력할 수 있는 가장 긴 집중 시간 (분)
-const _maxFocusMinutes = 600;
-
-/// [text]가 1~[_maxFocusMinutes] 사이의 분이면 그 값, 아니면 null
-int? _focusMinutes(String text) {
-  final minutes = int.tryParse(text);
-  if (minutes == null || minutes < 1 || minutes > _maxFocusMinutes) {
-    return null;
-  }
-  return minutes;
-}
 
 /// 타이머 대시보드
 ///
@@ -381,116 +361,35 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     );
   }
 
-  /// 타이머 시작 다이얼로그 표시
-  void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    final minutesController = TextEditingController(
-      text: '${_pendingDuration.inMinutes}',
+  /// 새 작업 시작 다이얼로그를 열고 고른 값으로 타이머를 시작한다
+  void _showStartTimerDialog(BuildContext context, WidgetRef ref) async {
+    final input = await showStartTimerDialog(
+      context,
+      initialDuration: _pendingDuration,
     );
-    showDialog(
-      context: context,
-      useRootNavigator: true,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('새 작업 시작'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: '작업명',
-                hintText: '어떤 작업을 시작할까요?',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: minutesController,
-              builder: (_, value, _) {
-                final minutes = _focusMinutes(value.text);
-                return Wrap(
-                  spacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    for (final preset in _focusDurationPresets)
-                      ChoiceChip(
-                        label: Text('${preset.inMinutes}분'),
-                        selected: preset.inMinutes == minutes,
-                        onSelected: (_) =>
-                            minutesController.text = '${preset.inMinutes}',
-                      ),
-                    SizedBox(
-                      width: 96,
-                      child: TextFormField(
-                        controller: minutesController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: InputDecoration(
-                          suffixText: '분',
-                          border: const OutlineInputBorder(),
-                          errorText: minutes == null
-                              ? '1~$_maxFocusMinutes분'
-                              : null,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('취소'),
+    if (input == null || !context.mounted) return;
+    try {
+      await ref
+          .read(timerControllerProvider.notifier)
+          .startTimer(
+            title: input.title,
+            allocatedDurationSeconds: input.duration.inSeconds,
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('타이머를 시작했습니다')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('타이머 시작 실패: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: minutesController,
-            builder: (_, value, _) {
-              final minutes = _focusMinutes(value.text);
-              return FilledButton(
-                onPressed: minutes == null
-                    ? null
-                    : () async {
-                        final title = controller.text.trim().isEmpty
-                            ? '새 작업'
-                            : controller.text.trim();
-                        Navigator.of(dialogContext).pop();
-                        try {
-                          await ref
-                              .read(timerControllerProvider.notifier)
-                              .startTimer(
-                                title: title,
-                                allocatedDurationSeconds: minutes * 60,
-                              );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('타이머를 시작했습니다')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('타이머 시작 실패: $e'),
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.error,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: const Text('시작'),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
 
   /// 타이머 완료 (정지)
