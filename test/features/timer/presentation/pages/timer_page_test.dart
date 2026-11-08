@@ -879,6 +879,53 @@ void main() {
     });
   });
 
+  group('새 작업 시작 할 일 연결', () {
+    testWidgets('할 일을 골라 시작하면 그 할 일을 연결하고 할 일 제목으로 시작한다', (tester) async {
+      final controller = _FakeTimerController();
+      final todo = makeTodo().copyWith(title: '보고서 쓰기');
+
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: controller,
+        todos: [todo],
+      );
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, '보고서 쓰기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedTodoId, todo.id);
+      expect(controller.startedTitle, '보고서 쓰기');
+      expect(controller.startedAllocatedDurationSeconds, 25 * 60);
+      expect(find.text('타이머를 시작했습니다'), findsOneWidget);
+    });
+
+    testWidgets('할 일을 고르지 않으면 연결 없이 시작한다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: controller,
+        todos: [makeTodo().copyWith(title: '보고서 쓰기')],
+      );
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, '작업명'), '집중');
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.started, isTrue);
+      expect(controller.startedTodoId, isNull);
+      expect(controller.startedTitle, '집중');
+    });
+  });
+
   group('다이얼', () {
     Future<void> dragDialTo9(WidgetTester tester) async {
       final dial = find.byType(TimerDial);
@@ -2167,6 +2214,7 @@ Future<void> _pumpTimerPage(
   required TimerRead? timer,
   List<TimerRead>? history,
   required _FakeTimerController controller,
+  List<TodoRead> todos = const [],
   List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
@@ -2177,6 +2225,7 @@ Future<void> _pumpTimerPage(
           timer: timer,
           history: history ?? [?timer],
           controller: controller,
+          todos: todos,
         ),
         ...overrides,
       ],
@@ -2189,8 +2238,11 @@ List<Override> _timerOverrides({
   required TimerRead? timer,
   required List<TimerRead> history,
   required _FakeTimerController controller,
+  List<TodoRead> todos = const [],
 }) {
   return [
+    // 새 작업 시작에서 고를 할 일
+    allTodosProvider.overrideWith((ref) async => todos),
     // 친구 활동 리스너가 실제 WS/auth 체인을 건드리지 않도록 빈 스트림으로 격리
     timerFriendActivityProvider.overrideWith(
       (ref) => const Stream<TimerWsTimerEvent>.empty(),
@@ -2272,6 +2324,8 @@ class _FakeTimerController extends TimerController {
   String? stoppedTimerId;
   bool started = false;
   int? startedAllocatedDurationSeconds;
+  String? startedTodoId;
+  String? startedTitle;
   bool paused = false;
   bool resumed = false;
   Duration? extendedBy;
@@ -2307,5 +2361,7 @@ class _FakeTimerController extends TimerController {
   }) async {
     started = true;
     startedAllocatedDurationSeconds = allocatedDurationSeconds;
+    startedTodoId = relatedTodoId;
+    startedTitle = title;
   }
 }

@@ -372,6 +372,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
       await ref
           .read(timerControllerProvider.notifier)
           .startTimer(
+            relatedTodoId: input.todo?.id,
             title: input.title,
             allocatedDurationSeconds: input.duration.inSeconds,
           );
