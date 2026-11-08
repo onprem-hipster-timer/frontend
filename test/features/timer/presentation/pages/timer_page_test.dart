@@ -1008,6 +1008,40 @@ void main() {
       expect(_clockText(tester), '00:45:00');
     });
   });
+
+  group('타이머 목록 항목', () {
+    for (final status in [TimerStatus.running, TimerStatus.paused]) {
+      testWidgets('360 폭에서 ${status.name} 항목이 넘치지 않는다', (tester) async {
+        final timer = makeTimer(
+          id: 'timer-1',
+          status: status,
+        ).copyWith(title: '아주 긴 작업 이름이 들어가도 목록 항목이 넘치지 않아야 한다');
+
+        await tester.pumpWidget(
+          pumpApp(
+            Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 360,
+                  child: TimerHistoryItem(timer: timer),
+                ),
+              ),
+            ),
+            overrides: _timerOverrides(
+              timer: timer,
+              history: [timer],
+              controller: _FakeTimerController(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(TimerHistoryItem), findsOneWidget);
+      });
+    }
+  });
 }
 
 Future<void> _pumpTimerPage(

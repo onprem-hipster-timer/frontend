@@ -960,24 +960,37 @@ class TimerHistoryItem extends ConsumerWidget {
         subtitle: Row(
           children: [
             if (isActive) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: style.bg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  style.label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: style.fg,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: style.bg,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    style.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: style.fg,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
             ],
-            Text('$startTime - $endTime'),
+            Flexible(
+              child: Text(
+                '$startTime - $endTime',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         trailing: Row(
@@ -995,6 +1008,7 @@ class TimerHistoryItem extends ConsumerWidget {
               const SizedBox(width: 4),
               if (timeUp)
                 IconButton(
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.add),
                   onPressed: () => _runTimerAction(
                     context,
@@ -1011,6 +1025,7 @@ class TimerHistoryItem extends ConsumerWidget {
                 )
               else if (timer.status == TimerStatus.running)
                 IconButton(
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.pause),
                   onPressed: () => _runTimerAction(
                     context,
@@ -1027,6 +1042,7 @@ class TimerHistoryItem extends ConsumerWidget {
                 )
               else if (timer.status == TimerStatus.paused)
                 IconButton(
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.play_arrow),
                   onPressed: () => _runTimerAction(
                     context,
@@ -1042,6 +1058,7 @@ class TimerHistoryItem extends ConsumerWidget {
                   ),
                 ),
               IconButton(
+                visualDensity: VisualDensity.compact,
                 icon: Icon(Icons.check, color: theme.colorScheme.error),
                 onPressed: () async {
                   final confirmed = await _confirmStopTimer(context);
