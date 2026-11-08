@@ -417,4 +417,22 @@ void main() {
     expect(findings, hasLength(1));
     expect(findings.single.severity, LayoutSeverity.info);
   });
+
+  testWidgets('SingleChildScrollView로 잘린 부분도 잘라냄·이탈로 보지 않는다', (tester) async {
+    await _pump(
+      tester,
+      SingleChildScrollView(
+        controller: ScrollController(initialScrollOffset: 10),
+        child: Column(
+          children: [
+            for (var i = 0; i < 30; i++)
+              SizedBox(height: 90, child: _text('Item $i')),
+          ],
+        ),
+      ),
+    );
+
+    expect(tester.getRect(find.text('Item 0')).top, -10);
+    expect(auditLayout(tester), isEmpty);
+  });
 }

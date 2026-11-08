@@ -85,7 +85,8 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
         localClip,
       );
       clipRect = clipRect?.intersect(clip) ?? clip;
-      if (parent is! RenderViewportBase) {
+      // SingleChildScrollView의 뷰포트는 RenderViewportBase가 아니라 인터페이스로 가른다.
+      if (parent is! RenderAbstractViewport) {
         contentClipRect = contentClipRect?.intersect(clip) ?? clip;
       }
     }
