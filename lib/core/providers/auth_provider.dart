@@ -171,18 +171,20 @@ class AuthNotifier extends _$AuthNotifier {
       });
       await _authenticateWith(result.sessionToken!);
     } catch (e) {
-      final type = AuthErrorType.classify(e);
-      if (type == AuthErrorType.emailNotVerified) {
-        throw EmailNotVerifiedException(
-          message: type.localized,
-          originalError: e,
-          verificationFlowId: e is KratosException
-              ? e.verificationFlowId
-              : null,
-        );
-      }
-      throw AuthException(message: type.localized, originalError: e);
+      throw _signInError(AuthErrorType.classify(e), e);
     }
+  }
+
+  /// 비밀번호 로그인 실패를 앱 예외로 바꾼다. 이메일 인증 전이면 서버가 새로 만든 인증 플로우를 담는다.
+  static AuthException _signInError(AuthErrorType type, Object e) {
+    if (type == AuthErrorType.emailNotVerified) {
+      return EmailNotVerifiedException(
+        message: type.localized,
+        originalError: e,
+        verificationFlowId: e is KratosException ? e.verificationFlowId : null,
+      );
+    }
+    return AuthException(message: type.localized, originalError: e);
   }
 
   /// 이 브라우저에서 시작한 Google 로그인이 돌아오기를 기다리는 중인지
@@ -272,10 +274,7 @@ class AuthNotifier extends _$AuthNotifier {
       await _prefs.remove(googleSignInCodeKey);
       await _authenticateWith(result.sessionToken!);
     } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
+      throw _signInError(AuthErrorType.classify(e), e);
     }
   }
 
