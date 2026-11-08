@@ -249,6 +249,65 @@ void main() {
     });
   });
 
+  group('명령 응답 전 표시', () {
+    test('먼저 보인 값은 같은 updated_at의 응답이 덮는다', () {
+      final held = _read('t1', TimerStatus.running, updatedMinute: 1);
+      final shown = held.copyWith(status: TimerStatus.paused);
+      ledger
+        ..apply(held)
+        ..showPending(shown);
+      expect(ledger['t1'], same(shown));
+
+      ledger.apply(_read('t1', TimerStatus.paused, updatedMinute: 1));
+
+      expect(ledger['t1'], isNot(same(shown)));
+      expect(ledger['t1']!.status, TimerStatus.paused);
+    });
+
+    test('먼저 보인 값은 updated_at 기록을 바꾸지 않아 이후 이벤트가 덮는다', () {
+      ledger
+        ..apply(_read('t1', TimerStatus.running, updatedMinute: 5))
+        ..showPending(
+          _read(
+            't1',
+            TimerStatus.paused,
+            updatedMinute: 5,
+          ).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 11)),
+        )
+        ..applyPartial(_event('t1', TimerStatus.running, updatedMinute: 6));
+
+      expect(ledger['t1']!.status, TimerStatus.running);
+    });
+
+    test('가진 적 없거나 지운 타이머는 먼저 보이지 않는다', () {
+      ledger
+        ..showPending(_read('new', TimerStatus.paused, updatedMinute: 1))
+        ..apply(_read('gone', TimerStatus.running, updatedMinute: 1))
+        ..delete('gone')
+        ..showPending(_read('gone', TimerStatus.paused, updatedMinute: 1));
+
+      expect(ledger['new'], isNull);
+      expect(ledger['gone'], isNull);
+    });
+
+    test('되돌리기는 먼저 보인 값이 그대로일 때만 이전 값으로 돌린다', () {
+      final held = _read('t1', TimerStatus.running, updatedMinute: 1);
+      final shown = held.copyWith(status: TimerStatus.paused);
+      ledger
+        ..apply(held)
+        ..showPending(shown)
+        ..revertPending(shown, held);
+      expect(ledger['t1'], same(held));
+
+      ledger
+        ..showPending(shown)
+        ..applyPartial(_event('t1', TimerStatus.paused, updatedMinute: 2))
+        ..revertPending(shown, held);
+
+      expect(ledger['t1']!.updatedAt, DateTime.utc(2026, 11, 6, 10, 2));
+    });
+  });
+
   test('활성 타이머만 최근에 시작한 순으로 돌려준다', () {
     ledger
       ..apply(

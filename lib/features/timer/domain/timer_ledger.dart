@@ -40,6 +40,24 @@ class TimerLedger {
     _needsRead.remove(timer.id);
   }
 
+  /// 명령 응답 전에 [timer]를 먼저 보인다.
+  ///
+  /// `updated_at` 기록을 바꾸지 않으므로 같거나 나중 `updated_at`의 응답·이벤트가 덮는다.
+  /// 가진 적 없거나 지운 타이머면 무시한다.
+  void showPending(TimerRead timer) {
+    if (!_timers.containsKey(timer.id)) return;
+    _timers[timer.id] = timer;
+  }
+
+  /// [showPending]한 [pending]이 아직 그대로면 [previous]로 되돌린다.
+  ///
+  /// 그 사이 응답·이벤트가 덮었으면 그 값을 둔다.
+  void revertPending(TimerRead pending, TimerRead previous) {
+    if (identical(_timers[pending.id], pending)) {
+      _timers[pending.id] = previous;
+    }
+  }
+
   /// 실시간 이벤트의 [timer]를 반영한다.
   ///
   /// 타이머 자체 필드만 바꾸고 가진 관계 필드는 둔다. `schedule_id`·`todo_id`가 바뀌었으면
