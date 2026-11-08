@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:momeet/features/timer/domain/timer_repository.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -12,6 +14,9 @@ class FakeTimerRepository implements TimerRepository {
   /// 설정하면 명령이 이 예외를 던진다
   Object? error;
 
+  /// 설정하면 명령이 이 Future가 끝날 때까지 응답하지 않는다
+  Future<void>? gate;
+
   /// 명령 응답. 기본은 `timer-1`이 명령에 맞는 상태가 된 것
   TimerRead Function(String timerId, TimerStatus status) respond =
       (timerId, status) => makeTimer(id: timerId, status: status);
@@ -23,8 +28,13 @@ class FakeTimerRepository implements TimerRepository {
   Future<TimerRead> Function(String timerId) getOne = (timerId) async =>
       throw Exception('404');
 
-  TimerRead _command(String call, String timerId, TimerStatus status) {
+  Future<TimerRead> _command(
+    String call,
+    String timerId,
+    TimerStatus status,
+  ) async {
     calls.add(call);
+    await gate;
     if (error != null) throw error!;
     return respond(timerId, status);
   }
@@ -36,15 +46,15 @@ class FakeTimerRepository implements TimerRepository {
   }
 
   @override
-  Future<TimerRead> pauseTimer(String timerId) async =>
+  Future<TimerRead> pauseTimer(String timerId) =>
       _command('pause:$timerId', timerId, TimerStatus.paused);
 
   @override
-  Future<TimerRead> resumeTimer(String timerId) async =>
+  Future<TimerRead> resumeTimer(String timerId) =>
       _command('resume:$timerId', timerId, TimerStatus.running);
 
   @override
-  Future<TimerRead> stopTimer(String timerId) async =>
+  Future<TimerRead> stopTimer(String timerId) =>
       _command('stop:$timerId', timerId, TimerStatus.completed);
 
   @override

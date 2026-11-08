@@ -89,6 +89,31 @@ final timerFriendActivityProvider =
       }
     });
 
+/// 타이머 목록에 REST 목록보다 먼저 보일 타이머 (명령 응답 전 값과 받은 응답)
+///
+/// 목록은 명령 뒤에 REST로 다시 읽으므로 그 사이 [timerView]로 이 값을 겹쳐 보인다.
+class TimerViewsNotifier extends Notifier<Map<String, TimerRead>> {
+  @override
+  Map<String, TimerRead> build() => const {};
+
+  void show(TimerRead timer) => state = {...state, timer.id: timer};
+
+  void drop(String timerId) => state = {...state}..remove(timerId);
+}
+
+final timerViewsProvider =
+    NotifierProvider<TimerViewsNotifier, Map<String, TimerRead>>(
+      TimerViewsNotifier.new,
+    );
+
+/// 목록의 [listed] 대신 보일 타이머. [views]의 값이 목록보다 이전 `updated_at`이면 목록 값
+TimerRead timerView(Map<String, TimerRead> views, TimerRead listed) {
+  final view = views[listed.id];
+  return view != null && !view.updatedAt.isBefore(listed.updatedAt)
+      ? view
+      : listed;
+}
+
 /// 내 활성(RUNNING·PAUSED) 타이머. 최근에 시작한 순
 ///
 /// REST 조회, 내 실시간 이벤트(`from_user`가 나), 명령 응답을 [TimerLedger] 규칙으로 반영한다.
@@ -120,6 +145,21 @@ class MyActiveTimers extends _$MyActiveTimers {
 
   /// 명령의 REST 응답을 반영한다.
   void apply(TimerRead timer) => _change(() => _ledger.apply(timer));
+
+  /// 가진 [timerId] 타이머. 없으면 null
+  TimerRead? timer(String timerId) => _ledger[timerId];
+
+  /// 명령 응답 전에 [timer]를 먼저 보인다. 응답·이벤트가 덮는다 ([TimerLedger.showPending])
+  void showPending(TimerRead timer) {
+    _ledger.showPending(timer);
+    state = AsyncData(_ledger.active);
+  }
+
+  /// 명령이 실패하면 [pending]을 [previous]로 되돌린다 ([TimerLedger.revertPending])
+  void revertPending(TimerRead pending, TimerRead previous) {
+    _ledger.revertPending(pending, previous);
+    state = AsyncData(_ledger.active);
+  }
 
   /// Todo를 바꾼 REST 응답 [todo]를 그 Todo에 연결된 타이머에 반영한다.
   ///
@@ -335,90 +375,106 @@ class TimerController extends _$TimerController {
   /// 타이머 정지
   ///
   /// [timerId]를 주면 해당 타이머를 정지하고, 생략 시 활성 타이머를 정지합니다.
+  /// 되돌릴 수 없는 명령이라 응답을 받은 뒤에 반영합니다.
   Future<void> stopTimer({String? timerId}) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final id =
-          timerId ??
-          ref
-              .read(activeTimerProvider)
-              .when(
-                data: (timer) => timer?.id,
-                loading: () => null,
-                error: (_, _) => null,
-              );
-      if (id == null) {
-        throw Exception('정지할 활성 타이머가 없습니다');
-      }
-
-      _apply(await ref.read(timerRepositoryProvider).stopTimer(id));
-      state = const AsyncValue.data(null);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
+    final id = timerId ?? _active()?.id;
+    if (id == null) {
+      final error = Exception('정지할 활성 타이머가 없습니다');
+      state = AsyncValue.error(error, StackTrace.current);
+      throw error;
     }
+    await _command(id, send: (repository) => repository.stopTimer(id));
   }
 
   /// 타이머 일시정지
   ///
   /// [timerId]를 주면 해당 타이머를 일시정지하고, 생략 시 활성 타이머를 일시정지합니다.
+  /// 응답 전에 서버 시각 기준 경과 시간으로 멈춘 타이머를 먼저 보입니다.
   Future<void> pauseTimer({String? timerId}) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final activeTimer = ref
-          .read(activeTimerProvider)
-          .when(
-            data: (timer) => timer,
-            loading: () => null,
-            error: (error, stack) => null,
-          );
-      final id = timerId ?? activeTimer?.id;
-      if (id == null) {
-        throw Exception('일시정지할 실행 중인 타이머가 없습니다');
-      }
-      if (timerId == null &&
-          (activeTimer == null || activeTimer.status != TimerStatus.running)) {
-        throw Exception('일시정지할 실행 중인 타이머가 없습니다');
-      }
-
-      _apply(await ref.read(timerRepositoryProvider).pauseTimer(id));
-      state = const AsyncValue.data(null);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
+    final active = _active();
+    final id = timerId ?? active?.id;
+    if (id == null ||
+        (timerId == null && active?.status != TimerStatus.running)) {
+      final error = Exception('일시정지할 실행 중인 타이머가 없습니다');
+      state = AsyncValue.error(error, StackTrace.current);
+      throw error;
     }
+    await _command(
+      id,
+      show: (timer, now) => timer.copyWith(
+        status: TimerStatus.paused,
+        elapsedTime: displayElapsed(timer, now).inSeconds,
+        pausedAt: now,
+      ),
+      send: (repository) => repository.pauseTimer(id),
+    );
   }
 
   /// 타이머 재개
   ///
   /// [timerId]를 주면 해당 타이머를 재개하고, 생략 시 활성 타이머를 재개합니다.
+  /// 응답 전에 지금부터 다시 세는 타이머를 먼저 보입니다.
   Future<void> resumeTimer({String? timerId}) async {
-    state = const AsyncValue.loading();
+    final active = _active();
+    final id = timerId ?? active?.id;
+    if (id == null ||
+        (timerId == null && active?.status != TimerStatus.paused)) {
+      final error = Exception('재개할 일시정지된 타이머가 없습니다');
+      state = AsyncValue.error(error, StackTrace.current);
+      throw error;
+    }
+    await _command(
+      id,
+      show: (timer, now) =>
+          timer.copyWith(status: TimerStatus.running, startedAt: now),
+      send: (repository) => repository.resumeTimer(id),
+    );
+  }
+
+  TimerRead? _active() => ref
+      .read(activeTimerProvider)
+      .when(data: (timer) => timer, loading: () => null, error: (_, _) => null);
+
+  /// 응답을 기다리는 명령의 타이머 ID. 같은 타이머에 겹친 명령은 보내지 않는다
+  final _pending = <String>{};
+
+  /// [timerId]에 명령을 보낸다.
+  ///
+  /// [show]가 있고 그 타이머를 가졌으면 응답 전에 [show]의 값을 활성 타이머와 목록에 먼저 보이고,
+  /// 실패하면 되돌린다. 응답을 기다리는 동안 로딩 상태로 두지 않는다.
+  Future<void> _command(
+    String timerId, {
+    TimerRead Function(TimerRead timer, DateTime now)? show,
+    required Future<TimerRead> Function(TimerRepository repository) send,
+  }) async {
+    if (!_pending.add(timerId)) return;
+    final timers = ref.exists(myActiveTimersProvider)
+        ? ref.read(myActiveTimersProvider.notifier)
+        : null;
+    final views = ref.read(timerViewsProvider.notifier);
+    final held = timers?.timer(timerId);
+    final shown = held == null || show == null
+        ? null
+        : show(held, ref.read(serverClockProvider).now());
+    if (shown != null) {
+      timers!.showPending(shown);
+      views.show(shown);
+    }
 
     try {
-      final activeTimer = ref
-          .read(activeTimerProvider)
-          .when(
-            data: (timer) => timer,
-            loading: () => null,
-            error: (error, stack) => null,
-          );
-      final id = timerId ?? activeTimer?.id;
-      if (id == null) {
-        throw Exception('재개할 일시정지된 타이머가 없습니다');
-      }
-      if (timerId == null &&
-          (activeTimer == null || activeTimer.status != TimerStatus.paused)) {
-        throw Exception('재개할 일시정지된 타이머가 없습니다');
-      }
-
-      _apply(await ref.read(timerRepositoryProvider).resumeTimer(id));
+      final timer = await send(ref.read(timerRepositoryProvider));
+      _apply(timer);
+      views.show(timer);
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
+      if (shown != null) {
+        timers!.revertPending(shown, held!);
+        views.drop(timerId);
+      }
       state = AsyncValue.error(error, stackTrace);
       rethrow;
+    } finally {
+      _pending.remove(timerId);
     }
   }
 }
