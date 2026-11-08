@@ -12,10 +12,13 @@ class FakeTimerRepository implements TimerRepository {
   TimerCreate? created;
   TimerUpdate? updated;
 
-  /// 설정하면 명령이 이 예외를 던진다
+  /// 마지막으로 저장한 공유 설정 (setVisibility)
+  VisibilityUpdate? visibilityUpdate;
+
+  /// 설정하면 명령과 공유 설정 저장이 이 예외를 던진다
   Object? error;
 
-  /// 설정하면 명령이 이 Future가 끝날 때까지 응답하지 않는다
+  /// 설정하면 명령과 공유 설정 저장이 이 Future가 끝날 때까지 응답하지 않는다
   Future<void>? gate;
 
   /// 명령 응답. 기본은 `timer-1`이 명령에 맞는 상태가 된 것
@@ -28,6 +31,13 @@ class FakeTimerRepository implements TimerRepository {
   /// 타이머 하나 조회(getTimer) 응답. 기본은 실패
   Future<TimerRead> Function(String timerId) getOne = (timerId) async =>
       throw Exception('404');
+
+  /// 공유 설정 조회(getVisibility) 응답. 기본은 설정 없음(비공개)
+  Future<VisibilityRead?> Function(String timerId) visibilityOf =
+      (timerId) async => null;
+
+  /// 공유받은 타이머 목록 조회(listSharedTimers) 응답
+  Future<List<TimerRead>> Function() listShared = () async => [];
 
   Future<TimerRead> _command(
     String call,
@@ -86,4 +96,41 @@ class FakeTimerRepository implements TimerRepository {
 
   @override
   Future<void> deleteTimer(String timerId) => throw UnimplementedError();
+
+  @override
+  Future<VisibilityRead?> getVisibility(String timerId) {
+    calls.add('visibility:$timerId');
+    return visibilityOf(timerId);
+  }
+
+  @override
+  Future<VisibilityRead> setVisibility(
+    String timerId,
+    VisibilityUpdate data,
+  ) async {
+    calls.add('setVisibility:$timerId');
+    visibilityUpdate = data;
+    await gate;
+    if (error != null) throw error!;
+    return makeVisibility(
+      timerId: timerId,
+      level: data.level,
+      allowedUserIds: data.allowedUserIds ?? const [],
+      allowedEmails: data.allowedEmails ?? const [],
+      allowedDomains: data.allowedDomains ?? const [],
+    );
+  }
+
+  @override
+  Future<void> clearVisibility(String timerId) async {
+    calls.add('clearVisibility:$timerId');
+    await gate;
+    if (error != null) throw error!;
+  }
+
+  @override
+  Future<List<TimerRead>> listSharedTimers() {
+    calls.add('listShared');
+    return listShared();
+  }
 }

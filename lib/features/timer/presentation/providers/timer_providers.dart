@@ -52,7 +52,7 @@ final timerWsClientProvider = Provider<TimerWsClient?>((ref) {
 /// REST API 클라이언트를 래핑하여 도메인 레이어 인터페이스를 제공합니다.
 final timerRepositoryProvider = Provider<TimerRepository>((ref) {
   final client = ref.watch(timersApiProvider);
-  return TimerRepositoryImpl(client);
+  return TimerRepositoryImpl(client, ref.watch(visibilityApiProvider));
 });
 
 // ============================================================
