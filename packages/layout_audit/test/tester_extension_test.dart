@@ -1,0 +1,293 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:layout_audit/layout_audit.dart';
+
+const _style = TextStyle(fontSize: 20, height: 1, letterSpacing: 0);
+const _case = LayoutAuditCase(TestViewports.iphoneSe1, 1.0);
+
+Widget _overlapping() => const SizedBox(
+      height: 30,
+      child: Stack(
+        children: [
+          Positioned(left: 0, top: 0, child: Text('AAAA', style: _style)),
+          Positioned(left: 10, top: 0, child: Text('BBBB', style: _style)),
+        ],
+      ),
+    );
+
+List<LayoutFinding> _ofKind(LayoutReport report, LayoutFindingKind kind) =>
+    report.findings.where((f) => f.kind == kind).toList();
+
+class _Marquee extends StatefulWidget {
+  const _Marquee();
+
+  @override
+  State<_Marquee> createState() => _MarqueeState();
+}
+
+class _MarqueeState extends State<_Marquee>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 1),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: ClipRect(
+        child: SizedBox(
+          width: 60,
+          height: 20,
+          child: OverflowBox(
+            maxWidth: 400,
+            alignment: Alignment.centerLeft,
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) => Transform.translate(
+                offset: Offset(-100 * _controller.value, 0),
+                child: child,
+              ),
+              child: const Text('흘러가는 아주 긴 공지 문구', style: _style),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 'BBBB'가 x=40에서 x=10으로 미끄러져 'AAAA' 위에 놓인다.
+Widget _slidingIn(Duration duration) => SizedBox(
+      height: 30,
+      child: Stack(
+        children: [
+          const Positioned(
+            left: 0,
+            top: 0,
+            child: Text('AAAA', style: _style),
+          ),
+          Positioned(
+            left: 0,
+            top: 0,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 40, end: 10),
+              duration: duration,
+              builder: (context, dx, child) =>
+                  Transform.translate(offset: Offset(dx, 0), child: child),
+              child: const Text('BBBB', style: _style),
+            ),
+          ),
+        ],
+      ),
+    );
+
+void main() {
+  late Directory dir;
+  late List<String> lines;
+  late LayoutReportSink sink;
+
+  setUp(() {
+    dir = Directory.systemTemp.createTempSync('layout_audit_ext_');
+    lines = [];
+    sink = LayoutReportSink(
+      reportDir: dir.path,
+      environment: const {},
+      writeLine: lines.add,
+    );
+  });
+
+  tearDown(() => dir.deleteSync(recursive: true));
+
+  testWidgets('조합의 뷰포트와 글자 배율이 적용된다', (tester) async {
+    Size? size;
+    double? scaled;
+    await tester.pumpAndAuditLayout(
+      name: 'media',
+      auditCase: const LayoutAuditCase(TestViewports.iphoneSe1, 2.0),
+      sink: sink,
+      child: Builder(
+        builder: (context) {
+          size = MediaQuery.sizeOf(context);
+          scaled = MediaQuery.textScalerOf(context).scale(10);
+          return const SizedBox();
+        },
+      ),
+    );
+
+    expect(size, const Size(320, 568));
+    expect(scaled, 20);
+  });
+
+  testWidgets('겹침이 없으면 빈 보고서를 돌려주고 아무것도 쓰지 않는다', (tester) async {
+    final report = await tester.pumpAndAuditLayout(
+      name: 'clean',
+      auditCase: _case,
+      sink: sink,
+      child: const Text('안녕하세요', style: _style),
+    );
+
+    expect(report.isEmpty, isTrue);
+    expect(lines, isEmpty);
+    expect(dir.listSync(), isEmpty);
+  });
+
+  testWidgets('겹침·넘침·말줄임을 한 보고서에 모아 보고한다', (tester) async {
+    final report = await tester.pumpAndAuditLayout(
+      name: 'mixed',
+      auditCase: _case,
+      sink: sink,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _overlapping(),
+          const Row(children: [SizedBox(width: 500, height: 10)]),
+          const Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '아주 긴 제목이 한 줄에 다 들어가지 않아 말줄임표로 끝납니다',
+                  style: _style,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(
+      report.findings.map((f) => f.kind).toSet(),
+      containsAll([
+        LayoutFindingKind.overlap,
+        LayoutFindingKind.overflow,
+        LayoutFindingKind.truncation,
+      ]),
+    );
+    expect(report.name, 'mixed');
+    expect(report.caseLabel, _case.toString());
+    expect(lines.single, contains('mixed'));
+    expect(File('${dir.path}/mixed.md').existsSync(), isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('움직이는 텍스트는 잘림이 아니라 움직임으로 보고한다', (tester) async {
+    final report = await tester.pumpAndAuditLayout(
+      name: 'marquee',
+      auditCase: _case,
+      sink: sink,
+      child: const _Marquee(),
+    );
+
+    expect(_ofKind(report, LayoutFindingKind.moving), hasLength(1));
+    expect(_ofKind(report, LayoutFindingKind.clipped), isEmpty);
+    expect(_ofKind(report, LayoutFindingKind.truncation), isEmpty);
+    expect(_ofKind(report, LayoutFindingKind.overlap), isEmpty);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('한 번만 재생되는 입장 애니메이션은 settle 뒤에는 겹침을 원래 심각도로 보고한다', (
+    tester,
+  ) async {
+    final settled = await tester.pumpAndAuditLayout(
+      name: 'slide-settled',
+      auditCase: _case,
+      sink: sink,
+      child: _slidingIn(const Duration(milliseconds: 300)),
+    );
+
+    expect(_ofKind(settled, LayoutFindingKind.moving), isEmpty);
+    expect(
+      _ofKind(settled, LayoutFindingKind.overlap).single.severity,
+      LayoutSeverity.warning,
+    );
+  });
+
+  testWidgets('settle 전이면 아직 움직이는 겹침은 info로 낮춘다', (tester) async {
+    final moving = await tester.pumpAndAuditLayout(
+      name: 'slide-moving',
+      auditCase: _case,
+      sink: sink,
+      settle: Duration.zero,
+      child: _slidingIn(const Duration(seconds: 1)),
+    );
+
+    expect(_ofKind(moving, LayoutFindingKind.moving), isNotEmpty);
+    expect(
+      _ofKind(moving, LayoutFindingKind.overlap).single.severity,
+      LayoutSeverity.info,
+    );
+
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('strict이면 warning에서 실패한다', (tester) async {
+    await expectLater(
+      () => tester.pumpAndAuditLayout(
+        name: 'strict',
+        auditCase: _case,
+        sink: sink,
+        strict: true,
+        child: _overlapping(),
+      ),
+      throwsA(isA<TestFailure>()),
+    );
+
+    final report = await tester.pumpAndAuditLayout(
+      name: 'lenient',
+      auditCase: _case,
+      sink: sink,
+      strict: false,
+      child: _overlapping(),
+    );
+    expect(report.countOf(LayoutSeverity.warning), 1);
+  });
+
+  testWidgets('wrap으로 감싼 앱 안에서 검사한다', (tester) async {
+    const appKey = Key('app');
+    final report = await tester.pumpAndAuditLayout(
+      name: 'wrapped',
+      auditCase: _case,
+      sink: sink,
+      wrap: (child) => MaterialApp(
+        key: appKey,
+        theme: ThemeData(useMaterial3: true),
+        home: Scaffold(body: child),
+      ),
+      child: _overlapping(),
+    );
+
+    expect(find.byKey(appKey), findsOneWidget);
+    expect(_ofKind(report, LayoutFindingKind.overlap), hasLength(1));
+  });
+
+  testWidgets('within으로 범위를 좁힌다', (tester) async {
+    const cleanKey = Key('clean');
+    final report = await tester.pumpAndAuditLayout(
+      name: 'within',
+      auditCase: _case,
+      sink: sink,
+      within: find.byKey(cleanKey),
+      child: Column(
+        children: [
+          _overlapping(),
+          const Text('혼자 있는 글자', key: cleanKey, style: _style),
+        ],
+      ),
+    );
+
+    expect(report.isEmpty, isTrue);
+  });
+}

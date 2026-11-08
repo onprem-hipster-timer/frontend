@@ -8,3 +8,6 @@ export 'src/overflow_recorder.dart';
 export 'src/rect_math.dart';
 export 'src/report.dart';
 export 'src/source_location.dart';
+export 'src/stress_texts.dart';
+export 'src/tester_extension.dart';
+export 'src/variants.dart';
