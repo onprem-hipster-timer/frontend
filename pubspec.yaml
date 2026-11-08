@@ -87,6 +87,10 @@ dev_dependencies:
   momeet_lints:
     path: packages/momeet_lints
 
+  # Layout audit (overlap, clipping, overflow in widget tests)
+  layout_audit:
+    path: packages/layout_audit
+
 
 flutter:
   uses-material-design: true

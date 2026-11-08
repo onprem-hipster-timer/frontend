@@ -3,13 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:layout_audit/layout_audit.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-import '../../../../helpers/rendering_test_devices.dart';
 import '../../../../helpers/schedule_fixtures.dart';
 
 void main() {

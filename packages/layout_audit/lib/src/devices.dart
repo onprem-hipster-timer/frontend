@@ -13,9 +13,9 @@ class TestViewport {
   final double devicePixelRatio;
 
   Size get physicalSize => Size(
-    logicalSize.width * devicePixelRatio,
-    logicalSize.height * devicePixelRatio,
-  );
+        logicalSize.width * devicePixelRatio,
+        logicalSize.height * devicePixelRatio,
+      );
 
   double get aspectRatio => logicalSize.width / logicalSize.height;
 
@@ -68,6 +68,52 @@ abstract final class TestViewports {
     'android-large',
     Size(412, 915),
     devicePixelRatio: 2.625,
+  );
+
+  // 가장 작은 폰과 작은 현행 폰.
+  static const iphoneSe1 = TestViewport(
+    'iphone-se-1',
+    Size(320, 568),
+    devicePixelRatio: 2,
+  );
+  static const iphoneMini = TestViewport(
+    'iphone-mini',
+    Size(375, 812),
+    devicePixelRatio: 3,
+  );
+
+  // 폴더블: 22:9로 긴 메인 화면, 거의 정사각형 커버·내부 화면, 두 화면 펼침.
+  static const zFlipMain = TestViewport(
+    'z-flip-main-22:9',
+    Size(412, 1006),
+    devicePixelRatio: 2.625,
+  );
+  static const zFlipCover = TestViewport(
+    'z-flip-cover',
+    Size(360, 374),
+    devicePixelRatio: 2,
+  );
+  static const duoSingle = TestViewport(
+    'duo-single-3:4',
+    Size(540, 720),
+    devicePixelRatio: 2.5,
+  );
+  static const duoSpanned = TestViewport(
+    'duo-spanned-3:2',
+    Size(1080, 720),
+    devicePixelRatio: 2.5,
+  );
+  static const zFoldInner = TestViewport(
+    'z-fold-inner',
+    Size(906, 1088),
+    devicePixelRatio: 2,
+  );
+
+  // 가로로 눕힌 폰.
+  static const phoneSmallLandscape = TestViewport(
+    'phone-small-landscape',
+    Size(800, 360),
+    devicePixelRatio: 3,
   );
 
   // 태블릿 portrait/landscape 대표값.
