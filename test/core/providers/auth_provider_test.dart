@@ -775,5 +775,39 @@ void main() {
       );
       expect(harness.prefs.getString(googleSignInCodeKey), 'init-code');
     });
+
+    test('인증 전 계정이면 새 인증 플로우를 담은 EmailNotVerifiedException이다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      harness.stubSubmitError(
+        KratosFlowType.login,
+        const KratosException(
+          statusCode: 403,
+          errorId: 'session_verified_address_required',
+          verificationFlowId: 'v9',
+        ),
+      );
+      final container = await boot();
+
+      await expectLater(
+        container
+            .read(authProvider.notifier)
+            .completeGoogleAccountLink(
+              flowId: 'l1',
+              email: 'owner@example.com',
+              password: 'Owner-Pass-123',
+            ),
+        throwsA(
+          isA<EmailNotVerifiedException>()
+              .having((e) => e.verificationFlowId, 'flow', 'v9')
+              .having(
+                (e) => e.message,
+                'message',
+                AuthErrorType.emailNotVerified.localized,
+              ),
+        ),
+      );
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+    });
   });
 }
