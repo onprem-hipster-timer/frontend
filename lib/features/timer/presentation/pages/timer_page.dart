@@ -621,7 +621,7 @@ class DigitalClock extends StatelessWidget {
         fontWeight: FontWeight.w400,
         color: timeUp
             ? theme.colorScheme.error
-            : !idle && duration.inSeconds > 0
+            : !idle
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
         letterSpacing: 2,

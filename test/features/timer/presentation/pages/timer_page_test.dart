@@ -1406,6 +1406,20 @@ void main() {
         expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
       });
 
+      testWidgets('휴식이 0이 되어도 시계를 대기처럼 흐리게 두지 않는다', (tester) async {
+        await pump(tester);
+        await chooseBreak(tester);
+        final idleClock = clockColor(tester);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        breakNow = breakNow.add(const Duration(minutes: 5));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(inDashboard(find.text('휴식 종료')), findsOneWidget);
+        expect(clockColor(tester), isNot(idleClock));
+      });
+
       testWidgets('휴식 중 다이얼은 tertiary로 남은 휴식을 보이고 끌어도 휴식 값이 그대로다', (
         tester,
       ) async {
