@@ -47,3 +47,12 @@ pre-push:
         else
           flutter test
         fi
+
+    layout-audit-test:
+      run: |
+        cd packages/layout_audit
+        if command -v fvm &> /dev/null; then
+          fvm flutter test
+        else
+          flutter test
+        fi
