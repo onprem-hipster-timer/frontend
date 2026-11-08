@@ -341,6 +341,12 @@ class TimerController extends _$TimerController {
       ref.read(myActiveTimersProvider.notifier).apply(timer);
     }
     ref.invalidate(timerHistoryProvider);
+    // 연결된 타이머가 끝나면 서버가 그 Todo를 완료·취소로 바꾼다
+    if (timer.todoId != null &&
+        (timer.status == TimerStatus.completed ||
+            timer.status == TimerStatus.cancelled)) {
+      ref.invalidate(todosProvider);
+    }
   }
 
   /// 타이머 시작

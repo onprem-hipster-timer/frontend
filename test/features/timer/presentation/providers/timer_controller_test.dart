@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
@@ -103,5 +104,58 @@ void main() {
     );
     expect(repository.calls, ['update:active-1']);
     expect(container.read(timerControllerProvider).hasError, isTrue);
+  });
+
+  group('연결된 Todo 목록', () {
+    late int todoListReads;
+
+    /// Todo 목록을 한 번 읽어 둔 컨테이너. 다시 읽을 때마다 [todoListReads]가 는다
+    Future<ProviderContainer> bootWithTodos() async {
+      todoListReads = 0;
+      final container = ProviderContainer(
+        overrides: [
+          timerRepositoryProvider.overrideWithValue(repository),
+          activeTimerProvider.overrideWithValue(const AsyncData(null)),
+          timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+          todosProvider.overrideWith((ref, groupId) async {
+            todoListReads++;
+            return <TodoRead>[];
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(timerControllerProvider, (_, _) {});
+      container.listen(todosProvider(null), (_, _) {});
+      await container.read(todosProvider(null).future);
+      return container;
+    }
+
+    void linkTo(String? todoId) =>
+        repository.respond = (timerId, status) =>
+            makeTimer(id: timerId, status: status).copyWith(todoId: todoId);
+
+    test('Todo에 연결된 타이머를 완료하면 서버가 바꾼 Todo 상태를 보도록 Todo 목록을 다시 읽게 한다', () async {
+      final container = await bootWithTodos();
+      linkTo('todo-1');
+
+      await controller(container).stopTimer(timerId: 't1');
+      await container.read(todosProvider(null).future);
+
+      expect(todoListReads, 2);
+    });
+
+    test('연결 없는 타이머를 완료하거나 연결된 타이머를 시작·일시정지·재개하면 Todo 목록을 다시 읽지 않는다', () async {
+      final container = await bootWithTodos();
+
+      linkTo(null);
+      await controller(container).stopTimer(timerId: 't0');
+      linkTo('todo-1');
+      await controller(container).startTimer(relatedTodoId: 'todo-1');
+      await controller(container).pauseTimer(timerId: 't1');
+      await controller(container).resumeTimer(timerId: 't1');
+      await container.read(todosProvider(null).future);
+
+      expect(todoListReads, 1);
+    });
   });
 }
