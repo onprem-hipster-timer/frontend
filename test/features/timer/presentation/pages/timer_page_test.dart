@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
@@ -17,6 +18,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
+import 'package:momeet/shared/providers/friend_providers.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/pump_app.dart';
@@ -2640,6 +2642,271 @@ void main() {
       );
     });
   });
+
+  group('친구 타이머', () {
+    final now = DateTime.utc(2026, 11, 9, 10);
+    late DateTime clock;
+    late FakeTimerRepository repository;
+
+    setUp(() {
+      clock = now;
+      repository = FakeTimerRepository();
+    });
+
+    /// [ownerId]가 나에게 공유한 타이머
+    TimerRead shared(
+      String id,
+      TimerStatus status, {
+      required String ownerId,
+      DateTime? startedAt,
+      int elapsedTime = 0,
+    }) => makeTimer(
+      id: id,
+      status: status,
+      startedAt: startedAt,
+      createdAt: startedAt,
+      allocatedDuration: 25 * 60,
+      elapsedTime: elapsedTime,
+    ).copyWith(isShared: true, ownerId: ownerId);
+
+    final running = shared(
+      'shared-1',
+      TimerStatus.running,
+      ownerId: 'friend-1',
+      startedAt: now.subtract(const Duration(minutes: 5)),
+    ).copyWith(title: '보고서 쓰기');
+    final paused = shared(
+      'shared-2',
+      TimerStatus.paused,
+      ownerId: 'friend-2',
+      startedAt: now.subtract(const Duration(hours: 1)),
+      elapsedTime: 10 * 60,
+    ).copyWith(todo: makeTodo().copyWith(title: '할 일 제목'));
+    final completed = shared(
+      'shared-3',
+      TimerStatus.completed,
+      ownerId: 'stranger',
+      startedAt: now.subtract(const Duration(days: 1)),
+      elapsedTime: 25 * 60,
+    );
+
+    Finder friendsTab() => find.text('친구 타이머');
+    Finder myTab() => find.text('내 타이머');
+    Finder sharedItem(String timerId) => find.byWidgetPredicate(
+      (widget) => widget is SharedTimerItem && widget.timer.id == timerId,
+    );
+    Finder inItem(String timerId, Finder finder) =>
+        find.descendant(of: sharedItem(timerId), matching: finder);
+
+    Future<void> pump(
+      WidgetTester tester, {
+      Stream<TimerWsTimerEvent> friendActivity = const Stream.empty(),
+    }) async {
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        history: [makeTimer(id: 'mine', status: TimerStatus.completed)],
+        controller: _FakeTimerController(),
+        friendActivity: friendActivity,
+        overrides: [
+          timerRepositoryProvider.overrideWithValue(repository),
+          friendsProvider.overrideWith(
+            (ref) async => [
+              makeFriend('friend-1', displayName: '영희'),
+              makeFriend('friend-2'),
+            ],
+          ),
+          serverClockProvider.overrideWithValue(
+            ServerClock(deviceNow: () => clock),
+          ),
+        ],
+      );
+    }
+
+    Future<void> openFriendsTab(WidgetTester tester) async {
+      await tester.tap(friendsTab());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('공유받은 타이머를 최근에 시작한 순으로 주인 이름과 함께 보기만 한다', (tester) async {
+      repository.listShared = () async => [completed, paused, running];
+
+      await pump(tester);
+      expect(myTab(), findsOneWidget);
+      expect(_historyItem('mine'), findsOneWidget);
+      expect(repository.calls, isEmpty);
+
+      await openFriendsTab(tester);
+
+      expect(repository.calls, ['listShared']);
+      expect(_historyItem('mine'), findsNothing);
+      final items = tester.widgetList<SharedTimerItem>(
+        find.byType(SharedTimerItem),
+      );
+      expect(items.map((item) => item.timer.id), [
+        'shared-1',
+        'shared-2',
+        'shared-3',
+      ]);
+      for (final (id, title, owner, status, time) in [
+        ('shared-1', '보고서 쓰기', '영희', '진행 중', '00:20:00'),
+        ('shared-2', '할 일 제목', '이름 없는 친구', '일시정지', '00:15:00'),
+        ('shared-3', '알 수 없는 작업', '다른 사용자', '완료', '00:25:00'),
+      ]) {
+        for (final text in [title, owner, status, time]) {
+          expect(inItem(id, find.text(text)), findsOneWidget, reason: text);
+        }
+      }
+      expect(
+        find.descendant(
+          of: find.byType(SharedTimerItem),
+          matching: find.byType(IconButton),
+        ),
+        findsNothing,
+      );
+      expect(find.byTooltip('공유 설정'), findsNothing);
+
+      await tester.tap(myTab());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SharedTimerItem), findsNothing);
+      expect(_historyItem('mine'), findsOneWidget);
+    });
+
+    testWidgets('취소된 공유 타이머는 취소로 보인다', (tester) async {
+      repository.listShared = () async => [
+        shared(
+          'shared-4',
+          TimerStatus.cancelled,
+          ownerId: 'friend-1',
+          startedAt: now,
+        ),
+      ];
+
+      await pump(tester);
+      await openFriendsTab(tester);
+
+      expect(inItem('shared-4', find.text('취소')), findsOneWidget);
+    });
+
+    testWidgets('실행 중인 공유 타이머는 서버 시각으로 1초마다 남은 시간을 센다', (tester) async {
+      repository.listShared = () async => [running, paused];
+
+      await pump(tester);
+      await openFriendsTab(tester);
+      expect(inItem('shared-1', find.text('00:20:00')), findsOneWidget);
+
+      clock = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(inItem('shared-1', find.text('00:19:59')), findsOneWidget);
+      expect(inItem('shared-2', find.text('00:15:00')), findsOneWidget);
+    });
+
+    testWidgets('친구 타이머를 고를 때마다 다시 읽는다', (tester) async {
+      repository.listShared = () async => [running];
+
+      await pump(tester);
+      await openFriendsTab(tester);
+      await tester.tap(myTab());
+      await tester.pumpAndSettle();
+      await openFriendsTab(tester);
+
+      expect(repository.calls, ['listShared', 'listShared']);
+    });
+
+    testWidgets('친구 활동 이벤트가 오면 공유받은 타이머를 다시 읽는다', (tester) async {
+      final activity = StreamController<TimerWsTimerEvent>.broadcast();
+      addTearDown(activity.close);
+      var reads = 0;
+      repository.listShared = () async {
+        reads++;
+        return [if (reads == 1) running else paused];
+      };
+
+      await pump(tester, friendActivity: activity.stream);
+      await openFriendsTab(tester);
+      expect(sharedItem('shared-1'), findsOneWidget);
+
+      activity.add(
+        TimerWsTimerEvent(
+          id: 'msg-1',
+          type: 'timer.updated',
+          fromUser: 'friend-1',
+          timestamp: now,
+          payload: TimerWsEventPayload(action: 'pause', timer: running),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(reads, 2);
+      expect(sharedItem('shared-1'), findsNothing);
+      expect(sharedItem('shared-2'), findsOneWidget);
+    });
+
+    testWidgets('공유받은 타이머가 없으면 알린다', (tester) async {
+      await pump(tester);
+      await openFriendsTab(tester);
+
+      expect(find.text('공유받은 타이머가 없습니다'), findsOneWidget);
+    });
+
+    testWidgets('공유받은 타이머를 끝내 읽지 못하면 알린다', (tester) async {
+      repository.listShared = () async => throw Exception('네트워크 오류');
+
+      await pump(tester);
+      await tester.tap(friendsTab());
+      // 자동 재시도가 끝날 때까지 기다린다
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(seconds: 7));
+      }
+      await tester.pumpAndSettle();
+
+      expect(find.text('공유받은 타이머를 불러올 수 없습니다'), findsOneWidget);
+    });
+
+    for (final size in const [Size(360, 800), Size(600, 800)]) {
+      testWidgets('${size.width.toInt()} 폭에서 내 타이머와 친구 타이머 목록이 넘치지 않는다', (
+        tester,
+      ) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        const long = '아주 긴 작업 이름이 들어가도 목록 항목이 넘치지 않아야 한다';
+        repository.listShared = () async => [
+          running.copyWith(title: long),
+          paused.copyWith(ownerId: 'friend-1'),
+          completed,
+        ];
+
+        await pump(tester);
+        if (size.width < 600) {
+          await tester.tap(find.byTooltip('타이머 목록'));
+          await tester.pumpAndSettle();
+        }
+        expect(tester.takeException(), isNull);
+        expect(_historyItem('mine'), findsOneWidget);
+
+        await openFriendsTab(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(sharedItem('shared-1'), findsOneWidget);
+
+        await tester.scrollUntilVisible(
+          sharedItem('shared-3'),
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(TimerHistoryList),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }
 
 Future<void> _pumpTimerPage(
@@ -2648,6 +2915,7 @@ Future<void> _pumpTimerPage(
   List<TimerRead>? history,
   required _FakeTimerController controller,
   List<TodoRead> todos = const [],
+  Stream<TimerWsTimerEvent> friendActivity = const Stream.empty(),
   List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
@@ -2659,6 +2927,7 @@ Future<void> _pumpTimerPage(
           history: history ?? [?timer],
           controller: controller,
           todos: todos,
+          friendActivity: friendActivity,
         ),
         ...overrides,
       ],
@@ -2672,14 +2941,13 @@ List<Override> _timerOverrides({
   required List<TimerRead> history,
   required _FakeTimerController controller,
   List<TodoRead> todos = const [],
+  Stream<TimerWsTimerEvent> friendActivity = const Stream.empty(),
 }) {
   return [
     // 새 작업 시작에서 고를 할 일
     allTodosProvider.overrideWith((ref) async => todos),
-    // 친구 활동 리스너가 실제 WS/auth 체인을 건드리지 않도록 빈 스트림으로 격리
-    timerFriendActivityProvider.overrideWith(
-      (ref) => const Stream<TimerWsTimerEvent>.empty(),
-    ),
+    // 친구 활동 리스너가 실제 WS/auth 체인을 건드리지 않도록 테스트가 준 스트림(기본은 빈 스트림)으로 격리
+    timerFriendActivityProvider.overrideWith((ref) => friendActivity),
     activeTimerProvider.overrideWithValue(AsyncData(timer)),
     timerHistoryProvider.overrideWith((ref) => Future.value(history)),
     // 다시 그려 활성 타이머가 바뀌면 남은 시간도 따라 바뀐다
@@ -2720,8 +2988,10 @@ Finder _historyItem(String timerId) => find.byWidgetPredicate(
 );
 
 /// 대기 상태의 작업·휴식 선택
-Finder _modeSwitch() =>
-    find.byWidgetPredicate((widget) => widget is SegmentedButton);
+Finder _modeSwitch() => find.descendant(
+  of: find.byType(TimerDashboard),
+  matching: find.byWidgetPredicate((widget) => widget is SegmentedButton),
+);
 
 /// 작업·휴식 선택에서 [label] 칸
 Finder _mode(String label) =>

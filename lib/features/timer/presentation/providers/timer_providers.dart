@@ -297,6 +297,32 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
   }
 }
 
+/// 다른 사용자가 나에게 공유한 타이머. 최근에 시작한 순
+///
+/// 친구의 타이머 이벤트([timerFriendActivityProvider])가 오면 다시 읽는다.
+///
+/// 테스트: test/features/timer/presentation/providers/shared_timers_test.dart
+@riverpod
+Future<List<TimerRead>> sharedTimers(Ref ref) async {
+  ref.listen(timerFriendActivityProvider, (_, next) {
+    if (next is AsyncData) ref.invalidateSelf();
+  });
+  final timers = await ref.watch(timerRepositoryProvider).listSharedTimers();
+  return [...timers]..sort(
+    (a, b) =>
+        (b.startedAt ?? b.createdAt).compareTo(a.startedAt ?? a.createdAt),
+  );
+}
+
+/// 서버 기준 현재 시각([serverClockProvider])을 바로 한 번, 이후 1초마다 낸다
+@riverpod
+Stream<DateTime> serverNow(Ref ref) async* {
+  final clock = ref.watch(serverClockProvider);
+  yield clock.now();
+  // yield*는 구독을 취소하면 바로 틱을 멈춘다
+  yield* Stream.periodic(const Duration(seconds: 1), (_) => clock.now());
+}
+
 // ============================================================
 // Timer Ticker Provider (Local UI Ticker)
 // ============================================================

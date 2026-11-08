@@ -11,6 +11,7 @@ import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.d
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
+import 'package:momeet/shared/providers/friend_providers.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -734,14 +735,23 @@ class TimerControlButton extends StatelessWidget {
 
 /// 타이머 히스토리 목록
 ///
+/// 머리말 아래에서 내 타이머와 친구가 공유한 타이머를 골라 봅니다. 친구 타이머를 고를 때마다 다시 읽습니다.
 /// 바텀 시트 안에서는 시트의 [scrollController]로 목록을 스크롤합니다.
-class TimerHistoryList extends ConsumerWidget {
+class TimerHistoryList extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
 
   const TimerHistoryList({super.key, this.scrollController});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimerHistoryList> createState() => _TimerHistoryListState();
+}
+
+class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
+  /// 친구가 공유한 타이머를 보는 중
+  bool _shared = false;
+
+  @override
+  Widget build(BuildContext context) {
     final historyAsync = ref.watch(timerHistoryProvider);
     final theme = Theme.of(context);
 
@@ -756,15 +766,34 @@ class TimerHistoryList extends ConsumerWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: historyAsync.when(
-              data: (timers) => timers.isEmpty
-                  ? _buildEmptyState(context)
-                  : _buildHistoryList(context, timers),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => _buildErrorState(context, error),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('내 타이머')),
+                ButtonSegment(value: true, label: Text('친구 타이머')),
+              ],
+              selected: {_shared},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                setState(() => _shared = selection.single);
+                if (_shared) ref.invalidate(sharedTimersProvider);
+              },
             ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _shared
+                ? _SharedTimerList(scrollController: widget.scrollController)
+                : historyAsync.when(
+                    data: (timers) => timers.isEmpty
+                        ? _buildEmptyState(context)
+                        : _buildHistoryList(context, timers),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) => _buildErrorState(context, error),
+                  ),
           ),
         ],
       ),
@@ -830,7 +859,7 @@ class TimerHistoryList extends ConsumerWidget {
     }
 
     return ListView.builder(
-      controller: scrollController,
+      controller: widget.scrollController,
       itemCount: groupedTimers.length,
       itemBuilder: (context, index) {
         final date = groupedTimers.keys.elementAt(index);
@@ -855,6 +884,144 @@ class TimerHistoryList extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// 친구가 공유한 타이머 목록. 주인 이름은 친구 목록에서 찾는다
+class _SharedTimerList extends ConsumerWidget {
+  const _SharedTimerList({this.scrollController});
+
+  final ScrollController? scrollController;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    // 친구 목록을 읽지 못하면 이름 대신 '다른 사용자'로 보인다
+    final friends = {
+      for (final friend in ref.watch(friendsProvider).value ?? <FriendRead>[])
+        friend.userId: friend,
+    };
+
+    return ref
+        .watch(sharedTimersProvider)
+        .when(
+          data: (timers) => timers.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.group_outlined,
+                        size: 64,
+                        color: theme.colorScheme.outline,
+                      ),
+                      const SizedBox(height: 16),
+                      Text('공유받은 타이머가 없습니다', style: theme.textTheme.bodyLarge),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  controller: scrollController,
+                  itemCount: timers.length,
+                  itemBuilder: (context, index) {
+                    final timer = timers[index];
+                    final owner = friends[timer.ownerId];
+                    return SharedTimerItem(
+                      timer: timer,
+                      ownerName: owner == null
+                          ? '다른 사용자'
+                          : owner.displayName ?? '이름 없는 친구',
+                    );
+                  },
+                ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text('공유받은 타이머를 불러올 수 없습니다', style: theme.textTheme.bodyLarge),
+                const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+  }
+}
+
+/// 타이머 상태별 아이콘, 색, 이름
+({IconData icon, Color bg, Color fg, String label}) _timerStatusStyle(
+  BuildContext context,
+  TimerStatus status,
+) {
+  final cs = Theme.of(context).colorScheme;
+  switch (status) {
+    case TimerStatus.running:
+      return (
+        icon: Icons.play_arrow,
+        bg: Colors.green.shade100,
+        fg: Colors.green.shade800,
+        label: '진행 중',
+      );
+    case TimerStatus.paused:
+      return (
+        icon: Icons.pause,
+        bg: Colors.orange.shade100,
+        fg: Colors.orange.shade800,
+        label: '일시정지',
+      );
+    case TimerStatus.cancelled:
+      return (
+        icon: Icons.cancel_outlined,
+        bg: cs.surfaceContainerHighest,
+        fg: cs.onSurfaceVariant,
+        label: '취소',
+      );
+    default:
+      return (
+        icon: Icons.check_circle_outline,
+        bg: cs.primaryContainer,
+        fg: cs.onPrimaryContainer,
+        label: '완료',
+      );
+  }
+}
+
+/// 타이머 상태 칩
+class _TimerStatusChip extends StatelessWidget {
+  const _TimerStatusChip(this.style);
+
+  final ({IconData icon, Color bg, Color fg, String label}) style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: style.bg,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        style.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: style.fg,
+        ),
+      ),
     );
   }
 }
@@ -899,42 +1066,12 @@ class TimerHistoryItem extends ConsumerWidget {
     }
   }
 
-  ({IconData icon, Color bg, Color fg, String label}) _statusStyle(
-    BuildContext context,
-    TimerRead timer,
-  ) {
-    final cs = Theme.of(context).colorScheme;
-    switch (timer.status) {
-      case TimerStatus.running:
-        return (
-          icon: Icons.play_arrow,
-          bg: Colors.green.shade100,
-          fg: Colors.green.shade800,
-          label: '진행 중',
-        );
-      case TimerStatus.paused:
-        return (
-          icon: Icons.pause,
-          bg: Colors.orange.shade100,
-          fg: Colors.orange.shade800,
-          label: '일시정지',
-        );
-      default:
-        return (
-          icon: Icons.check_circle_outline,
-          bg: cs.primaryContainer,
-          fg: cs.onPrimaryContainer,
-          label: '완료',
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     // 명령 응답 전 값이나 받은 응답을 목록을 다시 읽기 전에 먼저 보인다
     final timer = timerView(ref.watch(timerViewsProvider), this.timer);
-    final style = _statusStyle(context, timer);
+    final style = _timerStatusStyle(context, timer.status);
     final activeTimer = ref
         .watch(activeTimerProvider)
         .when(data: (t) => t, loading: () => null, error: (_, _) => null);
@@ -1077,28 +1214,7 @@ class TimerHistoryItem extends ConsumerWidget {
             subtitle: Row(
               children: [
                 if (isActive) ...[
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: style.bg,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        style.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: style.fg,
-                        ),
-                      ),
-                    ),
-                  ),
+                  Flexible(child: _TimerStatusChip(style)),
                   const SizedBox(width: 8),
                 ],
                 Flexible(
@@ -1136,6 +1252,68 @@ class TimerHistoryItem extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// 친구가 공유한 타이머 항목. 보기만 하고 버튼을 두지 않습니다
+///
+/// 작업 제목, 상태, 주인 이름([ownerName])을 보이고, RUNNING/PAUSED면 남은 시간을, 끝난 타이머는 경과 시간을 보입니다.
+/// 실행 중이면 서버 기준 시각으로 1초마다 다시 셉니다.
+class SharedTimerItem extends ConsumerWidget {
+  const SharedTimerItem({
+    super.key,
+    required this.timer,
+    required this.ownerName,
+  });
+
+  final TimerRead timer;
+  final String ownerName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final style = _timerStatusStyle(context, timer.status);
+    final isActive =
+        timer.status == TimerStatus.running ||
+        timer.status == TimerStatus.paused;
+    final ticked = timer.status == TimerStatus.running
+        ? ref.watch(serverNowProvider).value
+        : null;
+    final now = ticked ?? ref.watch(serverClockProvider).now();
+    final duration = isActive
+        ? displayRemaining(timer, now)
+        : displayElapsed(timer, now);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: style.bg,
+          child: Icon(style.icon, color: style.fg),
+        ),
+        title: Text(
+          timer.title ?? timer.todo?.title ?? '알 수 없는 작업',
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        // 이름이 한 줄에 안 들어가면 상태 아래 줄로 내린다
+        subtitle: Wrap(
+          spacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _TimerStatusChip(style),
+            Text(ownerName, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ],
+        ),
+        trailing: Text(
+          formatDuration(duration),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w600,
+            color: isActive ? style.fg : theme.colorScheme.primary,
+          ),
+        ),
       ),
     );
   }
