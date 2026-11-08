@@ -217,4 +217,24 @@ void main() {
 
     expect(seen.single, same(empty));
   });
+
+  test('LAYOUT_AUDIT=off면 파일도 콘솔도 쓰지 않고 onReport만 부른다', () {
+    final dir = _tempDir();
+    final seen = <LayoutReport>[];
+    final report = _report([_finding(LayoutSeverity.warning, '경고')]);
+
+    emitLayoutReport(
+      report,
+      strict: false,
+      sink: LayoutReportSink(
+        reportDir: dir.path,
+        environment: const {'LAYOUT_AUDIT': 'off'},
+        writeLine: (_) => fail('꺼져 있으면 출력하지 않는다'),
+        onReport: seen.add,
+      ),
+    );
+
+    expect(seen.single, same(report));
+    expect(dir.listSync(), isEmpty);
+  });
 }

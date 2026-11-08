@@ -88,7 +88,9 @@ void emitLayoutReport(
   LayoutReportSink sink = const LayoutReportSink(),
 }) {
   sink.onReport?.call(report);
-  if (report.isEmpty) {
+  final env = sink.environment ?? Platform.environment;
+  // LAYOUT_AUDIT=off는 자동·명시 모드 모두의 출력을 끈다.
+  if (report.isEmpty || env['LAYOUT_AUDIT'] == 'off') {
     return;
   }
   final writeLine = sink.writeLine ?? debugPrint;
@@ -98,7 +100,6 @@ void emitLayoutReport(
   file.writeAsStringSync(markdown, mode: FileMode.append);
   writeLine('${report._header} → ${file.path}');
 
-  final env = sink.environment ?? Platform.environment;
   if (env['GITHUB_ACTIONS'] == 'true') {
     _annotations(report).forEach(writeLine);
     final summary = env['GITHUB_STEP_SUMMARY'];
