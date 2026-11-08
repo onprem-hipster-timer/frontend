@@ -144,8 +144,10 @@ void main() {
       ('취소한', todo(status: TodoStatus.cancelled)),
       ('공유받은', todo(shared: true)),
     ]) {
-      testWidgets('$label 할 일에는 타이머 시작 버튼이 없다', (tester) async {
-        await pumpTile(tester, hidden);
+      testWidgets('$label 할 일에는 연결된 활성 타이머가 있어도 시작 버튼과 남은 시간이 없다', (
+        tester,
+      ) async {
+        await pumpTile(tester, hidden, active: [activeTimer()]);
 
         expect(startButton(), findsNothing);
         expect(chip(), findsNothing);
@@ -322,19 +324,20 @@ void main() {
         find.descendant(of: chip(), matching: find.text('00:00')),
         findsOneWidget,
       );
+      // 글자와 아이콘이 실제로 그려지는 색
+      Color? rendered(Finder finder) => tester
+          .widget<RichText>(
+            find.descendant(
+              of: find.descendant(of: chip(), matching: finder),
+              matching: find.byType(RichText),
+            ),
+          )
+          .text
+          .style
+          ?.color;
       final error = Theme.of(tester.element(chip())).colorScheme.error;
-      expect(tester.widget<ActionChip>(chip()).labelStyle?.color, error);
-      expect(
-        tester
-            .widget<Icon>(
-              find.descendant(
-                of: chip(),
-                matching: find.byIcon(Icons.timer_outlined),
-              ),
-            )
-            .color,
-        error,
-      );
+      expect(rendered(find.text('00:00')), error);
+      expect(rendered(find.byIcon(Icons.timer_outlined)), error);
       await unmount(tester);
     });
 
