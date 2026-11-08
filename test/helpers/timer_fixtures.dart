@@ -41,6 +41,14 @@ VisibilityRead makeVisibility({
   allowedDomains: allowedDomains,
 );
 
+/// 테스트용 [FriendRead] 인스턴스를 생성하는 팩토리.
+FriendRead makeFriend(String userId, {String? displayName}) => FriendRead(
+  userId: userId,
+  friendshipId: 'friendship-$userId',
+  since: DateTime.utc(2026, 1, 1),
+  displayName: displayName,
+);
+
 /// 테스트용 [TodoRead] 인스턴스를 생성하는 팩토리.
 TodoRead makeTodo({String id = 'todo-1'}) => TodoRead(
   id: id,

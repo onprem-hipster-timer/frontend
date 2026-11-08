@@ -10,6 +10,7 @@ import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -2279,6 +2280,25 @@ void main() {
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
     });
 
+    testWidgets('넓은 화면의 가장 좁은 폭에서도 목록 항목이 넘치지 않는다', (tester) async {
+      setSize(tester, const Size(600, 800));
+      final paused = makeTimer(
+        id: 'timer-2',
+        status: TimerStatus.paused,
+      ).copyWith(title: '아주 긴 작업 이름이 들어가도 목록 항목이 넘치지 않아야 한다');
+      final completed = makeTimer(id: 'timer-3', status: TimerStatus.completed);
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        history: [running, paused, completed],
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TimerHistoryList), findsOneWidget);
+      expect(_historyItem('timer-3'), findsOneWidget);
+    });
+
     testWidgets('태블릿 세로 화면의 목록 항목이 넘치지 않는다', (tester) async {
       setSize(tester, const Size(800, 1280));
       final long = makeTimer(
@@ -2390,8 +2410,235 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.byType(TimerHistoryItem), findsOneWidget);
+        expect(find.byTooltip('공유 설정'), findsOneWidget);
       });
     }
+
+    /// [width] 폭에 [timer] 항목 하나를 그린다
+    Future<void> pumpItem(
+      WidgetTester tester,
+      TimerRead timer,
+      double width,
+    ) async {
+      await tester.pumpWidget(
+        pumpApp(
+          Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: width,
+                child: TimerHistoryItem(timer: timer),
+              ),
+            ),
+          ),
+          overrides: _timerOverrides(
+            timer: null,
+            history: [timer],
+            controller: _FakeTimerController(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    /// [tooltip] 버튼이 항목의 ListTile 아래 줄에 있는지
+    bool belowTile(WidgetTester tester, String tooltip) =>
+        tester.getRect(find.byTooltip(tooltip)).top >=
+        tester.getRect(find.byType(ListTile)).bottom;
+
+    final running = makeTimer(id: 'timer-1', status: TimerStatus.running);
+    final completed = makeTimer(id: 'timer-1', status: TimerStatus.completed);
+
+    for (final (timer, width, below) in [
+      (running, 360.0, true),
+      (running, 480.0, false),
+      (completed, 300.0, true),
+      (completed, 328.0, false),
+    ]) {
+      testWidgets(
+        '${timer.status.name} 항목은 ${width.toInt()} 폭에서 버튼을 ${below ? '아래 줄로 내린다' : '남은 시간 옆에 둔다'}',
+        (tester) async {
+          await pumpItem(tester, timer, width);
+
+          expect(tester.takeException(), isNull);
+          for (final tooltip in [
+            '공유 설정',
+            if (timer.status == TimerStatus.running) ...['일시정지', '완료'],
+          ]) {
+            expect(belowTile(tester, tooltip), below, reason: tooltip);
+          }
+        },
+      );
+    }
+  });
+
+  group('공유 설정', () {
+    final running = makeTimer(id: 'timer-1', status: TimerStatus.running);
+    final share = find.byTooltip('공유 설정');
+
+    Finder dashboardShare() =>
+        find.descendant(of: find.byType(CurrentTaskDisplay), matching: share);
+    Finder itemShare() =>
+        find.descendant(of: _historyItem('timer-1'), matching: share);
+
+    /// [finder] 버튼의 아이콘
+    IconData? iconOf(WidgetTester tester, Finder finder) => tester
+        .widget<Icon>(find.descendant(of: finder, matching: find.byType(Icon)))
+        .icon;
+
+    for (final level in [null, ...VisibilityLevel.$valuesDefined]) {
+      testWidgets('대시보드와 타이머 목록의 공유 버튼은 공유 범위 ${level?.json} 아이콘이다', (
+        tester,
+      ) async {
+        await _pumpTimerPage(
+          tester,
+          timer: running.copyWith(visibilityLevel: level),
+          controller: _FakeTimerController(),
+        );
+
+        expect(dashboardShare(), findsOneWidget);
+        expect(itemShare(), findsOneWidget);
+        expect(iconOf(tester, dashboardShare()), visibilityLevelIcon(level));
+        expect(iconOf(tester, itemShare()), visibilityLevelIcon(level));
+      });
+    }
+
+    testWidgets('공유받은 타이머에는 공유 버튼이 없다', (tester) async {
+      await _pumpTimerPage(
+        tester,
+        timer: running.copyWith(isShared: true, ownerId: 'friend-1'),
+        controller: _FakeTimerController(),
+      );
+
+      expect(share, findsNothing);
+    });
+
+    testWidgets('끝난 타이머 항목에도 공유 버튼이 있다', (tester) async {
+      final completed = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.completed,
+      ).copyWith(visibilityLevel: VisibilityLevel.public);
+
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        history: [completed],
+        controller: _FakeTimerController(),
+      );
+
+      expect(dashboardShare(), findsNothing);
+      expect(iconOf(tester, itemShare()), Icons.public);
+    });
+
+    testWidgets('대기 상태에는 공유 버튼이 없다', (tester) async {
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: _FakeTimerController(),
+      );
+
+      expect(share, findsNothing);
+    });
+
+    testWidgets('휴식 중에는 대시보드에 공유 버튼이 없다', (tester) async {
+      final paused = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 5 * 60,
+      );
+      await _pumpTimerPage(
+        tester,
+        timer: paused,
+        controller: _FakeTimerController(),
+      );
+      expect(dashboardShare(), findsOneWidget);
+
+      await tester.tap(_dashboardFabByIcon(Icons.coffee));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: find.byType(TimerDashboard), matching: share),
+        findsNothing,
+      );
+      expect(itemShare(), findsOneWidget);
+    });
+
+    testWidgets('대시보드에서 저장하면 대시보드와 타이머 목록의 아이콘이 바뀐다', (tester) async {
+      final repository = FakeTimerRepository()
+        ..listActive = (() async => [running])
+        ..getOne = (timerId) async =>
+            running.copyWith(visibilityLevel: VisibilityLevel.friends);
+
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            timerFriendActivityProvider.overrideWith(
+              (ref) => const Stream<TimerWsTimerEvent>.empty(),
+            ),
+            timerRepositoryProvider.overrideWithValue(repository),
+            timerWsClientProvider.overrideWithValue(null),
+            currentUserProvider.overrideWithValue(null),
+            // 목록은 공유 설정을 바꾸기 전 값을 다시 돌려준다
+            timerHistoryProvider.overrideWith((ref) async => [running]),
+            timerTickerProvider.overrideWith(
+              (ref) => Stream.value(const Duration(minutes: 60)),
+            ),
+            timerControllerProvider.overrideWith(_FakeTimerController.new),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(iconOf(tester, dashboardShare()), Icons.lock_outline);
+
+      await tester.tap(dashboardShare());
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(RadioListTile<VisibilityLevel>, '친구 공개'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+
+      expect(
+        repository.visibilityUpdate,
+        const VisibilityUpdate(level: VisibilityLevel.friends),
+      );
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text('공유 설정을 저장했습니다'), findsOneWidget);
+      expect(iconOf(tester, dashboardShare()), Icons.group_outlined);
+      expect(iconOf(tester, itemShare()), Icons.group_outlined);
+    });
+
+    testWidgets('타이머 목록의 공유 버튼은 그 타이머의 공유 설정 시트를 연다', (tester) async {
+      final repository = FakeTimerRepository()
+        ..visibilityOf = (timerId) async =>
+            makeVisibility(timerId: timerId, level: VisibilityLevel.public);
+      final completed = makeTimer(id: 'timer-2', status: TimerStatus.completed);
+
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        history: [completed],
+        controller: _FakeTimerController(),
+        overrides: [timerRepositoryProvider.overrideWithValue(repository)],
+      );
+      await tester.tap(
+        find.descendant(of: _historyItem('timer-2'), matching: share),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['visibility:timer-2']);
+      expect(
+        tester
+            .widget<RadioGroup<VisibilityLevel>>(
+              find.byType(RadioGroup<VisibilityLevel>),
+            )
+            .groupValue,
+        VisibilityLevel.public,
+      );
+    });
   });
 }
 

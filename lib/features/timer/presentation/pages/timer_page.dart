@@ -5,6 +5,7 @@ import 'package:momeet/features/timer/presentation/providers/break_timer_provide
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -534,6 +535,7 @@ class DigitalClock extends StatelessWidget {
 ///
 /// 연결된 Todo가 있으면 제목 옆에 Todo 상태를 표시하고, 일시정지 중에는 그 자리에서 바꿀 수 있습니다.
 /// 바꾼 뒤 서버가 돌려준 Todo로 [onTodoChanged]를 부릅니다.
+/// 내 타이머면 제목 뒤에 공유 범위 버튼([TimerShareButton])을 둡니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
   final ValueChanged<TodoRead>? onTodoChanged;
@@ -589,6 +591,7 @@ class CurrentTaskDisplay extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        if (!timer!.isShared) TimerShareButton(timer: timer!),
       ],
     );
   }
@@ -856,10 +859,17 @@ class TimerHistoryList extends ConsumerWidget {
   }
 }
 
+/// 타이머 목록 항목에서 버튼 말고 한 줄에 필요한 폭 (여백, 상태 아이콘, 제목, 남은 시간)
+const _historyItemBaseWidth = 280.0;
+
+/// 타이머 목록 항목의 버튼 하나의 폭 ([VisualDensity.compact])
+const _historyItemButtonWidth = 40.0;
+
 /// 타이머 히스토리 항목
 ///
 /// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·완료 버튼을 제공합니다.
-/// 집중 시간이 끝난 타이머는 일시정지·재개 대신 연장 버튼을 둡니다.
+/// 집중 시간이 끝난 타이머는 일시정지·재개 대신 연장 버튼을 둡니다. 내 타이머는 맨 뒤에 공유 범위 버튼을 둡니다.
+/// 버튼까지 한 줄에 두면 제목 자리가 모자란 폭이면 버튼을 아래 줄로 내립니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
@@ -962,137 +972,170 @@ class TimerHistoryItem extends ConsumerWidget {
           )
         : shown;
 
+    final buttons = [
+      if (isActive) ...[
+        if (timeUp)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.add),
+            onPressed: () => _runTimerAction(
+              context,
+              ref,
+              action: () => ref
+                  .read(timerControllerProvider.notifier)
+                  .extendTimer(timerId: timer.id, by: _extendBy),
+              errorLabel: '연장',
+            ),
+            tooltip: '5분 연장',
+            style: IconButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+            ),
+          )
+        else if (timer.status == TimerStatus.running)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.pause),
+            onPressed: () => _runTimerAction(
+              context,
+              ref,
+              action: () => ref
+                  .read(timerControllerProvider.notifier)
+                  .pauseTimer(timerId: timer.id),
+              errorLabel: '일시정지',
+            ),
+            tooltip: '일시정지',
+            style: IconButton.styleFrom(
+              foregroundColor: theme.colorScheme.secondary,
+            ),
+          )
+        else if (timer.status == TimerStatus.paused)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.play_arrow),
+            onPressed: () => _runTimerAction(
+              context,
+              ref,
+              action: () => ref
+                  .read(timerControllerProvider.notifier)
+                  .resumeTimer(timerId: timer.id),
+              errorLabel: '재개',
+            ),
+            tooltip: '재개',
+            style: IconButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+            ),
+          ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: Icon(Icons.check, color: theme.colorScheme.error),
+          onPressed: () async {
+            final confirmed = await _confirmStopTimer(context);
+            if (!context.mounted || !confirmed) return;
+            await _runTimerAction(
+              context,
+              ref,
+              action: () => ref
+                  .read(timerControllerProvider.notifier)
+                  .stopTimer(timerId: timer.id),
+              errorLabel: '완료',
+            );
+          },
+          tooltip: '완료',
+        ),
+      ],
+      if (!timer.isShared)
+        TimerShareButton(timer: timer, visualDensity: VisualDensity.compact),
+    ];
+    final durationText = Text(
+      formatDuration(duration),
+      style: theme.textTheme.titleSmall?.copyWith(
+        fontFamily: 'monospace',
+        fontWeight: FontWeight.w600,
+        color: isActive ? style.fg : theme.colorScheme.primary,
+      ),
+    );
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: style.bg,
-          child: Icon(style.icon, color: style.fg),
-        ),
-        title: Text(
-          taskName,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
-        subtitle: Row(
-          children: [
-            if (isActive) ...[
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: style.bg,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    style.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: style.fg,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 좁으면 버튼을 아래 줄로 내려 제목 자리를 남긴다
+          final stacked =
+              buttons.isNotEmpty &&
+              constraints.maxWidth <
+                  _historyItemBaseWidth +
+                      _historyItemButtonWidth * buttons.length;
+          final tile = ListTile(
+            leading: CircleAvatar(
+              backgroundColor: style.bg,
+              child: Icon(style.icon, color: style.fg),
+            ),
+            title: Text(
+              taskName,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Row(
+              children: [
+                if (isActive) ...[
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: style.bg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        style.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: style.fg,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Flexible(
-              child: Text(
-                '$startTime - $endTime',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              formatDuration(duration),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.w600,
-                color: isActive ? style.fg : theme.colorScheme.primary,
-              ),
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 4),
-              if (timeUp)
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _runTimerAction(
-                    context,
-                    ref,
-                    action: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .extendTimer(timerId: timer.id, by: _extendBy),
-                    errorLabel: '연장',
-                  ),
-                  tooltip: '5분 연장',
-                  style: IconButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                  ),
-                )
-              else if (timer.status == TimerStatus.running)
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.pause),
-                  onPressed: () => _runTimerAction(
-                    context,
-                    ref,
-                    action: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .pauseTimer(timerId: timer.id),
-                    errorLabel: '일시정지',
-                  ),
-                  tooltip: '일시정지',
-                  style: IconButton.styleFrom(
-                    foregroundColor: theme.colorScheme.secondary,
-                  ),
-                )
-              else if (timer.status == TimerStatus.paused)
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.play_arrow),
-                  onPressed: () => _runTimerAction(
-                    context,
-                    ref,
-                    action: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .resumeTimer(timerId: timer.id),
-                    errorLabel: '재개',
-                  ),
-                  tooltip: '재개',
-                  style: IconButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
+                  const SizedBox(width: 8),
+                ],
+                Flexible(
+                  child: Text(
+                    '$startTime - $endTime',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.check, color: theme.colorScheme.error),
-                onPressed: () async {
-                  final confirmed = await _confirmStopTimer(context);
-                  if (!context.mounted || !confirmed) return;
-                  await _runTimerAction(
-                    context,
-                    ref,
-                    action: () => ref
-                        .read(timerControllerProvider.notifier)
-                        .stopTimer(timerId: timer.id),
-                    errorLabel: '완료',
-                  );
-                },
-                tooltip: '완료',
+              ],
+            ),
+            trailing: stacked
+                ? durationText
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      durationText,
+                      if (isActive) const SizedBox(width: 4),
+                      ...buttons,
+                    ],
+                  ),
+          );
+          if (!stacked) return tile;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              tile,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: buttons,
+                ),
               ),
             ],
-          ],
-        ),
+          );
+        },
       ),
     );
   }
