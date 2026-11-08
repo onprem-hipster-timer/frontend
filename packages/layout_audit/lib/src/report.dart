@@ -93,7 +93,7 @@ void emitLayoutReport(
   }
   final writeLine = sink.writeLine ?? debugPrint;
   final markdown = '${report.toMarkdown()}\n\n';
-  final file = File('${sink.reportDir}/${_slug(report.name)}.md');
+  final file = File('${sink.reportDir}/${slugify(report.name)}.md');
   file.parent.createSync(recursive: true);
   file.writeAsStringSync(markdown, mode: FileMode.append);
   writeLine('${report._header} → ${file.path}');
@@ -147,5 +147,6 @@ String _escapeData(String value) => value
 String _escapeProperty(String value) =>
     _escapeData(value).replaceAll(':', '%3A').replaceAll(',', '%2C');
 
-String _slug(String name) =>
+/// 소문자로 바꾸고 파일 이름에 못 쓰는 글자를 `_`로 바꾼다.
+String slugify(String name) =>
     name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9가-힣._-]'), '_');

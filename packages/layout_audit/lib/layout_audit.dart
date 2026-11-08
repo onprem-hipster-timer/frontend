@@ -1,6 +1,7 @@
 library;
 
 export 'src/auditor.dart';
+export 'src/binding.dart';
 export 'src/devices.dart';
 export 'src/finding.dart';
 export 'src/leaf_geometry.dart';
