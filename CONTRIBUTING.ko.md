@@ -95,6 +95,26 @@ fvm flutter test test/widget_test.dart
 fvm flutter test --coverage
 ```
 
+#### 레이아웃 점검
+
+모든 위젯 테스트는 끝난 뒤 화면을 점검받는다. 겹친 글자, RenderFlex 넘침, 잘리거나 화면 밖으로 나간 글자, 말줄임 처리된 글자를 보고하되 테스트를 실패시키지는 않는다. 발견이 있으면 콘솔에 테스트당 한 줄이 찍히고 전체 표는 `build/layout_audit/<이름>.md`에 남는다. GitHub Actions에서는 해당 소스 줄 어노테이션과 잡 요약에 같은 내용이 뜬다.
+
+```bash
+# 한 화면의 점검 결과 보기
+fvm flutter test test/features/mypage -r expanded
+
+# warning(겹침·넘침·잘라냄·이탈)에서 실패시키기
+fvm flutter test --dart-define=LAYOUT_AUDIT_STRICT=true
+
+# 점검 끄기
+LAYOUT_AUDIT=off fvm flutter test
+
+# 라이브러리 자체 테스트
+cd packages/layout_audit && fvm flutter test
+```
+
+위험이 큰 위젯은 `*_layout_test.dart`에서 `pumpAndAuditLayout`으로 화면 16종 × 글자 배율 × 긴 텍스트 조합을 돌린다. 발견 종류, 의도된 겹침을 무시하는 법, 한계는 `packages/layout_audit/README.md`에 있다.
+
 ### Git Hooks (Lefthook)
 
 이 프로젝트는 [Lefthook](https://github.com/evilmartians/lefthook)으로 Git Hook을 관리합니다. 커밋/푸시 시 자동으로 품질 검사가 실행됩니다.

@@ -54,6 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Config
 - `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
 
+#### Tests
+- 레이아웃 점검 테스트 라이브러리(`packages/layout_audit`): 모든 위젯 테스트 끝에 화면에 남은 글자·이미지의 겹침(가린 비율·가리는 위젯 포함), RenderFlex 넘침, 잘라냄, 화면 이탈, 말줄임을 찾아 보고한다
+  - 기본은 경고만 남기고 통과한다. `--dart-define=LAYOUT_AUDIT_STRICT=true`면 warning이 있을 때 실패한다
+  - 결과는 `build/layout_audit/*.md`에 남고, GitHub Actions에서는 해당 소스 줄 어노테이션과 잡 요약 표로 표시된다
+  - `LAYOUT_AUDIT=off`로 끄고, `LAYOUT_AUDIT_VIEWPORT`·`LAYOUT_AUDIT_TEXT_SCALE`로 스위트 전체를 다른 화면·배율로 돌린다
+- Todo 트리 타일, 타이머 목록 항목, 마이페이지 태그 통계, 달력 일정 블록에 화면 크기 16종 × 글자 배율 × 긴 텍스트 조합 레이아웃 점검 테스트
+- 렌더링 테스트 뷰포트 프리셋을 `packages/layout_audit`로 옮기고 iPhone SE·mini, Z Flip, Surface Duo, 폴드 내부, 가로 폰 추가
+
 ### Removed
 
 #### Timer WebSocket

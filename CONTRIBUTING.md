@@ -95,6 +95,26 @@ fvm flutter test test/widget_test.dart
 fvm flutter test --coverage
 ```
 
+#### Layout audit
+
+Every widget test is audited after it finishes: overlapping text, RenderFlex overflow, clipped or off-screen text and ellipsized text are reported, never failed. When something is found, the console prints one line per test and the full table goes to `build/layout_audit/<name>.md`. On GitHub Actions the same findings appear as annotations on the source line and in the job summary.
+
+```bash
+# See what the audit found for one screen
+fvm flutter test test/features/mypage -r expanded
+
+# Fail on warnings (overlap, overflow, clipped, off-screen)
+fvm flutter test --dart-define=LAYOUT_AUDIT_STRICT=true
+
+# Turn the audit off
+LAYOUT_AUDIT=off fvm flutter test
+
+# Library tests
+cd packages/layout_audit && fvm flutter test
+```
+
+High-risk widgets also have `*_layout_test.dart` files that render them across 16 viewports × text scales × long texts with `pumpAndAuditLayout`. See `packages/layout_audit/README.md` for the finding kinds, how to ignore an intentional overlay, and the known limits.
+
 ### Git Hooks (Lefthook)
 
 This project uses [Lefthook](https://github.com/evilmartians/lefthook) to manage Git Hooks. Quality checks run automatically on commit and push.
