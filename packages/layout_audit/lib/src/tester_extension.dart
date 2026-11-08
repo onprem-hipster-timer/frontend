@@ -12,10 +12,12 @@ extension LayoutAuditTester on WidgetTester {
   ///
   /// [wrap]이 null이면 `MaterialApp(home: Scaffold(body: child))`로 감싼다.
   /// [settle]은 입장 애니메이션이 끝나길 기다리는 시간, [frameGap]은 비교할 두 프레임 사이 간격이다.
+  /// [label]은 보고서 제목에 조합 뒤에 붙는다(예: 어떤 스트레스 텍스트였는지).
   Future<LayoutReport> pumpAndAuditLayout({
     required String name,
     required LayoutAuditCase auditCase,
     required Widget child,
+    String? label,
     Widget Function(Widget child)? wrap,
     Finder? within,
     LayoutAuditOptions options = const LayoutAuditOptions(),
@@ -41,7 +43,7 @@ extension LayoutAuditTester on WidgetTester {
 
     final report = LayoutReport(
       name: name,
-      caseLabel: auditCase.toString(),
+      caseLabel: label == null ? auditCase.toString() : '$auditCase · $label',
       findings: [
         ...overflows,
         ...auditLayout(

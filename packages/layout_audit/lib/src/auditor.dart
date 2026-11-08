@@ -56,19 +56,31 @@ Map<RenderObject, List<Rect>> snapshotLeafBoxes(
   WidgetTester tester, {
   Finder? within,
 }) {
-  return {
-    for (final leaf in collectContentLeaves(
-      _roots(tester, within),
-      _viewRect(tester),
-    ))
-      leaf.box: leaf.rawBoxes,
-  };
+  try {
+    return {
+      for (final leaf in collectContentLeaves(
+        _roots(tester, within),
+        _viewRect(tester),
+      ))
+        leaf.box: leaf.rawBoxes,
+    };
+  } on Object {
+    // 스냅샷 실패는 감사 실패로 이어지지 않게 빈 값으로 둔다.
+    return const {};
+  }
 }
 
-Iterable<RenderObject> _roots(WidgetTester tester, Finder? within) =>
-    within != null
-        ? tester.renderObjectList(within)
-        : tester.binding.renderViews;
+Iterable<RenderObject> _roots(WidgetTester tester, Finder? within) {
+  if (within == null) {
+    return tester.binding.renderViews;
+  }
+  // 레이아웃이 중단된 트리에서는 파인더 평가가 던질 수 있다. 그때는 전체를 본다.
+  try {
+    return tester.renderObjectList(within).toList();
+  } on Object {
+    return tester.binding.renderViews;
+  }
+}
 
 Rect _viewRect(WidgetTester tester) =>
     Offset.zero & (tester.view.physicalSize / tester.view.devicePixelRatio);

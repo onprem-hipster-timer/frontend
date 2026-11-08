@@ -290,4 +290,35 @@ void main() {
 
     expect(report.isEmpty, isTrue);
   });
+
+  testWidgets('label은 보고서 제목의 조합 뒤에 붙는다', (tester) async {
+    final report = await tester.pumpAndAuditLayout(
+      name: 'labeled',
+      auditCase: _case,
+      label: '한국어 긴 문장',
+      sink: sink,
+      child: _overlapping(),
+    );
+
+    expect(report.caseLabel, '$_case · 한국어 긴 문장');
+  });
+
+  testWidgets('ListTile 폭 단언 뒤 이어지는 레이아웃 오류도 넘침으로 흡수하고 보고한다', (
+    tester,
+  ) async {
+    final report = await tester.pumpAndAuditLayout(
+      name: 'list_tile',
+      auditCase: _case,
+      sink: sink,
+      child: ListView(
+        children: const [
+          ListTile(
+              title: Text('a', style: _style), trailing: SizedBox(width: 400)),
+        ],
+      ),
+    );
+
+    expect(_ofKind(report, LayoutFindingKind.overflow), hasLength(1));
+    expect(tester.takeException(), isNull);
+  });
 }

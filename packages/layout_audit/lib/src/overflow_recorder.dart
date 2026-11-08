@@ -13,13 +13,18 @@ Future<List<LayoutFinding>> recordLayoutOverflows(
   bool forward = false,
 }) async {
   final findings = <LayoutFinding>[];
+  var layoutAborted = false;
   final previous = FlutterError.onError;
   FlutterError.onError = (details) {
     final finding = _tryOverflowFinding(details);
     if (finding != null) {
       findings.add(finding);
+      layoutAborted = layoutAborted || _abortsLayout(details);
     }
-    if (finding == null || forward) {
+    // 레이아웃을 중단시킨 단언 뒤에는 크기 없는 상자 때문에 같은 원인의 오류가 이어진다.
+    final consequence =
+        finding == null && layoutAborted && _isLayoutConsequence(details);
+    if ((finding == null && !consequence) || forward) {
       previous?.call(details);
     }
   };
@@ -29,6 +34,17 @@ Future<List<LayoutFinding>> recordLayoutOverflows(
     FlutterError.onError = previous;
   }
   return findings;
+}
+
+bool _abortsLayout(FlutterErrorDetails details) =>
+    details.exceptionAsString().contains('consumes the entire tile width');
+
+bool _isLayoutConsequence(FlutterErrorDetails details) {
+  const libraries = {'rendering library', 'scheduler library', 'semantics'};
+  final text = details.exceptionAsString();
+  return libraries.contains(details.library) ||
+      text.contains('was not laid out') ||
+      text.contains('hasSize');
 }
 
 const _sides = {

@@ -96,8 +96,8 @@ void main() {
     expect(findings, hasLength(1));
     expect(findings.single.kind, LayoutFindingKind.overflow);
     expect(findings.single.message, contains('타일 폭'));
-    // 단언이 레이아웃을 중단시켜 뒤따르는 'not laid out' 오류는 프레임워크로 간다.
-    expect(tester.takeException(), isNotNull);
+    // 단언이 레이아웃을 중단시켜 뒤따르는 오류는 같은 원인으로 보고 삼킨다.
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('body가 예외를 던져도 핸들러를 되돌린다', (tester) async {
