@@ -862,6 +862,33 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('공유받은 타이머가 없습니다'), findsOneWidget);
       });
+
+      testWidgets('${sizeLabel(size)}에서 공유받은 타이머를 읽지 못한 긴 오류도 넘치지 않는다', (
+        tester,
+      ) async {
+        setSize(tester, size);
+        // 서버 오류 응답의 DioException 문구 길이
+        repository.listShared = () async => throw Exception(
+          'DioException [bad response]: This exception was thrown because '
+          'the response has a status code of 500 and '
+          'RequestOptions.validateStatus was configured to throw for this '
+          'status code.\nThe status code of 500 has the following meaning: '
+          '"Server error - the server failed to fulfil an apparent request"\n'
+          'Read more about status codes at '
+          'https://developer.mozilla.org/en-US/docs/Web/HTTP/Status\n'
+          'In order to resolve this exception you typically have either to '
+          'verify and fix your request code or you have to fix the server '
+          'code.',
+        );
+
+        await pump(tester);
+        if (size.width < 600) await openHistorySheet(tester);
+        await tester.tap(friendsTab());
+        await waitRetries(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('공유받은 타이머를 불러올 수 없습니다'), findsOneWidget);
+      });
     }
   });
 }

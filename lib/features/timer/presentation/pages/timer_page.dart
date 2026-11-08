@@ -936,24 +936,30 @@ class _SharedTimerList extends ConsumerWidget {
                   },
                 ),
           loading: () => const Center(child: CircularProgressIndicator()),
+          // 오류 문구가 칸보다 길면 굴려 본다
           error: (error, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: theme.colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text('공유받은 타이머를 불러올 수 없습니다', style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 8),
-                Text(
-                  error.toString(),
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '공유받은 타이머를 불러올 수 없습니다',
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    error.toString(),
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         );
