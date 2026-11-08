@@ -844,6 +844,76 @@ void main() {
 
       expect(_clockText(tester), '00:20:00');
     });
+
+    testWidgets('60분을 넘는 타이머의 판은 할당 시간 기준이다', (tester) async {
+      final timer = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.running,
+        allocatedDuration: 90 * 60,
+        elapsedTime: 40 * 60,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: timer,
+        controller: _FakeTimerController(),
+      );
+
+      final dial = tester.widget<TimerDial>(find.byType(TimerDial));
+      expect(dial.face, const Duration(minutes: 120));
+      expect(dial.remaining, const Duration(minutes: 50));
+    });
+
+    testWidgets('시간이 끝나면 다이얼은 에러 색이다', (tester) async {
+      final timeUp = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.running,
+        allocatedDuration: 600,
+        elapsedTime: 600,
+      );
+      await _pumpTimerPage(
+        tester,
+        timer: timeUp,
+        controller: _FakeTimerController(),
+      );
+
+      final cs = Theme.of(tester.element(find.byType(TimerDial))).colorScheme;
+      expect(tester.widget<TimerDial>(find.byType(TimerDial)).color, cs.error);
+    });
+
+    testWidgets('일시정지면 다이얼은 반투명 primary다', (tester) async {
+      final paused = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 600,
+        elapsedTime: 100,
+      );
+      await _pumpTimerPage(
+        tester,
+        timer: paused,
+        controller: _FakeTimerController(),
+      );
+
+      final cs = Theme.of(tester.element(find.byType(TimerDial))).colorScheme;
+      final color = tester.widget<TimerDial>(find.byType(TimerDial)).color;
+      expect(color.a, closeTo(0.5, 0.01));
+      expect(color.withValues(alpha: 1), cs.primary.withValues(alpha: 1));
+    });
+
+    testWidgets('새 작업 다이얼로그를 취소해도 고른 시간이 남는다', (tester) async {
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: _FakeTimerController(),
+      );
+      await dragDialTo9(tester);
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.pumpAndSettle();
+
+      expect(_clockText(tester), '00:45:00');
+    });
   });
 }
 
