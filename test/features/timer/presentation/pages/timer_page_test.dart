@@ -916,6 +916,13 @@ void main() {
       );
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.widgetWithText(InputDecorator, '할 일 연결 (선택)'),
+          matching: find.text('연결 안 함'),
+        ),
+        findsOneWidget,
+      );
       await tester.enterText(find.widgetWithText(TextField, '작업명'), '집중');
       await tester.tap(find.widgetWithText(FilledButton, '시작'));
       await tester.pumpAndSettle();
@@ -924,6 +931,185 @@ void main() {
       expect(controller.startedTodoId, isNull);
       expect(controller.startedTitle, '집중');
     });
+  });
+
+  group('새 작업 시작 할 일 연결 경계', () {
+    final report = makeTodo().copyWith(title: '보고서 쓰기');
+    final todoField = find.widgetWithText(InputDecorator, '할 일 연결 (선택)');
+
+    Future<void> openStart(WidgetTester tester) async {
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> chooseReport(WidgetTester tester) async {
+      await tester.ensureVisible(todoField);
+      await tester.pumpAndSettle();
+      await tester.tap(todoField);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, '보고서 쓰기'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> confirm(WidgetTester tester) async {
+      final start = find.widgetWithText(FilledButton, '시작');
+      await tester.ensureVisible(start);
+      await tester.pumpAndSettle();
+      await tester.tap(start);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('할 일을 고른 채 분을 잘못 넣으면 시작할 수 없고, 고치면 그 할 일로 시작한다', (
+      tester,
+    ) async {
+      final controller = _FakeTimerController();
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: controller,
+        todos: [report],
+      );
+      await openStart(tester);
+      await chooseReport(tester);
+
+      await tester.enterText(find.byType(TextFormField), '0');
+      await tester.pump();
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, '시작'))
+            .onPressed,
+        isNull,
+      );
+
+      await tester.enterText(find.byType(TextFormField), '30');
+      await tester.pump();
+      await confirm(tester);
+
+      expect(controller.startedTodoId, report.id);
+      expect(controller.startedTitle, '보고서 쓰기');
+      expect(controller.startedAllocatedDurationSeconds, 30 * 60);
+    });
+
+    testWidgets('할 일을 고르고 취소한 뒤 다시 열면 연결과 작업명이 비어 있다', (tester) async {
+      final controller = _FakeTimerController();
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: controller,
+        todos: [report],
+      );
+      await openStart(tester);
+      await chooseReport(tester);
+      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.pumpAndSettle();
+
+      await openStart(tester);
+
+      expect(
+        find.descendant(of: todoField, matching: find.text('연결 안 함')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, '작업명'))
+            .controller
+            ?.text,
+        isEmpty,
+      );
+      expect(controller.started, isFalse);
+    });
+
+    testWidgets('할 일을 연결해 시작하다 실패하면 실패를 알린다', (tester) async {
+      final controller = _FailingStartController();
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: controller,
+        todos: [report],
+      );
+      await openStart(tester);
+      await chooseReport(tester);
+      await confirm(tester);
+
+      expect(controller.startedTodoId, report.id);
+      expect(find.textContaining('타이머 시작 실패: '), findsOneWidget);
+      expect(find.text('타이머를 시작했습니다'), findsNothing);
+    });
+
+    for (final (from, to) in const [
+      (Size(360, 800), Size(1280, 800)),
+      (Size(1280, 800), Size(360, 800)),
+    ]) {
+      final label =
+          '${from.width.toInt()}에서 ${to.width.toInt()}로 창 폭이 바뀌어도 다이얼로그에서 고른 할 일로 시작한다';
+
+      testWidgets(label, (tester) async {
+        tester.view.physicalSize = from;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final controller = _FakeTimerController();
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: controller,
+          todos: [report],
+        );
+        await openStart(tester);
+        await chooseReport(tester);
+
+        tester.view.physicalSize = to;
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          find.descendant(of: todoField, matching: find.text('보고서 쓰기')),
+          findsOneWidget,
+        );
+        await confirm(tester);
+
+        expect(controller.startedTodoId, report.id);
+        expect(controller.startedTitle, '보고서 쓰기');
+        expect(find.text('타이머를 시작했습니다'), findsOneWidget);
+      });
+    }
+
+    for (final size in const [
+      Size(360, 800),
+      Size(360, 560),
+      Size(844, 390),
+      Size(800, 1280),
+      Size(1280, 800),
+    ]) {
+      testWidgets(
+        '${size.width.toInt()}x${size.height.toInt()} 화면에서 할 일을 골라 시작해도 넘치지 않는다',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          final controller = _FakeTimerController();
+          await _pumpTimerPage(
+            tester,
+            timer: null,
+            controller: controller,
+            todos: [
+              report,
+              for (var i = 0; i < 20; i++)
+                makeTodo(id: 'todo-$i-more').copyWith(title: '할 일 $i'),
+            ],
+          );
+          await openStart(tester);
+          expect(tester.takeException(), isNull);
+
+          await chooseReport(tester);
+          expect(tester.takeException(), isNull);
+          await confirm(tester);
+
+          expect(tester.takeException(), isNull);
+          expect(controller.startedTodoId, report.id);
+          expect(controller.startedTitle, '보고서 쓰기');
+        },
+      );
+    }
   });
 
   group('다이얼', () {
@@ -2363,5 +2549,24 @@ class _FakeTimerController extends TimerController {
     startedAllocatedDurationSeconds = allocatedDurationSeconds;
     startedTodoId = relatedTodoId;
     startedTitle = title;
+  }
+}
+
+/// 시작 요청을 기록하고 실패하는 컨트롤러
+class _FailingStartController extends _FakeTimerController {
+  @override
+  Future<void> startTimer({
+    String? relatedTodoId,
+    String? title,
+    String? scheduleId,
+    int? allocatedDurationSeconds,
+  }) async {
+    await super.startTimer(
+      relatedTodoId: relatedTodoId,
+      title: title,
+      scheduleId: scheduleId,
+      allocatedDurationSeconds: allocatedDurationSeconds,
+    );
+    throw Exception('서버 오류');
   }
 }
