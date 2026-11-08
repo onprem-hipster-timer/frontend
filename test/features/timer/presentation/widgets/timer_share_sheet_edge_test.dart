@@ -262,6 +262,39 @@ void main() {
       expect(find.textContaining('공유 설정 저장 실패'), findsNothing);
     });
 
+    testWidgets('다시 시도를 연달아 눌러도 한 번만 읽고 항목을 겹쳐 두지 않는다', (tester) async {
+      var reads = 0;
+      repository.visibilityOf = (_) async {
+        reads++;
+        if (reads == 1) throw Exception('네트워크 오류');
+        return makeVisibility(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['kim@example.com'],
+          allowedDomains: ['example.org'],
+        );
+      };
+
+      await open(tester);
+      final retry = find.widgetWithText(FilledButton, '다시 시도');
+      // 다시 그리기 전에 두 번 누른다
+      await tester.tap(retry);
+      await tester.tap(retry, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(reads, 2);
+      expect(chip('kim@example.com'), findsOneWidget);
+      expect(chip('example.org'), findsOneWidget);
+      await save(tester);
+      expect(
+        repository.visibilityUpdate,
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['kim@example.com'],
+          allowedDomains: ['example.org'],
+        ),
+      );
+    });
+
     testWidgets('다시 시도도 실패하면 다시 알리고, 그다음 시도로 읽는다', (tester) async {
       var reads = 0;
       final third = Completer<VisibilityRead?>();

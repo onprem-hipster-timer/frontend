@@ -136,6 +136,8 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
   }
 
   void _retry() {
+    // 다시 그리기 전에 연달아 누른 다시 시도는 읽지 않는다. 두 번 읽으면 항목이 겹친다
+    if (_loadError == null) return;
     setState(() {
       _loading = true;
       _loadError = null;
