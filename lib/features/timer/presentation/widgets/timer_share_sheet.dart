@@ -173,6 +173,8 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
   };
 
   Future<void> _save(List<FriendRead>? friends) async {
+    // 다시 그리기 전에 연달아 누른 저장은 보내지 않는다
+    if (_saving) return;
     final update = _update(friends);
     final timerId = widget.timer.id;
     // 저장하는 사이 시트가 닫혀도 결과를 알리고 반영한다

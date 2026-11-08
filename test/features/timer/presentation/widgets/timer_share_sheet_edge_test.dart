@@ -115,6 +115,34 @@ void main() {
   }
 
   group('저장하는 동안', () {
+    testWidgets('저장을 연달아 눌러도 한 번만 보낸다', (tester) async {
+      final saved = Completer<void>();
+      repository.gate = saved.future;
+
+      await open(tester);
+      await choose(tester, '친구 공개');
+      await tester.ensureVisible(saveButton());
+      await tester.pumpAndSettle();
+      // 다시 그리기 전에 두 번 누른다
+      await tester.tap(saveButton());
+      await tester.tap(saveButton(), warnIfMissed: false);
+      await tester.pump();
+      // 진행 표시 중에도 한 번 더 누른다
+      await tester.tap(
+        find.descendant(of: sheet(), matching: find.byType(FilledButton)),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      saved.complete();
+      await tester.pumpAndSettle();
+
+      expect(saves(), ['setVisibility:timer-1']);
+      expect(sheet(), findsNothing);
+      expect(find.text('열기'), findsOneWidget);
+      expect(find.text('공유 설정을 저장했습니다'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('시트가 닫히는 중에 저장 응답이 와도 시트 아래 화면은 닫지 않는다', (tester) async {
       final saved = Completer<void>();
       repository.gate = saved.future;
