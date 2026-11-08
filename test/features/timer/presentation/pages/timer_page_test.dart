@@ -1009,6 +1009,152 @@ void main() {
     });
   });
 
+  group('레이아웃', () {
+    void setSize(WidgetTester tester, Size size) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    final running = makeTimer(id: 'timer-1', status: TimerStatus.running);
+    final historyAction = find.widgetWithIcon(IconButton, Icons.history);
+
+    Finder inDashboard(Finder finder) =>
+        find.descendant(of: find.byType(TimerDashboard), matching: finder);
+
+    testWidgets('좁은 화면은 다이얼만 두고 앱 바에서 타이머 목록 시트를 연다', (tester) async {
+      setSize(tester, const Size(360, 800));
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TimerDial), findsOneWidget);
+      expect(find.byType(TimerHistoryList), findsNothing);
+      expect(historyAction, findsOneWidget);
+      expect(find.byTooltip('타이머 목록'), findsOneWidget);
+
+      await tester.tap(historyAction);
+      await tester.pumpAndSettle();
+
+      final sheet = find.byType(BottomSheet);
+      expect(
+        find.descendant(of: sheet, matching: find.byType(TimerHistoryList)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: _historyItem('timer-1')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('넓은 화면은 다이얼 옆에 타이머 목록을 둔다', (tester) async {
+      setSize(tester, const Size(1280, 800));
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TimerDial), findsOneWidget);
+      expect(find.byType(TimerHistoryList), findsOneWidget);
+      expect(historyAction, findsNothing);
+      expect(
+        tester.getCenter(find.byType(TimerHistoryList)).dx,
+        greaterThan(tester.getCenter(find.byType(TimerDial)).dx),
+      );
+    });
+
+    testWidgets('가로 휴대폰 화면에서도 넘치지 않고 제어 버튼이 보인다', (tester) async {
+      setSize(tester, const Size(844, 390));
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TimerDial), findsOneWidget);
+      expect(find.byType(TimerHistoryList), findsOneWidget);
+      final pause = _dashboardFabByIcon(Icons.pause);
+      expect(pause, findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
+      expect(tester.getRect(pause).bottom, lessThanOrEqualTo(390));
+    });
+
+    testWidgets('좁은 화면에서 시간이 끝난 타이머는 시간 종료와 연장 버튼을 보여 준다', (tester) async {
+      setSize(tester, const Size(360, 800));
+      await _pumpTimerPage(
+        tester,
+        timer: makeTimer(
+          id: 'timer-1',
+          status: TimerStatus.paused,
+          allocatedDuration: 25 * 60,
+          elapsedTime: 25 * 60,
+        ),
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(inDashboard(find.text('시간 종료')), findsOneWidget);
+      expect(inDashboard(find.text('일시정지')), findsNothing);
+      expect(_dashboardFabByIcon(Icons.add), findsOneWidget);
+    });
+
+    testWidgets('일시정지면 일시정지 캡션을 보여 준다', (tester) async {
+      await _pumpTimerPage(
+        tester,
+        timer: makeTimer(
+          id: 'timer-1',
+          status: TimerStatus.paused,
+          allocatedDuration: 25 * 60,
+          elapsedTime: 5 * 60,
+        ),
+        controller: _FakeTimerController(),
+      );
+
+      expect(inDashboard(find.text('일시정지')), findsOneWidget);
+      expect(inDashboard(find.text('시간 종료')), findsNothing);
+    });
+
+    testWidgets('실행 중이면 상태 캡션이 없다', (tester) async {
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        controller: _FakeTimerController(),
+      );
+
+      expect(inDashboard(find.text('일시정지')), findsNothing);
+      expect(inDashboard(find.text('시간 종료')), findsNothing);
+    });
+
+    testWidgets('좁은 화면의 타이머 목록 시트에서 항목이 넘치지 않는다', (tester) async {
+      setSize(tester, const Size(360, 800));
+      final paused = makeTimer(
+        id: 'timer-2',
+        status: TimerStatus.paused,
+      ).copyWith(title: '아주 긴 작업 이름이 들어가도 목록 항목이 넘치지 않아야 한다');
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        history: [running, paused],
+        controller: _FakeTimerController(),
+      );
+
+      await tester.tap(historyAction);
+      await tester.pumpAndSettle();
+
+      expect(_historyItem('timer-1'), findsOneWidget);
+      expect(_historyItem('timer-2'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('타이머 목록 항목', () {
     for (final status in [TimerStatus.running, TimerStatus.paused]) {
       testWidgets('360 폭에서 ${status.name} 항목이 넘치지 않는다', (tester) async {

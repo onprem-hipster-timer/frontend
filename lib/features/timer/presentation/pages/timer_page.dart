@@ -12,9 +12,13 @@ import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
+/// 이 폭보다 좁으면 다이얼만 두고 타이머 목록은 바텀 시트로 연다
+const _wideLayoutMinWidth = 600.0;
+
 /// 타이머 대시보드 페이지
 ///
 /// 실시간 타이머 표시, 제어 버튼, 히스토리 목록을 제공합니다.
+/// 넓은 화면은 다이얼 옆에 타이머 목록을 두고, 좁은 화면은 다이얼만 두고 앱 바에서 목록을 엽니다.
 class TimerPage extends ConsumerWidget {
   const TimerPage({super.key});
 
@@ -34,29 +38,66 @@ class TimerPage extends ConsumerWidget {
       });
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('타이머'),
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: ErrorBanner(
-              message: lastError?.message,
-              onDismiss: () =>
-                  ref.read(timerWsLastErrorProvider.notifier).setError(null),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= _wideLayoutMinWidth;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('타이머'),
+            elevation: 0,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            actions: [
+              if (!wide)
+                IconButton(
+                  icon: const Icon(Icons.history),
+                  tooltip: '타이머 목록',
+                  onPressed: () => _showHistorySheet(context),
+                ),
+            ],
           ),
-          const Expanded(flex: 3, child: TimerDashboard()),
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: ErrorBanner(
+                  message: lastError?.message,
+                  onDismiss: () => ref
+                      .read(timerWsLastErrorProvider.notifier)
+                      .setError(null),
+                ),
+              ),
+              Expanded(
+                child: wide
+                    ? const Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: 3, child: TimerDashboard()),
+                          VerticalDivider(width: 1),
+                          Expanded(flex: 2, child: TimerHistoryList()),
+                        ],
+                      )
+                    : const TimerDashboard(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-          // 구분선
-          const Divider(height: 1),
-
-          const Expanded(flex: 2, child: TimerHistoryList()),
-        ],
+  void _showHistorySheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) =>
+            TimerHistoryList(scrollController: scrollController),
       ),
     );
   }
@@ -123,9 +164,9 @@ int? _focusMinutes(String text) {
   return minutes;
 }
 
-/// 타이머 대시보드 (상단 영역)
+/// 타이머 대시보드
 ///
-/// 다이얼, 디지털 시계, 제어 버튼을 포함합니다.
+/// 다이얼, 작업 제목, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
 /// 활성 타이머가 없으면 다이얼을 끌어 새 작업의 집중 시간을 고르고, 있으면 다이얼은 남은 시간만 보여 줍니다.
 class TimerDashboard extends ConsumerStatefulWidget {
   const TimerDashboard({super.key});
@@ -167,28 +208,22 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         ? theme.colorScheme.primary.withValues(alpha: 0.5)
         : theme.colorScheme.primary;
 
+    final caption = timeUp
+        ? '시간 종료'
+        : activeTimer?.status == TimerStatus.paused
+        ? '일시정지'
+        : null;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxHeight < 230;
+        final short = constraints.maxHeight < 400;
 
-        return Container(
-          width: double.infinity,
+        return Padding(
           padding: EdgeInsets.symmetric(
             horizontal: 24,
-            vertical: compact ? 8 : 12,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                theme.colorScheme.surface,
-              ],
-            ),
+            vertical: short ? 8 : 16,
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
                 child: activeTimer == null
@@ -206,24 +241,30 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                         color: dialColor,
                       ),
               ),
-              SizedBox(height: compact ? 4 : 8),
-              DigitalClock(
-                duration: activeTimer == null ? _pendingDuration : remaining,
-                timeUp: timeUp,
-                idle: activeTimer == null,
-                compact: compact,
-              ),
-              SizedBox(height: compact ? 8 : 12),
+              SizedBox(height: short ? 8 : 16),
               CurrentTaskDisplay(
                 timer: activeTimer,
-                timeUp: timeUp,
-                compact: compact,
                 onTodoChanged: (todo) {
                   if (!context.mounted) return;
                   ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
                 },
               ),
-              SizedBox(height: compact ? 10 : 16),
+              DigitalClock(
+                duration: activeTimer == null ? _pendingDuration : remaining,
+                timeUp: timeUp,
+                idle: activeTimer == null,
+                compact: short,
+              ),
+              if (caption != null)
+                Text(
+                  caption,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: timeUp
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              SizedBox(height: short ? 8 : 16),
               TimerControlButton(
                 activeTimer: activeTimer,
                 starting: controllerState.isLoading,
@@ -477,14 +518,14 @@ class DigitalClock extends StatelessWidget {
       timeText,
       style: theme.textTheme.displayLarge?.copyWith(
         fontFamily: 'monospace', // 등폭 폰트 사용
-        fontSize: compact ? 28 : 36,
-        fontWeight: FontWeight.w300,
+        fontSize: compact ? 24 : 28,
+        fontWeight: FontWeight.w400,
         color: timeUp
             ? theme.colorScheme.error
             : !idle && duration.inSeconds > 0
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-        letterSpacing: compact ? 0 : 4,
+        letterSpacing: 2,
       ),
     );
   }
@@ -492,20 +533,15 @@ class DigitalClock extends StatelessWidget {
 
 /// 현재 작업 표시 위젯
 ///
-/// 집중 시간이 끝나면([timeUp]) 상태를 '시간 종료'로 표시합니다.
 /// 연결된 Todo가 있으면 제목 옆에 Todo 상태를 표시하고, 일시정지 중에는 그 자리에서 바꿀 수 있습니다.
 /// 바꾼 뒤 서버가 돌려준 Todo로 [onTodoChanged]를 부릅니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
-  final bool timeUp;
-  final bool compact;
   final ValueChanged<TodoRead>? onTodoChanged;
 
   const CurrentTaskDisplay({
     super.key,
     required this.timer,
-    this.timeUp = false,
-    this.compact = false,
     this.onTodoChanged,
   });
 
@@ -527,81 +563,33 @@ class CurrentTaskDisplay extends StatelessWidget {
         timer!.todo?.title ??
         timer!.schedule?.title ??
         '알 수 없는 작업';
-
-    final statusText = timeUp
-        ? '시간 종료'
-        : timer!.status == TimerStatus.running
-        ? '실행 중'
-        : '일시정지';
-    final statusColor = timeUp || timer!.status != TimerStatus.running
-        ? theme.colorScheme.error
-        : theme.colorScheme.primary;
     final todo = timer!.todo;
-    final todoIconSize = compact ? 20.0 : 24.0;
 
-    return Column(
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: compact ? 4 : 6,
-          ),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            statusText,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: statusColor,
-              fontWeight: FontWeight.w600,
+        if (todo != null) ...[
+          if (timer!.status == TimerStatus.paused)
+            TodoStatusSelector(todo: todo, onChanged: onTodoChanged)
+          else
+            Icon(
+              todo.status.icon,
+              color: todo.status.color(context),
+              semanticLabel: todo.status.label,
             ),
-          ),
-        ),
-        SizedBox(height: compact ? 4 : 8),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (todo != null) ...[
-              if (timer!.status == TimerStatus.paused)
-                TodoStatusSelector(
-                  todo: todo,
-                  iconSize: todoIconSize,
-                  onChanged: onTodoChanged,
-                )
-              else
-                Icon(
-                  todo.status.icon,
-                  color: todo.status.color(context),
-                  size: todoIconSize,
-                  semanticLabel: todo.status.label,
-                ),
-              const SizedBox(width: 8),
-            ],
-            Flexible(
-              child: Text(
-                taskName,
-                style:
-                    (compact
-                            ? theme.textTheme.titleMedium
-                            : theme.textTheme.titleLarge)
-                        ?.copyWith(fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        if (!compact && timer!.startedAt != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            '시작: ${formatTime(timer!.startedAt!)}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
+          const SizedBox(width: 8),
         ],
+        Flexible(
+          child: Text(
+            taskName,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -719,8 +707,12 @@ class TimerControlButton extends StatelessWidget {
 }
 
 /// 타이머 히스토리 목록
+///
+/// 바텀 시트 안에서는 시트의 [scrollController]로 목록을 스크롤합니다.
 class TimerHistoryList extends ConsumerWidget {
-  const TimerHistoryList({super.key});
+  final ScrollController? scrollController;
+
+  const TimerHistoryList({super.key, this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -812,6 +804,7 @@ class TimerHistoryList extends ConsumerWidget {
     }
 
     return ListView.builder(
+      controller: scrollController,
       itemCount: groupedTimers.length,
       itemBuilder: (context, index) {
         final date = groupedTimers.keys.elementAt(index);
