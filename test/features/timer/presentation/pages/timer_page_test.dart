@@ -308,6 +308,99 @@ void main() {
   // ============================================================
   // TimerPage — 남은 시간 (대시보드 + 타이머 목록)
   // ============================================================
+  group('명령 중 표시', () {
+    Future<void> pumpLoading(
+      WidgetTester tester, {
+      required TimerRead? timer,
+      List<TimerRead>? history,
+      Map<String, TimerRead> views = const {},
+    }) async {
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            ..._timerOverrides(
+              timer: timer,
+              history: history ?? [?timer],
+              controller: _LoadingTimerController(),
+            ),
+            timerViewsProvider.overrideWith(() => _FixedViews(views)),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('새 타이머를 시작하는 동안 시작 버튼 안에 진행 표시를 두고 다시 열지 않는다', (tester) async {
+      await pumpLoading(tester, timer: null);
+
+      final fab = find.byType(FloatingActionButton);
+      expect(fab, findsOneWidget);
+      expect(
+        find.descendant(
+          of: fab,
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<FloatingActionButton>(fab).onPressed, isNull);
+    });
+
+    testWidgets('활성 타이머가 있으면 컨트롤러 상태와 무관하게 버튼을 그대로 둔다', (tester) async {
+      await pumpLoading(
+        tester,
+        timer: makeTimer(id: 'timer-1', status: TimerStatus.running),
+      );
+
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byTooltip('일시정지'), findsOneWidget);
+    });
+
+    testWidgets('타이머 목록은 명령 응답 전 값을 목록보다 먼저 보인다', (tester) async {
+      final listed = makeTimer(id: 'timer-1', status: TimerStatus.running);
+      await pumpLoading(
+        tester,
+        timer: null,
+        history: [listed],
+        views: {'timer-1': listed.copyWith(status: TimerStatus.paused)},
+      );
+
+      expect(
+        find.descendant(
+          of: _historyItem('timer-1'),
+          matching: find.text('일시정지'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('재개'), findsOneWidget);
+      expect(find.byTooltip('일시정지'), findsNothing);
+    });
+
+    testWidgets('목록 값이 더 나중이면 목록 값을 보인다', (tester) async {
+      final listed = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.running,
+      ).copyWith(updatedAt: DateTime.utc(2026, 1, 1, 0, 5));
+      await pumpLoading(
+        tester,
+        timer: null,
+        history: [listed],
+        views: {
+          'timer-1': listed.copyWith(
+            status: TimerStatus.paused,
+            updatedAt: DateTime.utc(2026, 1, 1),
+          ),
+        },
+      );
+
+      expect(find.byTooltip('일시정지'), findsOneWidget);
+      expect(find.byTooltip('재개'), findsNothing);
+    });
+  });
+
   group('남은 시간 표시', () {
     testWidgets('대시보드는 할당 시간에서 경과 시간을 뺀 남은 시간을 보여 준다', (tester) async {
       final timer = makeTimer(
@@ -771,6 +864,21 @@ Finder _historyCompleteButton() {
 }
 
 class _MockTodosClient extends Mock implements TodosClient {}
+
+/// 명령 응답을 기다리는(로딩) 컨트롤러
+class _LoadingTimerController extends _FakeTimerController {
+  @override
+  FutureOr<void> build() => Completer<void>().future;
+}
+
+class _FixedViews extends TimerViewsNotifier {
+  _FixedViews(this.views);
+
+  final Map<String, TimerRead> views;
+
+  @override
+  Map<String, TimerRead> build() => views;
+}
 
 class _FakeTimerController extends TimerController {
   bool stopCalled = false;
