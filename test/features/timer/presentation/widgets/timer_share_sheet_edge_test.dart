@@ -628,5 +628,47 @@ void main() {
         },
       );
     }
+
+    for (final (size, keyboard) in const [
+      (Size(360, 800), 336.0),
+      (Size(360, 560), 250.0),
+      (Size(844, 390), 180.0),
+    ]) {
+      testWidgets(
+        '${size.width.toInt()}x${size.height.toInt()}에서 키보드가 올라와도 입력 칸이 키보드에 가리지 않는다',
+        (tester) async {
+          setSize(tester, size);
+
+          await open(tester);
+          await choose(tester, '이메일·도메인 지정');
+          await tester.ensureVisible(emailField());
+          await tester.pumpAndSettle();
+          await tester.showKeyboard(emailField());
+          tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(
+            tester.getRect(emailField()).bottom,
+            lessThanOrEqualTo(size.height - keyboard),
+          );
+
+          await tester.enterText(emailField(), 'kim@example.com');
+          await tester.testTextInput.receiveAction(TextInputAction.done);
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(chip('kim@example.com'), findsOneWidget);
+
+          await tester.showKeyboard(domainField());
+          await tester.pumpAndSettle();
+
+          expect(
+            tester.getRect(domainField()).bottom,
+            lessThanOrEqualTo(size.height - keyboard),
+          );
+        },
+      );
+    }
   });
 }

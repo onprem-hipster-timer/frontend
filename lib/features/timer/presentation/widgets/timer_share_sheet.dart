@@ -263,57 +263,55 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
         ? ref.watch(friendsProvider)
         : null;
 
-    return SingleChildScrollView(
-      // 키보드가 올라오면 그만큼 내용을 올린다
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        16 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '공유 설정',
-            style: theme.textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          RadioGroup<VisibilityLevel>(
-            groupValue: _level,
-            onChanged: (level) {
-              if (level != null) setState(() => _level = level);
-            },
-            child: Column(
-              children: [
-                for (final option in _options)
-                  RadioListTile<VisibilityLevel>(
-                    value: option.level,
-                    enabled: !_saving,
-                    title: Text(option.label),
-                    subtitle: Text(option.description),
-                  ),
-              ],
+    // 키보드가 올라오면 시트를 그만큼 올려 굴리는 영역이 키보드 위에 남게 한다
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '공유 설정',
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
             ),
-          ),
-          if (friends != null) _friendList(friends),
-          if (_level == VisibilityLevel.allowedEmails) ..._emailFields(),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: !_saving && _canSave(friends?.value)
-                ? () => _save(friends?.value)
-                : null,
-            child: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('저장'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            RadioGroup<VisibilityLevel>(
+              groupValue: _level,
+              onChanged: (level) {
+                if (level != null) setState(() => _level = level);
+              },
+              child: Column(
+                children: [
+                  for (final option in _options)
+                    RadioListTile<VisibilityLevel>(
+                      value: option.level,
+                      enabled: !_saving,
+                      title: Text(option.label),
+                      subtitle: Text(option.description),
+                    ),
+                ],
+              ),
+            ),
+            if (friends != null) _friendList(friends),
+            if (_level == VisibilityLevel.allowedEmails) ..._emailFields(),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: !_saving && _canSave(friends?.value)
+                  ? () => _save(friends?.value)
+                  : null,
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('저장'),
+            ),
+          ],
+        ),
       ),
     );
   }
