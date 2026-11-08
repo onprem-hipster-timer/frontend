@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 앱이 포그라운드로 돌아오면 끊긴 소켓을 바로 다시 연결한다
 - 친구 알림은 `from_user`가 내가 아닌 이벤트의 `actor_name`·`action`으로 띄운다
 
+#### Todo
+- Todo 목록의 누적 집중 시간·태그·하위 Todo 개수를 제목 아래 줄로 옮긴다. 자리가 모자라면 줄을 바꿔 좁은 화면에서도 넘치지 않는다
+
 #### API
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
@@ -73,6 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 끝난(COMPLETED) 타이머의 경과 시간에 진행 중·일시정지 타이머의 `displayElapsed`를 더해 1초마다 갱신한다
   - 취소한 타이머는 더하지 않는다. 활성 타이머가 끝나면 타이머 목록을 다시 읽는다
 - Todo·일정 삭제 시 서버가 연결 타이머 처리(`linked_timer_policy`)를 요구하면 '연결만 해제'·'타이머 삭제' 중 골라 다시 삭제한다
+- Todo 목록에서 바로 타이머를 시작한다. 완료·취소하지 않은 내 Todo에 타이머 시작 버튼을 두고, 그 Todo를 고른 새 작업 시작 다이얼로그를 연다
+  - 시작하면 타이머 화면으로 간다. 실패하면 알리고 머문다
+  - 진행 중·일시정지 타이머가 있으면 버튼 대신 남은 시간(mm:ss, 한 시간 이상은 h:mm:ss, 0이면 에러 색)을 1초마다 보여 주고, 누르면 타이머 화면으로 간다
 
 #### Config
 - `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
