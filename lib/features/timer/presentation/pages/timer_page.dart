@@ -19,11 +19,21 @@ const _wideLayoutMinWidth = 600.0;
 ///
 /// 실시간 타이머 표시, 제어 버튼, 히스토리 목록을 제공합니다.
 /// 넓은 화면은 다이얼 옆에 타이머 목록을 두고, 좁은 화면은 다이얼만 두고 앱 바에서 목록을 엽니다.
-class TimerPage extends ConsumerWidget {
+class TimerPage extends ConsumerStatefulWidget {
   const TimerPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimerPage> createState() => _TimerPageState();
+}
+
+class _TimerPageState extends ConsumerState<TimerPage> {
+  /// 레이아웃이 바뀌어도 대시보드 상태(다이얼로 고른 시간)를 옮겨 쓴다
+  final _dashboardKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboard = TimerDashboard(key: _dashboardKey);
+
     final lastError = ref.watch(timerWsLastErrorProvider);
 
     ref.listen<AsyncValue<TimerWsTimerEvent>>(timerFriendActivityProvider, (
@@ -69,15 +79,15 @@ class TimerPage extends ConsumerWidget {
               ),
               Expanded(
                 child: wide
-                    ? const Row(
+                    ? Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(flex: 3, child: TimerDashboard()),
-                          VerticalDivider(width: 1),
-                          Expanded(flex: 2, child: TimerHistoryList()),
+                          Expanded(flex: 3, child: dashboard),
+                          const VerticalDivider(width: 1),
+                          const Expanded(flex: 2, child: TimerHistoryList()),
                         ],
                       )
-                    : const TimerDashboard(),
+                    : dashboard,
               ),
             ],
           ),

@@ -1153,6 +1153,89 @@ void main() {
       expect(_historyItem('timer-2'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    Future<void> dragTo9(WidgetTester tester) async {
+      final dial = find.byType(TimerDial);
+      final center = tester.getCenter(dial);
+      final size = tester.getSize(dial);
+      final radius =
+          (size.width < size.height ? size.width : size.height) * 0.4;
+      await tester.dragFrom(
+        center + Offset(0, -radius),
+        Offset(-radius, radius),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('좁은 화면의 대기 상태는 다이얼을 끌 수 있고 새 작업 다이얼로그가 넘치지 않는다', (
+      tester,
+    ) async {
+      setSize(tester, const Size(360, 800));
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('진행 중인 작업이 없습니다'), findsOneWidget);
+      await dragTo9(tester);
+      expect(_clockText(tester), '00:45:00');
+
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, '45분'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('창 폭이 600을 넘나들어도 고른 시간이 남는다', (tester) async {
+      setSize(tester, const Size(1280, 800));
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: _FakeTimerController(),
+      );
+      await dragTo9(tester);
+      expect(_clockText(tester), '00:45:00');
+
+      tester.view.physicalSize = const Size(360, 800);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TimerHistoryList), findsNothing);
+      expect(_clockText(tester), '00:45:00');
+    });
+
+    testWidgets('아주 낮은 좁은 화면에서도 넘치지 않는다', (tester) async {
+      setSize(tester, const Size(360, 560));
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+    });
+
+    testWidgets('태블릿 세로 화면의 목록 항목이 넘치지 않는다', (tester) async {
+      setSize(tester, const Size(800, 1280));
+      final long = makeTimer(
+        id: 'timer-2',
+        status: TimerStatus.paused,
+      ).copyWith(title: '아주 긴 작업 이름이 들어가도 목록 항목이 넘치지 않아야 한다');
+      await _pumpTimerPage(
+        tester,
+        timer: running,
+        history: [running, long],
+        controller: _FakeTimerController(),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TimerHistoryList), findsOneWidget);
+      expect(_historyItem('timer-2'), findsOneWidget);
+    });
   });
 
   group('타이머 목록 항목', () {
