@@ -14,6 +14,8 @@ part 'timer_update.g.dart';
 /// - 필드가 UUID 값: 해당 ID로 연결 변경.
 /// - 필드가 null: 연결 해제.
 ///
+/// allocated_duration: 현재 elapsed_time보다 커야 함 (아니면 422). 만료된 타이머는 늘린 뒤 재개할 수 있다.
+///
 /// Note: 자동 연결 기능은 적용되지 않음 (명시적 변경만 수행).
 @Freezed()
 abstract class TimerUpdate with _$TimerUpdate {
@@ -23,6 +25,7 @@ abstract class TimerUpdate with _$TimerUpdate {
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
     @JsonKey(name: 'todo_id') String? todoId,
     @JsonKey(name: 'schedule_id') String? scheduleId,
+    @JsonKey(name: 'allocated_duration') int? allocatedDuration,
   }) = _TimerUpdate;
 
   factory TimerUpdate.fromJson(Map<String, Object?> json) =>
