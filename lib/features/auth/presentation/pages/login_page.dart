@@ -165,7 +165,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           queryParameters: {
             if (e.verificationFlowId != null) 'flow': e.verificationFlowId!,
           },
-          extra: _emailController.text.trim(),
+          extra: _linkEmail ?? _emailController.text.trim(),
         );
       }
     } catch (e) {

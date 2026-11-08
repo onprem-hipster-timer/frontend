@@ -414,6 +414,30 @@ void main() {
       expect(harness.prefs.getString(sessionTokenKey), 'ory_st_linked');
     });
 
+    testWidgets('인증 전 계정이면 서버가 준 플로우와 연결할 계정 이메일로 인증 화면을 연다', (tester) async {
+      await harness.prefs.setString(googleSignInCodeKey, 'init-code');
+      harness.stubGetFlow(KratosFlowType.login, linkFlow);
+      harness.stubSubmitError(
+        KratosFlowType.login,
+        const KratosException(
+          statusCode: 403,
+          errorId: 'session_verified_address_required',
+          verificationFlowId: 'v9',
+        ),
+      );
+      await openLinkPage(tester);
+
+      await tester.enterText(find.byType(TextFormField), 'Owner-Pass-123');
+      await tester.tap(find.text('로그인하고 Google 연결'));
+      await tester.pumpAndSettle();
+
+      final page = tester.widget<VerificationPage>(
+        find.byType(VerificationPage),
+      );
+      expect(page.flowId, 'v9');
+      expect(page.email, 'owner@example.com');
+    });
+
     testWidgets('이 브라우저가 시작하지 않은 연결 링크는 보안 경고로 보낸다', (tester) async {
       harness.stubGetFlow(KratosFlowType.login, linkFlow);
       await openLinkPage(tester);
