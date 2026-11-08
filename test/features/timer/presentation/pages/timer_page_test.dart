@@ -2299,6 +2299,18 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(TimerHistoryList), findsOneWidget);
       expect(_historyItem('timer-3'), findsOneWidget);
+      // 공유 버튼도 목록 칸 안에 있다
+      final pane = tester.getRect(find.byType(TimerHistoryList));
+      for (final id in ['timer-1', 'timer-2', 'timer-3']) {
+        final button = tester.getRect(
+          find.descendant(
+            of: _historyItem(id),
+            matching: find.byTooltip('공유 설정'),
+          ),
+        );
+        expect(button.left, greaterThanOrEqualTo(pane.left), reason: id);
+        expect(button.right, lessThanOrEqualTo(pane.right), reason: id);
+      }
     });
 
     testWidgets('태블릿 세로 화면의 목록 항목이 넘치지 않는다', (tester) async {
@@ -2416,7 +2428,7 @@ void main() {
       });
     }
 
-    /// [width] 폭에 [timer] 항목 하나를 그린다
+    /// 타이머 목록처럼 세로로 굴리는 목록 안 [width] 폭에 [timer] 항목 하나를 그린다
     Future<void> pumpItem(
       WidgetTester tester,
       TimerRead timer,
@@ -2425,12 +2437,16 @@ void main() {
       await tester.pumpWidget(
         pumpApp(
           Scaffold(
-            body: Align(
-              alignment: Alignment.topLeft,
-              child: SizedBox(
-                width: width,
-                child: TimerHistoryItem(timer: timer),
-              ),
+            body: ListView(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: width,
+                    child: TimerHistoryItem(timer: timer),
+                  ),
+                ),
+              ],
             ),
           ),
           overrides: _timerOverrides(
@@ -2443,34 +2459,91 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    /// [tooltip] 버튼이 항목의 ListTile 아래 줄에 있는지
-    bool belowTile(WidgetTester tester, String tooltip) =>
-        tester.getRect(find.byTooltip(tooltip)).top >=
-        tester.getRect(find.byType(ListTile)).bottom;
+    /// [a]와 [b]가 겹치는지
+    bool overlaps(Rect a, Rect b) {
+      final overlap = a.intersect(b);
+      return overlap.width > 0 && overlap.height > 0;
+    }
 
-    final running = makeTimer(id: 'timer-1', status: TimerStatus.running);
-    final completed = makeTimer(id: 'timer-1', status: TimerStatus.completed);
-
-    for (final (timer, width, below) in [
-      (running, 360.0, true),
-      (running, 480.0, false),
-      (completed, 300.0, true),
-      (completed, 328.0, false),
+    const longTitle = '아주 긴 작업 이름이 들어가도 목록 항목이 넘치지 않아야 한다';
+    for (final (label, timer, tooltips) in [
+      (
+        '실행 중',
+        makeTimer(id: 'timer-1', status: TimerStatus.running),
+        ['일시정지', '완료', '공유 설정'],
+      ),
+      (
+        '일시정지',
+        makeTimer(
+          id: 'timer-1',
+          status: TimerStatus.paused,
+          allocatedDuration: 25 * 60,
+          elapsedTime: 5 * 60,
+        ),
+        ['재개', '완료', '공유 설정'],
+      ),
+      (
+        '시간 종료',
+        makeTimer(
+          id: 'timer-1',
+          status: TimerStatus.paused,
+          allocatedDuration: 25 * 60,
+          elapsedTime: 25 * 60,
+        ),
+        ['5분 연장', '완료', '공유 설정'],
+      ),
+      (
+        '완료',
+        makeTimer(id: 'timer-1', status: TimerStatus.completed),
+        ['공유 설정'],
+      ),
+      (
+        '취소',
+        makeTimer(id: 'timer-1', status: TimerStatus.cancelled),
+        ['공유 설정'],
+      ),
     ]) {
-      testWidgets(
-        '${timer.status.name} 항목은 ${width.toInt()} 폭에서 버튼을 ${below ? '아래 줄로 내린다' : '남은 시간 옆에 둔다'}',
-        (tester) async {
-          await pumpItem(tester, timer, width);
+      testWidgets('$label 항목은 240~600 폭에서 넘치지 않고 버튼이 항목 안에서 서로·시간과 겹치지 않는다', (
+        tester,
+      ) async {
+        for (final width in const [
+          240.0,
+          280.0,
+          300.0,
+          328.0,
+          360.0,
+          480.0,
+          600.0,
+        ]) {
+          await pumpItem(tester, timer.copyWith(title: longTitle), width);
+          final reason = '${width.toInt()} 폭';
 
-          expect(tester.takeException(), isNull);
-          for (final tooltip in [
-            '공유 설정',
-            if (timer.status == TimerStatus.running) ...['일시정지', '완료'],
-          ]) {
-            expect(belowTile(tester, tooltip), below, reason: tooltip);
+          expect(tester.takeException(), isNull, reason: reason);
+          final item = tester.getRect(find.byType(TimerHistoryItem));
+          final time = tester.getRect(
+            find.textContaining(RegExp(r'^\d{2}:\d{2}:\d{2}$')),
+          );
+          final buttons = [
+            for (final tooltip in tooltips)
+              tester.getRect(find.byTooltip(tooltip)),
+          ];
+          for (final (i, button) in buttons.indexed) {
+            final which = '$reason ${tooltips[i]}';
+            expect(button.left, greaterThanOrEqualTo(item.left), reason: which);
+            expect(button.right, lessThanOrEqualTo(item.right), reason: which);
+            expect(button.top, greaterThanOrEqualTo(item.top), reason: which);
+            expect(
+              button.bottom,
+              lessThanOrEqualTo(item.bottom),
+              reason: which,
+            );
+            expect(overlaps(button, time), isFalse, reason: which);
+            for (final other in buttons.skip(i + 1)) {
+              expect(overlaps(button, other), isFalse, reason: which);
+            }
           }
-        },
-      );
+        }
+      });
     }
   });
 
@@ -2506,13 +2579,22 @@ void main() {
     }
 
     testWidgets('공유받은 타이머에는 공유 버튼이 없다', (tester) async {
+      final shared = running.copyWith(isShared: true, ownerId: 'friend-1');
+      final mine = makeTimer(id: 'timer-2', status: TimerStatus.completed);
       await _pumpTimerPage(
         tester,
-        timer: running.copyWith(isShared: true, ownerId: 'friend-1'),
+        timer: shared,
+        history: [shared, mine],
         controller: _FakeTimerController(),
       );
 
-      expect(share, findsNothing);
+      expect(dashboardShare(), findsNothing);
+      expect(itemShare(), findsNothing);
+      // 같은 목록의 내 타이머에는 있다
+      expect(
+        find.descendant(of: _historyItem('timer-2'), matching: share),
+        findsOneWidget,
+      );
     });
 
     testWidgets('끝난 타이머 항목에도 공유 버튼이 있다', (tester) async {
@@ -2532,14 +2614,27 @@ void main() {
       expect(iconOf(tester, itemShare()), Icons.public);
     });
 
-    testWidgets('대기 상태에는 공유 버튼이 없다', (tester) async {
+    testWidgets('대기 상태에는 작업·휴식 어느 쪽을 골라도 대시보드에 공유 버튼이 없다', (tester) async {
       await _pumpTimerPage(
         tester,
         timer: null,
+        history: [makeTimer(id: 'timer-1', status: TimerStatus.completed)],
         controller: _FakeTimerController(),
       );
+      final inDashboard = find.descendant(
+        of: find.byType(TimerDashboard),
+        matching: share,
+      );
 
-      expect(share, findsNothing);
+      expect(inDashboard, findsNothing);
+      // 목록의 끝난 타이머에는 있다
+      expect(itemShare(), findsOneWidget);
+
+      await tester.tap(_mode('휴식'));
+      await tester.pumpAndSettle();
+
+      expect(inDashboard, findsNothing);
+      expect(itemShare(), findsOneWidget);
     });
 
     testWidgets('휴식 중에는 대시보드에 공유 버튼이 없다', (tester) async {
