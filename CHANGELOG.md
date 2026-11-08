@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 대시보드를 타이머 목록보다 크게(3:2) 두고 디지털 시계는 다이얼 아래에 작게 둔다
 - 시간이 끝난 타이머는 서버가 일시정지 상태로 돌려주며, 대시보드와 타이머 목록은 일시정지·재개 대신 완료와 5분 연장만 보여 준다
   - 연장은 `PATCH /v1/timers/{id}`로 `allocated_duration`을 늘린 뒤 재개한다. 늘리기에 실패하면 재개하지 않는다
+  - PATCH 응답이 PAUSED가 아니면(서버가 아직 실행 중으로 둔 타이머) 재개를 보내지 않는다
 - `displayElapsed`는 `allocated_duration`을 넘지 않는다
 - 친구 알림에 `expire`(타이머 종료) 문구를 더한다
 

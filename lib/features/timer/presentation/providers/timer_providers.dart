@@ -434,7 +434,7 @@ class TimerController extends _$TimerController {
   /// 타이머 연장
   ///
   /// [timerId]를 주면 해당 타이머를, 생략 시 활성 타이머를 [by]만큼 늘린 뒤(`PATCH allocated_duration`) 재개합니다.
-  /// 늘리기에 실패하면 재개하지 않습니다.
+  /// 늘리기에 실패하거나 응답이 PAUSED가 아니면(이미 실행 중) 재개하지 않습니다.
   Future<void> extendTimer({String? timerId, required Duration by}) async {
     final active = _active();
     final timer = timerId == null || timerId == active?.id
@@ -448,13 +448,14 @@ class TimerController extends _$TimerController {
       throw error;
     }
     final id = timer.id;
-    await _command(
+    final extended = await _command(
       id,
       send: (repository) => repository.updateTimer(
         id,
         TimerUpdate(allocatedDuration: timer.allocatedDuration + by.inSeconds),
       ),
     );
+    if (extended?.status != TimerStatus.paused) return;
     await resumeTimer(timerId: id);
   }
 
@@ -469,12 +470,13 @@ class TimerController extends _$TimerController {
   ///
   /// [show]가 있고 그 타이머를 가졌으면 응답 전에 [show]의 값을 활성 타이머와 목록에 먼저 보이고,
   /// 실패하면 되돌린다. 응답을 기다리는 동안 로딩 상태로 두지 않는다.
-  Future<void> _command(
+  /// 반영한 응답을 돌려주고, 같은 타이머의 명령이 응답을 기다리는 중이면 보내지 않고 null을 돌려준다.
+  Future<TimerRead?> _command(
     String timerId, {
     TimerRead Function(TimerRead timer, DateTime now)? show,
     required Future<TimerRead> Function(TimerRepository repository) send,
   }) async {
-    if (!_pending.add(timerId)) return;
+    if (!_pending.add(timerId)) return null;
     final timers = ref.exists(myActiveTimersProvider)
         ? ref.read(myActiveTimersProvider.notifier)
         : null;
@@ -493,6 +495,7 @@ class TimerController extends _$TimerController {
       _apply(timer);
       views.show(timer);
       state = const AsyncValue.data(null);
+      return timer;
     } catch (error, stackTrace) {
       if (shown != null) {
         timers!.revertPending(shown, held!);
