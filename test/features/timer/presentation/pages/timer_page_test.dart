@@ -1040,6 +1040,16 @@ void main() {
     Finder inDashboard(Finder finder) =>
         find.descendant(of: find.byType(TimerDashboard), matching: finder);
 
+    Color? clockColor(WidgetTester tester) => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byType(DigitalClock),
+            matching: find.byType(Text),
+          ),
+        )
+        .style
+        ?.color;
+
     Future<void> chooseBreak(WidgetTester tester) async {
       await tester.tap(_mode('휴식'));
       await tester.pumpAndSettle();
@@ -1099,12 +1109,13 @@ void main() {
     testWidgets('휴식 시작은 서버에 보내지 않고 바로 휴식을 센다', (tester) async {
       final controller = await pump(tester);
       await chooseBreak(tester);
+      final idleClock = clockColor(tester);
 
       await tester.tap(_dashboardFabByIcon(Icons.coffee));
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing);
-      expect(controller.startedAllocatedDurationSeconds, isNull);
+      expect(controller.started, isFalse);
       expect(inDashboard(find.text('휴식')), findsOneWidget);
       expect(_modeSwitch(), findsNothing);
       expect(_clockText(tester), '00:05:00');
@@ -1120,16 +1131,8 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(_clockText(tester), '00:04:30');
-      final clock = tester.widget<Text>(
-        find.descendant(
-          of: find.byType(DigitalClock),
-          matching: find.byType(Text),
-        ),
-      );
-      final cs = Theme.of(
-        tester.element(find.byType(DigitalClock)),
-      ).colorScheme;
-      expect(clock.style?.color, cs.primary);
+      // 대기 시계처럼 흐리게 두지 않는다
+      expect(clockColor(tester), isNot(idleClock));
     });
 
     testWidgets('휴식 시간이 끝나면 휴식 종료와 확인을 보여 주고 확인하면 대기 상태로 돌아간다', (tester) async {
@@ -1189,8 +1192,12 @@ void main() {
       expect(controller.resumed, isFalse);
     });
 
-    for (final (name, timer) in [
-      ('실행 중인', makeTimer(id: 'timer-1', status: TimerStatus.running)),
+    for (final (name, timer, control) in [
+      (
+        '실행 중인',
+        makeTimer(id: 'timer-1', status: TimerStatus.running),
+        Icons.pause,
+      ),
       (
         '시간이 끝난',
         makeTimer(
@@ -1199,11 +1206,18 @@ void main() {
           allocatedDuration: 25 * 60,
           elapsedTime: 25 * 60,
         ),
+        Icons.add,
       ),
     ]) {
-      testWidgets('$name 타이머에는 휴식 버튼과 작업·휴식 선택이 없다', (tester) async {
-        await pump(tester, timer: timer);
+      testWidgets('일시정지 타이머가 $name 타이머가 되면 휴식 버튼이 사라지고 작업·휴식 선택도 없다', (
+        tester,
+      ) async {
+        final controller = await pump(tester, timer: paused);
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
 
+        await pump(tester, timer: timer, controller: controller);
+
+        expect(_dashboardFabByIcon(control), findsOneWidget);
         expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
         expect(_modeSwitch(), findsNothing);
       });
@@ -1225,6 +1239,586 @@ void main() {
       expect(inDashboard(find.text('휴식')), findsNothing);
       expect(_dashboardFabByIcon(Icons.stop), findsNothing);
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+    });
+
+    group('경계', () {
+      void setSize(WidgetTester tester, Size size) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+      }
+
+      Future<void> startBreak(WidgetTester tester) async {
+        await chooseBreak(tester);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+      }
+
+      TimerDial dial(WidgetTester tester) =>
+          tester.widget<TimerDial>(find.byType(TimerDial));
+
+      testWidgets(
+        '작업·휴식 칸에 아이콘이 있고 다이얼은 작업이 primary, 휴식이 tertiary이며 대기 시계 색은 같다',
+        (tester) async {
+          await pump(tester);
+          final cs = Theme.of(
+            tester.element(find.byType(TimerDial)),
+          ).colorScheme;
+
+          expect(
+            find.descendant(
+              of: _modeSwitch(),
+              matching: find.byIcon(Icons.coffee_outlined),
+            ),
+            findsOneWidget,
+          );
+          expect(dial(tester).color, cs.primary);
+          final idleClock = clockColor(tester);
+
+          await chooseBreak(tester);
+
+          expect(
+            find.descendant(
+              of: _modeSwitch(),
+              matching: find.byIcon(Icons.timer_outlined),
+            ),
+            findsOneWidget,
+          );
+          expect(dial(tester).color, cs.tertiary);
+          expect(clockColor(tester), idleClock);
+
+          await tester.tap(_mode('작업'));
+          await tester.pumpAndSettle();
+
+          expect(dial(tester).color, cs.primary);
+        },
+      );
+
+      testWidgets('고른 칸을 다시 눌러도 선택이 풀리지 않는다', (tester) async {
+        await pump(tester);
+
+        await tester.tap(_mode('작업'));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+        expect(_clockText(tester), '00:25:00');
+
+        await chooseBreak(tester);
+        await chooseBreak(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+        expect(_clockText(tester), '00:05:00');
+      });
+
+      testWidgets('휴식에서 고른 시간은 새 작업 시간에 섞이지 않는다', (tester) async {
+        final controller = await pump(tester);
+        await chooseBreak(tester);
+        await dragDialTo9(tester);
+
+        await tester.tap(_mode('작업'));
+        await tester.pumpAndSettle();
+        await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+        await tester.pumpAndSettle();
+
+        final chip = tester.widget<ChoiceChip>(
+          find.widgetWithText(ChoiceChip, '25분'),
+        );
+        expect(chip.selected, isTrue);
+
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+
+        expect(controller.startedAllocatedDurationSeconds, 25 * 60);
+      });
+
+      testWidgets('작업에서 고른 시간은 휴식 시간에 섞이지 않는다', (tester) async {
+        await pump(tester);
+        await dragDialTo9(tester);
+        expect(_clockText(tester), '00:45:00');
+
+        await startBreak(tester);
+
+        expect(_clockText(tester), '00:05:00');
+        expect(dial(tester).remaining, const Duration(minutes: 5));
+      });
+
+      testWidgets('다이얼 끝까지 고른 60분 휴식은 01:00:00부터 센다', (tester) async {
+        await pump(tester);
+        await chooseBreak(tester);
+        final center = tester.getCenter(find.byType(TimerDial));
+        final size = tester.getSize(find.byType(TimerDial));
+        final radius =
+            (size.width < size.height ? size.width : size.height) * 0.4;
+
+        // 9시에서 12시 바로 왼쪽까지 끈다
+        await tester.dragFrom(
+          center + Offset(-radius, 0),
+          Offset(radius * 0.97, -radius),
+        );
+        await tester.pump();
+
+        expect(_clockText(tester), '01:00:00');
+
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        expect(_clockText(tester), '01:00:00');
+        expect(dial(tester).remaining, const Duration(minutes: 60));
+      });
+
+      testWidgets('휴식을 시작한 첫 프레임부터 남은 시간을 보이고 휴식 종료를 비추지 않는다', (tester) async {
+        await pump(tester);
+        await chooseBreak(tester);
+
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pump();
+
+        expect(_clockText(tester), '00:05:00');
+        expect(inDashboard(find.text('휴식 종료')), findsNothing);
+        expect(_dashboardFabByIcon(Icons.check), findsNothing);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+      });
+
+      testWidgets('끝나기 직전까지는 1초를 보이고 끝나는 순간 휴식 종료로 바뀐다', (tester) async {
+        await pump(tester);
+        await startBreak(tester);
+
+        breakNow = breakNow.add(
+          const Duration(minutes: 4, seconds: 59, milliseconds: 999),
+        );
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(_clockText(tester), '00:00:01');
+        expect(dial(tester).remaining, const Duration(seconds: 1));
+        expect(inDashboard(find.text('휴식 종료')), findsNothing);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+
+        breakNow = breakNow.add(const Duration(milliseconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(_clockText(tester), '00:00:00');
+        expect(dial(tester).remaining, Duration.zero);
+        expect(inDashboard(find.text('휴식 종료')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.stop), findsNothing);
+        expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
+      });
+
+      testWidgets('휴식 중 다이얼은 tertiary로 남은 휴식을 보이고 끌어도 휴식 값이 그대로다', (
+        tester,
+      ) async {
+        await pump(tester);
+        await startBreak(tester);
+        breakNow = breakNow.add(const Duration(seconds: 30));
+        await tester.pump(const Duration(seconds: 1));
+
+        final cs = Theme.of(tester.element(find.byType(TimerDial))).colorScheme;
+        final shown = dial(tester);
+        expect(shown.onChanged, isNull);
+        expect(shown.color, cs.tertiary);
+        expect(shown.remaining, const Duration(minutes: 4, seconds: 30));
+        expect(
+          shown.face ?? dialFaceFor(shown.remaining),
+          dialFaceFor(const Duration(minutes: 5)),
+        );
+
+        await dragDialTo9(tester);
+
+        expect(_clockText(tester), '00:04:30');
+
+        await tester.tap(_dashboardFabByIcon(Icons.stop));
+        await tester.pumpAndSettle();
+
+        expect(_clockText(tester), '00:05:00');
+      });
+
+      testWidgets('휴식 시작과 확인을 한 프레임 안에 두 번 눌러도 휴식은 하나고 확인 뒤 새 휴식은 없다', (
+        tester,
+      ) async {
+        final controller = await pump(tester);
+        await chooseBreak(tester);
+
+        final start = _dashboardFabByIcon(Icons.coffee);
+        await tester.tap(start);
+        await tester.tap(start);
+        await tester.pump();
+
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+        expect(_clockText(tester), '00:05:00');
+
+        breakNow = breakNow.add(const Duration(minutes: 5));
+        await tester.pump(const Duration(seconds: 1));
+        final confirm = _dashboardFabByIcon(Icons.check);
+        await tester.tap(confirm);
+        await tester.tap(confirm);
+        await tester.pumpAndSettle();
+
+        expect(_modeSwitch(), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.stop), findsNothing);
+        expect(controller.started, isFalse);
+      });
+
+      testWidgets('일시정지 타이머의 휴식 버튼은 대기에서 고른 휴식 시간으로 시작한다', (tester) async {
+        final controller = await pump(tester);
+        await chooseBreak(tester);
+        await dragDialTo9(tester);
+
+        // 다른 기기에서 시작해 일시정지한 타이머
+        await pump(tester, timer: paused, controller: controller);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(_clockText(tester), '00:45:00');
+      });
+
+      testWidgets('같은 일시정지 타이머를 다시 받아도 휴식은 그대로다', (tester) async {
+        final controller = await pump(tester, timer: paused);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        // 태그만 바꾼 PATCH 같은 이벤트
+        await pump(
+          tester,
+          timer: paused.copyWith(updatedAt: DateTime.utc(2026, 1, 1, 0, 1)),
+          controller: controller,
+        );
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+      });
+
+      testWidgets('휴식 중에 다른 기기에서 일시정지 타이머가 생겨도 휴식을 보이고 끝내면 그 타이머를 보인다', (
+        tester,
+      ) async {
+        final controller = await pump(tester);
+        await startBreak(tester);
+
+        await pump(tester, timer: paused, controller: controller);
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(inDashboard(find.text('일시정지')), findsNothing);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsNothing);
+        expect(_clockText(tester), '00:05:00');
+
+        await tester.tap(_dashboardFabByIcon(Icons.stop));
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('일시정지')), findsOneWidget);
+        expect(_clockText(tester), '00:20:00');
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+      });
+
+      testWidgets('휴식 중에 일시정지 타이머가 다른 곳에서 완료돼도 휴식은 이어지고 끝내면 대기 상태다', (
+        tester,
+      ) async {
+        final controller = await pump(tester, timer: paused);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        await pump(tester, timer: null, controller: controller);
+
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+        expect(_clockText(tester), '00:05:00');
+
+        await tester.tap(_dashboardFabByIcon(Icons.stop));
+        await tester.pumpAndSettle();
+
+        expect(_modeSwitch(), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+        expect(_clockText(tester), '00:25:00');
+      });
+
+      testWidgets('일시정지 타이머 위의 휴식이 0이 되면 확인만 보이고 확인하면 완료 없이 그 타이머로 돌아간다', (
+        tester,
+      ) async {
+        final controller = await pump(tester, timer: paused);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        breakNow = breakNow.add(const Duration(minutes: 5));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(inDashboard(find.text('휴식 종료')), findsOneWidget);
+        expect(inDashboard(find.text('일시정지')), findsNothing);
+        expect(inDashboard(find.byType(FloatingActionButton)), findsOneWidget);
+
+        await tester.tap(_dashboardFabByIcon(Icons.check));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(controller.stopCalled, isFalse);
+        expect(inDashboard(find.text('일시정지')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+      });
+
+      testWidgets('Todo가 연결된 일시정지 타이머에서 휴식하면 제목 줄에 휴식만 보인다', (tester) async {
+        await pump(
+          tester,
+          timer: paused.copyWith(
+            title: '보고서 쓰기',
+            todoId: 'todo-1',
+            todo: makeTodo(),
+          ),
+        );
+        expect(find.byType(TodoStatusSelector), findsOneWidget);
+
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(find.byType(TodoStatusSelector), findsNothing);
+        expect(
+          inDashboard(find.byIcon(TodoStatus.unscheduled.icon)),
+          findsNothing,
+        );
+        expect(inDashboard(find.text('보고서 쓰기')), findsNothing);
+        expect(inDashboard(find.text('테스트 할 일')), findsNothing);
+      });
+
+      testWidgets('창 폭이 600을 넘나들어도 고른 모드와 휴식 시간, 진행 중인 휴식이 남는다', (
+        tester,
+      ) async {
+        setSize(tester, const Size(1280, 800));
+        await pump(tester);
+        await chooseBreak(tester);
+        await dragDialTo9(tester);
+
+        tester.view.physicalSize = const Size(360, 800);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TimerHistoryList), findsNothing);
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+        expect(_clockText(tester), '00:45:00');
+
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+        breakNow = breakNow.add(const Duration(minutes: 1));
+        tester.view.physicalSize = const Size(1280, 800);
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.byType(TimerHistoryList), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+        expect(_clockText(tester), '00:44:00');
+      });
+
+      testWidgets('타이머 화면을 떠났다 돌아와도 휴식이 이어진다', (tester) async {
+        final controller = await pump(tester);
+        await startBreak(tester);
+
+        await tester.pumpWidget(
+          pumpApp(
+            const SizedBox(),
+            overrides: [
+              ..._timerOverrides(
+                timer: null,
+                history: [],
+                controller: controller,
+              ),
+              breakClockProvider.overrideWithValue(() => breakNow),
+            ],
+          ),
+        );
+        expect(find.byType(TimerPage), findsNothing);
+        breakNow = breakNow.add(const Duration(minutes: 2));
+        await tester.pump(const Duration(seconds: 1));
+
+        await pump(tester, controller: controller);
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+        expect(_clockText(tester), '00:03:00');
+      });
+
+      testWidgets('다른 탭에 있는 사이 타이머가 실행됐다가 다시 일시정지해도 돌아오면 휴식이 끝나 있다', (
+        tester,
+      ) async {
+        final controller = _FakeTimerController();
+        // 다른 탭으로 가면 StatefulShellRoute가 타이머 탭의 TickerMode를 끄고, 화면의 구독이 멈춘다
+        Future<void> show(TimerRead timer, {required bool visible}) async {
+          await tester.pumpWidget(
+            pumpApp(
+              TickerMode(enabled: visible, child: const TimerPage()),
+              overrides: [
+                ..._timerOverrides(
+                  timer: timer,
+                  history: [timer],
+                  controller: controller,
+                ),
+                breakClockProvider.overrideWithValue(() => breakNow),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        await show(paused, visible: true);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+
+        await show(paused, visible: false);
+        await show(
+          paused.copyWith(
+            status: TimerStatus.running,
+            updatedAt: DateTime.utc(2026, 1, 1, 0, 1),
+          ),
+          visible: false,
+        );
+        final pausedAgain = paused.copyWith(
+          updatedAt: DateTime.utc(2026, 1, 1, 0, 2),
+        );
+        await show(pausedAgain, visible: false);
+        await show(pausedAgain, visible: true);
+
+        expect(inDashboard(find.text('휴식')), findsNothing);
+        expect(inDashboard(find.text('일시정지')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+      });
+
+      testWidgets('좁은 화면의 타이머 목록 시트에 휴식은 나오지 않는다', (tester) async {
+        setSize(tester, const Size(360, 800));
+        await pump(tester, timer: paused);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithIcon(IconButton, Icons.history));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(TimerHistoryItem), findsOneWidget);
+        expect(_historyItem('timer-1'), findsOneWidget);
+      });
+
+      // 대기에서는 0까지 기다려 확인하고, 일시정지 타이머에서는 세는 중에 끝낸다
+      for (final (label, timer, finish) in [
+        ('대기', null, Icons.check),
+        ('일시정지 타이머', paused, Icons.stop),
+      ]) {
+        testWidgets('$label에서 휴식을 시작하고 끝내도 서버에 아무것도 보내지 않는다', (tester) async {
+          final repository = FakeTimerRepository()
+            ..listActive = () async => [?timer];
+          await tester.pumpWidget(
+            pumpApp(
+              const TimerPage(),
+              overrides: [
+                timerFriendActivityProvider.overrideWith(
+                  (ref) => const Stream<TimerWsTimerEvent>.empty(),
+                ),
+                timerRepositoryProvider.overrideWithValue(repository),
+                timerWsClientProvider.overrideWithValue(null),
+                currentUserProvider.overrideWithValue(null),
+                timerHistoryProvider.overrideWith((ref) async => [?timer]),
+                timerTickerProvider.overrideWith(
+                  (ref) => Stream.value(const Duration(minutes: 20)),
+                ),
+                breakClockProvider.overrideWithValue(() => breakNow),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(repository.calls, ['list']);
+
+          if (timer == null) await chooseBreak(tester);
+          await tester.tap(_dashboardFabByIcon(Icons.coffee));
+          await tester.pumpAndSettle();
+          if (finish == Icons.check) {
+            breakNow = breakNow.add(const Duration(minutes: 5));
+          }
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(_dashboardFabByIcon(finish));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(AlertDialog), findsNothing);
+          expect(_dashboardFabByIcon(Icons.stop), findsNothing);
+          expect(inDashboard(find.text('휴식 종료')), findsNothing);
+          expect(repository.calls, ['list']);
+        });
+      }
+
+      testWidgets('타이머가 실행됐다 끝나 대기로 돌아와도 고른 모드와 시간이 그대로다', (tester) async {
+        final controller = await pump(tester);
+        await chooseBreak(tester);
+        await dragDialTo9(tester);
+
+        await pump(
+          tester,
+          timer: makeTimer(id: 'timer-1', status: TimerStatus.running),
+          controller: controller,
+        );
+        expect(_modeSwitch(), findsNothing);
+
+        await pump(tester, timer: null, controller: controller);
+
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+        expect(_clockText(tester), '00:45:00');
+      });
+
+      testWidgets('활성 타이머를 읽는 중이어도 휴식이 있으면 휴식을 보인다', (tester) async {
+        await tester.pumpWidget(
+          pumpApp(
+            const TimerPage(),
+            overrides: [
+              timerFriendActivityProvider.overrideWith(
+                (ref) => const Stream<TimerWsTimerEvent>.empty(),
+              ),
+              activeTimerProvider.overrideWithValue(const AsyncLoading()),
+              timerHistoryProvider.overrideWith(
+                (ref) => Future.value(<TimerRead>[]),
+              ),
+              timerTickerProvider.overrideWith(
+                (ref) => Stream.value(Duration.zero),
+              ),
+              timerControllerProvider.overrideWith(_FakeTimerController.new),
+              breakClockProvider.overrideWithValue(() => breakNow),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        ProviderScope.containerOf(
+          tester.element(find.byType(TimerPage)),
+        ).read(breakTimerProvider.notifier).start(const Duration(minutes: 5));
+        await tester.pump();
+        await tester.pump();
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.stop), findsOneWidget);
+        expect(_clockText(tester), '00:05:00');
+      });
+
+      for (final size in const [
+        Size(360, 800),
+        Size(360, 560),
+        Size(844, 390),
+        Size(800, 1280),
+        Size(1280, 800),
+      ]) {
+        final label = '${size.width.toInt()}x${size.height.toInt()}';
+
+        testWidgets('$label 화면에서 작업·휴식 선택은 시계 아래, 제어 버튼 바로 위에 대시보드 안에 있다', (
+          tester,
+        ) async {
+          setSize(tester, size);
+          await pump(tester);
+
+          expect(tester.takeException(), isNull);
+          final dashboard = tester.getRect(find.byType(TimerDashboard));
+          final modes = tester.getRect(_modeSwitch());
+          final fab = tester.getRect(_dashboardFabByIcon(Icons.play_arrow));
+          final clock = tester.getRect(find.byType(DigitalClock));
+
+          expect(modes.left, greaterThanOrEqualTo(dashboard.left));
+          expect(modes.right, lessThanOrEqualTo(dashboard.right));
+          expect(modes.bottom, lessThanOrEqualTo(size.height));
+          expect(clock.bottom, lessThanOrEqualTo(modes.top));
+          expect(modes.bottom, lessThanOrEqualTo(fab.top));
+        });
+      }
     });
   });
 
@@ -1589,13 +2183,15 @@ List<Override> _timerOverrides({
     ),
     activeTimerProvider.overrideWithValue(AsyncData(timer)),
     timerHistoryProvider.overrideWith((ref) => Future.value(history)),
-    timerTickerProvider.overrideWith(
-      (ref) => Stream.value(
-        timer == null
+    // 다시 그려 활성 타이머가 바뀌면 남은 시간도 따라 바뀐다
+    timerTickerProvider.overrideWith((ref) {
+      final active = ref.watch(activeTimerProvider).value;
+      return Stream.value(
+        active == null
             ? Duration.zero
-            : displayRemaining(timer, DateTime.utc(2026, 11, 6)),
-      ),
-    ),
+            : displayRemaining(active, DateTime.utc(2026, 11, 6)),
+      );
+    }),
     timerControllerProvider.overrideWith(() => controller),
   ];
 }
@@ -1660,6 +2256,7 @@ class _FixedViews extends TimerViewsNotifier {
 class _FakeTimerController extends TimerController {
   bool stopCalled = false;
   String? stoppedTimerId;
+  bool started = false;
   int? startedAllocatedDurationSeconds;
   bool paused = false;
   bool resumed = false;
@@ -1694,6 +2291,7 @@ class _FakeTimerController extends TimerController {
     String? scheduleId,
     int? allocatedDurationSeconds,
   }) async {
+    started = true;
     startedAllocatedDurationSeconds = allocatedDurationSeconds;
   }
 }
