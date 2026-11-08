@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -49,12 +50,12 @@ class TimerPage extends ConsumerWidget {
                   ref.read(timerWsLastErrorProvider.notifier).setError(null),
             ),
           ),
-          const Expanded(flex: 2, child: TimerDashboard()),
+          const Expanded(flex: 3, child: TimerDashboard()),
 
           // 구분선
           const Divider(height: 1),
 
-          const Expanded(flex: 3, child: TimerHistoryList()),
+          const Expanded(flex: 2, child: TimerHistoryList()),
         ],
       ),
     );
@@ -120,12 +121,21 @@ int? _focusMinutes(String text) {
 
 /// 타이머 대시보드 (상단 영역)
 ///
-/// 디지털 시계와 제어 버튼을 포함합니다.
-class TimerDashboard extends ConsumerWidget {
+/// 다이얼, 디지털 시계, 제어 버튼을 포함합니다.
+/// 활성 타이머가 없으면 다이얼을 끌어 새 작업의 집중 시간을 고르고, 있으면 다이얼은 남은 시간만 보여 줍니다.
+class TimerDashboard extends ConsumerStatefulWidget {
   const TimerDashboard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimerDashboard> createState() => _TimerDashboardState();
+}
+
+class _TimerDashboardState extends ConsumerState<TimerDashboard> {
+  /// 다이얼로 고른 새 작업의 집중 시간
+  Duration _pendingDuration = defaultFocusDuration;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final activeTimerAsync = ref.watch(activeTimerProvider);
     final timerTicker = ref.watch(timerTickerProvider);
@@ -144,6 +154,11 @@ class TimerDashboard extends ConsumerWidget {
       error: (error, stack) => computed,
     );
     final timeUp = activeTimer != null && remaining == Duration.zero;
+    final dialColor = timeUp
+        ? theme.colorScheme.error
+        : activeTimer?.status == TimerStatus.paused
+        ? theme.colorScheme.primary.withValues(alpha: 0.5)
+        : theme.colorScheme.primary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -168,9 +183,27 @@ class TimerDashboard extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Expanded(
+                child: activeTimer == null
+                    ? TimerDial(
+                        remaining: _pendingDuration,
+                        color: dialColor,
+                        onChanged: (duration) =>
+                            setState(() => _pendingDuration = duration),
+                      )
+                    : TimerDial(
+                        remaining: remaining,
+                        face: dialFaceFor(
+                          Duration(seconds: activeTimer.allocatedDuration),
+                        ),
+                        color: dialColor,
+                      ),
+              ),
+              SizedBox(height: compact ? 4 : 8),
               DigitalClock(
-                duration: remaining,
+                duration: activeTimer == null ? _pendingDuration : remaining,
                 timeUp: timeUp,
+                idle: activeTimer == null,
                 compact: compact,
               ),
               SizedBox(height: compact ? 8 : 12),
@@ -203,7 +236,7 @@ class TimerDashboard extends ConsumerWidget {
   void _showStartTimerDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
     final minutesController = TextEditingController(
-      text: '${defaultFocusDuration.inMinutes}',
+      text: '${_pendingDuration.inMinutes}',
     );
     showDialog(
       context: context,
@@ -395,16 +428,19 @@ class TimerDashboard extends ConsumerWidget {
 
 /// 디지털 시계 위젯
 ///
-/// HH:MM:SS 형식으로 남은 시간을 크게 표시합니다. 집중 시간이 끝나면([timeUp]) 에러 색으로 표시합니다.
+/// HH:MM:SS 형식으로 남은 시간을 표시합니다. 집중 시간이 끝나면([timeUp]) 에러 색,
+/// 활성 타이머 없이 고른 시간이면([idle]) 흐린 색으로 표시합니다.
 class DigitalClock extends StatelessWidget {
   final Duration duration;
   final bool timeUp;
+  final bool idle;
   final bool compact;
 
   const DigitalClock({
     super.key,
     required this.duration,
     this.timeUp = false,
+    this.idle = false,
     this.compact = false,
   });
 
@@ -417,11 +453,11 @@ class DigitalClock extends StatelessWidget {
       timeText,
       style: theme.textTheme.displayLarge?.copyWith(
         fontFamily: 'monospace', // 등폭 폰트 사용
-        fontSize: compact ? 46 : 56,
+        fontSize: compact ? 28 : 36,
         fontWeight: FontWeight.w300,
         color: timeUp
             ? theme.colorScheme.error
-            : duration.inSeconds > 0
+            : !idle && duration.inSeconds > 0
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurface.withValues(alpha: 0.6),
         letterSpacing: compact ? 0 : 4,

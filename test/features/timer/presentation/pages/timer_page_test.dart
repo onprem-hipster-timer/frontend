@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -781,6 +782,67 @@ void main() {
 
       expect(controller.startedAllocatedDurationSeconds, isNull);
       expect(find.byType(AlertDialog), findsOneWidget);
+    });
+  });
+
+  group('다이얼', () {
+    Future<void> dragDialTo9(WidgetTester tester) async {
+      final dial = find.byType(TimerDial);
+      final center = tester.getCenter(dial);
+      final size = tester.getSize(dial);
+      final radius =
+          (size.width < size.height ? size.width : size.height) * 0.4;
+      await tester.dragFrom(
+        center + Offset(0, -radius),
+        Offset(-radius, radius),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('활성 타이머가 없으면 다이얼을 끌어 고른 시간으로 새 작업을 연다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+      expect(find.byType(TimerDial), findsOneWidget);
+      expect(_clockText(tester), '00:25:00');
+
+      await dragDialTo9(tester);
+      expect(_clockText(tester), '00:45:00');
+
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<TextFormField>(find.byType(TextFormField))
+            .controller
+            ?.text,
+        '45',
+      );
+      final chip = tester.widget<ChoiceChip>(
+        find.widgetWithText(ChoiceChip, '45분'),
+      );
+      expect(chip.selected, isTrue);
+    });
+
+    testWidgets('실행 중인 타이머의 다이얼은 끌어도 남은 시간이 그대로다', (tester) async {
+      final timer = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.running,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 5 * 60,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: timer,
+        controller: _FakeTimerController(),
+      );
+      expect(_clockText(tester), '00:20:00');
+
+      await dragDialTo9(tester);
+
+      expect(_clockText(tester), '00:20:00');
     });
   });
 }
