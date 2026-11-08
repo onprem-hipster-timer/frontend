@@ -114,6 +114,31 @@ void main() {
     await tapInSheet(tester, find.byTooltip(tooltip));
   }
 
+  group('저장하는 동안', () {
+    testWidgets('시트가 닫히는 중에 저장 응답이 와도 시트 아래 화면은 닫지 않는다', (tester) async {
+      final saved = Completer<void>();
+      repository.gate = saved.future;
+
+      await open(tester);
+      await choose(tester, '친구 공개');
+      await tester.ensureVisible(saveButton());
+      await tester.pumpAndSettle();
+      await tester.tap(saveButton());
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      // 닫는 애니메이션이 끝나기 전에 응답이 온다
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(sheet(), findsOneWidget);
+      saved.complete();
+      await tester.pumpAndSettle();
+
+      expect(sheet(), findsNothing);
+      expect(find.text('열기'), findsOneWidget);
+      expect(find.text('공유 설정을 저장했습니다'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('실패와 회복', () {
     // 할 일·태그·일정 폼 시트와 같이 실패 SnackBar는 시트 안이 아니라 화면 Scaffold에 띄운다.
     // 시트가 화면 아래를 덮는 좁은 화면에서는 SnackBar가 시트에 가린다
