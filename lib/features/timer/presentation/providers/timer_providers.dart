@@ -431,6 +431,33 @@ class TimerController extends _$TimerController {
     );
   }
 
+  /// 타이머 연장
+  ///
+  /// [timerId]를 주면 해당 타이머를, 생략 시 활성 타이머를 [by]만큼 늘린 뒤(`PATCH allocated_duration`) 재개합니다.
+  /// 늘리기에 실패하면 재개하지 않습니다.
+  Future<void> extendTimer({String? timerId, required Duration by}) async {
+    final active = _active();
+    final timer = timerId == null || timerId == active?.id
+        ? active
+        : ref.exists(myActiveTimersProvider)
+        ? ref.read(myActiveTimersProvider.notifier).timer(timerId)
+        : null;
+    if (timer == null) {
+      final error = Exception('연장할 타이머가 없습니다');
+      state = AsyncValue.error(error, StackTrace.current);
+      throw error;
+    }
+    final id = timer.id;
+    await _command(
+      id,
+      send: (repository) => repository.updateTimer(
+        id,
+        TimerUpdate(allocatedDuration: timer.allocatedDuration + by.inSeconds),
+      ),
+    );
+    await resumeTimer(timerId: id);
+  }
+
   TimerRead? _active() => ref
       .read(activeTimerProvider)
       .when(data: (timer) => timer, loading: () => null, error: (_, _) => null);

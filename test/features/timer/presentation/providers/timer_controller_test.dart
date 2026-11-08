@@ -69,4 +69,39 @@ void main() {
     );
     expect(container.read(timerControllerProvider).hasError, isTrue);
   });
+
+  test('연장은 allocated_duration을 늘려 PATCH한 뒤 재개한다', () async {
+    final container = boot(
+      active: makeTimer(
+        id: 'active-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 1500,
+        elapsedTime: 1500,
+      ),
+    );
+
+    await controller(container).extendTimer(by: const Duration(minutes: 5));
+
+    expect(repository.calls, ['update:active-1', 'resume:active-1']);
+    expect(repository.updated, const TimerUpdate(allocatedDuration: 1800));
+  });
+
+  test('연장 PATCH가 실패하면 재개하지 않고 예외를 던진다', () async {
+    final container = boot(
+      active: makeTimer(
+        id: 'active-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 1500,
+        elapsedTime: 1500,
+      ),
+    );
+    repository.error = Exception('422');
+
+    await expectLater(
+      controller(container).extendTimer(by: const Duration(minutes: 5)),
+      throwsA(same(repository.error)),
+    );
+    expect(repository.calls, ['update:active-1']);
+    expect(container.read(timerControllerProvider).hasError, isTrue);
+  });
 }

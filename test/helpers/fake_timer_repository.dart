@@ -10,6 +10,7 @@ class FakeTimerRepository implements TimerRepository {
   /// 호출 순서 (`create`, `pause:<id>`, `list` 등)
   final calls = <String>[];
   TimerCreate? created;
+  TimerUpdate? updated;
 
   /// 설정하면 명령이 이 예외를 던진다
   Object? error;
@@ -78,8 +79,10 @@ class FakeTimerRepository implements TimerRepository {
   Future<List<TimerRead>> getTimerHistory() async => [];
 
   @override
-  Future<TimerRead> updateTimer(String timerId, TimerUpdate data) =>
-      throw UnimplementedError();
+  Future<TimerRead> updateTimer(String timerId, TimerUpdate data) {
+    updated = data;
+    return _command('update:$timerId', timerId, TimerStatus.paused);
+  }
 
   @override
   Future<void> deleteTimer(String timerId) => throw UnimplementedError();

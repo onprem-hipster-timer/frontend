@@ -64,7 +64,7 @@ class TimerPage extends ConsumerWidget {
 
 /// 친구의 타이머 이벤트를 SnackBar 문구로 변환한다.
 ///
-/// `payload.action` 중 start/pause/resume/stop만 매핑하고,
+/// `payload.action` 중 start/pause/resume/stop/expire만 매핑하고,
 /// 그 외 action은 generic fallback 문구로 처리한다.
 /// `payload.actor_name`이 없거나 빈 문자열이면 `친구`로 대체한다.
 String friendActivityMessage(TimerWsTimerEvent event) {
@@ -80,6 +80,7 @@ String friendActivityMessage(TimerWsTimerEvent event) {
     'pause' => '$friendName님이 $target를 일시정지했습니다',
     'resume' => '$friendName님이 $target를 재개했습니다',
     'stop' => '$friendName님이 $target를 정지했습니다',
+    'expire' => '$friendName님의 $target가 끝났습니다',
     _ => '$friendName님의 타이머 상태가 변경되었습니다',
   };
 }
@@ -106,6 +107,9 @@ const _focusDurationPresets = [
   Duration(minutes: 45),
   Duration(minutes: 60),
 ];
+
+/// 시간이 끝난 타이머를 한 번에 늘리는 시간
+const _extendBy = Duration(minutes: 5);
 
 /// 새 작업 시작 다이얼로그에 입력할 수 있는 가장 긴 집중 시간 (분)
 const _maxFocusMinutes = 600;
@@ -145,15 +149,18 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
       loading: () => null,
       error: (error, stack) => null,
     );
+    final now = ref.watch(serverClockProvider).now();
     final computed = activeTimer == null
         ? Duration.zero
-        : displayRemaining(activeTimer, ref.watch(serverClockProvider).now());
+        : displayRemaining(activeTimer, now);
     final remaining = timerTicker.when(
       data: (duration) => duration,
       loading: () => computed,
       error: (error, stack) => computed,
     );
-    final timeUp = activeTimer != null && remaining == Duration.zero;
+    final timeUp =
+        activeTimer != null &&
+        (remaining == Duration.zero || isTimeUp(activeTimer, now));
     final dialColor = timeUp
         ? theme.colorScheme.error
         : activeTimer?.status == TimerStatus.paused
@@ -220,10 +227,12 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
               TimerControlButton(
                 activeTimer: activeTimer,
                 starting: controllerState.isLoading,
+                timeUp: timeUp,
                 onStart: () => _showStartTimerDialog(context, ref),
                 onStop: () => _stopTimer(context, ref),
                 onPause: () => _pauseTimer(context, ref),
                 onResume: () => _resumeTimer(context, ref),
+                onExtend: () => _extendTimer(context, ref),
               ),
             ],
           ),
@@ -424,6 +433,21 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
       }
     }
   }
+
+  /// 타이머 5분 연장
+  void _extendTimer(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(timerControllerProvider.notifier)
+          .extendTimer(by: _extendBy);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('연장 실패: ${error.toString()}')));
+      }
+    }
+  }
 }
 
 /// 디지털 시계 위젯
@@ -587,22 +611,27 @@ class CurrentTaskDisplay extends StatelessWidget {
 ///
 /// 일시정지·재개는 누르는 즉시 [activeTimer]에 반영되므로 버튼을 그대로 둔다.
 /// 새 타이머 시작만 응답을 기다리고([starting]), 그동안 시작 버튼 안에 진행 표시를 둔다.
+/// 집중 시간이 끝나면([timeUp]) 일시정지·재개 대신 연장([onExtend]) 버튼을 둔다.
 class TimerControlButton extends StatelessWidget {
   final TimerRead? activeTimer;
   final bool starting;
+  final bool timeUp;
   final VoidCallback onStart;
   final VoidCallback onStop;
   final VoidCallback onPause;
   final VoidCallback onResume;
+  final VoidCallback onExtend;
 
   const TimerControlButton({
     super.key,
     required this.activeTimer,
     required this.starting,
+    required this.timeUp,
     required this.onStart,
     required this.onStop,
     required this.onPause,
     required this.onResume,
+    required this.onExtend,
   });
 
   @override
@@ -627,6 +656,25 @@ class TimerControlButton extends StatelessWidget {
                 size: 32,
                 color: theme.colorScheme.onPrimary,
               ),
+      );
+    } else if (timeUp) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FloatingActionButton.small(
+            onPressed: onStop,
+            tooltip: '완료',
+            backgroundColor: theme.colorScheme.error,
+            child: Icon(Icons.check, color: theme.colorScheme.onError),
+          ),
+          const SizedBox(width: 40),
+          FloatingActionButton(
+            onPressed: onExtend,
+            tooltip: '5분 연장',
+            backgroundColor: theme.colorScheme.primary,
+            child: Icon(Icons.add, color: theme.colorScheme.onPrimary),
+          ),
+        ],
       );
     } else if (activeTimer!.status == TimerStatus.running) {
       // 위계: 자주 쓰는 일시정지를 큰 주 버튼(primary), 비가역 완료는
@@ -795,6 +843,7 @@ class TimerHistoryList extends ConsumerWidget {
 /// 타이머 히스토리 항목
 ///
 /// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·완료 버튼을 제공합니다.
+/// 집중 시간이 끝난 타이머는 일시정지·재개 대신 연장 버튼을 둡니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
@@ -885,6 +934,7 @@ class TimerHistoryItem extends ConsumerWidget {
     final bool useLiveTicker =
         timer.status == TimerStatus.running && timer.id == activeTimer?.id;
     final now = ref.watch(serverClockProvider).now();
+    final timeUp = isTimeUp(timer, now);
     final shown = isActive
         ? displayRemaining(timer, now)
         : displayElapsed(timer, now);
@@ -943,7 +993,23 @@ class TimerHistoryItem extends ConsumerWidget {
             ),
             if (isActive) ...[
               const SizedBox(width: 4),
-              if (timer.status == TimerStatus.running)
+              if (timeUp)
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _runTimerAction(
+                    context,
+                    ref,
+                    action: () => ref
+                        .read(timerControllerProvider.notifier)
+                        .extendTimer(timerId: timer.id, by: _extendBy),
+                    errorLabel: '연장',
+                  ),
+                  tooltip: '5분 연장',
+                  style: IconButton.styleFrom(
+                    foregroundColor: theme.colorScheme.primary,
+                  ),
+                )
+              else if (timer.status == TimerStatus.running)
                 IconButton(
                   icon: const Icon(Icons.pause),
                   onPressed: () => _runTimerAction(
@@ -958,8 +1024,8 @@ class TimerHistoryItem extends ConsumerWidget {
                   style: IconButton.styleFrom(
                     foregroundColor: theme.colorScheme.secondary,
                   ),
-                ),
-              if (timer.status == TimerStatus.paused)
+                )
+              else if (timer.status == TimerStatus.paused)
                 IconButton(
                   icon: const Icon(Icons.play_arrow),
                   onPressed: () => _runTimerAction(

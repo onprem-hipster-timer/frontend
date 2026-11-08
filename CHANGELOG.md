@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 타이머 화면, 일정 상세의 타이머 목록, Todo 목록이 같은 계산을 쓴다
   - `now`는 타이머 REST 응답의 `Date` 헤더로 보정한 서버 기준 시각이다
 - 타이머 화면은 남은 시간(`allocated_duration - displayElapsed`, 0 아래로 내려가지 않음)을 센다
-  - 0이 되면 `00:00:00`과 '시간 종료'로 표시한다. 타이머는 사용자가 완료할 때까지 RUNNING으로 남는다
+  - 0이 되면 `00:00:00`과 '시간 종료'로 표시한다
   - 타이머 목록의 진행 중·일시정지 항목도 남은 시간, 끝난 항목은 경과 시간을 보여 준다
 - 새 타이머의 기본 집중 시간(`allocated_duration`)을 25분으로. 새 작업 시작에서 1~600분을 입력하거나 15·25·45·60분 칩으로 채운다
 - 타이머 화면의 정지를 '완료'로 표시 (버튼, 확인 다이얼로그, 알림). 일시정지·재개는 확인 없이 바로 보낸다
@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 활성 타이머가 없으면 다이얼을 끌어 새 작업의 집중 시간을 고르고, 새 작업 시작의 분 칸이 그 값으로 열린다
   - 집중 시간이 60분을 넘으면 다이얼 한 바퀴를 60분 단위로 늘린다. 진행 중인 타이머의 다이얼은 끌어도 바뀌지 않는다
   - 대시보드를 타이머 목록보다 크게(3:2) 두고 디지털 시계는 다이얼 아래에 작게 둔다
+- 시간이 끝난 타이머는 서버가 일시정지 상태로 돌려주며, 대시보드와 타이머 목록은 일시정지·재개 대신 완료와 5분 연장만 보여 준다
+  - 연장은 `PATCH /v1/timers/{id}`로 `allocated_duration`을 늘린 뒤 재개한다. 늘리기에 실패하면 재개하지 않는다
+- `displayElapsed`는 `allocated_duration`을 넘지 않는다
+- 친구 알림에 `expire`(타이머 종료) 문구를 더한다
 
 #### Timer WebSocket
 - 소켓을 수신 전용으로 바꿈. 클라이언트는 45초마다 `ping`만 보낸다
@@ -44,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 친구 알림은 `from_user`가 내가 아닌 이벤트의 `actor_name`·`action`으로 띄운다
 
 #### API
-- OpenAPI 스펙 v2026.11.07-5ef2872 반영 및 API 클라이언트 재생성
+- OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 ### Added
 

@@ -95,6 +95,15 @@ void main() {
           '철수님이 타이머를 정지했습니다',
         );
       });
+
+      test('expire', () {
+        expect(
+          friendActivityMessage(
+            activity(action: 'expire', displayName: '철수', timerTitle: '집중'),
+          ),
+          '철수님의 집중 타이머가 끝났습니다',
+        );
+      });
     });
 
     group('그 외 action — generic fallback', () {
@@ -485,6 +494,90 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  group('시간 종료', () {
+    final expired = makeTimer(
+      id: 'timer-1',
+      status: TimerStatus.paused,
+      allocatedDuration: 25 * 60,
+      elapsedTime: 25 * 60,
+    );
+
+    void expectExtendOnly() {
+      expect(find.text('시간 종료'), findsOneWidget);
+      final extend = _dashboardFabByIcon(Icons.add);
+      expect(extend, findsOneWidget);
+      expect(
+        find.descendant(of: extend, matching: find.byTooltip('5분 연장')),
+        findsOneWidget,
+      );
+      expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.pause), findsNothing);
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsNothing);
+    }
+
+    testWidgets('시간이 끝나 일시정지된 타이머는 완료와 5분 연장만 보여 주고 연장을 누르면 5분 늘린다', (
+      tester,
+    ) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: expired, controller: controller);
+
+      expectExtendOnly();
+
+      await tester.tap(_dashboardFabByIcon(Icons.add));
+      await tester.pump();
+
+      expect(controller.extendedBy, const Duration(minutes: 5));
+      expect(controller.extendedTimerId, isNull);
+      expect(controller.resumed, isFalse);
+    });
+
+    testWidgets('실행 중인데 남은 시간이 0이면 완료와 5분 연장만 보여 준다', (tester) async {
+      final timer = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.running,
+        startedAt: DateTime.utc(2026, 11, 5, 23, 59),
+        allocatedDuration: 60,
+        elapsedTime: 0,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: timer,
+        controller: _FakeTimerController(),
+      );
+
+      expectExtendOnly();
+    });
+
+    testWidgets('타이머 목록의 시간이 끝난 항목은 재개 대신 5분 연장을 보여 준다', (tester) async {
+      final controller = _FakeTimerController();
+
+      await _pumpTimerPage(tester, timer: expired, controller: controller);
+
+      final item = _historyItem('timer-1');
+      final extend = find.descendant(
+        of: item,
+        matching: find.widgetWithIcon(IconButton, Icons.add),
+      );
+      expect(extend, findsOneWidget);
+      expect(
+        find.descendant(of: item, matching: find.byTooltip('5분 연장')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: item, matching: find.byIcon(Icons.play_arrow)),
+        findsNothing,
+      );
+
+      await tester.tap(extend);
+      await tester.pump();
+
+      expect(controller.extendedTimerId, 'timer-1');
+      expect(controller.extendedBy, const Duration(minutes: 5));
     });
   });
 
@@ -1018,6 +1111,8 @@ class _FakeTimerController extends TimerController {
   int? startedAllocatedDurationSeconds;
   bool paused = false;
   bool resumed = false;
+  Duration? extendedBy;
+  String? extendedTimerId;
 
   @override
   FutureOr<void> build() {}
@@ -1033,6 +1128,12 @@ class _FakeTimerController extends TimerController {
 
   @override
   Future<void> resumeTimer({String? timerId}) async => resumed = true;
+
+  @override
+  Future<void> extendTimer({String? timerId, required Duration by}) async {
+    extendedTimerId = timerId;
+    extendedBy = by;
+  }
 
   @override
   Future<void> startTimer({

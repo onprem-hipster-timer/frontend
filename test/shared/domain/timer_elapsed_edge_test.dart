@@ -107,4 +107,52 @@ void main() {
       );
     });
   });
+
+  group('allocated_duration 경계', () {
+    final startedAt = DateTime.utc(2026, 11, 6, 10, 0, 0);
+
+    test(
+      'PAUSED 저장값이 allocated_duration을 넘어도 표시 경과 시간은 allocated_duration이다',
+      () {
+        final timer = makeTimer(
+          id: 't1',
+          status: TimerStatus.paused,
+          allocatedDuration: 60,
+          elapsedTime: 90,
+        );
+
+        expect(displayElapsed(timer, startedAt), const Duration(seconds: 60));
+      },
+    );
+
+    test('RUNNING은 1초 남으면 false, 정확히 다 쓰면 true', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 60,
+        elapsedTime: 0,
+      );
+
+      expect(
+        isTimeUp(timer, startedAt.add(const Duration(seconds: 59))),
+        isFalse,
+      );
+      expect(
+        isTimeUp(timer, startedAt.add(const Duration(seconds: 60))),
+        isTrue,
+      );
+    });
+
+    test('CANCELLED면 경과 시간이 allocated_duration이어도 false', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.cancelled,
+        allocatedDuration: 60,
+        elapsedTime: 60,
+      );
+
+      expect(isTimeUp(timer, startedAt), isFalse);
+    });
+  });
 }
