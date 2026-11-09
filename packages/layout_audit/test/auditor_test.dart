@@ -450,4 +450,18 @@ void main() {
     expect(offscreen, hasLength(1));
     expect(offscreen.single.message, contains('화면 오른쪽 밖으로 120.0px'));
   });
+
+  testWidgets('같은 줄 단어 사이 빈칸에 놓인 이웃은 겹침이 아니다', (tester) async {
+    await pumpInApp(
+      tester,
+      Stack(
+        children: [
+          at(0, 0, squareText('AAAA      BBBB')),
+          at(120, 0, squareText('C')),
+        ],
+      ),
+    );
+
+    expect(auditLayout(tester), isEmpty);
+  });
 }

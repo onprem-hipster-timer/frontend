@@ -17,7 +17,7 @@ class ContentLeaf {
 
   final RenderBox box;
 
-  /// 글자 줄마다 하나(이미지는 하나)인 전역 사각형. 클립 전.
+  /// 단어마다(이미지는 하나) 전역 사각형. 클립 전.
   final List<Rect> rawBoxes;
 
   /// [rawBoxes]를 조상 클립과 화면으로 자른 것. 완전히 가려졌으면 비어 있다.
@@ -141,29 +141,18 @@ String _plainText(RenderParagraph paragraph) => paragraph.text.toPlainText(
       includePlaceholders: true,
     );
 
-/// 문단 상자가 아니라 글자가 놓인 줄마다 사각형 하나. 줄 옆 빈 공간과 줄 끝 공백은
-/// 그려지는 것이 없으므로 겹침·잘라냄으로 보지 않는다.
+/// 문단 상자가 아니라 공백 없는 글자 덩어리(단어)마다, 줄이 바뀌면 줄마다 사각형 하나.
+/// 줄 옆 빈 공간·단어 사이 공백·줄 끝 공백에는 그려지는 것이 없으므로 겹침·잘라냄으로 보지 않는다.
 List<Rect> _localBoxes(RenderBox box) {
   if (box is! RenderParagraph) {
     return [box.paintBounds];
   }
-  final textBoxes = [
+  final words = [
     for (final run in RegExp(r'\S+').allMatches(_plainText(box)))
-      ...box.getBoxesForSelection(
+      for (final textBox in box.getBoxesForSelection(
         TextSelection(baseOffset: run.start, extentOffset: run.end),
-      ),
+      ))
+        textBox.toRect(),
   ];
-  final lines = <Rect>[];
-  for (final textBox in textBoxes) {
-    final rect = textBox.toRect();
-    final index = lines.indexWhere(
-      (line) => line.top == rect.top && line.bottom == rect.bottom,
-    );
-    if (index < 0) {
-      lines.add(rect);
-    } else {
-      lines[index] = lines[index].expandToInclude(rect);
-    }
-  }
-  return lines.isEmpty ? [box.paintBounds] : lines;
+  return words.isEmpty ? [box.paintBounds] : words;
 }
