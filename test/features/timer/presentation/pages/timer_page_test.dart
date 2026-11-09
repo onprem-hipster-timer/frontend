@@ -1662,6 +1662,59 @@ void main() {
       },
     );
 
+    testWidgets('다른 타이머가 실행 중이어도 시간이 끝났으면 휴식 버튼을 보인다', (tester) async {
+      final clock = DateTime.utc(2026, 11, 9, 10, 10);
+      // 9:00에 시작한 25분 타이머는 10:10에 시간이 끝나 있다
+      final timeUpA = makeTimer(
+        id: 'a',
+        status: TimerStatus.running,
+        startedAt: DateTime.utc(2026, 11, 9, 9),
+        allocatedDuration: 25 * 60,
+      );
+      final pausedB = makeTimer(
+        id: 'b',
+        status: TimerStatus.paused,
+        startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+        allocatedDuration: 25 * 60,
+        elapsedTime: 60,
+      ).copyWith(title: 'B 작업');
+      final repository = FakeTimerRepository()
+        ..listActive = () async => [timeUpA, pausedB];
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
+            timerFriendActivityProvider.overrideWith(
+              (ref) => const Stream<TimerWsTimerEvent>.empty(),
+            ),
+            timerRepositoryProvider.overrideWithValue(repository),
+            timerWsClientProvider.overrideWithValue(null),
+            currentUserProvider.overrideWithValue(null),
+            serverClockProvider.overrideWithValue(
+              ServerClock(deviceNow: () => clock),
+            ),
+            breakClockProvider.overrideWithValue(() => breakNow),
+            timerHistoryProvider.overrideWith(
+              (ref) async => [pausedB, timeUpA],
+            ),
+            timerTickerProvider.overrideWith((ref) {
+              final active = ref.watch(activeTimerProvider).value;
+              return Stream.value(
+                active == null
+                    ? Duration.zero
+                    : displayRemaining(active, clock),
+              );
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(inDashboard(find.text('B 작업')), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+    });
+
     group('경계', () {
       void setSize(WidgetTester tester, Size size) {
         tester.view.physicalSize = size;
