@@ -15,15 +15,13 @@ IconData visibilityLevelIcon(VisibilityLevel? level) => switch (level) {
 
 /// 내 타이머 [timer]의 공유 범위 아이콘 버튼. 누르면 [showTimerShareSheet]를 연다
 class TimerShareButton extends StatelessWidget {
-  const TimerShareButton({super.key, required this.timer, this.visualDensity});
+  const TimerShareButton({super.key, required this.timer});
 
   final TimerRead timer;
-  final VisualDensity? visualDensity;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      visualDensity: visualDensity,
       icon: Icon(visibilityLevelIcon(timer.visibilityLevel)),
       tooltip: '공유 설정',
       onPressed: () => showTimerShareSheet(context, timer: timer),

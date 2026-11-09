@@ -2884,47 +2884,80 @@ void main() {
         ['공유 설정'],
       ),
     ]) {
-      testWidgets('$label 항목은 240~600 폭에서 넘치지 않고 버튼이 항목 안에서 서로·시간과 겹치지 않는다', (
-        tester,
-      ) async {
-        for (final width in const [
-          240.0,
-          280.0,
-          300.0,
-          328.0,
-          360.0,
-          480.0,
-          600.0,
-        ]) {
-          await pumpItem(tester, timer.copyWith(title: longTitle), width);
-          final reason = '${width.toInt()} 폭';
+      testWidgets(
+        '$label 항목은 240~600 폭에서 넘치지 않고 48 탭 영역의 버튼이 항목 안에서 서로·시간과 겹치지 않는다',
+        (tester) async {
+          // 버튼까지 한 줄에 두려면 여백·아이콘·제목·시간 자리 280에 버튼마다 48이 더 든다
+          final oneRowWidth = 280.0 + 48 * tooltips.length;
+          for (final width in {
+            240.0,
+            280.0,
+            300.0,
+            327.0,
+            328.0,
+            360.0,
+            423.0,
+            424.0,
+            480.0,
+            600.0,
+            oneRowWidth - 1,
+            oneRowWidth,
+          }) {
+            await pumpItem(tester, timer.copyWith(title: longTitle), width);
+            final reason = '${width.toInt()} 폭';
 
-          expect(tester.takeException(), isNull, reason: reason);
-          final item = tester.getRect(find.byType(TimerHistoryItem));
-          final time = tester.getRect(
-            find.textContaining(RegExp(r'^\d{2}:\d{2}:\d{2}$')),
-          );
-          final buttons = [
-            for (final tooltip in tooltips)
-              tester.getRect(find.byTooltip(tooltip)),
-          ];
-          for (final (i, button) in buttons.indexed) {
-            final which = '$reason ${tooltips[i]}';
-            expect(button.left, greaterThanOrEqualTo(item.left), reason: which);
-            expect(button.right, lessThanOrEqualTo(item.right), reason: which);
-            expect(button.top, greaterThanOrEqualTo(item.top), reason: which);
-            expect(
-              button.bottom,
-              lessThanOrEqualTo(item.bottom),
-              reason: which,
+            expect(tester.takeException(), isNull, reason: reason);
+            final item = tester.getRect(find.byType(TimerHistoryItem));
+            final time = tester.getRect(
+              find.textContaining(RegExp(r'^\d{2}:\d{2}:\d{2}$')),
             );
-            expect(overlaps(button, time), isFalse, reason: which);
-            for (final other in buttons.skip(i + 1)) {
-              expect(overlaps(button, other), isFalse, reason: which);
+            final buttons = [
+              for (final tooltip in tooltips)
+                tester.getRect(
+                  find.ancestor(
+                    of: find.byTooltip(tooltip),
+                    matching: find.byType(IconButton),
+                  ),
+                ),
+            ];
+            for (final (i, button) in buttons.indexed) {
+              final which = '$reason ${tooltips[i]}';
+              expect(button.width, greaterThanOrEqualTo(48), reason: which);
+              expect(button.height, greaterThanOrEqualTo(48), reason: which);
+              expect(
+                button.left,
+                greaterThanOrEqualTo(item.left),
+                reason: which,
+              );
+              expect(
+                button.right,
+                lessThanOrEqualTo(item.right),
+                reason: which,
+              );
+              expect(button.top, greaterThanOrEqualTo(item.top), reason: which);
+              expect(
+                button.bottom,
+                lessThanOrEqualTo(item.bottom),
+                reason: which,
+              );
+              expect(overlaps(button, time), isFalse, reason: which);
+              // 한 줄에 다 들어가지 않으면 버튼을 시간 아래 줄로 내린다
+              if (width < oneRowWidth) {
+                expect(
+                  button.top,
+                  greaterThanOrEqualTo(time.bottom),
+                  reason: which,
+                );
+              } else {
+                expect(button.top, lessThan(time.bottom), reason: which);
+              }
+              for (final other in buttons.skip(i + 1)) {
+                expect(overlaps(button, other), isFalse, reason: which);
+              }
             }
           }
-        }
-      });
+        },
+      );
     }
   });
 

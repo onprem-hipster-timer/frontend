@@ -1093,8 +1093,8 @@ class _TimerStatusChip extends StatelessWidget {
 /// 타이머 목록 항목에서 버튼 말고 한 줄에 필요한 폭 (여백, 상태 아이콘, 제목, 남은 시간)
 const _historyItemBaseWidth = 280.0;
 
-/// 타이머 목록 항목의 버튼 하나의 폭 ([VisualDensity.compact])
-const _historyItemButtonWidth = 40.0;
+/// 타이머 목록 항목의 버튼 하나의 폭 (탭 영역 48)
+const _historyItemButtonWidth = 48.0;
 
 /// 타이머 히스토리 항목
 ///
@@ -1177,7 +1177,6 @@ class TimerHistoryItem extends ConsumerWidget {
       if (isActive) ...[
         if (timeUp)
           IconButton(
-            visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.add),
             onPressed: () => _runTimerAction(
               context,
@@ -1194,7 +1193,6 @@ class TimerHistoryItem extends ConsumerWidget {
           )
         else if (timer.status == TimerStatus.running)
           IconButton(
-            visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.pause),
             onPressed: () => _runTimerAction(
               context,
@@ -1211,7 +1209,6 @@ class TimerHistoryItem extends ConsumerWidget {
           )
         else if (timer.status == TimerStatus.paused)
           IconButton(
-            visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.play_arrow),
             onPressed: () => _runTimerAction(
               context,
@@ -1227,7 +1224,6 @@ class TimerHistoryItem extends ConsumerWidget {
             ),
           ),
         IconButton(
-          visualDensity: VisualDensity.compact,
           icon: Icon(Icons.check, color: theme.colorScheme.error),
           onPressed: () async {
             final confirmed = await _confirmStopTimer(context);
@@ -1244,8 +1240,7 @@ class TimerHistoryItem extends ConsumerWidget {
           tooltip: '완료',
         ),
       ],
-      if (!timer.isShared)
-        TimerShareButton(timer: timer, visualDensity: VisualDensity.compact),
+      if (!timer.isShared) TimerShareButton(timer: timer),
     ];
     final durationText = Text(
       formatDuration(duration),
