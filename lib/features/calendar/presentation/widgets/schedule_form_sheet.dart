@@ -642,19 +642,11 @@ Future<void> showScheduleFormSheet(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true, // 키보드가 올라와도 전체 크기 유지
-    backgroundColor: Colors.transparent,
-    builder: (context) => Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: ScheduleFormSheet(
-        initialStartTime: defaultStartTime,
-        initialEndTime: defaultEndTime,
-      ),
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    shape: _sheetShape,
+    builder: (context) => ScheduleFormSheet(
+      initialStartTime: defaultStartTime,
+      initialEndTime: defaultEndTime,
     ),
   );
 }
@@ -675,16 +667,13 @@ Future<void> showScheduleEditSheet(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: ScheduleFormSheet(existingSchedule: existingSchedule),
-    ),
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    shape: _sheetShape,
+    builder: (context) => ScheduleFormSheet(existingSchedule: existingSchedule),
   );
 }
+
+// 시트 배경은 시트 자체(Material)에 칠해야 종일 스위치의 물결 효과가 보인다
+const _sheetShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+);

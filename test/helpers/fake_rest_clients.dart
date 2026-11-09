@@ -274,3 +274,115 @@ class FakeTodosClient extends Fake implements TodosClient {
 /// [explicitNulls]로 null을 보내라고 표시한 필드들.
 List<String> explicitNullFields(RequestOptions? options) =>
     (options?.extra['explicit_nulls'] as List<String>?) ?? const [];
+
+/// 메모리에 일정을 들고 있는 [SchedulesClient]. 받은 요청을 기록한다.
+class FakeSchedulesClient extends Fake implements SchedulesClient {
+  FakeSchedulesClient([List<ScheduleRead> schedules = const []])
+    : schedules = [...schedules];
+
+  final List<ScheduleRead> schedules;
+
+  final created = <ScheduleCreate>[];
+  final updated = <(String, ScheduleUpdate, RequestOptions?)>[];
+  final deleted = <(String, SourceTodoPolicy?, LinkedTimerPolicy?)>[];
+  final convertedToTodo = <(String, String)>[];
+
+  /// 설정하면 조회가 이 오류로 실패한다.
+  Object? readError;
+
+  /// 설정하면 쓰기 요청이 이 오류로 실패한다.
+  Object? writeError;
+
+  void _failWrite() {
+    if (writeError != null) throw writeError!;
+  }
+
+  @override
+  Future<List<ScheduleRead>> readSchedulesV1SchedulesGet({
+    required DateTime startDate,
+    required DateTime endDate,
+    List<String>? tagIds,
+    List<String>? groupIds,
+    String? timezone,
+    ResourceScope? scope = ResourceScope.mine,
+    RequestOptions? options,
+  }) async {
+    if (readError != null) throw readError!;
+    return [...schedules];
+  }
+
+  @override
+  Future<ScheduleRead> readScheduleV1SchedulesScheduleIdGet({
+    required String scheduleId,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    if (readError != null) throw readError!;
+    return schedules.firstWhere((s) => s.id == scheduleId);
+  }
+
+  @override
+  Future<ScheduleRead> createScheduleV1SchedulesPost({
+    required ScheduleCreate body,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    created.add(body);
+    final schedule = ScheduleRead(
+      id: 'schedule-new-${created.length}',
+      title: body.title,
+      startTime: body.startTime,
+      endTime: body.endTime,
+      description: body.description,
+      state: ScheduleState.planned,
+      createdAt: _at,
+    );
+    schedules.add(schedule);
+    return schedule;
+  }
+
+  @override
+  Future<ScheduleRead> updateScheduleV1SchedulesScheduleIdPatch({
+    required String scheduleId,
+    required ScheduleUpdate body,
+    DateTime? instanceStart,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    updated.add((scheduleId, body, options));
+    final index = schedules.indexWhere((s) => s.id == scheduleId);
+    final old = schedules[index];
+    final next = old.copyWith(
+      title: body.title ?? old.title,
+      startTime: body.startTime ?? old.startTime,
+      endTime: body.endTime ?? old.endTime,
+    );
+    schedules[index] = next;
+    return next;
+  }
+
+  @override
+  Future<void> deleteScheduleV1SchedulesScheduleIdDelete({
+    required String scheduleId,
+    DateTime? instanceStart,
+    SourceTodoPolicy? sourceTodoPolicy,
+    LinkedTimerPolicy? linkedTimerPolicy,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    deleted.add((scheduleId, sourceTodoPolicy, linkedTimerPolicy));
+    schedules.removeWhere((s) => s.id == scheduleId);
+  }
+
+  @override
+  Future<void> createTodoFromScheduleV1SchedulesScheduleIdTodoPost({
+    required String scheduleId,
+    required String tagGroupId,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    convertedToTodo.add((scheduleId, tagGroupId));
+  }
+}
