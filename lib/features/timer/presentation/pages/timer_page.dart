@@ -850,25 +850,28 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    // 안내가 칸보다 길면 굴려 본다
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.history,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text('타이머가 없습니다', style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 8),
-          Text(
-            '새 작업을 시작해보세요',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.history,
+              size: 64,
               color: Theme.of(context).colorScheme.outline,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text('타이머가 없습니다', style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 8),
+            Text(
+              '새 작업을 시작해보세요',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -955,19 +958,25 @@ class _SharedTimerList extends ConsumerWidget {
     return ref
         .watch(sharedTimersProvider)
         .when(
+          // 안내가 칸보다 길면 굴려 본다
           data: (timers) => timers.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.group_outlined,
-                        size: 64,
-                        color: theme.colorScheme.outline,
-                      ),
-                      const SizedBox(height: 16),
-                      Text('공유받은 타이머가 없습니다', style: theme.textTheme.bodyLarge),
-                    ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.group_outlined,
+                          size: 64,
+                          color: theme.colorScheme.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '공유받은 타이머가 없습니다',
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : ListView.builder(

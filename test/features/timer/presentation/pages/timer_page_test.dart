@@ -2601,57 +2601,28 @@ void main() {
         matching: find.byType(CustomPaint),
       );
 
-      /// 앱처럼 하단 내비 바 셸([ScaffoldWithNavBar]) 안에 타이머 화면을 그린다
+      /// [timer]를 활성 타이머로 두고 하단 내비 바 셸 안에 타이머 화면을 그린다
       Future<void> pumpInShell(
         WidgetTester tester, {
         required Size size,
         required double textScale,
         required TimerRead? timer,
-      }) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = 1;
-        tester.platformDispatcher.textScaleFactorTestValue = textScale;
-        addTearDown(tester.view.reset);
-        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-        final router = GoRouter(
-          routes: [
-            StatefulShellRoute.indexedStack(
-              builder: (context, state, shell) =>
-                  ScaffoldWithNavBar(navigationShell: shell),
-              branches: [
-                StatefulShellBranch(
-                  routes: [
-                    GoRoute(
-                      path: '/',
-                      builder: (context, state) => const TimerPage(),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        );
-        addTearDown(router.dispose);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              ..._timerOverrides(
-                timer: timer,
-                history: [
-                  ?timer,
-                  makeTimer(id: 'done', status: TimerStatus.completed),
-                ],
-                controller: _FakeTimerController(),
-              ),
-              breakClockProvider.overrideWithValue(
-                () => DateTime(2026, 11, 9, 10),
-              ),
+      }) => _pumpInNavShell(
+        tester,
+        size: size,
+        textScale: textScale,
+        overrides: [
+          ..._timerOverrides(
+            timer: timer,
+            history: [
+              ?timer,
+              makeTimer(id: 'done', status: TimerStatus.completed),
             ],
-            child: MaterialApp.router(routerConfig: router),
+            controller: _FakeTimerController(),
           ),
-        );
-        await tester.pumpAndSettle();
-      }
+          breakClockProvider.overrideWithValue(() => DateTime(2026, 11, 9, 10)),
+        ],
+      );
 
       /// 다이얼이 왼쪽에 120 이상으로 있고, 시계와 [fabs]가 그 오른쪽에 있다.
       /// 오른쪽 칸이 길면 굴려서 [fabs]가 셸 위 화면 안에 들어와 눌린다
@@ -2745,6 +2716,62 @@ void main() {
         );
         expect(dial.shortestSide, greaterThanOrEqualTo(240));
       });
+    });
+
+    group('하단 내비 바 셸 안의 빈 목록 안내', () {
+      for (final (size, textScale) in const [
+        (Size(844, 390), 1.0),
+        (Size(844, 390), 1.5),
+        (Size(800, 360), 1.0),
+        (Size(360, 560), 1.0),
+        (Size(360, 560), 1.5),
+      ]) {
+        final label =
+            '${size.width.toInt()}x${size.height.toInt()} 글자 $textScale배';
+
+        testWidgets('$label: 내 타이머와 친구 타이머가 없다는 안내가 넘치지 않고 화면 안에 보인다', (
+          tester,
+        ) async {
+          await _pumpInNavShell(
+            tester,
+            size: size,
+            textScale: textScale,
+            overrides: [
+              ..._timerOverrides(
+                timer: null,
+                history: const [],
+                controller: _FakeTimerController(),
+              ),
+              timerRepositoryProvider.overrideWithValue(FakeTimerRepository()),
+              friendsProvider.overrideWith((ref) async => const <FriendRead>[]),
+            ],
+          );
+          // 셸은 아래 100을 내비 바 자리로 비워 둔다
+          final pageBottom = size.height - 100;
+
+          /// [text]가 넘침 없이 굴려서라도 셸 위 화면 안에 보인다
+          Future<void> expectShown(String text) async {
+            expect(tester.takeException(), isNull, reason: text);
+            await tester.ensureVisible(find.text(text));
+            await tester.pumpAndSettle();
+            expect(
+              tester.getRect(find.text(text)).bottom,
+              lessThanOrEqualTo(pageBottom),
+              reason: text,
+            );
+          }
+
+          if (size.width < 600) {
+            await tester.tap(find.byTooltip('타이머 목록'));
+            await tester.pumpAndSettle();
+          }
+          await expectShown('새 작업을 시작해보세요');
+
+          await tester.tap(find.text('친구 타이머'));
+          await tester.pumpAndSettle();
+          await expectShown('공유받은 타이머가 없습니다');
+        });
+      }
     });
   });
 
@@ -3380,6 +3407,46 @@ Future<void> _pumpTimerPage(
         ),
         ...overrides,
       ],
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// 앱처럼 하단 내비 바 셸([ScaffoldWithNavBar]) 안에 타이머 화면을 [size] 화면, 글자 [textScale]배로 그린다
+Future<void> _pumpInNavShell(
+  WidgetTester tester, {
+  required Size size,
+  double textScale = 1,
+  required List<Override> overrides,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  tester.platformDispatcher.textScaleFactorTestValue = textScale;
+  addTearDown(tester.view.reset);
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  final router = GoRouter(
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) =>
+            ScaffoldWithNavBar(navigationShell: shell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const TimerPage(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
