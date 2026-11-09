@@ -110,7 +110,7 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Image.asset(
-                        'assets/google_g_logo.png',
+                        'assets/google_g_logo.webp',
                         width: 20,
                         height: 20,
                       ),

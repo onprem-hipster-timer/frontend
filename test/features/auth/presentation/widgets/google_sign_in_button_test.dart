@@ -71,7 +71,7 @@ void main() {
 
     final logo = find.byType(Image);
     final image = tester.widget<Image>(logo);
-    expect((image.image as AssetImage).assetName, 'assets/google_g_logo.png');
+    expect((image.image as AssetImage).assetName, 'assets/google_g_logo.webp');
     expect(tester.getSize(logo), const Size(20, 20));
 
     final label = find.text('Google 계정으로 계속하기');
