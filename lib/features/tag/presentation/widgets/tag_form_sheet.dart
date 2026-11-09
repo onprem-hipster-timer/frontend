@@ -94,7 +94,11 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               const SizedBox(height: 24),
               _buildColorPicker(theme),
               const SizedBox(height: 32),
-              _buildButtonBar(isLoading),
+              AppFormActionBar(
+                submitLabel: _isEditMode ? '수정' : '생성',
+                onSubmit: _handleSubmit,
+                busy: isLoading,
+              ),
             ],
           ),
         ),
@@ -339,50 +343,6 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               ),
             );
           }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildButtonBar(bool isLoading) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('취소'),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: FilledButton(
-            onPressed: isLoading ? null : _handleSubmit,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  )
-                : Text(_isEditMode ? '수정' : '생성'),
-          ),
         ),
       ],
     );

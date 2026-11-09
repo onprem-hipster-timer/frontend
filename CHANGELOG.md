@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 #### UI
+- 폼 아래 버튼 줄을 `AppFormActionBar`(취소 + 넓은 저장)로 맞춘다. 공유 설정과 시간 정하기에도 취소가 생기고, 저장 중 진행 표시는 막힌 버튼 위에서도 보이는 색으로 그린다
 - 폼의 소제목을 `AppSectionHeader`로 그린다. 일정 폼의 '시작'·'종료'도 다른 폼과 같은 크기로 맞춘다
 - 입력 칸은 화면마다 테두리를 정하지 않고 테마의 외곽선(모서리 12)을 따른다. 로그인·가입 입력 칸도 같은 모서리로 맞춘다
 - 하단 시트를 `showAppSheet`·`showAppScrollableSheet`로 연다. 모든 시트가 하단 내비게이션까지 덮고, 손잡이·배경·모서리·키보드 여백을 한 곳에서 정한다

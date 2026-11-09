@@ -276,51 +276,10 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
               const SizedBox(height: 32),
 
-              // 버튼 영역
-              Row(
-                children: [
-                  // 취소 버튼
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('취소'),
-                    ),
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // 저장 버튼
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton(
-                      onPressed: isLoading ? null : _handleSubmit,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: isLoading
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: theme.colorScheme.onPrimary,
-                              ),
-                            )
-                          : Text(widget.existingSchedule != null ? '수정' : '저장'),
-                    ),
-                  ),
-                ],
+              AppFormActionBar(
+                submitLabel: widget.existingSchedule != null ? '수정' : '저장',
+                onSubmit: _handleSubmit,
+                busy: isLoading,
               ),
 
               // 키보드 여백

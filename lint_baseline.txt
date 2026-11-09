@@ -81,13 +81,11 @@ no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagGroupItem -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagItem -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagList -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildButtonBar -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildColorPicker -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildFormSheet -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildGroupSelector -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildHeader -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildNameField -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildButtonBar -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildColorPicker -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildHeader -
@@ -109,7 +107,6 @@ no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildErrorState -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildTodoList -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_list_page.dart TodoListPage._buildTreeView -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildButtonBar -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDeadlineSelector -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildEmptyTagState -

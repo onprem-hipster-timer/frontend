@@ -58,25 +58,13 @@ class _DurationPickerSheetState extends State<_DurationPickerSheet> {
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('취소'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _picked == Duration.zero
-                      ? null
-                      : () => Navigator.of(context).pop(
-                          _picked > maxPickedDuration
-                              ? maxPickedDuration
-                              : _picked,
-                        ),
-                  child: const Text('확인'),
-                ),
-              ],
+            AppFormActionBar(
+              submitLabel: '확인',
+              onSubmit: _picked == Duration.zero
+                  ? null
+                  : () => Navigator.of(context).pop(
+                      _picked > maxPickedDuration ? maxPickedDuration : _picked,
+                    ),
             ),
           ],
         ),

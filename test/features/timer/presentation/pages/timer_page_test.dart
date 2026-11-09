@@ -1418,7 +1418,7 @@ void main() {
         expect(picker.mode, CupertinoTimerPickerMode.hms);
         expect(picker.initialTimerDuration, const Duration(minutes: 25));
         expect(find.text('시간 정하기'), findsOneWidget);
-        expect(find.widgetWithText(TextButton, '취소'), findsOneWidget);
+        expect(find.widgetWithText(OutlinedButton, '취소'), findsOneWidget);
       });
 
       testWidgets('마우스로 분 바퀴를 끌어 올리면 분이 늘어난다', (tester) async {
@@ -1530,7 +1530,7 @@ void main() {
 
         await openPicker(tester);
         await pick(tester, const Duration(minutes: 12, seconds: 34));
-        await tester.tap(find.widgetWithText(TextButton, '취소'));
+        await tester.tap(find.widgetWithText(OutlinedButton, '취소'));
         await tester.pumpAndSettle();
 
         expect(find.byType(CupertinoTimerPicker), findsNothing);

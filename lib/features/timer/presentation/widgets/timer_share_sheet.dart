@@ -226,17 +226,12 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
           ),
           if (friends != null) _friendList(friends),
           const SizedBox(height: 16),
-          FilledButton(
-            onPressed: !_saving && _canSave(friends?.value)
+          AppFormActionBar(
+            submitLabel: '저장',
+            onSubmit: _canSave(friends?.value)
                 ? () => _save(friends?.value)
                 : null,
-            child: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('저장'),
+            busy: _saving,
           ),
         ],
       ),
