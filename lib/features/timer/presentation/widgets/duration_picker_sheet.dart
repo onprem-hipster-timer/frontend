@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 /// '시간 정하기'에서 고를 수 있는 가장 긴 시간
@@ -46,11 +47,17 @@ class _DurationPickerSheetState extends State<_DurationPickerSheet> {
             Text('시간 정하기', style: Theme.of(context).textTheme.titleLarge),
             SizedBox(
               height: 216,
-              child: CupertinoTimerPicker(
-                mode: CupertinoTimerPickerMode.hms,
-                initialTimerDuration: _picked,
-                onTimerDurationChanged: (duration) =>
-                    setState(() => _picked = duration),
+              // 웹·데스크톱에서도 마우스로 휠을 끌어 돌린다 (기본 스크롤 동작은 마우스 끌기를 받지 않는다)
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(
+                  context,
+                ).copyWith(dragDevices: {...PointerDeviceKind.values}),
+                child: CupertinoTimerPicker(
+                  mode: CupertinoTimerPickerMode.hms,
+                  initialTimerDuration: _picked,
+                  onTimerDurationChanged: (duration) =>
+                      setState(() => _picked = duration),
+                ),
               ),
             ),
             Row(

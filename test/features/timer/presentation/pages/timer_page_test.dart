@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1418,6 +1419,29 @@ void main() {
         expect(picker.initialTimerDuration, const Duration(minutes: 25));
         expect(find.text('시간 정하기'), findsOneWidget);
         expect(find.widgetWithText(TextButton, '취소'), findsOneWidget);
+      });
+
+      testWidgets('마우스로 분 바퀴를 끌어 올리면 분이 늘어난다', (tester) async {
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+
+        await openPicker(tester);
+        await tester.dragFrom(
+          tester.getCenter(find.byType(CupertinoTimerPicker)),
+          const Offset(0, -150),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(confirm());
+        await tester.pumpAndSettle();
+
+        final clock = _clockText(tester)!;
+        expect(clock, isNot('00:25:00'));
+        expect(clock.startsWith('00:'), isTrue);
+        expect(int.parse(clock.split(':')[1]), greaterThan(25));
       });
 
       testWidgets('12분 34초를 확인하면 시계가 00:12:34이고 754초로 시작한다', (tester) async {
