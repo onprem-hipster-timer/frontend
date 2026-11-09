@@ -210,9 +210,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
 
     // 휴식은 활성 타이머보다 먼저 보인다
     final breakSession = ref.watch(breakTimerProvider);
-    final breakComputed =
-        breakSession?.remainingAt(ref.watch(breakClockProvider)()) ??
-        Duration.zero;
+    final breakComputed = breakSession?.remainingAt(now) ?? Duration.zero;
     final breakRemaining = ref
         .watch(breakTickerProvider)
         .when(

@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
-import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -77,7 +76,6 @@ void main() {
       (ref) => (friends ?? () async => <FriendRead>[])(),
     ),
     serverClockProvider.overrideWithValue(ServerClock(deviceNow: () => clock)),
-    breakClockProvider.overrideWithValue(() => clock),
   ];
 
   /// 활성 타이머를 [active]로 고정해 타이머 화면을 그린다

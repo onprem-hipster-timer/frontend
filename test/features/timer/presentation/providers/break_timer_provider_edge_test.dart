@@ -31,7 +31,9 @@ void main() {
         timerWsClientProvider.overrideWithValue(null),
         currentUserProvider.overrideWithValue(null),
         timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
-        breakClockProvider.overrideWithValue(() => now),
+        serverClockProvider.overrideWithValue(
+          ServerClock(deviceNow: () => now),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -239,7 +241,6 @@ void main() {
           timerWsClientProvider.overrideWithValue(null),
           currentUserProvider.overrideWithValue(null),
           timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
-          breakClockProvider.overrideWithValue(() => now),
           serverClockProvider.overrideWithValue(
             ServerClock(deviceNow: () => serverNow),
           ),
@@ -361,7 +362,9 @@ void main() {
           timerWsClientProvider.overrideWithValue(null),
           currentUserProvider.overrideWith((ref) => ref.watch(_signedIn)),
           timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
-          breakClockProvider.overrideWithValue(() => now),
+          serverClockProvider.overrideWithValue(
+            ServerClock(deviceNow: () => now),
+          ),
         ],
       );
       addTearDown(container.dispose);

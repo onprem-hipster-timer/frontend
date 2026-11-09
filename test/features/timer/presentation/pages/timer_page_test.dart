@@ -1509,7 +1509,11 @@ void main() {
         tester,
         timer: timer,
         controller: timerController,
-        overrides: [breakClockProvider.overrideWithValue(() => breakNow)],
+        overrides: [
+          serverClockProvider.overrideWithValue(
+            ServerClock(deviceNow: () => breakNow),
+          ),
+        ],
       );
       return timerController;
     }
@@ -1841,7 +1845,6 @@ void main() {
             serverClockProvider.overrideWithValue(
               ServerClock(deviceNow: () => clock),
             ),
-            breakClockProvider.overrideWithValue(() => breakNow),
             timerHistoryProvider.overrideWith(
               (ref) async => [pausedB, runningA],
             ),
@@ -1924,7 +1927,6 @@ void main() {
             serverClockProvider.overrideWithValue(
               ServerClock(deviceNow: () => clock),
             ),
-            breakClockProvider.overrideWithValue(() => breakNow),
             timerHistoryProvider.overrideWith(
               (ref) async => [pausedB, timeUpA],
             ),
@@ -2347,7 +2349,9 @@ void main() {
                 history: [],
                 controller: controller,
               ),
-              breakClockProvider.overrideWithValue(() => breakNow),
+              serverClockProvider.overrideWithValue(
+                ServerClock(deviceNow: () => breakNow),
+              ),
             ],
           ),
         );
@@ -2377,7 +2381,9 @@ void main() {
                   history: [timer],
                   controller: controller,
                 ),
-                breakClockProvider.overrideWithValue(() => breakNow),
+                serverClockProvider.overrideWithValue(
+                  ServerClock(deviceNow: () => breakNow),
+                ),
               ],
             ),
           );
@@ -2444,7 +2450,9 @@ void main() {
                 timerTickerProvider.overrideWith(
                   (ref) => Stream.value(const Duration(minutes: 20)),
                 ),
-                breakClockProvider.overrideWithValue(() => breakNow),
+                serverClockProvider.overrideWithValue(
+                  ServerClock(deviceNow: () => breakNow),
+                ),
               ],
             ),
           );
@@ -2505,7 +2513,9 @@ void main() {
                 (ref) => Stream.value(Duration.zero),
               ),
               timerControllerProvider.overrideWith(_FakeTimerController.new),
-              breakClockProvider.overrideWithValue(() => breakNow),
+              serverClockProvider.overrideWithValue(
+                ServerClock(deviceNow: () => breakNow),
+              ),
               currentUserProvider.overrideWithValue(null),
             ],
           ),
@@ -2836,7 +2846,11 @@ void main() {
           tester,
           timer: null,
           controller: _FakeTimerController(),
-          overrides: [breakClockProvider.overrideWithValue(() => breakNow)],
+          overrides: [
+            serverClockProvider.overrideWithValue(
+              ServerClock(deviceNow: () => breakNow),
+            ),
+          ],
         );
 
         expect(_modeSwitch(), findsOneWidget);
@@ -2913,7 +2927,9 @@ void main() {
             ],
             controller: _FakeTimerController(),
           ),
-          breakClockProvider.overrideWithValue(() => DateTime(2026, 11, 9, 10)),
+          serverClockProvider.overrideWithValue(
+            ServerClock(deviceNow: () => DateTime(2026, 11, 9, 10)),
+          ),
         ],
       );
 

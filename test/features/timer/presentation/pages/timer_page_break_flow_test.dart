@@ -27,7 +27,6 @@ import '../../../../helpers/timer_fixtures.dart';
 /// 휴식 버튼 자체와 휴식 provider 규칙은 timer_page_test.dart, break_timer_provider_test.dart
 void main() {
   final clock = DateTime.utc(2026, 11, 9, 10, 10);
-  final breakNow = DateTime(2026, 11, 9, 10, 10);
 
   // 10:00에 시작해 10분 센 뒤 일시정지한 A(15분 남음), 10:05에 시작해 5분 센 뒤 일시정지한 B(20분 남음)
   final pausedA = makeTimer(
@@ -89,7 +88,6 @@ void main() {
     timerWsClientProvider.overrideWithValue(null),
     currentUserProvider.overrideWithValue(null),
     serverClockProvider.overrideWithValue(ServerClock(deviceNow: () => clock)),
-    breakClockProvider.overrideWithValue(() => breakNow),
     // 타이머 목록은 읽을 때의 서버 타이머다
     timerHistoryProvider.overrideWith(
       (ref) async => sortTimerHistory(server.values.toList()),

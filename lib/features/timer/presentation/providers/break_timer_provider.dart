@@ -12,10 +12,6 @@ part 'break_timer_provider.g.dart';
 /// 새 휴식의 기본 길이
 const defaultBreakDuration = Duration(minutes: 5);
 
-/// 휴식 시간을 재는 기기 시각. 테스트에서 바꾼다
-@Riverpod(keepAlive: true)
-DateTime Function() breakClock(Ref ref) => DateTime.now;
-
 /// 진행 중인 휴식. [endAt]에 끝나는 [total] 길이의 휴식
 @immutable
 class BreakSession {
@@ -48,6 +44,7 @@ bool blocksBreak(Iterable<TimerRead> timers, DateTime now) => timers.any(
 /// 휴식 카운트다운
 ///
 /// 기기 안에서만 센다. 서버에 보내지 않으므로 타이머 목록·친구 알림에 나오지 않는다.
+/// 타이머와 같은 서버 기준 시각([serverClockProvider])으로 끝나는 시각과 남은 시간을 센다.
 /// 내 활성 타이머 중 하나라도 시간이 남은 채 실행 중(RUNNING)이면 휴식이 없다([blocksBreak]).
 /// 휴식 중에 그런 타이머가 생기면 바로 끝낸다. 일시정지한 타이머는 휴식을 끝내지 않는다.
 /// 로그인한 사용자가 바뀌면(로그아웃 포함) 휴식을 버린다.
@@ -77,7 +74,7 @@ class BreakTimer extends _$BreakTimer {
       (_, next) => _endIfBlocked(next),
     );
     state = BreakSession(
-      endAt: ref.read(breakClockProvider)().add(total),
+      endAt: ref.read(serverClockProvider).now().add(total),
       total: total,
     );
     _endIfBlocked(timers.read());
@@ -100,20 +97,20 @@ class BreakTimer extends _$BreakTimer {
   }
 }
 
-/// 휴식의 남은 시간 ([BreakSession.remainingAt])을 바로 한 번, 이후 1초마다 낸다. 휴식이 없으면 Duration.zero
+/// 휴식의 남은 시간 ([BreakSession.remainingAt], 서버 기준 시각)을 바로 한 번, 이후 1초마다 낸다. 휴식이 없으면 Duration.zero
 @riverpod
 Stream<Duration> breakTicker(Ref ref) async* {
   final session = ref.watch(breakTimerProvider);
-  final now = ref.watch(breakClockProvider);
+  final clock = ref.watch(serverClockProvider);
   if (session == null) {
     yield Duration.zero;
     return;
   }
 
-  yield session.remainingAt(now());
+  yield session.remainingAt(clock.now());
   // yield*는 구독을 취소하면 바로 틱을 멈춘다
   yield* Stream.periodic(
     const Duration(seconds: 1),
-    (_) => session.remainingAt(now()),
+    (_) => session.remainingAt(clock.now()),
   );
 }

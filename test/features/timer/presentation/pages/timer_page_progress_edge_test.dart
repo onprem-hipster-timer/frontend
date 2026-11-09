@@ -65,7 +65,6 @@ void main() {
         clock ?? ServerClock(deviceNow: () => now),
       ),
       timerHistoryProvider.overrideWith((ref) async => history),
-      breakClockProvider.overrideWithValue(() => now),
     ],
     child: MaterialApp(home: home),
   );

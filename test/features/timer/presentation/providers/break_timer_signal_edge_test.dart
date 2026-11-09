@@ -29,10 +29,8 @@ void main() {
   late FakeTimerRepository repository;
   late _FakeWsClient client;
 
-  /// 휴식 시계(기기 시각)
+  /// 서버 기준 시각
   late DateTime now;
-
-  final serverNow = DateTime.utc(2026, 11, 9, 10, 10);
 
   // 10:00에 시작해 5분 쓰고 일시정지한 타이머
   final paused = makeTimer(
@@ -53,7 +51,7 @@ void main() {
   setUp(() {
     repository = FakeTimerRepository()..listActive = () async => [paused];
     client = _FakeWsClient();
-    now = DateTime(2026, 11, 9, 10, 10);
+    now = DateTime.utc(2026, 11, 9, 10, 10);
   });
 
   /// 타이머 화면 없이(휴식 말고 지켜보는 곳 없이) 시작한 컨테이너
@@ -72,9 +70,8 @@ void main() {
         ),
         timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
         todosProvider.overrideWith((ref, groupId) async => <TodoRead>[]),
-        breakClockProvider.overrideWithValue(() => now),
         serverClockProvider.overrideWithValue(
-          ServerClock(deviceNow: () => serverNow),
+          ServerClock(deviceNow: () => now),
         ),
       ],
     );

@@ -1,6 +1,7 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -32,7 +33,9 @@ void main() {
         timerWsClientProvider.overrideWithValue(null),
         currentUserProvider.overrideWithValue(null),
         timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
-        breakClockProvider.overrideWithValue(() => now),
+        serverClockProvider.overrideWithValue(
+          ServerClock(deviceNow: () => now),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -253,5 +256,101 @@ void main() {
     );
     expect(session.remainingAt(DateTime(2026, 11, 9, 10, 5)), Duration.zero);
     expect(session.remainingAt(DateTime(2026, 11, 9, 10, 6)), Duration.zero);
+  });
+
+  group('기기 시계가 서버와 어긋나도 서버 기준 시각으로 센다', () {
+    for (final (name, skew) in [
+      ('늦은', const Duration(minutes: -10)),
+      ('빠른', const Duration(minutes: 10)),
+    ]) {
+      test('기기 시계가 $name 기기에서 끝나는 시각은 서버 시각 기준이고 길이는 그대로다', () {
+        fakeAsync((async) {
+          var server = DateTime.utc(2026, 11, 9, 10);
+          var device = server.add(skew);
+          final clock = ServerClock(deviceNow: () => device)
+            ..addSample(serverDate: server, sentAt: device, receivedAt: device);
+          final container = ProviderContainer(
+            overrides: [
+              timerRepositoryProvider.overrideWithValue(repository),
+              timerWsClientProvider.overrideWithValue(null),
+              currentUserProvider.overrideWithValue(null),
+              timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+              serverClockProvider.overrideWithValue(clock),
+            ],
+          );
+          addTearDown(container.dispose);
+          container.listen(breakTickerProvider, (_, _) {});
+          void pass(Duration by) {
+            server = server.add(by);
+            device = device.add(by);
+            async.elapse(by);
+          }
+
+          breakTimer(container).start(const Duration(minutes: 5));
+          async.elapse(Duration.zero);
+
+          expect(
+            container.read(breakTimerProvider)!.endAt,
+            clock.now().add(const Duration(minutes: 5)),
+          );
+          expect(
+            container.read(breakTimerProvider)!.endAt.difference(server),
+            const Duration(minutes: 5, milliseconds: 500),
+          );
+
+          pass(const Duration(minutes: 4, seconds: 58));
+          expect(remaining(container), const Duration(seconds: 2));
+          pass(const Duration(seconds: 2));
+          expect(remaining(container), Duration.zero);
+        });
+      });
+
+      test(
+        '휴식 중 기기 시계를 ${skew.isNegative ? '뒤로' : '앞으로'} 옮겨도 서버 시각을 다시 맞추면 남은 시간이 그대로다',
+        () {
+          fakeAsync((async) {
+            var server = DateTime.utc(2026, 11, 9, 10);
+            var device = server;
+            final clock = ServerClock(deviceNow: () => device);
+            final container = ProviderContainer(
+              overrides: [
+                timerRepositoryProvider.overrideWithValue(repository),
+                timerWsClientProvider.overrideWithValue(null),
+                currentUserProvider.overrideWithValue(null),
+                timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+                serverClockProvider.overrideWithValue(clock),
+              ],
+            );
+            addTearDown(container.dispose);
+            container.listen(breakTickerProvider, (_, _) {});
+            void pass(Duration by) {
+              server = server.add(by);
+              device = device.add(by);
+              async.elapse(by);
+            }
+
+            breakTimer(container).start(const Duration(minutes: 5));
+            pass(const Duration(minutes: 1));
+            expect(remaining(container), const Duration(minutes: 4));
+
+            // 기기 시계만 옮기고, 그 뒤 타이머 응답들로 서버 시각을 다시 맞춘다
+            device = device.add(skew);
+            for (var i = 0; i < 5; i++) {
+              clock.addSample(
+                serverDate: server,
+                sentAt: device,
+                receivedAt: device,
+              );
+            }
+            pass(const Duration(seconds: 1));
+
+            expect(
+              remaining(container),
+              const Duration(minutes: 3, seconds: 59),
+            );
+          });
+        },
+      );
+    }
   });
 }
