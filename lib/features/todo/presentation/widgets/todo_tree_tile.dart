@@ -617,8 +617,9 @@ class _TodoTimerChip extends ConsumerWidget {
 
 /// [todo]를 연결해 새 타이머를 시작하는 버튼. Todo에 활성 타이머가 있으면 표시하지 않는다
 ///
-/// 새 작업 시작 다이얼로그를 [todo]를 고른 채 열고, 시작하면 타이머 화면으로 간다.
-/// 실패하면 알리고 머문다. 새 타이머를 시작하는 동안에는 누를 수 없다.
+/// 새 작업 시작 다이얼로그를 [todo]를 고른 채 열고, 시작해도 할 일 화면에 머문다.
+/// 시작하면 떠 있던 알림을 닫고 '타이머 보기'(타이머 화면으로 이동)가 있는 알림을 띄운다.
+/// 실패하면 알린다. 새 타이머를 시작하는 동안에는 누를 수 없다.
 ///
 /// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
 class _TodoTimerStartButton extends ConsumerWidget {
@@ -643,16 +644,31 @@ class _TodoTimerStartButton extends ConsumerWidget {
           );
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('타이머 시작 실패: $error'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('타이머 시작 실패: $error'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
       }
       return;
     }
-    if (context.mounted) context.go(AppRoute.timer.path);
+    if (!context.mounted) return;
+    // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
+    final router = GoRouter.of(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('타이머를 시작했습니다'),
+          action: SnackBarAction(
+            label: '타이머 보기',
+            onPressed: () => router.go(AppRoute.timer.path),
+          ),
+        ),
+      );
   }
 
   @override

@@ -184,7 +184,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('시작하면 이 할 일을 연결해 시작하고 타이머 화면으로 간다', (tester) async {
+    testWidgets('시작하면 이 할 일을 연결해 시작하고 할 일 화면에 머물며 알린다', (tester) async {
       await pumpTile(tester, todo());
 
       await openDialog(tester);
@@ -193,6 +193,21 @@ void main() {
       expect(controller.starts, [
         (todoId: 'todo-1', title: '보고서 쓰기', seconds: 25 * 60),
       ]);
+      expect(location(), AppRoute.todo.path);
+      expect(find.text('타이머 화면'), findsNothing);
+      expect(find.widgetWithText(SnackBar, '타이머를 시작했습니다'), findsOneWidget);
+      expect(find.widgetWithText(SnackBarAction, '타이머 보기'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets("알림의 '타이머 보기'를 누르면 타이머 화면으로 간다", (tester) async {
+      await pumpTile(tester, todo());
+
+      await openDialog(tester);
+      await confirm(tester);
+      await tester.tap(find.widgetWithText(SnackBarAction, '타이머 보기'));
+      await tester.pumpAndSettle();
+
       expect(location(), AppRoute.timer.path);
       expect(find.text('타이머 화면'), findsOneWidget);
       await unmount(tester);
@@ -246,7 +261,8 @@ void main() {
       gate.complete();
       await tester.pumpAndSettle();
 
-      expect(location(), AppRoute.timer.path);
+      expect(location(), AppRoute.todo.path);
+      expect(find.text('타이머를 시작했습니다'), findsOneWidget);
       await unmount(tester);
     });
   });

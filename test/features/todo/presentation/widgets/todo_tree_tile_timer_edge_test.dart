@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/network/server_clock.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
@@ -64,6 +65,7 @@ void main() {
     Set<String> expanded = const {},
     TimerController Function()? controller,
     List<Override> overrides = const [],
+    bool liveActiveTimers = false,
   }) async {
     final tree = buildTodoTree(todos);
     router = GoRouter(
@@ -101,7 +103,8 @@ void main() {
         overrides: [
           if (controller != null)
             timerControllerProvider.overrideWith(controller),
-          activeTimersProvider.overrideWith((ref) async => active),
+          if (!liveActiveTimers)
+            activeTimersProvider.overrideWith((ref) async => active),
           todoTimerAggregationsProvider.overrideWith((ref) async => {}),
           serverClockProvider.overrideWithValue(
             ServerClock(deviceNow: () => now),
@@ -280,7 +283,7 @@ void main() {
   });
 
   group('타일에서 시작', () {
-    testWidgets("다이얼로그에서 '연결 안 함'을 고르면 연결 없이 시작하고 타이머 화면으로 간다", (tester) async {
+    testWidgets("다이얼로그에서 '연결 안 함'을 고르면 연결 없이 시작하고 할 일 화면에 머문다", (tester) async {
       final controller = _FakeTimerController();
       await pumpTile(tester, [todo()], controller: () => controller);
 
@@ -291,7 +294,7 @@ void main() {
       expect(controller.starts, [
         (todoId: null, title: '보고서 쓰기', seconds: 25 * 60),
       ]);
-      expect(location(), AppRoute.timer.path);
+      expect(location(), AppRoute.todo.path);
       await unmount(tester);
     });
 
@@ -311,11 +314,11 @@ void main() {
       expect(controller.starts, [
         (todoId: 'todo-2', title: '회의 준비', seconds: 45 * 60),
       ]);
-      expect(location(), AppRoute.timer.path);
+      expect(location(), AppRoute.todo.path);
       await unmount(tester);
     });
 
-    testWidgets('시작에 실패한 뒤 다시 시작하면 타이머 화면으로 간다', (tester) async {
+    testWidgets('시작에 실패한 뒤 다시 시작하면 실패 알림을 시작 알림으로 바꾼다', (tester) async {
       final controller = _FakeTimerController()..error = Exception('서버 오류');
       await pumpTile(tester, [todo()], controller: () => controller);
 
@@ -329,7 +332,10 @@ void main() {
       await confirm(tester);
 
       expect(controller.starts, hasLength(2));
-      expect(location(), AppRoute.timer.path);
+      expect(location(), AppRoute.todo.path);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('타이머 시작 실패'), findsNothing);
+      expect(find.text('타이머를 시작했습니다'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -359,7 +365,7 @@ void main() {
       );
     }
 
-    testWidgets('실제 컨트롤러로 응답을 기다렸다 시작해도 할 일을 연결해 만들고 타이머 화면으로 간다', (
+    testWidgets('실제 컨트롤러로 응답을 기다렸다 시작해도 할 일을 연결해 만들고 할 일 화면에서 알린다', (
       tester,
     ) async {
       final repository = FakeTimerRepository();
@@ -385,7 +391,8 @@ void main() {
       expect(repository.created?.title, '보고서 쓰기');
       expect(repository.created?.allocatedDuration, 25 * 60);
       expect(find.textContaining('타이머 시작 실패'), findsNothing);
-      expect(location(), AppRoute.timer.path);
+      expect(find.text('타이머를 시작했습니다'), findsOneWidget);
+      expect(location(), AppRoute.todo.path);
       await unmount(tester);
     });
 
@@ -404,6 +411,91 @@ void main() {
       expect(find.textContaining('타이머 시작 실패: '), findsOneWidget);
       expect(location(), AppRoute.todo.path);
       expect(startButton(), findsOneWidget);
+      await unmount(tester);
+    });
+  });
+
+  group('타일에서 연달아 시작', () {
+    Finder startButtonOf(String id) =>
+        find.descendant(of: tileOf(id), matching: startButton()).first;
+
+    testWidgets('두 할 일을 연달아 시작해도 알림은 하나만 보이고 닫으면 쌓인 알림이 없다', (tester) async {
+      final controller = _FakeTimerController();
+      await pumpTile(
+        tester,
+        [todo(), todo(id: 'todo-2', title: '회의 준비', parentId: 'todo-1')],
+        expanded: {'todo-1'},
+        controller: () => controller,
+      );
+
+      await tester.tap(startButtonOf('todo-1'));
+      await tester.pumpAndSettle();
+      await confirm(tester);
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      await tester.tap(startButtonOf('todo-2'));
+      await tester.pumpAndSettle();
+      await confirm(tester);
+
+      expect(controller.starts.map((start) => start.todoId), [
+        'todo-1',
+        'todo-2',
+      ]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(location(), AppRoute.todo.path);
+
+      tester
+          .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
+          .hideCurrentSnackBar();
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('시작 알림 뒤에 실패하면 실패 알림으로 바꾼다', (tester) async {
+      final controller = _FakeTimerController();
+      await pumpTile(tester, [todo()], controller: () => controller);
+
+      await openDialog(tester);
+      await confirm(tester);
+      controller.error = Exception('서버 오류');
+      // 시작 버튼이 남도록 활성 타이머 없이 다시 연다
+      await openDialog(tester);
+      await confirm(tester);
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('타이머 시작 실패'), findsOneWidget);
+      expect(find.text('타이머를 시작했습니다'), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('실제 컨트롤러로 시작하면 머문 채 타일에 남은 시간을 보여 준다', (tester) async {
+      final repository = FakeTimerRepository()
+        ..respond = (timerId, status) => makeTimer(
+          id: timerId,
+          status: status,
+          startedAt: now,
+          allocatedDuration: 1500,
+        ).copyWith(todoId: 'todo-1');
+      await pumpTile(
+        tester,
+        [todo()],
+        liveActiveTimers: true,
+        overrides: [
+          timerRepositoryProvider.overrideWithValue(repository),
+          timerWsClientProvider.overrideWithValue(null),
+          currentUserProvider.overrideWithValue(null),
+        ],
+      );
+      expect(startButton(), findsOneWidget);
+      expect(chip(), findsNothing);
+
+      await openDialog(tester);
+      await confirm(tester);
+
+      expect(location(), AppRoute.todo.path);
+      expect(startButton(), findsNothing);
+      expect(chipText('25:00'), findsOneWidget);
       await unmount(tester);
     });
   });
