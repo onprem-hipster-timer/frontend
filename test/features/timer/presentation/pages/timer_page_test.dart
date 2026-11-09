@@ -2583,6 +2583,106 @@ void main() {
     Finder inDashboard(Finder finder) =>
         find.descendant(of: find.byType(TimerDashboard), matching: finder);
 
+    for (final size in const [
+      Size(360, 560),
+      Size(844, 390),
+      Size(800, 1280),
+      Size(1280, 800),
+    ]) {
+      final label = '${size.width.toInt()}x${size.height.toInt()}';
+      // 가로 휴대폰은 다이얼을 왼쪽에, 제목부터 나머지를 오른쪽 칸에 둔다
+      final sideBySide = size.width >= size.height * 1.5 && size.height < 400;
+
+      /// 대시보드의 [header]·다이얼·시계·[caption]·[fab]이 위에서부터 차례로 넘치지 않고 있는지
+      void expectOrder(
+        WidgetTester tester, {
+        required Finder header,
+        Finder? caption,
+        Finder? modes,
+        required Finder fab,
+      }) {
+        expect(tester.takeException(), isNull);
+        final top = tester.getRect(inDashboard(header));
+        final dial = tester.getRect(inDashboard(find.byType(TimerDial)));
+        final clock = tester.getRect(inDashboard(find.byType(DigitalClock)));
+        final button = tester.getRect(fab);
+        if (sideBySide) {
+          expect(top.left, greaterThanOrEqualTo(dial.right));
+        } else {
+          expect(top.bottom, lessThanOrEqualTo(dial.top));
+          expect(dial.bottom, lessThanOrEqualTo(clock.top));
+        }
+        expect(top.bottom, lessThanOrEqualTo(clock.top));
+        var above = clock;
+        for (final finder in [?caption, ?modes]) {
+          final rect = tester.getRect(inDashboard(finder));
+          expect(above.bottom, lessThanOrEqualTo(rect.top));
+          above = rect;
+        }
+        expect(above.bottom, lessThanOrEqualTo(button.top));
+        expect(button.bottom, lessThanOrEqualTo(size.height));
+      }
+
+      testWidgets('$label 화면에서 제목·다이얼·시계와 캡션·제어 버튼을 위에서부터 둔다', (tester) async {
+        setSize(tester, size);
+        await _pumpTimerPage(
+          tester,
+          timer: makeTimer(
+            id: 'timer-1',
+            status: TimerStatus.paused,
+            allocatedDuration: 25 * 60,
+            elapsedTime: 5 * 60,
+          ).copyWith(title: '제목'),
+          controller: _FakeTimerController(),
+        );
+
+        expectOrder(
+          tester,
+          header: find.byType(CurrentTaskDisplay),
+          caption: find.text('일시정지'),
+          fab: _dashboardFabByIcon(Icons.play_arrow),
+        );
+      });
+
+      testWidgets('$label 화면의 대기 상태는 안내 문구를 맨 위에, 작업·휴식 선택을 제어 버튼 위에 둔다', (
+        tester,
+      ) async {
+        setSize(tester, size);
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+
+        expectOrder(
+          tester,
+          header: find.text('진행 중인 작업이 없습니다'),
+          modes: find.byWidgetPredicate((widget) => widget is SegmentedButton),
+          fab: _dashboardFabByIcon(Icons.play_arrow),
+        );
+      });
+
+      testWidgets('$label 화면의 휴식은 휴식 제목을 맨 위에 둔다', (tester) async {
+        setSize(tester, size);
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+        ProviderScope.containerOf(
+          tester.element(find.byType(TimerPage)),
+        ).read(breakTimerProvider.notifier).start(const Duration(minutes: 5));
+        await tester.pump();
+        await tester.pump();
+
+        expectOrder(
+          tester,
+          header: find.text('휴식'),
+          fab: _dashboardFabByIcon(Icons.stop),
+        );
+      });
+    }
+
     testWidgets('좁은 화면은 다이얼만 두고 앱 바에서 타이머 목록 시트를 연다', (tester) async {
       setSize(tester, const Size(360, 800));
       await _pumpTimerPage(

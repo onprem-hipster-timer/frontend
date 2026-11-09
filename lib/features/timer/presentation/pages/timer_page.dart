@@ -166,8 +166,8 @@ const _sideControlsMinWidth = 232.0;
 
 /// 타이머 대시보드
 ///
-/// 다이얼, 작업 제목, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
-/// 높이 400 미만에 폭이 높이의 1.5배 이상인 칸(가로 휴대폰)은 다이얼을 왼쪽에 두고 나머지를 오른쪽에 둡니다.
+/// 작업 제목, 다이얼, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
+/// 높이 400 미만에 폭이 높이의 1.5배 이상인 칸(가로 휴대폰)은 다이얼을 왼쪽에 두고 제목부터 나머지를 오른쪽에 둡니다.
 /// 휴식 중이면 휴식을, 아니면 고른 활성 타이머([activeTimerProvider])를 보여 주고, 다이얼은 남은 시간만 보여 줍니다.
 /// 활성 타이머가 둘 이상이면 다이얼 자리에 타이머마다 한 쪽씩 다이얼을 둔 갤러리([_TimerGallery])를 두고,
 /// 보이는 쪽의 타이머를 고릅니다. 활성 타이머가 있으면 굴리지 않는 '새 타이머' 칩으로 다른 타이머가 도는 중에도
@@ -318,22 +318,22 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
               )
             : null;
 
+        final header = breakSession != null
+            ? Text(
+                '휴식',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            : CurrentTaskDisplay(
+                timer: activeTimer,
+                onTodoChanged: (todo) {
+                  if (!context.mounted) return;
+                  ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
+                },
+              );
+
         final controls = [
-          if (breakSession != null)
-            Text(
-              '휴식',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            )
-          else
-            CurrentTaskDisplay(
-              timer: activeTimer,
-              onTodoChanged: (todo) {
-                if (!context.mounted) return;
-                ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
-              },
-            ),
           DigitalClock(
             duration: breakSession != null
                 ? breakRemaining
@@ -430,7 +430,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                           child: SingleChildScrollView(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: controls,
+                              children: [header, gap, ...controls],
                             ),
                           ),
                         ),
@@ -454,6 +454,8 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 Align(alignment: Alignment.centerRight, child: addTimer),
                 gap,
               ],
+              header,
+              gap,
               Expanded(child: gallery ?? dial),
               gap,
               ...controls,
