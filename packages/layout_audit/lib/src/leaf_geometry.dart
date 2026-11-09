@@ -20,7 +20,7 @@ class ContentLeaf {
   /// 글자 줄마다 하나(이미지는 하나)인 전역 사각형. 클립 전.
   final List<Rect> rawBoxes;
 
-  /// [rawBoxes]를 조상 클립과 화면으로 자른 것.
+  /// [rawBoxes]를 조상 클립과 화면으로 자른 것. 완전히 가려졌으면 비어 있다.
   final List<Rect> visibleBoxes;
 
   /// 모든 조상 클립의 교집합.
@@ -37,6 +37,10 @@ class ContentLeaf {
   /// 이미지는 빈 문자열.
   final String text;
 
+  /// 화면·클립과 겹치는 부분이 있다. 겹침은 보이는 leaf끼리만, 이탈은 모든 leaf를 본다.
+  bool get isVisible => visibleBoxes.isNotEmpty;
+
+  /// 보이는 부분의 경계. [isVisible]일 때만 쓴다.
   Rect get bounds => unionRect(visibleBoxes);
 
   double get visibleArea => totalArea(visibleBoxes);
@@ -107,9 +111,6 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
     if (visible.width > 1 && visible.height > 1) {
       visibleBoxes.add(visible);
     }
-  }
-  if (visibleBoxes.isEmpty) {
-    return null;
   }
   return ContentLeaf(
     box: box,

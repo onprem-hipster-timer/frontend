@@ -135,7 +135,10 @@ class _Audit {
     }
     final raw = <_Raw>[
       ..._movement(leaves),
-      ..._overlaps(leaves),
+      ..._overlaps([
+        for (final leaf in leaves)
+          if (leaf.isVisible) leaf,
+      ]),
       for (final leaf in leaves)
         if (!_moving.contains(leaf.box)) ..._edges(leaf),
     ];
@@ -182,7 +185,7 @@ class _Audit {
             severity: LayoutSeverity.notice,
             message:
                 '[이동] ${_describe(leaf)} 프레임 사이에 ${formatPx(shift)}px 이동했습니다',
-            rects: [leaf.bounds],
+            rects: [unionRect(leaf.rawBoxes)],
             locations: [sourceLocationOf(leaf.box)],
             texts: [leaf.text],
           ),
@@ -353,7 +356,8 @@ class _Audit {
 
     final ellipsized = box.overflow == TextOverflow.ellipsis ||
         box.overflow == TextOverflow.fade;
-    if (!ellipsized) {
+    // 화면에 보이지 않는 글자는 화면 이탈만 따진다.
+    if (leaf.isVisible && !ellipsized) {
       final (_, clipped) = maxOvershoot(leaf.rawBoxes, [
         if (leaf.contentClipRect != null) leaf.contentClipRect!,
         // visible이면 제 상자 밖도 그려지므로 잘린 것이 아니다.
@@ -380,7 +384,7 @@ class _Audit {
       }
     }
 
-    if (ellipsized && box.didExceedMaxLines) {
+    if (leaf.isVisible && ellipsized && box.didExceedMaxLines) {
       add(
         LayoutFindingKind.truncation,
         LayoutSeverity.notice,

@@ -438,4 +438,16 @@ void main() {
     expect(skipped.message, contains('2001개'));
     expect(skipped.message, contains('maxLeaves(2000)'));
   });
+
+  testWidgets('화면 밖으로 완전히 나간 텍스트도 이탈이다', (tester) async {
+    await pumpInApp(
+      tester,
+      Stack(
+          clipBehavior: Clip.none, children: [at(400, 0, squareText('AAAA'))]),
+    );
+
+    final offscreen = ofKind(auditLayout(tester), LayoutFindingKind.offscreen);
+    expect(offscreen, hasLength(1));
+    expect(offscreen.single.message, contains('화면 오른쪽 밖으로 120.0px'));
+  });
 }
