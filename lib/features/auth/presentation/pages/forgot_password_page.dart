@@ -6,7 +6,7 @@
 // 로그인한 사용자의 비밀번호 변경도 이 화면에서 한다. 이메일은 고를 수 없고 계정 이메일로 코드를
 // 보낸다. 현재 비밀번호만으로는 바꿀 수 없다(backend가 메일 복구 세션이 아닌 변경을 거절한다).
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';

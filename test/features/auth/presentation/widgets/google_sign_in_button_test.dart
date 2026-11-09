@@ -1,7 +1,7 @@
 // Google 브랜딩 가이드라인의 버튼 규격을 지키는지 확인한다
 // https://developers.google.com/identity/branding-guidelines
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/providers/auth_provider.dart';

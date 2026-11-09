@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 앱 전용 시맨틱 컬러를 정의하는 ThemeExtension.
 ///

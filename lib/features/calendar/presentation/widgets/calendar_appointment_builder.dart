@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 

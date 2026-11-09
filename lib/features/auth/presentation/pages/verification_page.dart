@@ -4,7 +4,7 @@
 // 앱은 API 플로우를 쓰므로 메일 링크를 열어도 인증이 끝나지 않는다. 메일의 6자리 코드를 입력받는다.
 // 이메일 인증 전에는 세션이 없으므로, 인증을 마치면 로그인 화면으로 보낸다.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';

@@ -2,7 +2,7 @@
 //
 // 계층형 할 일 트리의 각 노드를 렌더링합니다.
 // 드래그 앤 드롭으로 부모 변경을 지원합니다.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/shared/api/rest/export.dart';

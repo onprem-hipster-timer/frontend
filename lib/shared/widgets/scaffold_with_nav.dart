@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
 /// 떠있는(Floating) 하단 네비게이션 바가 있는 스캐폴드

@@ -2,7 +2,7 @@
 //
 // Kratos가 브라우저 이동 중 오류를 만나면 이 화면으로 보낸다 (예: 만료되거나 잘못된 메일 링크).
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 

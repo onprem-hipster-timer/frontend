@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/widgets/choice_dialog.dart';
 

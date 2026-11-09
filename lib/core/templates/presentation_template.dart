@@ -51,7 +51,7 @@
 /// }
 
 /// 4. ConsumerWidget 페이지 예시
-/// import 'package:flutter/material.dart';
+/// import 'package:material_ui/material_ui.dart';
 /// import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// class SchedulePage extends ConsumerWidget {

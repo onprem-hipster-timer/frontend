@@ -3,13 +3,16 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 // 앱 메인 위젯
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/core/theme/app_colors.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
 import 'package:momeet/router.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show GlobalCupertinoLocalizations;
+import 'package:flutter_localizations/flutter_localizations.dart'
+    show GlobalWidgetsLocalizations;
 
 class MoMeetApp extends ConsumerWidget {
   const MoMeetApp({super.key});

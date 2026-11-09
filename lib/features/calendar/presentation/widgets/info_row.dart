@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 아이콘 + 라벨 + 값을 한 행에 표시하는 범용 위젯.
 ///

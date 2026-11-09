@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 인라인 에러 배너 (AnimatedSize로 부드럽게 표시/숨김)
 ///
