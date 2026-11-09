@@ -166,7 +166,9 @@ const _sideControlsMinWidth = 232.0;
 ///
 /// 다이얼, 작업 제목, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
 /// 높이 400 미만에 폭이 높이의 1.5배 이상인 칸(가로 휴대폰)은 다이얼을 왼쪽에 두고 나머지를 오른쪽에 둡니다.
-/// 휴식 중이면 휴식을, 아니면 활성 타이머를 보여 주고, 다이얼은 남은 시간만 보여 줍니다.
+/// 휴식 중이면 휴식을, 아니면 고른 활성 타이머([activeTimerProvider])를 보여 주고, 다이얼은 남은 시간만 보여 줍니다.
+/// 활성 타이머가 있으면 맨 위에 활성 타이머 칩 줄을 둡니다. 둘 이상이면 타이머마다 칩을 두고 누른 타이머를 보여 주며,
+/// 끝에 '새 타이머' 칩으로 다른 타이머가 도는 중에도 새 작업을 시작합니다. 휴식 중에는 칩 줄이 없습니다.
 /// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌어 각각의 시간을 고릅니다. 휴식은 서버에 보내지 않고 바로 시작합니다.
 class TimerDashboard extends ConsumerStatefulWidget {
   const TimerDashboard({super.key});
@@ -221,11 +223,9 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     final breakOver = breakSession != null && breakRemaining == Duration.zero;
     final idle = breakSession == null && activeTimer == null;
     final pending = _breakSelected ? _pendingBreakDuration : _pendingDuration;
+    final myTimers = ref.watch(myActiveTimersProvider).value ?? const [];
     // 보이는 타이머가 일시정지여도 시간이 남은 채 실행 중인 다른 내 타이머가 있으면 휴식 버튼을 두지 않는다
-    final breakBlocked = blocksBreak(
-      ref.watch(myActiveTimersProvider).value ?? const [],
-      now,
-    );
+    final breakBlocked = blocksBreak(myTimers, now);
 
     final timeUp =
         breakSession == null &&
@@ -278,6 +278,15 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 ),
                 color: dialColor,
               );
+
+        final chips = breakSession == null && myTimers.isNotEmpty
+            ? _ActiveTimerChips(
+                timers: myTimers,
+                focusedId: activeTimer?.id,
+                starting: controllerState.isLoading,
+                onAdd: () => _showStartTimerDialog(context, ref),
+              )
+            : null;
 
         final controls = [
           if (breakSession != null)
@@ -359,9 +368,9 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                         .read(breakTimerProvider.notifier)
                         .start(_pendingBreakDuration),
               onStop: () => _stopTimer(context, ref),
-              onPause: () => _pauseTimer(context, ref),
-              onResume: () => _resumeTimer(context, ref),
-              onExtend: () => _extendTimer(context, ref),
+              onPause: () => _pauseTimer(context, ref, activeTimer!.id),
+              onResume: () => _resumeTimer(context, ref, activeTimer!.id),
+              onExtend: () => _extendTimer(context, ref, activeTimer!.id),
             ),
         ];
 
@@ -383,7 +392,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: controls,
+                        children: [?chips, if (chips != null) gap, ...controls],
                       ),
                     ),
                   ),
@@ -400,6 +409,8 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           ),
           child: Column(
             children: [
+              ?chips,
+              if (chips != null) gap,
               Expanded(child: dial),
               gap,
               ...controls,
@@ -497,10 +508,17 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     }
   }
 
+  /// 보이는 타이머를 [timerId]로 묶어 둔다. 명령으로 기본 타이머가 바뀌어도 대시보드가 다른 타이머로 넘어가지 않는다
+  void _keepFocus(String timerId) =>
+      ref.read(focusedTimerIdProvider.notifier).focus(timerId);
+
   /// 타이머 일시정지
-  void _pauseTimer(BuildContext context, WidgetRef ref) async {
+  void _pauseTimer(BuildContext context, WidgetRef ref, String timerId) async {
+    _keepFocus(timerId);
     try {
-      await ref.read(timerControllerProvider.notifier).pauseTimer();
+      await ref
+          .read(timerControllerProvider.notifier)
+          .pauseTimer(timerId: timerId);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -511,9 +529,12 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
   }
 
   /// 타이머 재개
-  void _resumeTimer(BuildContext context, WidgetRef ref) async {
+  void _resumeTimer(BuildContext context, WidgetRef ref, String timerId) async {
+    _keepFocus(timerId);
     try {
-      await ref.read(timerControllerProvider.notifier).resumeTimer();
+      await ref
+          .read(timerControllerProvider.notifier)
+          .resumeTimer(timerId: timerId);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -524,11 +545,12 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
   }
 
   /// 타이머 5분 연장
-  void _extendTimer(BuildContext context, WidgetRef ref) async {
+  void _extendTimer(BuildContext context, WidgetRef ref, String timerId) async {
+    _keepFocus(timerId);
     try {
       await ref
           .read(timerControllerProvider.notifier)
-          .extendTimer(by: _extendBy);
+          .extendTimer(timerId: timerId, by: _extendBy);
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -536,6 +558,103 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         ).showSnackBar(SnackBar(content: Text('연장 실패: ${error.toString()}')));
       }
     }
+  }
+}
+
+/// 대시보드 맨 위의 활성 타이머 칩 줄
+///
+/// [timers]가 둘 이상이면 타이머마다 제목, 남은 시간, 진행 중·일시정지 아이콘을 담은 칩을 두고,
+/// 누르면 그 타이머를 대시보드가 보이게 고른다. 타이머 칩은 폭이 모자라면 옆으로 굴린다.
+/// 오른쪽 끝의 '새 타이머' 칩은 굴리지 않고 늘 보이며 [onAdd]로 새 작업 시작을 연다.
+class _ActiveTimerChips extends ConsumerWidget {
+  const _ActiveTimerChips({
+    required this.timers,
+    required this.focusedId,
+    required this.starting,
+    required this.onAdd,
+  });
+
+  final List<TimerRead> timers;
+
+  /// 대시보드가 보이는 타이머 id
+  final String? focusedId;
+
+  /// 새 타이머를 시작하는 중. 그동안 '새 타이머'를 누를 수 없다
+  final bool starting;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final now =
+        ref.watch(serverNowProvider).value ??
+        ref.watch(serverClockProvider).now();
+
+    return Row(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                if (timers.length >= 2)
+                  for (final timer in timers)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        key: ValueKey('timer-chip-${timer.id}'),
+                        showCheckmark: false,
+                        selected: timer.id == focusedId,
+                        avatar: Icon(
+                          timer.status == TimerStatus.running
+                              ? Icons.play_arrow
+                              : Icons.pause,
+                          semanticLabel: timer.status == TimerStatus.running
+                              ? '진행 중'
+                              : '일시정지',
+                        ),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 120),
+                              child: Text(
+                                timer.title ??
+                                    timer.todo?.title ??
+                                    timer.schedule?.title ??
+                                    '알 수 없는 작업',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              formatDuration(displayRemaining(timer, now)),
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                color: isTimeUp(timer, now)
+                                    ? theme.colorScheme.error
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        onSelected: (_) => ref
+                            .read(focusedTimerIdProvider.notifier)
+                            .focus(timer.id),
+                      ),
+                    ),
+              ],
+            ),
+          ),
+        ),
+        ActionChip(
+          avatar: const Icon(Icons.add),
+          label: const Text('새 타이머'),
+          onPressed: starting ? null : onAdd,
+        ),
+      ],
+    );
   }
 }
 

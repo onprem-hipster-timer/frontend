@@ -275,10 +275,36 @@ class MyActiveTimers extends _$MyActiveTimers {
   }
 }
 
-/// 활성 타이머 (내 활성 타이머 중 가장 최근에 시작한 것)
+/// 대시보드에서 고른 내 활성 타이머 id. 고르지 않았으면 null
+///
+/// 좁은 화면과 넓은 화면이 같은 값을 쓰도록 위젯 상태가 아니라 여기에 둔다.
 @riverpod
-AsyncValue<TimerRead?> activeTimer(Ref ref) =>
-    ref.watch(myActiveTimersProvider).whenData((timers) => timers.firstOrNull);
+class FocusedTimerId extends _$FocusedTimerId {
+  @override
+  String? build() => null;
+
+  void focus(String? timerId) => state = timerId;
+}
+
+/// [timers](최근에 시작한 순) 중 대시보드가 보일 타이머
+///
+/// [focusedId] 타이머가 있으면 그것, 없으면(고르지 않았거나 끝났으면) 가장 최근에 시작한 실행 중 타이머,
+/// 실행 중인 타이머가 없으면 가장 최근에 시작한 타이머다.
+TimerRead? focusedTimer(List<TimerRead> timers, String? focusedId) =>
+    timers.where((timer) => timer.id == focusedId).firstOrNull ??
+    timers.where((timer) => timer.status == TimerStatus.running).firstOrNull ??
+    timers.firstOrNull;
+
+/// 활성 타이머 (대시보드가 보이는 타이머, [focusedTimer]). 타이머 명령에 id를 주지 않으면 이 타이머에 보낸다
+///
+/// 테스트: test/features/timer/presentation/providers/focused_timer_test.dart
+@riverpod
+AsyncValue<TimerRead?> activeTimer(Ref ref) {
+  final focusedId = ref.watch(focusedTimerIdProvider);
+  return ref
+      .watch(myActiveTimersProvider)
+      .whenData((timers) => focusedTimer(timers, focusedId));
+}
 
 /// 타이머 히스토리 조회
 ///
@@ -383,7 +409,7 @@ class TimerController extends _$TimerController {
     }
   }
 
-  /// 타이머 시작
+  /// 타이머 시작. 시작한 타이머를 대시보드가 보이게 고른다
   Future<void> startTimer({
     String? relatedTodoId,
     String? title,
@@ -405,6 +431,7 @@ class TimerController extends _$TimerController {
             ),
           );
       _apply(timer);
+      ref.read(focusedTimerIdProvider.notifier).focus(timer.id);
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);

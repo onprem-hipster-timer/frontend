@@ -615,7 +615,7 @@ void main() {
       await tester.pump();
 
       expect(controller.extendedBy, const Duration(minutes: 5));
-      expect(controller.extendedTimerId, isNull);
+      expect(controller.extendedTimerId, 'timer-1');
       expect(controller.resumed, isFalse);
     });
 
@@ -1738,76 +1738,90 @@ void main() {
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
     });
 
-    testWidgets(
-      '가장 최근 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식 버튼이 없고, 그 타이머가 멈추면 다시 보인다',
-      (tester) async {
-        final clock = DateTime.utc(2026, 11, 9, 10, 10);
-        // 10:00에 시작해 실행 중인 A와 10:05에 시작해 일시정지한 B
-        final runningA = makeTimer(
-          id: 'a',
-          status: TimerStatus.running,
-          startedAt: DateTime.utc(2026, 11, 9, 10),
-          allocatedDuration: 25 * 60,
-        );
-        final pausedB = makeTimer(
-          id: 'b',
-          status: TimerStatus.paused,
-          startedAt: DateTime.utc(2026, 11, 9, 10, 5),
-          allocatedDuration: 25 * 60,
-          elapsedTime: 60,
-        ).copyWith(title: 'B 작업');
-        final repository = FakeTimerRepository()
-          ..listActive = () async => [runningA, pausedB];
-        await tester.pumpWidget(
-          pumpApp(
-            const TimerPage(),
-            overrides: [
-              allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
-              timerFriendActivityProvider.overrideWith(
-                (ref) => const Stream<TimerWsTimerEvent>.empty(),
-              ),
-              timerRepositoryProvider.overrideWithValue(repository),
-              timerWsClientProvider.overrideWithValue(null),
-              currentUserProvider.overrideWithValue(null),
-              serverClockProvider.overrideWithValue(
-                ServerClock(deviceNow: () => clock),
-              ),
-              breakClockProvider.overrideWithValue(() => breakNow),
-              timerHistoryProvider.overrideWith(
-                (ref) async => [pausedB, runningA],
-              ),
-              timerTickerProvider.overrideWith((ref) {
-                final active = ref.watch(activeTimerProvider).value;
-                return Stream.value(
-                  active == null
-                      ? Duration.zero
-                      : displayRemaining(active, clock),
-                );
-              }),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('고른 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식 버튼이 없고, 그 타이머가 멈추면 다시 보인다', (
+      tester,
+    ) async {
+      final clock = DateTime.utc(2026, 11, 9, 10, 10);
+      // 10:00에 시작해 실행 중인 A와 10:05에 시작해 일시정지한 B
+      final runningA = makeTimer(
+        id: 'a',
+        status: TimerStatus.running,
+        startedAt: DateTime.utc(2026, 11, 9, 10),
+        allocatedDuration: 25 * 60,
+      );
+      final pausedB = makeTimer(
+        id: 'b',
+        status: TimerStatus.paused,
+        startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+        allocatedDuration: 25 * 60,
+        elapsedTime: 60,
+      ).copyWith(title: 'B 작업');
+      final repository = FakeTimerRepository()
+        ..listActive = () async => [runningA, pausedB];
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
+            timerFriendActivityProvider.overrideWith(
+              (ref) => const Stream<TimerWsTimerEvent>.empty(),
+            ),
+            timerRepositoryProvider.overrideWithValue(repository),
+            timerWsClientProvider.overrideWithValue(null),
+            currentUserProvider.overrideWithValue(null),
+            serverClockProvider.overrideWithValue(
+              ServerClock(deviceNow: () => clock),
+            ),
+            breakClockProvider.overrideWithValue(() => breakNow),
+            timerHistoryProvider.overrideWith(
+              (ref) async => [pausedB, runningA],
+            ),
+            timerTickerProvider.overrideWith((ref) {
+              final active = ref.watch(activeTimerProvider).value;
+              return Stream.value(
+                active == null
+                    ? Duration.zero
+                    : displayRemaining(active, clock),
+              );
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // 기본으로 보이는 실행 중인 A 대신 B를 고른다
+      await tester.tap(find.byKey(const ValueKey('timer-chip-b')));
+      await tester.pumpAndSettle();
 
-        expect(inDashboard(find.text('B 작업')), findsOneWidget);
-        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
-        expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(CurrentTaskDisplay),
+          matching: find.text('B 작업'),
+        ),
+        findsOneWidget,
+      );
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
 
-        ProviderScope.containerOf(tester.element(find.byType(TimerPage)))
-            .read(myActiveTimersProvider.notifier)
-            .apply(
-              runningA.copyWith(
-                status: TimerStatus.paused,
-                elapsedTime: 10 * 60,
-                updatedAt: clock,
-              ),
-            );
-        await tester.pumpAndSettle();
+      ProviderScope.containerOf(tester.element(find.byType(TimerPage)))
+          .read(myActiveTimersProvider.notifier)
+          .apply(
+            runningA.copyWith(
+              status: TimerStatus.paused,
+              elapsedTime: 10 * 60,
+              updatedAt: clock,
+            ),
+          );
+      await tester.pumpAndSettle();
 
-        expect(inDashboard(find.text('B 작업')), findsOneWidget);
-        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
-      },
-    );
+      expect(
+        find.descendant(
+          of: find.byType(CurrentTaskDisplay),
+          matching: find.text('B 작업'),
+        ),
+        findsOneWidget,
+      );
+      expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+    });
 
     testWidgets('다른 타이머가 실행 중이어도 시간이 끝났으면 휴식 버튼을 보인다', (tester) async {
       final clock = DateTime.utc(2026, 11, 9, 10, 10);
@@ -1857,8 +1871,18 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // 시간이 끝난 A가 기본으로 보이므로 일시정지한 B를 고른다
+      await tester.tap(find.byKey(const ValueKey('timer-chip-b')));
+      await tester.pumpAndSettle();
 
-      expect(inDashboard(find.text('B 작업')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(CurrentTaskDisplay),
+          matching: find.text('B 작업'),
+        ),
+        findsOneWidget,
+      );
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
       expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
     });
 
@@ -3701,6 +3725,340 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  });
+
+  // ============================================================
+  // TimerPage — 여러 활성 타이머 (칩 줄과 고른 타이머)
+  // ============================================================
+  group('여러 타이머', () {
+    final clock = DateTime.utc(2026, 11, 9, 10, 10);
+
+    // 10:00에 시작해 실행 중인 A(15분 남음)와 10:05에 시작해 일시정지한 B(20분 남음)
+    final runningA = makeTimer(
+      id: 'a',
+      status: TimerStatus.running,
+      startedAt: DateTime.utc(2026, 11, 9, 10),
+      allocatedDuration: 25 * 60,
+    ).copyWith(title: 'A 작업');
+    final pausedB = makeTimer(
+      id: 'b',
+      status: TimerStatus.paused,
+      startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+      allocatedDuration: 25 * 60,
+      elapsedTime: 5 * 60,
+    ).copyWith(title: 'B 작업');
+
+    late FakeTimerRepository repository;
+
+    /// [timers]를 내 활성 타이머로 받아 타이머 화면을 [size]로 그린다
+    Future<void> pumpLive(
+      WidgetTester tester,
+      List<TimerRead> timers, {
+      Size? size,
+      List<TodoRead> todos = const [],
+    }) async {
+      if (size != null) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+      }
+      repository = FakeTimerRepository()..listActive = () async => timers;
+      // 명령 응답은 받은 타이머의 상태만 바꾼다
+      repository.respond = (timerId, status) {
+        final held = timers.where((timer) => timer.id == timerId).first;
+        return held.copyWith(
+          status: status,
+          startedAt: status == TimerStatus.running ? clock : held.startedAt,
+          updatedAt: clock,
+        );
+      };
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            allTodosProvider.overrideWith((ref) async => todos),
+            timerFriendActivityProvider.overrideWith(
+              (ref) => const Stream<TimerWsTimerEvent>.empty(),
+            ),
+            timerRepositoryProvider.overrideWithValue(repository),
+            timerWsClientProvider.overrideWithValue(null),
+            currentUserProvider.overrideWithValue(null),
+            serverClockProvider.overrideWithValue(
+              ServerClock(deviceNow: () => clock),
+            ),
+            timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+            timerTickerProvider.overrideWith((ref) {
+              final active = ref.watch(activeTimerProvider).value;
+              return Stream.value(
+                active == null
+                    ? Duration.zero
+                    : displayRemaining(active, clock),
+              );
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Finder timerChip(String id) => find.byKey(ValueKey('timer-chip-$id'));
+    Finder addChip() => find.widgetWithText(ActionChip, '새 타이머');
+    Finder inChip(String id, Finder finder) =>
+        find.descendant(of: timerChip(id), matching: finder);
+    bool selected(WidgetTester tester, String id) =>
+        tester.widget<ChoiceChip>(timerChip(id)).selected;
+
+    Finder inDashboard(Finder finder) =>
+        find.descendant(of: find.byType(TimerDashboard), matching: finder);
+
+    /// 대시보드의 작업 제목
+    Finder title(String text) => find.descendant(
+      of: find.byType(CurrentTaskDisplay),
+      matching: find.text(text),
+    );
+
+    testWidgets('활성 타이머가 하나면 타이머 칩 없이 새 타이머 칩만 둔다', (tester) async {
+      await pumpLive(tester, [runningA]);
+
+      expect(addChip(), findsOneWidget);
+      expect(timerChip('a'), findsNothing);
+      expect(title('A 작업'), findsOneWidget);
+    });
+
+    testWidgets('활성 타이머가 없으면 칩 줄이 없다', (tester) async {
+      await pumpLive(tester, []);
+
+      expect(addChip(), findsNothing);
+      expect(find.byType(ChoiceChip), findsNothing);
+    });
+
+    testWidgets('둘 이상이면 타이머마다 제목·남은 시간·진행 중/일시정지 칩을 두고 실행 중인 타이머를 기본으로 보인다', (
+      tester,
+    ) async {
+      await pumpLive(tester, [runningA, pausedB]);
+
+      expect(inChip('a', find.text('A 작업')), findsOneWidget);
+      expect(inChip('a', find.text('00:15:00')), findsOneWidget);
+      expect(inChip('a', find.byIcon(Icons.play_arrow)), findsOneWidget);
+      expect(inChip('b', find.text('B 작업')), findsOneWidget);
+      expect(inChip('b', find.text('00:20:00')), findsOneWidget);
+      expect(inChip('b', find.byIcon(Icons.pause)), findsOneWidget);
+      expect(addChip(), findsOneWidget);
+
+      // B가 더 나중에 시작했어도 실행 중인 A를 보인다
+      expect(selected(tester, 'a'), isTrue);
+      expect(selected(tester, 'b'), isFalse);
+      expect(title('A 작업'), findsOneWidget);
+      expect(_clockText(tester), '00:15:00');
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+    });
+
+    testWidgets('실행 중인 타이머가 없으면 가장 최근에 시작한 타이머를 보인다', (tester) async {
+      final pausedA = runningA.copyWith(
+        status: TimerStatus.paused,
+        elapsedTime: 10 * 60,
+      );
+      await pumpLive(tester, [pausedA, pausedB]);
+
+      expect(selected(tester, 'b'), isTrue);
+      expect(title('B 작업'), findsOneWidget);
+    });
+
+    testWidgets('칩을 누르면 다이얼·시계·제목·버튼이 그 타이머를 보이고 명령도 그 타이머에 보낸다', (
+      tester,
+    ) async {
+      await pumpLive(tester, [runningA, pausedB]);
+
+      await tester.tap(timerChip('b'));
+      await tester.pumpAndSettle();
+
+      expect(selected(tester, 'b'), isTrue);
+      expect(selected(tester, 'a'), isFalse);
+      expect(title('B 작업'), findsOneWidget);
+      expect(_clockText(tester), '00:20:00');
+      expect(
+        tester.widget<TimerDial>(find.byType(TimerDial)).remaining,
+        const Duration(minutes: 20),
+      );
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+      expect(
+        tester
+            .widget<TimerShareButton>(
+              find.descendant(
+                of: find.byType(CurrentTaskDisplay),
+                matching: find.byType(TimerShareButton),
+              ),
+            )
+            .timer
+            .id,
+        'b',
+      );
+
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'resume:b']);
+      // 재개한 B가 실행 중인 채로 보인다
+      expect(title('B 작업'), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+    });
+
+    testWidgets('고른 타이머를 일시정지해도 대시보드는 그 타이머에 머문다', (tester) async {
+      final runningB = pausedB.copyWith(
+        status: TimerStatus.running,
+        startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+        elapsedTime: 0,
+      );
+      await pumpLive(tester, [runningA, runningB]);
+      // 둘 다 실행 중이면 가장 최근에 시작한 B가 기본이다
+      expect(selected(tester, 'b'), isTrue);
+
+      await tester.tap(_dashboardFabByIcon(Icons.pause));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'pause:b']);
+      expect(title('B 작업'), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+    });
+
+    testWidgets('고른 타이머를 완료하면 그 타이머에 보내고 기본 타이머로 돌아간다', (tester) async {
+      await pumpLive(tester, [runningA, pausedB]);
+      await tester.tap(timerChip('b'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(_dashboardFabByIcon(Icons.check));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '완료'));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'stop:b']);
+      expect(timerChip('b'), findsNothing);
+      expect(title('A 작업'), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+    });
+
+    testWidgets('고른 타이머의 시간이 끝났으면 5분 연장을 그 타이머에 보낸다', (tester) async {
+      final expiredB = pausedB.copyWith(elapsedTime: 25 * 60);
+      await pumpLive(tester, [runningA, expiredB]);
+      await tester.tap(timerChip('b'));
+      await tester.pumpAndSettle();
+
+      expect(inDashboard(find.text('시간 종료')), findsOneWidget);
+      await tester.tap(_dashboardFabByIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls.take(2), ['list', 'update:b']);
+      expect(repository.updated?.allocatedDuration, 30 * 60);
+    });
+
+    testWidgets('창 폭이 600을 넘나들어도 고른 타이머가 그대로다', (tester) async {
+      await pumpLive(tester, [runningA, pausedB], size: const Size(360, 800));
+      await tester.tap(timerChip('b'));
+      await tester.pumpAndSettle();
+
+      tester.view.physicalSize = const Size(1024, 800);
+      await tester.pumpAndSettle();
+      expect(find.byType(TimerHistoryList), findsOneWidget);
+      expect(selected(tester, 'b'), isTrue);
+      expect(title('B 작업'), findsOneWidget);
+
+      tester.view.physicalSize = const Size(360, 800);
+      await tester.pumpAndSettle();
+      expect(title('B 작업'), findsOneWidget);
+    });
+
+    testWidgets('좁은 화면에서 칩이 많으면 옆으로 굴리고 넘치지 않는다', (tester) async {
+      final timers = [
+        for (var i = 0; i < 5; i++)
+          makeTimer(
+            id: 't$i',
+            status: TimerStatus.paused,
+            startedAt: DateTime.utc(2026, 11, 9, 10, i),
+            allocatedDuration: 25 * 60,
+          ).copyWith(title: '아주 긴 작업 이름 $i번이 칩 안에서 잘린다'),
+      ];
+      await pumpLive(tester, timers, size: const Size(360, 640));
+
+      expect(tester.takeException(), isNull);
+      final row = find.ancestor(
+        of: timerChip('t0'),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is SingleChildScrollView &&
+              widget.scrollDirection == Axis.horizontal,
+        ),
+      );
+      expect(row, findsOneWidget);
+      // 새 타이머 칩은 굴리지 않아도 보이고, 마지막 타이머 칩은 굴려야 보인다
+      expect(tester.getRect(addChip()).right, lessThanOrEqualTo(360));
+      expect(tester.getRect(timerChip('t0')).left, greaterThan(360));
+
+      await tester.drag(row, const Offset(-2000, 0));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(timerChip('t0')).right, lessThanOrEqualTo(360));
+      await tester.tap(timerChip('t0'));
+      await tester.pumpAndSettle();
+      expect(title('아주 긴 작업 이름 0번이 칩 안에서 잘린다'), findsOneWidget);
+      await tester.tap(addChip());
+      await tester.pumpAndSettle();
+      expect(find.text('새 작업 시작'), findsOneWidget);
+    });
+
+    testWidgets('새 타이머 칩은 다른 타이머가 실행 중이어도 새 작업 시작을 열고 시작한 타이머를 보인다', (
+      tester,
+    ) async {
+      await pumpLive(tester, [runningA, pausedB]);
+      await tester.tap(timerChip('b'));
+      await tester.pumpAndSettle();
+      repository.respond = (timerId, status) => makeTimer(
+        id: 'c',
+        status: status,
+        startedAt: clock,
+        allocatedDuration: 25 * 60,
+      ).copyWith(title: 'C 작업', updatedAt: clock);
+
+      await tester.tap(addChip());
+      await tester.pumpAndSettle();
+      expect(find.text('새 작업 시작'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextField, '작업명'), 'C 작업');
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'create']);
+      expect(timerChip('c'), findsOneWidget);
+      expect(selected(tester, 'c'), isTrue);
+      expect(title('C 작업'), findsOneWidget);
+    });
+
+    testWidgets('휴식 중에는 칩 줄을 숨기고 휴식을 끝내면 다시 보인다', (tester) async {
+      final pausedA = runningA.copyWith(
+        status: TimerStatus.paused,
+        elapsedTime: 10 * 60,
+      );
+      await pumpLive(tester, [pausedA, pausedB]);
+      expect(timerChip('a'), findsOneWidget);
+
+      await tester.tap(_dashboardFabByIcon(Icons.coffee));
+      await tester.pumpAndSettle();
+
+      expect(inDashboard(find.text('휴식')), findsOneWidget);
+      expect(timerChip('a'), findsNothing);
+      expect(addChip(), findsNothing);
+
+      await tester.tap(_dashboardFabByIcon(Icons.stop));
+      await tester.pumpAndSettle();
+      expect(timerChip('a'), findsOneWidget);
+      expect(addChip(), findsOneWidget);
+    });
+
+    testWidgets('고른 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식 버튼이 없다', (tester) async {
+      await pumpLive(tester, [runningA, pausedB]);
+      await tester.tap(timerChip('b'));
+      await tester.pumpAndSettle();
+
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
+    });
   });
 }
 

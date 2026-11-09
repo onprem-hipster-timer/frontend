@@ -215,7 +215,7 @@ void main() {
     /// 서버 기준 현재 시각
     final serverNow = DateTime.utc(2026, 11, 9, 10, 10);
 
-    // 10:00에 시작해 실행 중인 A와 10:05에 시작해 일시정지한 B. 가장 최근 타이머는 B다
+    // 10:00에 시작해 실행 중인 A와 10:05에 시작해 일시정지한 B. 가장 최근에 시작한 타이머는 B다
     final runningA = makeTimer(
       id: 'a',
       status: TimerStatus.running,
@@ -251,8 +251,15 @@ void main() {
       return container;
     }
 
-    test('가장 최근 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식을 두지 않는다', () async {
+    /// 대시보드가 일시정지한 B를 보이게 고른다
+    void focusB(ProviderContainer container) {
+      container.listen(activeTimerProvider, (_, _) {});
+      container.read(focusedTimerIdProvider.notifier).focus('b');
+    }
+
+    test('보이는 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식을 두지 않는다', () async {
       final container = await bootWith([runningA, pausedB]);
+      focusB(container);
       expect(container.read(activeTimerProvider).value?.id, 'b');
 
       breakTimer(container).start(const Duration(minutes: 5));
@@ -260,12 +267,13 @@ void main() {
       expect(container.read(breakTimerProvider), isNull);
     });
 
-    test('휴식 중에 가장 최근이 아닌 타이머가 실행 중이 되면 휴식이 끝난다', () async {
+    test('휴식 중에 보이지 않는 타이머가 실행 중이 되면 휴식이 끝난다', () async {
       final pausedA = runningA.copyWith(
         status: TimerStatus.paused,
         elapsedTime: 2 * 60,
       );
       final container = await bootWith([pausedA, pausedB]);
+      focusB(container);
       breakTimer(container).start(const Duration(minutes: 5));
       expect(container.read(breakTimerProvider), isNotNull);
 
