@@ -153,8 +153,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Google로 계속하기'));
-    await tester.tap(find.text('Google로 계속하기'));
+    await tester.ensureVisible(find.text('Google 계정으로 계속하기'));
+    await tester.tap(find.text('Google 계정으로 계속하기'));
     // 브라우저가 Google로 떠나는 동안 진행 표시가 계속 돌므로 settle을 기다리지 않는다
     await tester.pump();
     await tester.pump();
