@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
+import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -47,7 +48,11 @@ void main() {
     }
   }
 
-  Widget app(Widget home, {ServerClock? clock}) => ProviderScope(
+  Widget app(
+    Widget home, {
+    ServerClock? clock,
+    List<TimerRead> history = const [],
+  }) => ProviderScope(
     overrides: [
       allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
       timerFriendActivityProvider.overrideWith(
@@ -59,7 +64,8 @@ void main() {
       serverClockProvider.overrideWithValue(
         clock ?? ServerClock(deviceNow: () => now),
       ),
-      timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+      timerHistoryProvider.overrideWith((ref) async => history),
+      breakClockProvider.overrideWithValue(() => now),
     ],
     child: MaterialApp(home: home),
   );
@@ -210,6 +216,48 @@ void main() {
     expect(find.text('시간 종료'), findsNothing);
     await tick(tester, 1);
     expect(clockText(tester), '00:14:59');
+
+    await unmount(tester);
+  });
+
+  testWidgets('넓은 화면과 목록 시트가 같은 휴식을 보이고, 시트에서 재개하면 휴식이 끝난다', (tester) async {
+    setSize(tester, const Size(1200, 900));
+    addTearDown(tester.view.reset);
+    repository.listActive = () async => [pausedB];
+    repository.respond = (id, status) =>
+        pausedB.copyWith(status: status, startedAt: now, updatedAt: now);
+    await tester.pumpWidget(app(const TimerPage(), history: [pausedB]));
+    await tester.pump();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TimerPage)),
+    );
+    container
+        .read(breakTimerProvider.notifier)
+        .start(const Duration(minutes: 5));
+    await tester.pump();
+    await tick(tester, 2);
+    expect(find.text('휴식'), findsOneWidget);
+    expect(clockText(tester), '00:04:58');
+
+    // 좁은 화면으로 바꿔 목록을 시트로 연다
+    setSize(tester, const Size(400, 900));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.history));
+    await tester.pumpAndSettle();
+    expect(find.byType(TimerDashboard), findsOneWidget);
+    expect(clockText(tester), '00:04:58');
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(TimerHistoryItem),
+        matching: find.byIcon(Icons.play_arrow),
+      ),
+    );
+    await tester.pump();
+
+    expect(container.read(breakTimerProvider), isNull);
+    expect(find.text('휴식'), findsNothing);
+    expect(clockText(tester), '00:20:00');
 
     await unmount(tester);
   });
