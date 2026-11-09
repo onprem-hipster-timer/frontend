@@ -406,6 +406,7 @@ void main() {
 
     expect(findings, hasLength(1));
     expect(findings.single.severity, LayoutSeverity.info);
+    expect(findings.single.message, startsWith('[점검 건너뜀] '));
   });
 
   testWidgets('SingleChildScrollView로 잘린 부분도 잘라냄·이탈로 보지 않는다', (tester) async {
@@ -424,5 +425,17 @@ void main() {
 
     expect(tester.getRect(find.text('Item 0')).top, -10);
     expect(auditLayout(tester), isEmpty);
+  });
+
+  test('점검 실패·건너뜀 발견은 info이고 같은 접두어를 쓴다', () {
+    final failed = LayoutFinding.auditFailed(StateError('x'));
+    expect(failed.severity, LayoutSeverity.info);
+    expect(failed.message, startsWith('[점검 실패] '));
+    expect(failed.message, contains('x'));
+
+    final skipped = LayoutFinding.auditSkipped(leaves: 2001, maxLeaves: 2000);
+    expect(skipped.severity, LayoutSeverity.info);
+    expect(skipped.message, contains('2001개'));
+    expect(skipped.message, contains('maxLeaves(2000)'));
   });
 }

@@ -82,7 +82,7 @@ void main() {
       contains(
         isA<(LayoutSeverity, String)>()
             .having((r) => r.$1, 'severity', LayoutSeverity.info)
-            .having((r) => r.$2, 'message', contains('검사 실패')),
+            .having((r) => r.$2, 'message', contains('점검 실패')),
       ),
     );
   });

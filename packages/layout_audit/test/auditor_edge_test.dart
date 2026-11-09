@@ -59,7 +59,7 @@ void main() {
     expect(tester.takeException(), isNotNull);
     final f = auditLayout(tester);
     expect(f, isNotEmpty);
-    expect(f.any((e) => e.message.contains('검사 실패')), isFalse);
+    expect(f.any((e) => e.message.contains('점검 실패')), isFalse);
   });
 
   testWidgets('다이얼로그가 뒤 화면 글자를 덮는 것은 겹침이 아니다', (tester) async {

@@ -28,6 +28,23 @@ class LayoutFinding {
     this.count = 1,
   });
 
+  /// 점검 자체가 오류로 끝났음을 알린다. 테스트를 실패시키지 않도록 info다.
+  LayoutFinding.auditFailed(Object error)
+      : this(
+          kind: LayoutFindingKind.overlap,
+          severity: LayoutSeverity.info,
+          message: '[점검 실패] 레이아웃 점검 중 오류가 났습니다: $error',
+        );
+
+  /// 글자·이미지가 너무 많아 점검을 건너뛰었음을 알린다.
+  LayoutFinding.auditSkipped({required int leaves, required int maxLeaves})
+      : this(
+          kind: LayoutFindingKind.overlap,
+          severity: LayoutSeverity.info,
+          message:
+              '[점검 건너뜀] 텍스트·이미지가 $leaves개로 maxLeaves($maxLeaves)를 넘어 검사를 건너뜁니다',
+        );
+
   final LayoutFindingKind kind;
   final LayoutSeverity severity;
 

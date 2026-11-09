@@ -101,13 +101,7 @@ List<LayoutFinding> auditRenderTree(
   try {
     return _Audit(viewRect, hitTest, options, previousFrame).run(roots);
   } on Object catch (error) {
-    return [
-      LayoutFinding(
-        kind: LayoutFindingKind.overlap,
-        severity: LayoutSeverity.info,
-        message: '[검사 실패] 레이아웃 검사 중 오류가 났습니다: $error',
-      ),
-    ];
+    return [LayoutFinding.auditFailed(error)];
   }
 }
 
@@ -133,11 +127,9 @@ class _Audit {
     final leaves = collectContentLeaves(roots, viewRect);
     if (leaves.length > options.maxLeaves) {
       return [
-        LayoutFinding(
-          kind: LayoutFindingKind.overlap,
-          severity: LayoutSeverity.info,
-          message:
-              '[겹침] 텍스트·이미지가 ${leaves.length}개로 maxLeaves(${options.maxLeaves})를 넘어 검사를 건너뜁니다',
+        LayoutFinding.auditSkipped(
+          leaves: leaves.length,
+          maxLeaves: options.maxLeaves,
         ),
       ];
     }

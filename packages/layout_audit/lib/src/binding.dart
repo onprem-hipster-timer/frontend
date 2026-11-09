@@ -197,7 +197,7 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
       return LayoutReport(
         name: name,
         caseLabel: caseLabel,
-        findings: [_failure(error)],
+        findings: [LayoutFinding.auditFailed(error)],
       );
     }
   }
@@ -207,7 +207,7 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
       final report = LayoutReport(
         name: name,
         caseLabel: caseLabel,
-        findings: [_failure(error)],
+        findings: [LayoutFinding.auditFailed(error)],
       );
       config.sink.onReport?.call(report);
       (config.sink.writeLine ?? debugPrint)(report.describe());
@@ -216,9 +216,3 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
     }
   }
 }
-
-LayoutFinding _failure(Object error) => LayoutFinding(
-      kind: LayoutFindingKind.overlap,
-      severity: LayoutSeverity.info,
-      message: '[점검 실패] 자동 레이아웃 점검 중 오류가 났습니다: $error',
-    );
