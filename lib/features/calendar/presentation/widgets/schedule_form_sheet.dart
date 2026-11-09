@@ -48,6 +48,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   final DateFormat _dateTimeFormat = DateFormat('M월 d일 (E) HH:mm', 'ko');
   final DateFormat _dateFormat = DateFormat('M월 d일 (E)', 'ko');
 
+  String _format(DateTime time) =>
+      (_isAllDay ? _dateFormat : _dateTimeFormat).format(time);
+
   @override
   void initState() {
     super.initState();
@@ -173,91 +176,24 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
               const SizedBox(height: 16),
 
-              // 시작 시간
-              const AppSectionHeader('시작'),
-              const SizedBox(height: 8),
-              InkWell(
+              AppPickerField(
+                label: '시작',
+                icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
+                value: _format(_startTime),
                 onTap: () => _selectDateTime(context, isStartTime: true),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: theme.colorScheme.outline),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _isAllDay ? Icons.calendar_today : Icons.schedule,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _isAllDay
-                              ? _dateFormat.format(_startTime)
-                              : _dateTimeFormat.format(_startTime),
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_drop_down,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                ),
               ),
 
               const SizedBox(height: 16),
 
-              // 종료 시간
-              const AppSectionHeader('종료'),
-              const SizedBox(height: 8),
-              InkWell(
+              AppPickerField(
+                label: '종료',
+                icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
+                value: _format(_endTime),
                 onTap: () => _selectDateTime(context, isStartTime: false),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: theme.colorScheme.outline),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _isAllDay ? Icons.calendar_today : Icons.schedule,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _isAllDay
-                              ? _dateFormat.format(_endTime)
-                              : _dateTimeFormat.format(_endTime),
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_drop_down,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
-                ),
+                errorText: !_isAllDay && _endTime.isBefore(_startTime)
+                    ? '종료 시간은 시작 시간보다 늦어야 합니다'
+                    : null,
               ),
-
-              // 시간 유효성 검사 에러 표시
-              if (!_isAllDay && _endTime.isBefore(_startTime))
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    '종료 시간은 시작 시간보다 늦어야 합니다',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                ),
 
               const SizedBox(height: 16),
 

@@ -121,7 +121,16 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
               const SizedBox(height: 20),
 
               // 마감일 선택
-              _buildDeadlineSelector(theme),
+              AppPickerField(
+                label: '마감일',
+                icon: Icons.calendar_today,
+                value: _selectedDeadline == null
+                    ? null
+                    : '${_selectedDeadline!.year}년 ${_selectedDeadline!.month}월 ${_selectedDeadline!.day}일',
+                placeholder: '선택 안 함',
+                onTap: () => _selectDeadline(context),
+                onClear: () => setState(() => _selectedDeadline = null),
+              ),
 
               const SizedBox(height: 24),
 
@@ -247,62 +256,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                     ),
                   );
                 }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 마감일 선택기
-  Widget _buildDeadlineSelector(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppSectionHeader('마감일'),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () => _selectDeadline(context),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.5),
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _selectedDeadline != null
-                        ? '${_selectedDeadline!.year}년 ${_selectedDeadline!.month}월 ${_selectedDeadline!.day}일'
-                        : '마감일 선택 (선택사항)',
-                    style: TextStyle(
-                      color: _selectedDeadline != null
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-                if (_selectedDeadline != null)
-                  IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () {
-                      setState(() {
-                        _selectedDeadline = null;
-                      });
-                    },
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
-            ),
           ),
         ),
       ],
