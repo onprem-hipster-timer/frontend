@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'auditor.dart';
+import 'binding.dart';
 import 'devices.dart';
 import 'overflow_recorder.dart';
 import 'report.dart';
@@ -55,6 +56,10 @@ extension LayoutAuditTester on WidgetTester {
         ),
       ],
     );
+    final binding = this.binding;
+    if (binding is LayoutAuditBinding) {
+      binding.skipAutoAudit();
+    }
     emitLayoutReport(report, strict: strict, sink: sink);
     return report;
   }

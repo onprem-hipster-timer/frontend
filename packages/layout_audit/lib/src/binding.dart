@@ -91,6 +91,10 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
   Map<String, String> get _env => config.environment ?? Platform.environment;
 
   LayoutReport? _pending;
+  bool _skipCurrent = false;
+
+  /// 지금 테스트는 이미 명시 모드로 보고했으니 끝날 때 다시 감사하지 않는다.
+  void skipAutoAudit() => _skipCurrent = true;
   bool _matrixApplied = false;
 
   @override
@@ -100,6 +104,7 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
     String description = '',
   }) {
     _pending = null;
+    _skipCurrent = false;
     final active = config.enabled &&
         !isDisabled(_env) &&
         !(config.skipTests?.hasMatch(description) ?? false);
@@ -111,7 +116,7 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
     return super.runTest(
       () async {
         final overflows = await recordLayoutOverflows(testBody, forward: true);
-        _pending = _audit(description, overflows);
+        _pending = _skipCurrent ? null : _audit(description, overflows);
       },
       invariantTester,
       description: description,
