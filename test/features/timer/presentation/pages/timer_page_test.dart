@@ -583,6 +583,71 @@ void main() {
       expect(controller.extendedTimerId, 'timer-1');
       expect(controller.extendedBy, const Duration(minutes: 5));
     });
+
+    testWidgets('연장 응답을 기다리는 사이 완료하면 늘린 뒤 정지를 보내고 정지 응답을 받아야 완료를 알린다', (
+      tester,
+    ) async {
+      final clock = DateTime.utc(2026, 11, 9, 10, 30);
+      final repository = FakeTimerRepository()
+        ..listActive = () async => [expired];
+      await tester.pumpWidget(
+        pumpApp(
+          const TimerPage(),
+          overrides: [
+            allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
+            timerFriendActivityProvider.overrideWith(
+              (ref) => const Stream<TimerWsTimerEvent>.empty(),
+            ),
+            timerRepositoryProvider.overrideWithValue(repository),
+            timerWsClientProvider.overrideWithValue(null),
+            currentUserProvider.overrideWithValue(null),
+            serverClockProvider.overrideWithValue(
+              ServerClock(deviceNow: () => clock),
+            ),
+            timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+            timerTickerProvider.overrideWith((ref) {
+              final active = ref.watch(activeTimerProvider).value;
+              return Stream.value(
+                active == null
+                    ? Duration.zero
+                    : displayRemaining(active, clock),
+              );
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 늘리기(PATCH)가 바로 끝나지 않는다
+      final patched = Completer<void>();
+      repository.gate = patched.future;
+      await tester.tap(_dashboardFabByIcon(Icons.add));
+      await tester.pump();
+
+      final stopped = Completer<void>();
+      repository.gate = stopped.future;
+      await tester.tap(_dashboardFabByIcon(Icons.check));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '완료'));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'update:timer-1']);
+      expect(find.text('작업을 완료했습니다'), findsNothing);
+
+      patched.complete();
+      await tester.pump();
+
+      expect(repository.calls, ['list', 'update:timer-1', 'stop:timer-1']);
+      expect(find.text('작업을 완료했습니다'), findsNothing);
+
+      stopped.complete();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('작업을 완료했습니다'), findsOneWidget);
+      expect(repository.calls, ['list', 'update:timer-1', 'stop:timer-1']);
+      expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+    });
   });
 
   // ============================================================

@@ -407,7 +407,9 @@ class TimerController extends _$TimerController {
   /// 타이머 정지
   ///
   /// [timerId]를 주면 해당 타이머를 정지하고, 생략 시 활성 타이머를 정지합니다.
-  /// 되돌릴 수 없는 명령이라 응답을 받은 뒤에 반영합니다.
+  /// 되돌릴 수 없는 명령이라 응답을 받은 뒤에 반영하고, 정지 응답을 받아야 끝납니다.
+  /// 같은 타이머의 명령이 응답을 기다리는 중이면 그 응답(실패도)을 기다렸다 보냅니다.
+  /// 정지를 기다리는 같은 타이머의 정지는 따로 보내지 않고 그 결과를 함께 받습니다.
   Future<void> stopTimer({String? timerId}) async {
     final id = timerId ?? _active()?.id;
     if (id == null) {
@@ -415,7 +417,19 @@ class TimerController extends _$TimerController {
       state = AsyncValue.error(error, StackTrace.current);
       throw error;
     }
-    await _command(id, send: (repository) => repository.stopTimer(id));
+    await (_stopping[id] ??= _stop(id).whenComplete(() {
+      _stopping.remove(id);
+    }));
+  }
+
+  Future<void> _stop(String timerId) async {
+    while (_inFlight.containsKey(timerId)) {
+      await _inFlight[timerId];
+    }
+    await _command(
+      timerId,
+      send: (repository) => repository.stopTimer(timerId),
+    );
   }
 
   /// 타이머 일시정지
@@ -466,7 +480,7 @@ class TimerController extends _$TimerController {
   /// 타이머 연장
   ///
   /// [timerId]를 주면 해당 타이머를, 생략 시 활성 타이머를 [by]만큼 늘린 뒤(`PATCH allocated_duration`) 재개합니다.
-  /// 늘리기에 실패하거나 응답이 PAUSED가 아니면(이미 실행 중) 재개하지 않습니다.
+  /// 늘리기에 실패하거나 응답이 PAUSED가 아니면(이미 실행 중), 늘리는 사이 정지를 요청했으면 재개하지 않습니다.
   Future<void> extendTimer({String? timerId, required Duration by}) async {
     final active = _active();
     final timer = timerId == null || timerId == active?.id
@@ -487,7 +501,9 @@ class TimerController extends _$TimerController {
         TimerUpdate(allocatedDuration: timer.allocatedDuration + by.inSeconds),
       ),
     );
-    if (extended?.status != TimerStatus.paused) return;
+    if (extended?.status != TimerStatus.paused || _stopping.containsKey(id)) {
+      return;
+    }
     await resumeTimer(timerId: id);
   }
 
@@ -495,8 +511,11 @@ class TimerController extends _$TimerController {
       .read(activeTimerProvider)
       .when(data: (timer) => timer, loading: () => null, error: (_, _) => null);
 
-  /// 응답을 기다리는 명령의 타이머 ID. 같은 타이머에 겹친 명령은 보내지 않는다
-  final _pending = <String>{};
+  /// 타이머 ID별 응답을 기다리는 명령. 응답·실패를 받으면 끝난다. 같은 타이머에 겹친 명령은 보내지 않는다
+  final _inFlight = <String, Future<void>>{};
+
+  /// 타이머 ID별 요청한 정지. 정지를 기다리는 동안 연장은 재개하지 않는다
+  final _stopping = <String, Future<void>>{};
 
   /// [timerId]에 명령을 보낸다.
   ///
@@ -508,7 +527,9 @@ class TimerController extends _$TimerController {
     TimerRead Function(TimerRead timer, DateTime now)? show,
     required Future<TimerRead> Function(TimerRepository repository) send,
   }) async {
-    if (!_pending.add(timerId)) return null;
+    if (_inFlight.containsKey(timerId)) return null;
+    final answered = Completer<void>();
+    _inFlight[timerId] = answered.future;
     final timers = ref.exists(myActiveTimersProvider)
         ? ref.read(myActiveTimersProvider.notifier)
         : null;
@@ -536,7 +557,8 @@ class TimerController extends _$TimerController {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
     } finally {
-      _pending.remove(timerId);
+      _inFlight.remove(timerId);
+      answered.complete();
     }
   }
 }

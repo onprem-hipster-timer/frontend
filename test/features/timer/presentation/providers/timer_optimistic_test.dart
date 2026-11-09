@@ -129,17 +129,24 @@ void main() {
     expect(c.read(timerControllerProvider).hasError, isTrue);
   });
 
-  test('응답을 기다리는 타이머에 또 명령하면 보내지 않는다', () async {
+  test('응답을 기다리는 타이머에 또 일시정지·재개하면 보내지 않고, 완료는 그 응답 뒤에 보낸다', () async {
     final c = await boot(_held(TimerStatus.running));
 
     final first = controller(c).pauseTimer(timerId: 't1');
     await pumpEventQueue();
     await controller(c).resumeTimer(timerId: 't1');
-    await controller(c).stopTimer(timerId: 't1');
+    await controller(c).pauseTimer(timerId: 't1');
+    final stop = controller(c).stopTimer(timerId: 't1');
+    await pumpEventQueue();
+    expect(repository.calls.where((call) => call != 'list'), ['pause:t1']);
 
     gate.complete();
     await first;
-    expect(repository.calls.where((call) => call != 'list'), ['pause:t1']);
+    await stop;
+    expect(repository.calls.where((call) => call != 'list'), [
+      'pause:t1',
+      'stop:t1',
+    ]);
   });
 
   test('응답 뒤에는 같은 타이머에 다시 명령할 수 있다', () async {
