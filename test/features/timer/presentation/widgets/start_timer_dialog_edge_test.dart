@@ -118,7 +118,7 @@ void main() {
 
       expect(titleText(tester), '회의 준비');
       await start(tester);
-      expect(result?.todo, meeting);
+      expect(result?.todos, [meeting]);
       expect(result?.title, '회의 준비');
     });
 
@@ -130,7 +130,7 @@ void main() {
 
       expect(titleText(tester), '보고서 초안');
       await start(tester);
-      expect(result?.todo, meeting);
+      expect(result?.todos, [meeting]);
       expect(result?.title, '보고서 초안');
     });
 
@@ -146,7 +146,7 @@ void main() {
 
       expect(titleText(tester), '회의 준비');
       await start(tester);
-      expect(result?.todo, meeting);
+      expect(result?.todos, [meeting]);
       expect(result?.title, '회의 준비');
     });
 
@@ -168,7 +168,7 @@ void main() {
       await start(tester);
 
       expect(result?.title, '집중');
-      expect(result?.todo, report);
+      expect(result?.todos, [report]);
     });
 
     testWidgets('할 일을 읽는 동안에도 처음 연결할 할 일 제목으로 작업명을 채우고, 읽은 뒤 고친 작업명을 덮지 않는다', (
@@ -185,7 +185,7 @@ void main() {
       expect(titleText(tester), '보고서 초안');
       await start(tester);
       expect(result?.title, '보고서 초안');
-      expect(result?.todo, report);
+      expect(result?.todos, [report]);
     });
   });
 
@@ -201,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
       await start(tester);
 
-      expect(result?.todo?.id, 'todo-b');
+      expect(result?.todos.map((todo) => todo.id), ['todo-b']);
     });
 
     testWidgets('영문 제목은 대소문자를 가리지 않고 찾는다', (tester) async {
@@ -236,7 +236,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(fieldShows('연결 안 함'), findsOneWidget);
       await start(tester);
-      expect(result?.todo, isNull);
+      expect(result?.todos, isEmpty);
     });
 
     testWidgets('검색한 채 닫았다 다시 열면 모든 할 일을 보인다', (tester) async {
@@ -281,7 +281,7 @@ void main() {
       await closePicker(tester);
       await start(tester);
 
-      expect(result?.todo?.id, 'todo-1');
+      expect(result?.todos.map((todo) => todo.id), ['todo-1']);
     });
 
     testWidgets('할 일을 읽지 못해도 처음 연결할 할 일로 시작한다', (tester) async {
@@ -298,7 +298,7 @@ void main() {
 
       await start(tester);
 
-      expect(result?.todo, report);
+      expect(result?.todos, [report]);
       expect(result?.title, '보고서 쓰기');
     });
 
@@ -322,7 +322,7 @@ void main() {
       expect(fieldShows('회의 준비'), findsOneWidget);
       await start(tester);
 
-      expect(result?.todo, meeting);
+      expect(result?.todos, [meeting]);
       expect(result?.title, '회의 준비');
     });
 
@@ -343,7 +343,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(fieldShows('회의 준비'), findsOneWidget);
       await start(tester);
-      expect(result?.todo, meeting);
+      expect(result?.todos, [meeting]);
     });
   });
 
@@ -398,7 +398,7 @@ void main() {
         await start(tester);
 
         expect(closed, isTrue);
-        expect(result?.todo?.id, 'todo-19-more');
+        expect(result?.todos.map((todo) => todo.id), ['todo-19-more']);
       });
     }
   });

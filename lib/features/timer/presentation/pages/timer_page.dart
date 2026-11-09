@@ -428,14 +428,29 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
       initialDuration: _pendingDuration,
     );
     if (input == null || !context.mounted) return;
+    final controller = ref.read(timerControllerProvider.notifier);
+    if (input.todos.length >= 2) {
+      final failed = await controller.startTimers(
+        todos: input.todos,
+        duration: input.duration,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        failed.isEmpty
+            ? const SnackBar(content: Text('타이머를 시작했습니다'))
+            : SnackBar(
+                content: Text(startFailureMessage(failed)),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+      );
+      return;
+    }
     try {
-      await ref
-          .read(timerControllerProvider.notifier)
-          .startTimer(
-            relatedTodoId: input.todo?.id,
-            title: input.title,
-            allocatedDurationSeconds: input.duration.inSeconds,
-          );
+      await controller.startTimer(
+        relatedTodoId: input.todos.firstOrNull?.id,
+        title: input.title,
+        allocatedDurationSeconds: input.duration.inSeconds,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,

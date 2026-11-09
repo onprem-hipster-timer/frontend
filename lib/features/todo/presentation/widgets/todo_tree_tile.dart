@@ -619,7 +619,8 @@ class _TodoTimerChip extends ConsumerWidget {
 ///
 /// 새 작업 시작 다이얼로그를 [todo]를 고른 채 열고, 시작해도 할 일 화면에 머문다.
 /// 시작하면 떠 있던 알림을 닫고 '타이머 보기'(타이머 화면으로 이동)가 있는 알림을 띄운다.
-/// 실패하면 알린다. 새 타이머를 시작하는 동안에는 누를 수 없다.
+/// 실패하면 알린다. 다이얼로그에서 할 일을 여럿 고르면 할 일마다 시작하고, 시작하지 못한 할 일만 알린다.
+/// 새 타이머를 시작하는 동안에는 누를 수 없다.
 ///
 /// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
 class _TodoTimerStartButton extends ConsumerWidget {
@@ -634,41 +635,49 @@ class _TodoTimerStartButton extends ConsumerWidget {
       initialTodo: todo,
     );
     if (input == null || !context.mounted) return;
-    try {
-      await ref
-          .read(timerControllerProvider.notifier)
-          .startTimer(
-            relatedTodoId: input.todo?.id,
-            title: input.title,
-            allocatedDurationSeconds: input.duration.inSeconds,
-          );
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('타이머 시작 실패: $error'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+    final controller = ref.read(timerControllerProvider.notifier);
+    var failed = const <TodoRead>[];
+    Object? error;
+    if (input.todos.length >= 2) {
+      failed = await controller.startTimers(
+        todos: input.todos,
+        duration: input.duration,
+      );
+    } else {
+      try {
+        await controller.startTimer(
+          relatedTodoId: input.todos.firstOrNull?.id,
+          title: input.title,
+          allocatedDurationSeconds: input.duration.inSeconds,
+        );
+      } catch (e) {
+        error = e;
       }
-      return;
     }
     if (!context.mounted) return;
-    // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
-    final router = GoRouter.of(context);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    if (error != null || failed.isNotEmpty) {
+      messenger.showSnackBar(
         SnackBar(
-          content: const Text('타이머를 시작했습니다'),
-          action: SnackBarAction(
-            label: '타이머 보기',
-            onPressed: () => router.go(AppRoute.timer.path),
+          content: Text(
+            error != null ? '타이머 시작 실패: $error' : startFailureMessage(failed),
           ),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
+      return;
+    }
+    // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
+    final router = GoRouter.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('타이머를 시작했습니다'),
+        action: SnackBarAction(
+          label: '타이머 보기',
+          onPressed: () => router.go(AppRoute.timer.path),
+        ),
+      ),
+    );
   }
 
   @override

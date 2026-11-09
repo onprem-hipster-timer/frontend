@@ -35,23 +35,28 @@ class StartTimerInput {
   const StartTimerInput({
     required this.title,
     required this.duration,
-    this.todo,
+    this.todos = const [],
   });
 
-  /// 작업명. 비워 두면 연결한 할 일의 제목, 그것도 없으면 '새 작업'
+  /// 작업명. 비워 두면 연결한 할 일의 제목, 그것도 없으면 '새 작업'. 할 일이 둘 이상이면 쓰지 않는다
   final String title;
 
-  /// 연결한 할 일. 연결하지 않으면 null
-  final TodoRead? todo;
+  /// 연결한 할 일. 연결하지 않으면 비어 있다. 둘 이상이면 할 일마다 그 제목으로 타이머를 하나씩 시작한다
+  final List<TodoRead> todos;
 
   /// 집중 시간
   final Duration duration;
 }
 
+/// 타이머를 시작하지 못한 [failed] 할 일을 알리는 문구
+String startFailureMessage(List<TodoRead> failed) =>
+    '타이머 시작 실패: ${failed.map((todo) => todo.title).join(', ')}';
+
 /// 새 작업 시작 다이얼로그. 분 칸을 [initialDuration]으로 채우고 [initialTodo]를 연결해 연다. 취소하면 null
 ///
-/// 할 일은 [allTodosProvider] 중 [canLinkTimer]인 것을 제목으로 찾아 고른다.
-/// 작업명이 비었거나 앞서 고른 할 일의 제목 그대로면 고른 할 일의 제목으로 채운다.
+/// 할 일은 [allTodosProvider] 중 [canLinkTimer]인 것을 제목으로 찾아 고르고, 체크해 여럿을 고를 수 있다.
+/// 할 일을 하나 고르면 작업명이 비었거나 앞서 고른 할 일의 제목 그대로일 때 그 할 일의 제목으로 채운다.
+/// 둘 이상 고르면 작업명 칸을 막는다. 할 일마다 그 제목으로 타이머를 하나씩 시작한다.
 ///
 /// 테스트: test/features/timer/presentation/widgets/start_timer_dialog_test.dart
 Future<StartTimerInput?> showStartTimerDialog(
@@ -85,8 +90,8 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
     text: '${widget.initialDuration.inMinutes}',
   );
 
-  /// 연결할 할 일. 연결하지 않으면 null
-  late TodoRead? _todo = widget.initialTodo;
+  /// 연결할 할 일. 연결하지 않으면 비어 있다
+  late List<TodoRead> _todos = [?widget.initialTodo];
 
   /// 할 일 제목으로 채운 작업명. 사용자가 고치지 않았으면 다른 할 일을 고를 때 바꾼다
   late String? _filledTitle = widget.initialTodo?.title;
@@ -99,14 +104,14 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
   }
 
   Future<void> _pickTodo(List<TodoRead> todos) async {
-    final picked = await showDialog<({TodoRead? todo})>(
+    final picked = await showDialog<({List<TodoRead> todos})>(
       context: context,
-      builder: (_) => _TodoPicker(todos: todos, selected: _todo),
+      builder: (_) => _TodoPicker(todos: todos, selected: _todos),
     );
     if (picked == null || !mounted) return;
-    final todo = picked.todo;
     setState(() {
-      _todo = todo;
+      _todos = picked.todos;
+      final todo = _todos.length == 1 ? _todos.single : null;
       if (todo != null &&
           (_title.text.trim().isEmpty || _title.text == _filledTitle)) {
         _title.text = todo.title;
@@ -117,11 +122,13 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
 
   void _submit(int minutes) {
     final typed = _title.text.trim();
-    final title = typed.isNotEmpty ? typed : _todo?.title.trim() ?? '';
+    final title = typed.isNotEmpty
+        ? typed
+        : _todos.firstOrNull?.title.trim() ?? '';
     Navigator.of(context).pop(
       StartTimerInput(
         title: title.isEmpty ? '새 작업' : title,
-        todo: _todo,
+        todos: _todos,
         duration: Duration(minutes: minutes),
       ),
     );
@@ -132,6 +139,7 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
     final todos = ref.watch(allTodosProvider);
     // 읽는 중이거나 읽지 못하면 null
     final linkable = todos.value?.where(canLinkTimer).toList();
+    final several = _todos.length >= 2;
 
     return AlertDialog(
       // 키보드가 올라와 높이가 모자라면 내용을 스크롤한다
@@ -142,10 +150,13 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
         children: [
           TextField(
             controller: _title,
-            decoration: const InputDecoration(
+            enabled: !several,
+            decoration: InputDecoration(
               labelText: '작업명',
               hintText: '어떤 작업을 시작할까요?',
-              border: OutlineInputBorder(),
+              helperText: several ? '할 일마다 그 제목으로 타이머를 하나씩 시작합니다' : null,
+              helperMaxLines: 2,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -163,7 +174,12 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
                 suffixIcon: const Icon(Icons.arrow_drop_down),
               ),
               child: Text(
-                _todo?.title ?? '연결 안 함',
+                switch (_todos) {
+                  [] => '연결 안 함',
+                  [final todo] => todo.title,
+                  [final first, ...final rest] =>
+                    '${first.title} 외 ${rest.length}개',
+                },
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -225,12 +241,15 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
   }
 }
 
-/// 연결할 할 일을 제목으로 찾아 고르는 다이얼로그. 고르면 그 할 일('연결 안 함'은 null)을 담아 닫고, 그냥 닫으면 null
+/// 연결할 할 일을 제목으로 찾아 고르는 다이얼로그. 그냥 닫으면 null
+///
+/// 할 일을 누르면 그 할 일 하나만, '연결 안 함'을 누르면 빈 목록을 담아 바로 닫는다.
+/// 체크 상자로 둘 이상 고르면 나오는 'N개 선택 완료'를 누르면 체크한 차례대로 담아 닫는다. [selected]를 체크한 채 연다.
 class _TodoPicker extends StatefulWidget {
   const _TodoPicker({required this.todos, required this.selected});
 
   final List<TodoRead> todos;
-  final TodoRead? selected;
+  final List<TodoRead> selected;
 
   @override
   State<_TodoPicker> createState() => _TodoPickerState();
@@ -239,13 +258,26 @@ class _TodoPicker extends StatefulWidget {
 class _TodoPickerState extends State<_TodoPicker> {
   final _query = TextEditingController();
 
+  /// 체크한 할 일. 체크한 차례대로
+  late final _checked = [...widget.selected];
+
   @override
   void dispose() {
     _query.dispose();
     super.dispose();
   }
 
-  void _pick(TodoRead? todo) => Navigator.of(context).pop((todo: todo));
+  bool _isChecked(TodoRead todo) => _checked.any((it) => it.id == todo.id);
+
+  void _toggle(TodoRead todo) => setState(() {
+    if (_isChecked(todo)) {
+      _checked.removeWhere((it) => it.id == todo.id);
+    } else {
+      _checked.add(todo);
+    }
+  });
+
+  void _pick(List<TodoRead> todos) => Navigator.of(context).pop((todos: todos));
 
   @override
   Widget build(BuildContext context) {
@@ -277,23 +309,39 @@ class _TodoPickerState extends State<_TodoPicker> {
                 children: [
                   ListTile(
                     title: const Text('연결 안 함'),
-                    selected: widget.selected == null,
-                    onTap: () => _pick(null),
+                    selected: _checked.isEmpty,
+                    onTap: () => _pick(const []),
                   ),
                   for (final todo in widget.todos)
                     if (todo.title.toLowerCase().contains(query))
                       ListTile(
+                        leading: Checkbox(
+                          value: _isChecked(todo),
+                          onChanged: (_) => _toggle(todo),
+                        ),
                         title: Text(
                           todo.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        selected: todo.id == widget.selected?.id,
-                        onTap: () => _pick(todo),
+                        selected: _isChecked(todo),
+                        onTap: () => _pick([todo]),
                       ),
                 ],
               ),
             ),
+            // 하나는 그 할 일을 눌러 고르므로 둘 이상 체크했을 때만 둔다
+            if (_checked.length >= 2)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: () => _pick([..._checked]),
+                    child: Text('${_checked.length}개 선택 완료'),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

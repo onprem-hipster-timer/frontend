@@ -1079,6 +1079,75 @@ void main() {
       expect(controller.startedTodoId, isNull);
       expect(controller.startedTitle, '집중');
     });
+
+    group('여러 할 일', () {
+      final report = makeTodo(id: 'todo-1').copyWith(title: '보고서 쓰기');
+      final meeting = makeTodo(id: 'todo-2').copyWith(title: '회의 준비');
+      final review = makeTodo(id: 'todo-3').copyWith(title: '코드 리뷰');
+
+      /// 새 작업 시작에서 [labels] 할 일을 체크해 고르고 [minutes]분 칩을 골라 시작한다
+      Future<void> startWith(
+        WidgetTester tester,
+        List<String> labels, {
+        int minutes = 45,
+      }) async {
+        await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+        await tester.pumpAndSettle();
+        for (final label in labels) {
+          await tester.tap(
+            find.descendant(
+              of: find.widgetWithText(ListTile, label),
+              matching: find.byType(Checkbox),
+            ),
+          );
+          await tester.pump();
+        }
+        await tester.tap(
+          find.widgetWithText(FilledButton, '${labels.length}개 선택 완료'),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(ChoiceChip, '$minutes분'));
+        await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('둘 이상 고르면 할 일마다 같은 시간으로 한꺼번에 시작하고 알린다', (tester) async {
+        final controller = _FakeTimerController();
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: controller,
+          todos: [report, meeting, review],
+        );
+
+        await startWith(tester, ['회의 준비', '보고서 쓰기']);
+
+        expect(controller.started, isFalse);
+        expect(controller.startedTodos, [meeting, report]);
+        expect(controller.startedDuration, const Duration(minutes: 45));
+        expect(find.text('타이머를 시작했습니다'), findsOneWidget);
+      });
+
+      testWidgets('일부가 실패하면 시작하지 못한 할 일을 알린다', (tester) async {
+        final controller = _FakeTimerController()
+          ..failedTodoIds = {'todo-2', 'todo-3'};
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: controller,
+          todos: [report, meeting, review],
+        );
+
+        await startWith(tester, ['보고서 쓰기', '회의 준비', '코드 리뷰']);
+
+        expect(controller.startedTodos, [report, meeting, review]);
+        expect(find.text('타이머 시작 실패: 회의 준비, 코드 리뷰'), findsOneWidget);
+        expect(find.text('타이머를 시작했습니다'), findsNothing);
+      });
+    });
   });
 
   group('새 작업 시작 할 일 연결 경계', () {
@@ -4235,9 +4304,27 @@ class _FakeTimerController extends TimerController {
   bool resumed = false;
   Duration? extendedBy;
   String? extendedTimerId;
+  List<TodoRead>? startedTodos;
+  Duration? startedDuration;
+
+  /// startTimers가 시작하지 못한 것으로 돌려줄 할 일 id
+  Set<String> failedTodoIds = {};
 
   @override
   FutureOr<void> build() {}
+
+  @override
+  Future<List<TodoRead>> startTimers({
+    required List<TodoRead> todos,
+    required Duration duration,
+  }) async {
+    startedTodos = todos;
+    startedDuration = duration;
+    return [
+      for (final todo in todos)
+        if (failedTodoIds.contains(todo.id)) todo,
+    ];
+  }
 
   @override
   Future<void> stopTimer({String? timerId}) async {

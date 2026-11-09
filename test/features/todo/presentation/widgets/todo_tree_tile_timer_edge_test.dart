@@ -500,6 +500,71 @@ void main() {
     });
   });
 
+  group('타일에서 여러 할 일로 시작', () {
+    final todos = [
+      todo(),
+      todo(id: 'todo-2', title: '회의 준비'),
+      todo(id: 'todo-3', title: '코드 리뷰'),
+    ];
+
+    Finder checkbox(String label) => find.descendant(
+      of: find.widgetWithText(ListTile, label),
+      matching: find.byType(Checkbox),
+    );
+
+    /// 타일의 할 일을 체크한 채 연 목록에서 [labels]를 더 체크하고 시작한다
+    Future<void> startWithMore(WidgetTester tester, List<String> labels) async {
+      await openDialog(tester);
+      await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Checkbox>(checkbox('보고서 쓰기')).value, isTrue);
+      for (final label in labels) {
+        await tester.tap(checkbox(label));
+        await tester.pump();
+      }
+      await tester.tap(
+        find.widgetWithText(FilledButton, '${labels.length + 1}개 선택 완료'),
+      );
+      await tester.pumpAndSettle();
+      await confirm(tester);
+    }
+
+    testWidgets('타일의 할 일에 다른 할 일을 더 고르면 할 일마다 시작하고 머물며 알린다', (tester) async {
+      final controller = _FakeTimerController();
+      await pumpTile(tester, todos, controller: () => controller);
+
+      await startWithMore(tester, ['코드 리뷰']);
+
+      expect(controller.starts, isEmpty);
+      expect(controller.multiStarts.single.todoIds, ['todo-1', 'todo-3']);
+      expect(
+        controller.multiStarts.single.duration,
+        const Duration(minutes: 25),
+      );
+      expect(location(), AppRoute.todo.path);
+      expect(find.text('타이머를 시작했습니다'), findsOneWidget);
+      expect(find.widgetWithText(SnackBarAction, '타이머 보기'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('일부가 실패하면 시작하지 못한 할 일만 알리고 머문다', (tester) async {
+      final controller = _FakeTimerController()..failedTodoIds = {'todo-2'};
+      await pumpTile(tester, todos, controller: () => controller);
+
+      await startWithMore(tester, ['회의 준비', '코드 리뷰']);
+
+      expect(controller.multiStarts.single.todoIds, [
+        'todo-1',
+        'todo-2',
+        'todo-3',
+      ]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('타이머 시작 실패: 회의 준비'), findsOneWidget);
+      expect(location(), AppRoute.todo.path);
+      await unmount(tester);
+    });
+  });
+
   group('화면 크기', () {
     final tag = TagRead(
       id: 'tag-1',
@@ -604,8 +669,29 @@ class _FakeTimerController extends TimerController {
   /// 설정하면 startTimer가 이 Future가 끝날 때까지 응답하지 않는다
   Future<void>? gate;
 
+  /// startTimers로 받은 할 일 id와 집중 시간
+  final multiStarts = <({List<String> todoIds, Duration duration})>[];
+
+  /// startTimers가 시작하지 못한 것으로 돌려줄 할 일 id
+  Set<String> failedTodoIds = {};
+
   @override
   FutureOr<void> build() {}
+
+  @override
+  Future<List<TodoRead>> startTimers({
+    required List<TodoRead> todos,
+    required Duration duration,
+  }) async {
+    multiStarts.add((
+      todoIds: [for (final todo in todos) todo.id],
+      duration: duration,
+    ));
+    return [
+      for (final todo in todos)
+        if (failedTodoIds.contains(todo.id)) todo,
+    ];
+  }
 
   @override
   Future<void> startTimer({
