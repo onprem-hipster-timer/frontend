@@ -655,12 +655,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
     if (availableGroups.isEmpty) {
       // 태그 그룹이 없는 경우 안내
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('먼저 태그 그룹을 생성해주세요. 태그 관리 페이지에서 그룹을 만들 수 있습니다.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      showAppSnackBar(context, '먼저 태그 그룹을 생성해주세요. 태그 관리 페이지에서 그룹을 만들 수 있습니다.');
       return;
     }
 
@@ -687,7 +682,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
 
     // 생성 모드에서 tagGroupId 검증 및 기본 그룹 생성
     if (!_isEditMode) {
@@ -725,12 +719,13 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             _selectedTagGroupId = tagGroups.first.group.id;
           }
         } catch (error) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text('기본 태그 그룹 생성에 실패했습니다: $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (mounted) {
+            showAppSnackBar(
+              context,
+              '기본 태그 그룹 생성에 실패했습니다: $error',
+              kind: AppNoticeKind.error,
+            );
+          }
           return;
         }
       } else {
@@ -789,18 +784,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
-                  const SizedBox(width: 12),
-                  const Text('할 일이 수정되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '할 일이 수정되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       } else {
@@ -824,42 +810,18 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
-                  const SizedBox(width: 12),
-                  const Text('할 일이 생성되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '할 일이 생성되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       }
     } catch (error) {
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: theme.colorScheme.onError),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _isEditMode
-                        ? '할 일 수정에 실패했습니다: $error'
-                        : '할 일 생성에 실패했습니다: $error',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
+        showAppSnackBar(
+          context,
+          _isEditMode ? '할 일 수정에 실패했습니다: $error' : '할 일 생성에 실패했습니다: $error',
+          kind: AppNoticeKind.error,
         );
       }
     }

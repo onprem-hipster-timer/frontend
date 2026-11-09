@@ -7,6 +7,7 @@
 // 보낸다. 현재 비밀번호만으로는 바꿀 수 없다(backend가 메일 복구 세션이 아닌 변경을 거절한다).
 
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
@@ -78,9 +79,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             newPassword: _passwordController.text,
           );
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('비밀번호를 바꿨습니다. 다른 기기의 로그인은 끊겼습니다.')),
-            );
+            showAppSnackBar(context, '비밀번호를 바꿨습니다. 다른 기기의 로그인은 끊겼습니다.');
             context.goNamed(AppRoute.calendar.name);
           }
       }

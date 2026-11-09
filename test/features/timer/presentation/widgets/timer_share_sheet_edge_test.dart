@@ -190,9 +190,6 @@ void main() {
 
       repository.error = null;
       await save(tester);
-      // 앞서 띄운 실패 알림이 사라질 때까지 기다린다
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
 
       expect(saves(), ['setVisibility:timer-1', 'setVisibility:timer-1']);
       expect(

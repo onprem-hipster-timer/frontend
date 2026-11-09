@@ -3,6 +3,7 @@
 // 계층형 할 일 트리의 각 노드를 렌더링합니다.
 // 드래그 앤 드롭으로 부모 변경을 지원합니다.
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -655,28 +656,20 @@ class _TodoTimerStartButton extends ConsumerWidget {
       }
     }
     if (!context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    final messenger = ScaffoldMessenger.of(context);
     if (error != null || failed.isNotEmpty) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            error != null ? '타이머 시작 실패: $error' : startFailureMessage(failed),
-          ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      messenger.showAppSnackBar(
+        error != null ? '타이머 시작 실패: $error' : startFailureMessage(failed),
+        kind: AppNoticeKind.error,
       );
       return;
     }
     // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
     final router = GoRouter.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: const Text('타이머를 시작했습니다'),
-        action: SnackBarAction(
-          label: '타이머 보기',
-          onPressed: () => router.go(AppRoute.timer.path),
-        ),
-      ),
+    messenger.showAppSnackBar(
+      '타이머를 시작했습니다',
+      actionLabel: '타이머 보기',
+      onAction: () => router.go(AppRoute.timer.path),
     );
   }
 

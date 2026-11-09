@@ -155,14 +155,14 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
       }
     } catch (error) {
       if (mounted) setState(() => _saving = false);
-      messenger.showSnackBar(SnackBar(content: Text('공유 설정 저장 실패: $error')));
+      messenger.showAppSnackBar('공유 설정 저장 실패: $error');
       return;
     }
     // 저장하는 사이 시트를 닫았으면 그 아래 화면은 닫지 않는다
     if (mounted && (ModalRoute.isCurrentOf(context) ?? false)) {
       Navigator.of(context).pop();
     }
-    messenger.showSnackBar(const SnackBar(content: Text('공유 설정을 저장했습니다')));
+    messenger.showAppSnackBar('공유 설정을 저장했습니다');
     await _reloadTimer(container, timerId);
   }
 

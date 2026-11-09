@@ -353,7 +353,6 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
 
     try {
       if (_isEditMode) {
@@ -369,18 +368,9 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
         );
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
-                  const SizedBox(width: 12),
-                  const Text('태그가 수정되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '태그가 수정되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       } else {
@@ -395,38 +385,21 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
         );
         if (mounted) {
           navigator.pop();
-          _showSuccess(scaffoldMessenger, '태그가 생성되었습니다');
+          scaffoldMessenger.showAppSnackBar(
+            '태그가 생성되었습니다',
+            kind: AppNoticeKind.success,
+          );
         }
       }
     } catch (error) {
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error',
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppSnackBar(
+          context,
+          _isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error',
+          kind: AppNoticeKind.error,
         );
       }
     }
-  }
-
-  void _showSuccess(ScaffoldMessengerState messenger, String message) {
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 }
 

@@ -51,9 +51,7 @@ class _TimerPageState extends ConsumerState<TimerPage> {
       next.whenData((event) {
         // 시간 종료(expire)는 함께 오는 명령(정지 등)의 알림과 겹치므로 띄우지 않는다
         if (event.payload.action == 'expire' || !context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(friendActivityMessage(event))));
+        showAppSnackBar(context, friendActivityMessage(event));
       });
     });
 
@@ -525,14 +523,15 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         duration: input.duration,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        failed.isEmpty
-            ? const SnackBar(content: Text('타이머를 시작했습니다'))
-            : SnackBar(
-                content: Text(startFailureMessage(failed)),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-      );
+      if (failed.isEmpty) {
+        showAppSnackBar(context, '타이머를 시작했습니다');
+      } else {
+        showAppSnackBar(
+          context,
+          startFailureMessage(failed),
+          kind: AppNoticeKind.error,
+        );
+      }
       return;
     }
     try {
@@ -542,18 +541,11 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         allocatedDurationSeconds: input.duration.inSeconds,
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('타이머를 시작했습니다')));
+        showAppSnackBar(context, '타이머를 시작했습니다');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('타이머 시작 실패: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        showAppSnackBar(context, '타이머 시작 실패: $e', kind: AppNoticeKind.error);
       }
     }
   }
@@ -571,9 +563,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
       ref.invalidate(myActiveTimersProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('진행 중인 작업이 없습니다.')));
+        showAppSnackBar(context, '진행 중인 작업이 없습니다.');
       }
       return;
     }
@@ -588,26 +578,22 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           .read(timerControllerProvider.notifier)
           .stopTimer(timerId: activeTimer.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('작업을 완료했습니다'),
-            action: SnackBarAction(
-              label: '새 타이머 시작',
-              onPressed: () {
-                if (!context.mounted) return;
-                _showStartTimerDialog(context, ref);
-              },
-            ),
-          ),
+        showAppSnackBar(
+          context,
+          '작업을 완료했습니다',
+          actionLabel: '새 타이머 시작',
+          onAction: () {
+            if (!context.mounted) return;
+            _showStartTimerDialog(context, ref);
+          },
         );
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('완료 실패: ${error.toString()}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          '완료 실패: ${error.toString()}',
+          kind: AppNoticeKind.error,
         );
       }
     }
@@ -637,9 +623,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           .pauseTimer(timerId: timerId);
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('일시정지 실패: ${error.toString()}')));
+        showAppSnackBar(context, '일시정지 실패: ${error.toString()}');
       }
     }
   }
@@ -653,9 +637,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           .resumeTimer(timerId: timerId);
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('재개 실패: ${error.toString()}')));
+        showAppSnackBar(context, '재개 실패: ${error.toString()}');
       }
     }
   }
@@ -669,9 +651,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           .extendTimer(timerId: timerId, by: _extendBy);
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('연장 실패: ${error.toString()}')));
+        showAppSnackBar(context, '연장 실패: ${error.toString()}');
       }
     }
   }
@@ -1415,11 +1395,10 @@ class TimerHistoryItem extends ConsumerWidget {
       await action();
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$errorLabel 실패: $error'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          '$errorLabel 실패: $error',
+          kind: AppNoticeKind.error,
         );
       }
     }

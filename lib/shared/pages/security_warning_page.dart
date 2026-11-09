@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
@@ -39,12 +40,7 @@ class SecurityWarningPage extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$text 복사됨'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    showAppSnackBar(context, '$text 복사됨');
   }
 
   @override

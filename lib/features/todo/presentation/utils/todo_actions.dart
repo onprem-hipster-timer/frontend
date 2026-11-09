@@ -66,21 +66,14 @@ class TodoActions {
         );
 
         if (deleted && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${todo.title}이(가) 삭제되었습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showAppSnackBar(context, '${todo.title}이(가) 삭제되었습니다');
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('할 일 삭제에 실패했습니다: $error'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
+          showAppSnackBar(
+            context,
+            '할 일 삭제에 실패했습니다: $error',
+            kind: AppNoticeKind.error,
           );
         }
       }

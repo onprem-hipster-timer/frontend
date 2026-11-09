@@ -330,21 +330,14 @@ class TagManagementPage extends ConsumerWidget {
         );
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${tagGroup.groupName} 그룹이 삭제되었습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showAppSnackBar(context, '${tagGroup.groupName} 그룹이 삭제되었습니다');
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('그룹 삭제에 실패했습니다: $error'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          showAppSnackBar(
+            context,
+            '그룹 삭제에 실패했습니다: $error',
+            kind: AppNoticeKind.error,
           );
         }
       }
@@ -394,21 +387,14 @@ class TagManagementPage extends ConsumerWidget {
         );
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${tag.name} 태그가 삭제되었습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showAppSnackBar(context, '${tag.name} 태그가 삭제되었습니다');
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('태그 삭제에 실패했습니다: $error'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          showAppSnackBar(
+            context,
+            '태그 삭제에 실패했습니다: $error',
+            kind: AppNoticeKind.error,
           );
         }
       }

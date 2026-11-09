@@ -331,22 +331,15 @@ class TodoGroupDetailPage extends ConsumerWidget {
         );
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${group.name} 그룹이 삭제되었습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showAppSnackBar(context, '${group.name} 그룹이 삭제되었습니다');
           context.go(AppRoute.todo.path);
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('그룹 삭제에 실패했습니다: $error'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          showAppSnackBar(
+            context,
+            '그룹 삭제에 실패했습니다: $error',
+            kind: AppNoticeKind.error,
           );
         }
       }

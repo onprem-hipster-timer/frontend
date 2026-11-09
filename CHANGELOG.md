@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 #### UI
+- 알림을 `showAppSnackBar`로 띄운다. 이전 알림은 닫고, 오류는 error 색·성공은 success 색으로 칠한다. 시트가 열린 채 실패하면 알림을 시트 위에 띄워 가려지지 않는다
 - 빈 화면·오류·불러오는 중 표시를 `AppEmptyState`·`AppErrorState`·`AppLoading`으로 맞춘다. 오류에는 화면마다 '다시 시도'와 다른 길(돌아가기 등)을 같은 자리에 두고, 낮은 칸에서는 안내를 굴려 본다
 - 확인·선택 다이얼로그를 `lib/shared/ui`로 옮기고 `showAppConfirmDialog`·`showAppChoiceDialog`로 부른다
 - 누르면 날짜·시간 선택 창을 여는 줄(할 일 마감일, 일정 시작·종료)을 입력 칸 모양의 `AppPickerField`로 그린다. 이름표는 칸 안에 두고, 일정 시간 오류는 종료 칸 아래에 보인다

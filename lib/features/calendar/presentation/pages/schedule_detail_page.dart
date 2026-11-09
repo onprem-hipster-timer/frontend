@@ -366,11 +366,15 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       );
 
       if (context.mounted) {
-        _showSnackBar(context, message: 'TODO로 변환되었습니다');
+        showAppSnackBar(context, 'TODO로 변환되었습니다', kind: AppNoticeKind.success);
       }
     } catch (error) {
       if (context.mounted) {
-        _showSnackBar(context, message: '변환에 실패했습니다: $error', isError: true);
+        showAppSnackBar(
+          context,
+          '변환에 실패했습니다: $error',
+          kind: AppNoticeKind.error,
+        );
       }
     } finally {
       if (mounted) setState(() => _pendingAction = null);
@@ -437,37 +441,18 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
 
       if (deleted && context.mounted) {
         context.pop();
-        _showSnackBar(context, message: '일정이 삭제되었습니다');
+        showAppSnackBar(context, '일정이 삭제되었습니다', kind: AppNoticeKind.success);
       }
     } catch (error) {
       if (context.mounted) {
-        _showSnackBar(context, message: '삭제에 실패했습니다: $error', isError: true);
+        showAppSnackBar(
+          context,
+          '삭제에 실패했습니다: $error',
+          kind: AppNoticeKind.error,
+        );
       }
     } finally {
       if (mounted) setState(() => _pendingAction = null);
     }
-  }
-
-  void _showSnackBar(
-    BuildContext context, {
-    required String message,
-    bool isError = false,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error : Icons.check_circle,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 }

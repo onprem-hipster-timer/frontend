@@ -369,18 +369,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('일정이 수정되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '일정이 수정되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       } else {
@@ -403,18 +394,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('일정이 생성되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '일정이 생성되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       }
@@ -423,20 +405,10 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       final action = widget.existingSchedule != null ? '수정' : '생성';
       debugPrint('일정 $action 에러: $error');
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text('일정 $action에 실패했습니다: ${error.toString()}'),
-                ),
-              ],
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppSnackBar(
+          context,
+          '일정 $action에 실패했습니다: ${error.toString()}',
+          kind: AppNoticeKind.error,
         );
       }
     }
@@ -444,19 +416,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
   /// 에러 스낵바 표시
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.white),
-            const SizedBox(width: 12),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showAppSnackBar(context, message, kind: AppNoticeKind.error);
   }
 }
 

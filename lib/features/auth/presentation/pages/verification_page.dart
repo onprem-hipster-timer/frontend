@@ -5,6 +5,7 @@
 // 이메일 인증 전에는 세션이 없으므로, 인증을 마치면 로그인 화면으로 보낸다.
 
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
@@ -103,9 +104,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
       context.goNamed(AppRoute.calendar.name);
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('이메일이 인증되었습니다. 로그인해주세요.')));
+    showAppSnackBar(context, '이메일이 인증되었습니다. 로그인해주세요.');
     context.goNamed(AppRoute.login.name, extra: _emailController.text.trim());
   }
 

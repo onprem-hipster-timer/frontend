@@ -221,7 +221,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
 
     try {
       if (widget.tagGroup != null) {
@@ -248,18 +247,9 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
-                  const SizedBox(width: 12),
-                  const Text('태그 그룹이 수정되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '태그 그룹이 수정되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       } else {
@@ -280,42 +270,20 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
         if (mounted) {
           navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
-                  const SizedBox(width: 12),
-                  const Text('태그 그룹이 생성되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
+          scaffoldMessenger.showAppSnackBar(
+            '태그 그룹이 생성되었습니다',
+            kind: AppNoticeKind.success,
           );
         }
       }
     } catch (error) {
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: theme.colorScheme.onError),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    widget.tagGroup != null
-                        ? '태그 그룹 수정에 실패했습니다: $error'
-                        : '태그 그룹 생성에 실패했습니다: $error',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
+        showAppSnackBar(
+          context,
+          widget.tagGroup != null
+              ? '태그 그룹 수정에 실패했습니다: $error'
+              : '태그 그룹 생성에 실패했습니다: $error',
+          kind: AppNoticeKind.error,
         );
       }
     }
