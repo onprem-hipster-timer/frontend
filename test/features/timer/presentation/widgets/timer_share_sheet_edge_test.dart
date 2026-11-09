@@ -500,6 +500,83 @@ void main() {
       );
     });
 
+    testWidgets('도메인은 호스트 이름만 더하고 URL·와일드카드·경로·밑줄은 형식 오류다', (tester) async {
+      await open(tester);
+      await choose(tester, '이메일·도메인 지정');
+
+      for (final invalid in [
+        'https://example.com',
+        'example.com:8080',
+        '*.example.com',
+        'example.com/path',
+        'ex_ample.com',
+        '-example.com',
+        'example-.com',
+        'example..com',
+        '.example.com',
+        'example.com.',
+      ]) {
+        await addEntry(tester, domainField(), invalid, '도메인 추가');
+
+        expect(
+          find.text('도메인 형식이 아닙니다 (예: example.com)'),
+          findsOneWidget,
+          reason: invalid,
+        );
+        expect(find.byType(InputChip), findsNothing, reason: invalid);
+        expect(canSave(tester), isFalse, reason: invalid);
+      }
+
+      for (final valid in ['www.example.com', 'mail-1.example.co.kr']) {
+        await addEntry(tester, domainField(), valid, '도메인 추가');
+        expect(chip(valid), findsOneWidget, reason: valid);
+      }
+    });
+
+    testWidgets('이메일·도메인은 소문자로 바꿔 더하고 보낸다', (tester) async {
+      await open(tester);
+      await choose(tester, '이메일·도메인 지정');
+      await addEntry(tester, emailField(), 'Kim@Example.COM', '이메일 추가');
+      await addEntry(tester, domainField(), 'WWW.Example.Org', '도메인 추가');
+
+      expect(chip('kim@example.com'), findsOneWidget);
+      expect(chip('www.example.org'), findsOneWidget);
+
+      await save(tester);
+      expect(
+        repository.visibilityUpdate,
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['kim@example.com'],
+          allowedDomains: ['www.example.org'],
+        ),
+      );
+    });
+
+    testWidgets('불러온 대문자 항목은 소문자로 바꾸고 겹치는 항목을 빼서 보낸다', (tester) async {
+      repository.visibilityOf = (_) async => makeVisibility(
+        level: VisibilityLevel.allowedEmails,
+        allowedEmails: [
+          'Kim@Example.com',
+          'kim@example.com',
+          'lee@example.com',
+        ],
+        allowedDomains: ['Example.Org', 'example.org'],
+      );
+
+      await open(tester);
+      await save(tester);
+
+      expect(
+        repository.visibilityUpdate,
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['kim@example.com', 'lee@example.com'],
+          allowedDomains: ['example.org'],
+        ),
+      );
+    });
+
     testWidgets('도메인 칸도 키보드의 완료로 더하고 칸을 비운다', (tester) async {
       await open(tester);
       await choose(tester, '이메일·도메인 지정');
@@ -603,6 +680,35 @@ void main() {
 
         await type(tester, emailField(), 'lee@');
         await type(tester, domainField(), 'example');
+
+        expect(canSave(tester), isFalse);
+      });
+
+      testWidgets('대문자로 적은 값도 저장할 수 있고 소문자로 보낸다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+
+        await type(tester, emailField(), ' Lee@Example.COM ');
+        await type(tester, domainField(), 'Example.ORG');
+        expect(canSave(tester), isTrue);
+
+        await save(tester);
+
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(
+            level: VisibilityLevel.allowedEmails,
+            allowedEmails: ['lee@example.com'],
+            allowedDomains: ['example.org'],
+          ),
+        );
+      });
+
+      testWidgets('목록이 비었고 칸의 도메인이 URL이면 저장할 수 없다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+
+        await type(tester, domainField(), 'https://example.com');
 
         expect(canSave(tester), isFalse);
       });

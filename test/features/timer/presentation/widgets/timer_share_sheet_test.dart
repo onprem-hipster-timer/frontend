@@ -431,7 +431,7 @@ void main() {
       await addEntry(tester, emailField(), ' Kim@Example.com ', '이메일 추가');
 
       expect(find.text('이메일 형식이 아닙니다'), findsNothing);
-      expect(chip('Kim@Example.com'), findsOneWidget);
+      expect(chip('kim@example.com'), findsOneWidget);
       expect(canSave(tester), isTrue);
 
       // 키보드의 완료로도 더한다

@@ -45,8 +45,20 @@ const _options = [
 /// '@' 앞뒤가 있고 '@' 뒤 도메인에 점이 있는 이메일
 final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
-/// '@' 없이 점이 있는 도메인 (예: example.com)
-final _domainPattern = RegExp(r'^[^@\s]+\.[^@\s]+$');
+/// 점으로 이은 소문자 라벨(a-z·0-9·하이픈, 하이픈으로 시작·끝나지 않음)로 된 호스트 이름 (예: example.com)
+final _domainPattern = RegExp(
+  r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$',
+);
+
+/// 칸의 값을 앞뒤 공백을 지우고 소문자로 바꾼 것
+///
+/// 서버는 사용자 이메일·도메인과 그대로 비교하고, 로그인 이메일은 소문자다.
+String _normalized(TextEditingController field) =>
+    field.text.trim().toLowerCase();
+
+/// [entries]를 소문자로 바꾸고 겹치는 항목을 뺀 것. 순서는 처음 나온 대로
+List<String> _lowercased(List<String> entries) =>
+    {for (final entry in entries) entry.toLowerCase()}.toList();
 
 /// 내 타이머 [timer]의 공유 범위를 고르는 바텀 시트를 연다
 ///
@@ -158,8 +170,8 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     VisibilityLevel.allowedEmails =>
       _emails.isNotEmpty ||
           _domains.isNotEmpty ||
-          _emailPattern.hasMatch(_email.text.trim()) ||
-          _domainPattern.hasMatch(_domain.text.trim()),
+          _emailPattern.hasMatch(_normalized(_email)) ||
+          _domainPattern.hasMatch(_normalized(_domain)),
     VisibilityLevel.$unknown => false,
     _ => true,
   };
@@ -173,8 +185,8 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     ),
     VisibilityLevel.allowedEmails => VisibilityUpdate(
       level: _level,
-      allowedEmails: [..._emails],
-      allowedDomains: [..._domains],
+      allowedEmails: _lowercased(_emails),
+      allowedDomains: _lowercased(_domains),
     ),
     _ => VisibilityUpdate(level: _level),
   };
@@ -214,7 +226,7 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     await _reloadTimer(container, timerId);
   }
 
-  /// [field]의 값이 [pattern]에 맞으면 [entries]에 더하고 비운다. 이미 있으면(대소문자 무시) 더하지 않는다
+  /// [field]의 값을 소문자로 바꿔 [pattern]에 맞으면 [entries]에 더하고 비운다. 이미 있으면(대소문자 무시) 더하지 않는다
   ///
   /// 맞지 않으면 [invalid]를 돌려준다.
   String? _add(
@@ -223,11 +235,10 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     RegExp pattern,
     String invalid,
   ) {
-    final value = field.text.trim();
+    final value = _normalized(field);
     if (value.isEmpty) return null;
     if (!pattern.hasMatch(value)) return invalid;
-    final key = value.toLowerCase();
-    if (!entries.any((entry) => entry.toLowerCase() == key)) {
+    if (!entries.any((entry) => entry.toLowerCase() == value)) {
       entries.add(value);
     }
     field.clear();
