@@ -147,6 +147,15 @@ void main() {
     expect(location(), AppRoute.todo.path);
   });
 
+  testWidgets('할 일을 불러오지 못한 뒤 다시 시도하면 목록을 그린다', (tester) async {
+    todos.readError = Exception('끊김');
+    await pumpPage(tester);
+
+    todos.readError = null;
+    await tapVisible(tester, find.text('다시 시도'));
+    expect(find.text('보고서'), findsOneWidget);
+  });
+
   group('그룹 설정', () {
     testWidgets('그룹 수정은 그룹 값으로 채운 시트를 연다', (tester) async {
       await pumpPage(tester);

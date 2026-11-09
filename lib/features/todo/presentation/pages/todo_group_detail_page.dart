@@ -49,7 +49,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
                   child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (error, stack) => SliverFillRemaining(
-                  child: _buildErrorState(context, theme, error),
+                  child: _buildErrorState(context, ref, error),
                 ),
               ),
             ],
@@ -281,7 +281,8 @@ class TodoGroupDetailPage extends ConsumerWidget {
   }
 
   /// 에러 상태 위젯
-  Widget _buildErrorState(BuildContext context, ThemeData theme, Object error) {
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, Object error) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -318,10 +319,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 FilledButton.icon(
-                  onPressed: () {
-                    // 새로고침 로직
-                    // ref.invalidate(todoTreeProvider(groupId));
-                  },
+                  onPressed: () => ref.invalidate(todosProvider(groupId)),
                   icon: const Icon(Icons.refresh),
                   label: const Text('다시 시도'),
                 ),
