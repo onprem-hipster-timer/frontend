@@ -37,7 +37,7 @@ class CalendarPage extends ConsumerWidget {
   PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
     return AppBar(
       title: const Text('달력'),
-      centerTitle: true,
+      centerTitle: false,
       leading: IconButton(
         icon: const Icon(Icons.menu),
         onPressed: () {
@@ -46,11 +46,6 @@ class CalendarPage extends ConsumerWidget {
         },
       ),
       actions: [
-        const _TodayButton(),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: CalendarViewSelector(),
-        ),
         IconButton(
           icon: const Icon(Icons.filter_list),
           tooltip: '필터',
@@ -58,8 +53,8 @@ class CalendarPage extends ConsumerWidget {
         ),
       ],
       bottom: const PreferredSize(
-        preferredSize: Size.fromHeight(48),
-        child: _PeriodBar(),
+        preferredSize: Size.fromHeight(56),
+        child: _CalendarToolbar(),
       ),
     );
   }
@@ -162,9 +157,10 @@ String periodLabel(CalendarSettingsState settings) {
   }
 }
 
-/// 이전·다음 기간 버튼과 지금 보는 기간. 기간을 누르면 날짜를 골라 그날로 간다
-class _PeriodBar extends ConsumerWidget {
-  const _PeriodBar();
+/// 달력 도구 줄. 왼쪽은 기간 옮기기(오늘·이전·보는 기간·다음), 오른쪽은 보기 고르기.
+/// 보는 기간을 누르면 날짜를 골라 그날로 간다
+class _CalendarToolbar extends ConsumerWidget {
+  const _CalendarToolbar();
 
   Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
     final settings = ref.read(calendarSettingsProvider);
@@ -185,32 +181,43 @@ class _PeriodBar extends ConsumerWidget {
     final settings = ref.watch(calendarSettingsProvider);
     final notifier = ref.read(calendarSettingsProvider.notifier);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.fromLTRB(8, 0, 12, 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          const _TodayButton(),
           IconButton(
             icon: const Icon(Icons.chevron_left),
             tooltip: '이전',
+            visualDensity: VisualDensity.compact,
             onPressed: notifier.goToPrevious,
-          ),
-          Flexible(
-            child: TextButton.icon(
-              onPressed: () => _pickDate(context, ref),
-              iconAlignment: IconAlignment.end,
-              icon: const Icon(Icons.arrow_drop_down),
-              label: Text(
-                periodLabel(settings),
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
             tooltip: '다음',
+            visualDensity: VisualDensity.compact,
             onPressed: notifier.goToNext,
           ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => _pickDate(context, ref),
+                iconAlignment: IconAlignment.end,
+                icon: const Icon(Icons.arrow_drop_down),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                label: Text(
+                  periodLabel(settings),
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const CalendarViewSelector(),
         ],
       ),
     );

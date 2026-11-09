@@ -127,13 +127,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           cellBorderColor: colorScheme.outlineVariant.withValues(alpha: 0.3),
           todayHighlightColor: colorScheme.primary,
 
-          headerStyle: const CalendarHeaderStyle(
-            textAlign: TextAlign.center,
-            backgroundColor: Colors.transparent,
-            textStyle: TextStyle(
-              fontSize: 0, // 헤더 숨김 (커스텀 헤더 사용)
-            ),
-          ),
+          // 기간 이름과 이동은 화면의 도구 줄이 맡는다
+          headerHeight: 0,
 
           viewHeaderStyle: ViewHeaderStyle(
             backgroundColor: colorScheme.surfaceContainerHighest.withValues(
