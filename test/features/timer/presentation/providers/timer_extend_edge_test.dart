@@ -182,4 +182,86 @@ void main() {
       expect(repository.calls, ['stop:active-1', 'stop:active-1']);
     });
   });
+
+  group('연장 중 완료 경계', () {
+    test('연장 중 보낸 완료가 실패한 뒤 다시 연장하면 늘리고 다시 실행한다', () async {
+      final container = boot(active: expired);
+      final patched = Completer<void>();
+      repository.gate = patched.future;
+      // 정지만 실패한다
+      repository.respond = (id, status) => status == TimerStatus.completed
+          ? throw Exception('503')
+          : makeTimer(id: id, status: status);
+
+      final extend = controller(
+        container,
+      ).extendTimer(by: const Duration(minutes: 5));
+      final stop = controller(container).stopTimer(timerId: 'active-1');
+      patched.complete();
+      await extend;
+      await expectLater(stop, throwsA(isA<Exception>()));
+
+      repository.respond = (id, status) => makeTimer(id: id, status: status);
+      await controller(container).extendTimer(by: const Duration(minutes: 5));
+
+      expect(repository.calls, [
+        'update:active-1',
+        'stop:active-1',
+        'update:active-1',
+        'resume:active-1',
+      ]);
+    });
+
+    test('다른 타이머의 완료는 연장 응답을 기다리지 않고 바로 보낸다', () async {
+      final container = boot(active: expired);
+      final patched = Completer<void>();
+      repository.gate = patched.future;
+
+      final extend = controller(
+        container,
+      ).extendTimer(by: const Duration(minutes: 5));
+      final stop = controller(container).stopTimer(timerId: 'other');
+      await pumpEventQueue();
+
+      expect(repository.calls, ['update:active-1', 'stop:other']);
+      patched.complete();
+      await Future.wait([extend, stop]);
+      expect(repository.calls, [
+        'update:active-1',
+        'stop:other',
+        'resume:active-1',
+      ]);
+    });
+
+    test('연장 중 완료를 연달아 눌러도 늘린 뒤 정지는 한 번만 보낸다', () async {
+      final container = boot(active: expired);
+      final patched = Completer<void>();
+      repository.gate = patched.future;
+
+      final extend = controller(
+        container,
+      ).extendTimer(by: const Duration(minutes: 5));
+      final first = controller(container).stopTimer(timerId: 'active-1');
+      final second = controller(container).stopTimer(timerId: 'active-1');
+      patched.complete();
+      await Future.wait([extend, first, second]);
+
+      expect(repository.calls, ['update:active-1', 'stop:active-1']);
+    });
+
+    test('완료 응답을 기다리는 사이 연장하면 보내지 않는다', () async {
+      final container = boot(active: expired);
+      final stopped = Completer<void>();
+      repository.gate = stopped.future;
+
+      final stop = controller(container).stopTimer(timerId: 'active-1');
+      final extend = controller(
+        container,
+      ).extendTimer(by: const Duration(minutes: 5));
+      stopped.complete();
+      await Future.wait([stop, extend]);
+
+      expect(repository.calls, ['stop:active-1']);
+    });
+  });
 }
