@@ -1,24 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
-const _style = TextStyle(fontSize: 20, height: 1, letterSpacing: 0);
+import 'support.dart';
+
 const _case = LayoutAuditCase(TestViewports.iphoneSe1, 1.0);
-
-Widget _overlapping() => const SizedBox(
-      height: 30,
-      child: Stack(
-        children: [
-          Positioned(left: 0, top: 0, child: Text('AAAA', style: _style)),
-          Positioned(left: 10, top: 0, child: Text('BBBB', style: _style)),
-        ],
-      ),
-    );
-
-List<LayoutFinding> _ofKind(LayoutReport report, LayoutFindingKind kind) =>
-    report.findings.where((f) => f.kind == kind).toList();
 
 class _Marquee extends StatefulWidget {
   const _Marquee();
@@ -57,7 +44,7 @@ class _MarqueeState extends State<_Marquee>
                 offset: Offset(-100 * _controller.value, 0),
                 child: child,
               ),
-              child: const Text('흘러가는 아주 긴 공지 문구', style: _style),
+              child: const Text('흘러가는 아주 긴 공지 문구', style: squareStyle),
             ),
           ),
         ),
@@ -74,7 +61,7 @@ Widget _slidingIn(Duration duration) => SizedBox(
           const Positioned(
             left: 0,
             top: 0,
-            child: Text('AAAA', style: _style),
+            child: Text('AAAA', style: squareStyle),
           ),
           Positioned(
             left: 0,
@@ -84,7 +71,7 @@ Widget _slidingIn(Duration duration) => SizedBox(
               duration: duration,
               builder: (context, dx, child) =>
                   Transform.translate(offset: Offset(dx, 0), child: child),
-              child: const Text('BBBB', style: _style),
+              child: const Text('BBBB', style: squareStyle),
             ),
           ),
         ],
@@ -97,16 +84,10 @@ void main() {
   late LayoutReportSink sink;
 
   setUp(() {
-    dir = Directory.systemTemp.createTempSync('layout_audit_ext_');
+    dir = tempDir();
     lines = [];
-    sink = LayoutReportSink(
-      reportDir: dir.path,
-      environment: const {},
-      writeLine: lines.add,
-    );
+    sink = sinkFor(dir, lines: lines);
   });
-
-  tearDown(() => dir.deleteSync(recursive: true));
 
   testWidgets('조합의 뷰포트와 글자 배율이 적용된다', (tester) async {
     Size? size;
@@ -133,7 +114,7 @@ void main() {
       name: 'clean',
       auditCase: _case,
       sink: sink,
-      child: const Text('안녕하세요', style: _style),
+      child: const Text('안녕하세요', style: squareStyle),
     );
 
     expect(report.isEmpty, isTrue);
@@ -149,14 +130,14 @@ void main() {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _overlapping(),
+          const OverlappingPair(),
           const Row(children: [SizedBox(width: 500, height: 10)]),
           const Row(
             children: [
               Expanded(
                 child: Text(
                   '아주 긴 제목이 한 줄에 다 들어가지 않아 말줄임표로 끝납니다',
-                  style: _style,
+                  style: squareStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -192,10 +173,10 @@ void main() {
       child: const _Marquee(),
     );
 
-    expect(_ofKind(report, LayoutFindingKind.moving), hasLength(1));
-    expect(_ofKind(report, LayoutFindingKind.clipped), isEmpty);
-    expect(_ofKind(report, LayoutFindingKind.truncation), isEmpty);
-    expect(_ofKind(report, LayoutFindingKind.overlap), isEmpty);
+    expect(ofKind(report.findings, LayoutFindingKind.moving), hasLength(1));
+    expect(ofKind(report.findings, LayoutFindingKind.clipped), isEmpty);
+    expect(ofKind(report.findings, LayoutFindingKind.truncation), isEmpty);
+    expect(ofKind(report.findings, LayoutFindingKind.overlap), isEmpty);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -210,9 +191,9 @@ void main() {
       child: _slidingIn(const Duration(milliseconds: 300)),
     );
 
-    expect(_ofKind(settled, LayoutFindingKind.moving), isEmpty);
+    expect(ofKind(settled.findings, LayoutFindingKind.moving), isEmpty);
     expect(
-      _ofKind(settled, LayoutFindingKind.overlap).single.severity,
+      ofKind(settled.findings, LayoutFindingKind.overlap).single.severity,
       LayoutSeverity.warning,
     );
   });
@@ -226,9 +207,9 @@ void main() {
       child: _slidingIn(const Duration(seconds: 1)),
     );
 
-    expect(_ofKind(moving, LayoutFindingKind.moving), isNotEmpty);
+    expect(ofKind(moving.findings, LayoutFindingKind.moving), isNotEmpty);
     expect(
-      _ofKind(moving, LayoutFindingKind.overlap).single.severity,
+      ofKind(moving.findings, LayoutFindingKind.overlap).single.severity,
       LayoutSeverity.info,
     );
 
@@ -242,7 +223,7 @@ void main() {
         auditCase: _case,
         sink: sink,
         strict: true,
-        child: _overlapping(),
+        child: const OverlappingPair(),
       ),
       throwsA(isA<TestFailure>()),
     );
@@ -252,7 +233,7 @@ void main() {
       auditCase: _case,
       sink: sink,
       strict: false,
-      child: _overlapping(),
+      child: const OverlappingPair(),
     );
     expect(report.countOf(LayoutSeverity.warning), 1);
   });
@@ -268,11 +249,11 @@ void main() {
         theme: ThemeData(useMaterial3: true),
         home: Scaffold(body: child),
       ),
-      child: _overlapping(),
+      child: const OverlappingPair(),
     );
 
     expect(find.byKey(appKey), findsOneWidget);
-    expect(_ofKind(report, LayoutFindingKind.overlap), hasLength(1));
+    expect(ofKind(report.findings, LayoutFindingKind.overlap), hasLength(1));
   });
 
   testWidgets('within으로 범위를 좁힌다', (tester) async {
@@ -284,8 +265,8 @@ void main() {
       within: find.byKey(cleanKey),
       child: Column(
         children: [
-          _overlapping(),
-          const Text('혼자 있는 글자', key: cleanKey, style: _style),
+          const OverlappingPair(),
+          const Text('혼자 있는 글자', key: cleanKey, style: squareStyle),
         ],
       ),
     );
@@ -299,7 +280,7 @@ void main() {
       auditCase: _case,
       label: '한국어 긴 문장',
       sink: sink,
-      child: _overlapping(),
+      child: const OverlappingPair(),
     );
 
     expect(report.caseLabel, '$_case · 한국어 긴 문장');
@@ -315,12 +296,13 @@ void main() {
       child: ListView(
         children: const [
           ListTile(
-              title: Text('a', style: _style), trailing: SizedBox(width: 400)),
+              title: Text('a', style: squareStyle),
+              trailing: SizedBox(width: 400)),
         ],
       ),
     );
 
-    expect(_ofKind(report, LayoutFindingKind.overflow), hasLength(1));
+    expect(ofKind(report.findings, LayoutFindingKind.overflow), hasLength(1));
     expect(tester.takeException(), isNull);
   });
 }

@@ -2,13 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
-void _useNarrowView(WidgetTester tester) {
-  tester.view.physicalSize = const Size(360 * 3, 800 * 3);
-  tester.view.devicePixelRatio = 3;
-  addTearDown(tester.view.reset);
-}
-
-Widget _app(Widget body) => MaterialApp(home: Scaffold(body: body));
+import 'support.dart';
 
 class _Throwing extends StatelessWidget {
   const _Throwing();
@@ -19,11 +13,11 @@ class _Throwing extends StatelessWidget {
 
 void main() {
   testWidgets('RenderFlex 넘침을 실패 대신 기록한다', (tester) async {
-    _useNarrowView(tester);
-
     final findings = await recordLayoutOverflows(
-      () => tester.pumpWidget(
-          _app(const Row(children: [SizedBox(width: 500, height: 10)]))),
+      () => pumpInApp(
+        tester,
+        const Row(children: [SizedBox(width: 500, height: 10)]),
+      ),
     );
 
     expect(findings, hasLength(1));
@@ -41,15 +35,12 @@ void main() {
   });
 
   testWidgets('세로 넘침은 아래쪽으로 기록한다', (tester) async {
-    _useNarrowView(tester);
-
     final findings = await recordLayoutOverflows(
-      () => tester.pumpWidget(
-        _app(
-          const SizedBox(
-            height: 100,
-            child: Column(children: [SizedBox(width: 10, height: 150)]),
-          ),
+      () => pumpInApp(
+        tester,
+        const SizedBox(
+          height: 100,
+          child: Column(children: [SizedBox(width: 10, height: 150)]),
         ),
       ),
     );
@@ -59,11 +50,11 @@ void main() {
   });
 
   testWidgets('forward가 true면 기록하면서 원래 핸들러에도 넘긴다', (tester) async {
-    _useNarrowView(tester);
-
     final findings = await recordLayoutOverflows(
-      () => tester.pumpWidget(
-          _app(const Row(children: [SizedBox(width: 500, height: 10)]))),
+      () => pumpInApp(
+        tester,
+        const Row(children: [SizedBox(width: 500, height: 10)]),
+      ),
       forward: true,
     );
 
@@ -72,10 +63,8 @@ void main() {
   });
 
   testWidgets('넘침이 아닌 오류는 그대로 테스트 프레임워크로 넘긴다', (tester) async {
-    _useNarrowView(tester);
-
     final findings = await recordLayoutOverflows(
-      () => tester.pumpWidget(_app(const _Throwing())),
+      () => pumpInApp(tester, const _Throwing()),
     );
 
     expect(findings, isEmpty);
@@ -83,13 +72,10 @@ void main() {
   });
 
   testWidgets('ListTile 폭 단언을 넘침으로 기록한다', (tester) async {
-    _useNarrowView(tester);
-
     final findings = await recordLayoutOverflows(
-      () => tester.pumpWidget(
-        _app(
-          const ListTile(title: Text('a'), trailing: SizedBox(width: 400)),
-        ),
+      () => pumpInApp(
+        tester,
+        const ListTile(title: Text('a'), trailing: SizedBox(width: 400)),
       ),
     );
 

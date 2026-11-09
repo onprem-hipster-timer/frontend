@@ -1,32 +1,8 @@
 import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
-LayoutFinding _finding(
-  LayoutSeverity severity,
-  String message, {
-  LayoutFindingKind kind = LayoutFindingKind.overlap,
-  int count = 1,
-  String? file,
-  int line = 1,
-}) =>
-    LayoutFinding(
-      kind: kind,
-      severity: severity,
-      message: message,
-      count: count,
-      locations: [if (file != null) SourceLocation(file, line, 1)],
-    );
-
-LayoutReport _report(List<LayoutFinding> findings, {String name = '홈 화면'}) =>
-    LayoutReport(name: name, caseLabel: '360x800', findings: findings);
-
-Directory _tempDir() {
-  final dir = Directory.systemTemp.createTempSync('layout_audit_');
-  addTearDown(() => dir.deleteSync(recursive: true));
-  return dir;
-}
+import 'support.dart';
 
 List<String> _tableRows(String markdown) => markdown
     .split('\n')
@@ -35,11 +11,11 @@ List<String> _tableRows(String markdown) => markdown
     .toList();
 
 void main() {
-  final mixed = _report([
-    _finding(LayoutSeverity.notice, '알림 하나', count: 1),
-    _finding(LayoutSeverity.info, '정보'),
-    _finding(LayoutSeverity.notice, '알림 둘', count: 2),
-    _finding(
+  final mixed = makeReport([
+    makeFinding(LayoutSeverity.notice, '알림 하나', count: 1),
+    makeFinding(LayoutSeverity.info, '정보'),
+    makeFinding(LayoutSeverity.notice, '알림 둘', count: 2),
+    makeFinding(
       LayoutSeverity.warning,
       '경고 a|b',
       kind: LayoutFindingKind.overflow,
@@ -66,13 +42,13 @@ void main() {
     ]);
     expect(mixed.countOf(LayoutSeverity.notice), 2);
     expect(mixed.isEmpty, isFalse);
-    expect(_report(const []).isEmpty, isTrue);
+    expect(makeReport(const []).isEmpty, isTrue);
   });
 
   test('종류는 모두 한국어로 표에 쓴다', () {
-    final markdown = _report([
+    final markdown = makeReport([
       for (final kind in LayoutFindingKind.values)
-        _finding(LayoutSeverity.info, kind.name, kind: kind),
+        makeFinding(LayoutSeverity.info, kind.name, kind: kind),
     ]).toMarkdown();
 
     for (final word in ['겹침', '넘침', '잘라냄', '이탈', '말줄임', '이동']) {
@@ -81,7 +57,7 @@ void main() {
   });
 
   test('마크다운 보고서를 reportDir에 남기고 발견이 없으면 남기지 않는다', () {
-    final dir = _tempDir();
+    final dir = tempDir();
     final lines = <String>[];
     final sink = LayoutReportSink(
       reportDir: '${dir.path}/out',
@@ -89,12 +65,12 @@ void main() {
       writeLine: lines.add,
     );
 
-    emitLayoutReport(_report(const [], name: 'Home Screen!'), sink: sink);
+    emitLayoutReport(makeReport(const [], name: 'Home Screen!'), sink: sink);
     expect(dir.listSync(recursive: true), isEmpty);
     expect(lines, isEmpty);
 
-    final report =
-        _report([_finding(LayoutSeverity.warning, '경고')], name: 'Home Screen!');
+    final report = makeReport([makeFinding(LayoutSeverity.warning, '경고')],
+        name: 'Home Screen!');
     emitLayoutReport(report, strict: false, sink: sink);
     final file = File('${dir.path}/out/home_screen_.md');
     expect(file.existsSync(), isTrue);
@@ -111,13 +87,9 @@ void main() {
   });
 
   test('strict이면 warning으로만 실패하고 notice·info로는 실패하지 않는다', () {
-    final dir = _tempDir();
-    final sink = LayoutReportSink(
-      reportDir: dir.path,
-      environment: const {},
-      writeLine: (_) {},
-    );
-    final warning = _report([_finding(LayoutSeverity.warning, '경고')]);
+    final dir = tempDir();
+    final sink = sinkFor(dir);
+    final warning = makeReport([makeFinding(LayoutSeverity.warning, '경고')]);
 
     expect(
       () => emitLayoutReport(warning, strict: true, sink: sink),
@@ -126,12 +98,12 @@ void main() {
       ),
     );
     emitLayoutReport(
-      _report([_finding(LayoutSeverity.notice, '알림')]),
+      makeReport([makeFinding(LayoutSeverity.notice, '알림')]),
       strict: true,
       sink: sink,
     );
     emitLayoutReport(
-      _report([_finding(LayoutSeverity.info, '정보')]),
+      makeReport([makeFinding(LayoutSeverity.info, '정보')]),
       strict: true,
       sink: sink,
     );
@@ -139,7 +111,7 @@ void main() {
   });
 
   test('GitHub 모드에서 어노테이션은 10개까지, 요약 표는 전체를 쓴다', () {
-    final dir = _tempDir();
+    final dir = tempDir();
     final summary = File('${dir.path}/summary.md');
     final lines = <String>[];
     final sink = LayoutReportSink(
@@ -150,10 +122,10 @@ void main() {
       },
       writeLine: lines.add,
     );
-    final report = _report([
-      _finding(LayoutSeverity.notice, '알림', file: 'lib/n.dart'),
+    final report = makeReport([
+      makeFinding(LayoutSeverity.notice, '알림', file: 'lib/n.dart'),
       for (var i = 0; i < 12; i++)
-        _finding(
+        makeFinding(
           LayoutSeverity.warning,
           i == 0 ? '100%\n둘째 줄' : '경고 $i',
           file: i == 0 ? 'lib/a,b.dart' : 'lib/w.dart',
@@ -175,21 +147,18 @@ void main() {
   });
 
   test('GitHub 어노테이션은 같은 종류·위치를 하나로 묶고 info와 위치 없는 발견은 뺀다', () {
-    final dir = _tempDir();
+    final dir = tempDir();
     final lines = <String>[];
-    final sink = LayoutReportSink(
-      reportDir: dir.path,
-      environment: const {'GITHUB_ACTIONS': 'true'},
-      writeLine: lines.add,
-    );
+    final sink =
+        sinkFor(dir, env: const {'GITHUB_ACTIONS': 'true'}, lines: lines);
 
     emitLayoutReport(
-      _report([
-        _finding(LayoutSeverity.warning, '첫째', file: 'lib/x.dart', line: 3),
-        _finding(LayoutSeverity.warning, '둘째', file: 'lib/x.dart', line: 3),
-        _finding(LayoutSeverity.notice, '알림', file: 'lib/y.dart', line: 4),
-        _finding(LayoutSeverity.info, '정보', file: 'lib/z.dart'),
-        _finding(LayoutSeverity.warning, '위치 없음'),
+      makeReport([
+        makeFinding(LayoutSeverity.warning, '첫째', file: 'lib/x.dart', line: 3),
+        makeFinding(LayoutSeverity.warning, '둘째', file: 'lib/x.dart', line: 3),
+        makeFinding(LayoutSeverity.notice, '알림', file: 'lib/y.dart', line: 4),
+        makeFinding(LayoutSeverity.info, '정보', file: 'lib/z.dart'),
+        makeFinding(LayoutSeverity.warning, '위치 없음'),
       ]),
       strict: false,
       sink: sink,
@@ -204,7 +173,7 @@ void main() {
 
   test('onReport는 빈 보고서에도 불린다', () {
     final seen = <LayoutReport>[];
-    final empty = _report(const []);
+    final empty = makeReport(const []);
 
     emitLayoutReport(
       empty,
@@ -219,9 +188,9 @@ void main() {
   });
 
   test('LAYOUT_AUDIT=off면 파일도 콘솔도 쓰지 않고 onReport만 부른다', () {
-    final dir = _tempDir();
+    final dir = tempDir();
     final seen = <LayoutReport>[];
-    final report = _report([_finding(LayoutSeverity.warning, '경고')]);
+    final report = makeReport([makeFinding(LayoutSeverity.warning, '경고')]);
 
     emitLayoutReport(
       report,

@@ -3,8 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
 import 'recorded_reports.dart';
-
-const _style = TextStyle(fontSize: 20, height: 1, letterSpacing: 0);
+import 'support.dart';
 
 const _audited = '테스트가 끝나면 남은 트리를 자동으로 감사한다 (자동 감사 대상 1)';
 const _skipped = '자동 감사 제외: 이 테스트는 감사하지 않는다';
@@ -12,43 +11,32 @@ const _clean = '겹침이 없는 트리는 빈 보고서를 남긴다 (자동 �
 const _overflow = 'RenderFlex 넘침은 기록하면서 테스트 실패도 그대로 남긴다 (자동 감사 대상 3)';
 const _failing = '감사 중 예외가 나도 테스트는 통과한다 (자동 감사 대상 4)';
 
-Future<void> _pump(WidgetTester tester, Widget body) async {
-  tester.view.physicalSize = const Size(360 * 3, 800 * 3);
-  tester.view.devicePixelRatio = 3;
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(MaterialApp(home: Scaffold(body: body)));
-}
-
-Widget _overlapping() => const Stack(
-      children: [
-        Positioned(left: 10, top: 10, child: Text('AAAA', style: _style)),
-        Positioned(left: 20, top: 15, child: Text('BBBB', style: _style)),
-      ],
-    );
-
 List<LayoutReport> _reportsOf(String description) =>
     recordedReports.where((r) => r.name == slugify(description)).toList();
 
 void main() {
   testWidgets(_audited, (tester) async {
-    await _pump(tester, _overlapping());
+    await pumpInApp(tester, const OverlappingPair());
   });
 
   testWidgets(_skipped, (tester) async {
-    await _pump(tester, _overlapping());
+    await pumpInApp(tester, const OverlappingPair());
   });
 
   testWidgets(_clean, (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       const Row(
-        children: [Text('AAAA', style: _style), Text('BBBB', style: _style)],
+        children: [
+          Text('AAAA', style: squareStyle),
+          Text('BBBB', style: squareStyle)
+        ],
       ),
     );
   });
 
   testWidgets(_overflow, (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       const Row(children: [SizedBox(width: 500, height: 10)]),
     );
@@ -59,7 +47,7 @@ void main() {
   testWidgets(_failing, (tester) async {
     throwInIgnore = true;
     addTearDown(() => throwInIgnore = false);
-    await _pump(tester, _overlapping());
+    await pumpInApp(tester, const OverlappingPair());
   });
 
   tearDownAll(() {

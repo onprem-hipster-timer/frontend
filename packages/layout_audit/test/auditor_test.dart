@@ -2,51 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
-// 테마의 줄 높이·자간을 지워 테스트 글꼴의 글자가 20px 정사각형이 되게 한다.
-const _style = TextStyle(fontSize: 20, height: 1, letterSpacing: 0);
-
-Future<void> _pump(WidgetTester tester, Widget body) async {
-  tester.view.physicalSize = const Size(360 * 3, 800 * 3);
-  tester.view.devicePixelRatio = 3;
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(MaterialApp(home: Scaffold(body: body)));
-}
-
-Widget _at(double left, double top, Widget child) =>
-    Positioned(left: left, top: top, child: child);
-
-Widget _text(String text) => Text(text, style: _style);
-
-List<LayoutFinding> _ofKind(
-  List<LayoutFinding> findings,
-  LayoutFindingKind kind,
-) =>
-    findings.where((f) => f.kind == kind).toList();
-
-class _OverlappingPair extends StatelessWidget {
-  const _OverlappingPair();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 30,
-      child: Stack(
-        children: [
-          _at(0, 0, const Text('AAAA', style: _style)),
-          _at(10, 0, const Text('BBBB', style: _style)),
-        ],
-      ),
-    );
-  }
-}
+import 'support.dart';
 
 void main() {
   testWidgets('Stack에서 겹친 두 Text를 겹침으로 찾고 위쪽 Text와 가리는 위젯을 이름 붙인다', (
     tester,
   ) async {
-    await _pump(
+    await pumpInApp(
       tester,
-      Stack(children: [_at(10, 10, _text('AAAA')), _at(20, 15, _text('BBBB'))]),
+      Stack(children: [
+        at(10, 10, squareText('AAAA')),
+        at(20, 15, squareText('BBBB'))
+      ]),
     );
 
     final findings = auditLayout(tester);
@@ -65,12 +32,12 @@ void main() {
   });
 
   testWidgets('두 줄 텍스트의 짧은 둘째 줄 옆 빈 공간에 놓인 이웃은 겹침이 아니다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Stack(
         children: [
-          _at(0, 0, SizedBox(width: 100, child: _text('AAAAA BB'))),
-          _at(60, 22, _text('C')),
+          at(0, 0, SizedBox(width: 100, child: squareText('AAAAA BB'))),
+          at(60, 22, squareText('C')),
         ],
       ),
     );
@@ -80,7 +47,7 @@ void main() {
   });
 
   testWidgets('가운데 정렬된 짧은 텍스트의 양쪽 빈 공간은 겹침이 아니다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Stack(
         children: [
@@ -88,10 +55,10 @@ void main() {
             left: 0,
             top: 0,
             width: 200,
-            child: Text('AB', style: _style, textAlign: TextAlign.center),
+            child: Text('AB', style: squareStyle, textAlign: TextAlign.center),
           ),
-          _at(0, 0, _text('C')),
-          _at(170, 0, _text('D')),
+          at(0, 0, squareText('C')),
+          at(170, 0, squareText('D')),
         ],
       ),
     );
@@ -100,7 +67,7 @@ void main() {
   });
 
   testWidgets('Stack 밖에서 밀려 나온 Text도 겹침으로 찾는다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Align(
         alignment: Alignment.topLeft,
@@ -113,16 +80,16 @@ void main() {
               child: OverflowBox(
                 maxWidth: 300,
                 alignment: Alignment.centerLeft,
-                child: _text('AAAAAAAA'),
+                child: squareText('AAAAAAAA'),
               ),
             ),
-            _text('B'),
+            squareText('B'),
           ],
         ),
       ),
     );
 
-    final overlaps = _ofKind(auditLayout(tester), LayoutFindingKind.overlap);
+    final overlaps = ofKind(auditLayout(tester), LayoutFindingKind.overlap);
 
     expect(overlaps, hasLength(1));
     expect(overlaps.single.insideStack, isFalse);
@@ -130,17 +97,21 @@ void main() {
   });
 
   testWidgets('25% 미만 살짝 겹치면 notice, 완전히 덮이면 warning이다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
-      Stack(children: [_at(0, 0, _text('AAAA')), _at(75, 0, _text('BBBB'))]),
+      Stack(children: [
+        at(0, 0, squareText('AAAA')),
+        at(75, 0, squareText('BBBB'))
+      ]),
     );
     final slight = auditLayout(tester).single;
     expect(slight.severity, LayoutSeverity.notice);
     expect(slight.coveredFraction, closeTo(5 / 80, 0.001));
 
-    await _pump(
+    await pumpInApp(
       tester,
-      Stack(children: [_at(0, 0, _text('AAAA')), _at(20, 0, _text('B'))]),
+      Stack(
+          children: [at(0, 0, squareText('AAAA')), at(20, 0, squareText('B'))]),
     );
     final covered = auditLayout(tester).single;
     expect(covered.severity, LayoutSeverity.warning);
@@ -148,14 +119,14 @@ void main() {
   });
 
   testWidgets('2px 이하 겹침은 보고하지 않는다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Stack(
         children: [
-          _at(0, 0, _text('AAAA')),
-          _at(78, 0, _text('BBBB')),
-          _at(0, 39, _text('CCCC')),
-          _at(0, 58, _text('DDDD')),
+          at(0, 0, squareText('AAAA')),
+          at(78, 0, squareText('BBBB')),
+          at(0, 39, squareText('CCCC')),
+          at(0, 58, squareText('DDDD')),
         ],
       ),
     );
@@ -164,7 +135,7 @@ void main() {
   });
 
   testWidgets('Expanded + ellipsis는 겹침이 아니라 말줄임이다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,20 +143,20 @@ void main() {
           Expanded(
             child: Text(
               '아주 긴 제목이 들어가서 한 줄에 다 들어가지 않는 경우',
-              style: _style,
+              style: squareStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          _text('수정'),
+          squareText('수정'),
         ],
       ),
     );
 
     final findings = auditLayout(tester);
 
-    expect(_ofKind(findings, LayoutFindingKind.overlap), isEmpty);
-    final truncation = _ofKind(findings, LayoutFindingKind.truncation);
+    expect(ofKind(findings, LayoutFindingKind.overlap), isEmpty);
+    final truncation = ofKind(findings, LayoutFindingKind.truncation);
     expect(truncation, hasLength(1));
     expect(truncation.single.severity, LayoutSeverity.notice);
     expect(truncation.single.message, contains('(maxLines 1)'));
@@ -193,7 +164,7 @@ void main() {
   });
 
   testWidgets('TextOverflow.clip으로 잘려 나간 글자는 잘라냄이다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Align(
         alignment: Alignment.topLeft,
@@ -201,7 +172,7 @@ void main() {
           width: 60,
           child: Text(
             'AAAAAAAA',
-            style: _style,
+            style: squareStyle,
             maxLines: 1,
             softWrap: false,
             overflow: TextOverflow.clip,
@@ -219,14 +190,15 @@ void main() {
   });
 
   testWidgets('클립 없는 Positioned 텍스트가 화면 밖으로 나가면 이탈이다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
-      Stack(clipBehavior: Clip.none, children: [_at(340, 0, _text('AAAA'))]),
+      Stack(
+          clipBehavior: Clip.none, children: [at(340, 0, squareText('AAAA'))]),
     );
 
     final findings = auditLayout(tester);
 
-    final offscreen = _ofKind(findings, LayoutFindingKind.offscreen);
+    final offscreen = ofKind(findings, LayoutFindingKind.offscreen);
     expect(offscreen, hasLength(1));
     expect(offscreen.single.severity, LayoutSeverity.warning);
     expect(offscreen.single.message, contains('화면 오른쪽 밖으로 60.0px'));
@@ -234,9 +206,9 @@ void main() {
   });
 
   testWidgets('나란히 놓인 두 Text는 겹치지 않는다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
-      Row(children: [_text('AAA'), _text('BBB')]),
+      Row(children: [squareText('AAA'), squareText('BBB')]),
     );
 
     expect(auditLayout(tester), isEmpty);
@@ -244,19 +216,22 @@ void main() {
 
   testWidgets('Offstage·Opacity(0)·IndexedStack에 가려진 Text는 무시한다',
       (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Stack(
         children: [
-          _at(0, 0, _text('AAAA')),
-          _at(0, 0, Offstage(child: _text('BBBB'))),
-          _at(0, 0, Opacity(opacity: 0, child: _text('CCCC'))),
-          _at(
+          at(0, 0, squareText('AAAA')),
+          at(0, 0, Offstage(child: squareText('BBBB'))),
+          at(0, 0, Opacity(opacity: 0, child: squareText('CCCC'))),
+          at(
             0,
             0,
             IndexedStack(
               index: 0,
-              children: [const SizedBox(width: 1, height: 1), _text('DDDD')],
+              children: [
+                const SizedBox(width: 1, height: 1),
+                squareText('DDDD')
+              ],
             ),
           ),
         ],
@@ -267,13 +242,13 @@ void main() {
   });
 
   testWidgets('스크롤로 잘린 부분은 겹침·잘라냄·이탈로 보지 않는다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       ListView(
         controller: ScrollController(initialScrollOffset: 10),
         children: [
           for (var i = 0; i < 30; i++)
-            SizedBox(height: 90, child: _text('Item $i')),
+            SizedBox(height: 90, child: squareText('Item $i')),
         ],
       ),
     );
@@ -284,16 +259,16 @@ void main() {
   });
 
   testWidgets('WidgetSpan 안의 Text는 바깥 Text와 겹침으로 보지 않는다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Align(
         alignment: Alignment.topLeft,
         child: Text.rich(
           TextSpan(
-            style: _style,
+            style: squareStyle,
             children: [
               const TextSpan(text: 'AA'),
-              WidgetSpan(child: _text('BB')),
+              WidgetSpan(child: squareText('BB')),
               const TextSpan(text: 'CC'),
             ],
           ),
@@ -305,11 +280,14 @@ void main() {
   });
 
   testWidgets('IgnorePointer 아래 겹침은 순서 불명으로 보고한다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       IgnorePointer(
         child: Stack(
-          children: [_at(10, 10, _text('AAAA')), _at(20, 15, _text('BBBB'))],
+          children: [
+            at(10, 10, squareText('AAAA')),
+            at(20, 15, squareText('BBBB'))
+          ],
         ),
       ),
     );
@@ -323,12 +301,12 @@ void main() {
 
   testWidgets('within 밖의 겹침은 보고하지 않는다', (tester) async {
     const inside = Key('inside');
-    await _pump(
+    await pumpInApp(
       tester,
       Column(
         children: [
-          SizedBox(key: inside, height: 30, child: _text('AAAA')),
-          const _OverlappingPair(),
+          SizedBox(key: inside, height: 30, child: squareText('AAAA')),
+          const OverlappingPair(),
         ],
       ),
     );
@@ -336,13 +314,13 @@ void main() {
     expect(auditLayout(tester), hasLength(1));
     expect(auditLayout(tester, within: find.byKey(inside)), isEmpty);
     expect(
-      auditLayout(tester, within: find.byType(_OverlappingPair)),
+      auditLayout(tester, within: find.byType(OverlappingPair)),
       hasLength(1),
     );
   });
 
   testWidgets('ignore로 의도한 겹침을 뺄 수 있다', (tester) async {
-    await _pump(tester, const _OverlappingPair());
+    await pumpInApp(tester, const OverlappingPair());
 
     final findings = auditLayout(
       tester,
@@ -353,10 +331,10 @@ void main() {
   });
 
   testWidgets('같은 위젯 쌍의 반복 겹침은 하나로 묶고 횟수를 센다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       Column(
-        children: [for (var i = 0; i < 5; i++) const _OverlappingPair()],
+        children: [for (var i = 0; i < 5; i++) const OverlappingPair()],
       ),
     );
 
@@ -368,7 +346,16 @@ void main() {
   });
 
   testWidgets('찾은 위치가 이 테스트 파일의 줄을 가리킨다', (tester) async {
-    await _pump(tester, const _OverlappingPair());
+    // 공용 헬퍼가 아니라 이 파일에서 위젯을 만들어야 위치가 이 파일을 가리킨다.
+    await pumpInApp(
+      tester,
+      const Stack(
+        children: [
+          Positioned(left: 0, top: 0, child: Text('AAAA', style: squareStyle)),
+          Positioned(left: 10, top: 0, child: Text('BBBB', style: squareStyle)),
+        ],
+      ),
+    );
 
     final overlap = auditLayout(tester).single;
 
@@ -381,20 +368,23 @@ void main() {
 
   testWidgets('프레임 사이에 움직인 텍스트는 이동으로 알리고 그 겹침은 info로 낮춘다', (tester) async {
     Widget scene(double left) => Stack(
-          children: [_at(0, 0, _text('AAAA')), _at(left, 0, _text('BBBB'))],
+          children: [
+            at(0, 0, squareText('AAAA')),
+            at(left, 0, squareText('BBBB'))
+          ],
         );
-    await _pump(tester, scene(44));
+    await pumpInApp(tester, scene(44));
     final previous = snapshotLeafBoxes(tester);
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: scene(20))));
 
     final findings = auditLayout(tester, previousFrame: previous);
 
-    final moving = _ofKind(findings, LayoutFindingKind.moving);
+    final moving = ofKind(findings, LayoutFindingKind.moving);
     expect(moving, hasLength(1));
     expect(moving.single.texts, ['BBBB']);
     expect(moving.single.message, contains('24.0px 이동했습니다'));
     expect(
-      _ofKind(findings, LayoutFindingKind.overlap).single.severity,
+      ofKind(findings, LayoutFindingKind.overlap).single.severity,
       LayoutSeverity.info,
     );
 
@@ -402,12 +392,12 @@ void main() {
       tester,
       previousFrame: snapshotLeafBoxes(tester),
     );
-    expect(_ofKind(settled, LayoutFindingKind.moving), isEmpty);
+    expect(ofKind(settled, LayoutFindingKind.moving), isEmpty);
     expect(settled.single.severity, LayoutSeverity.warning);
   });
 
   testWidgets('maxLeaves를 넘으면 검사를 건너뛰고 info 하나만 돌려준다', (tester) async {
-    await _pump(tester, const _OverlappingPair());
+    await pumpInApp(tester, const OverlappingPair());
 
     final findings = auditLayout(
       tester,
@@ -419,14 +409,14 @@ void main() {
   });
 
   testWidgets('SingleChildScrollView로 잘린 부분도 잘라냄·이탈로 보지 않는다', (tester) async {
-    await _pump(
+    await pumpInApp(
       tester,
       SingleChildScrollView(
         controller: ScrollController(initialScrollOffset: 10),
         child: Column(
           children: [
             for (var i = 0; i < 30; i++)
-              SizedBox(height: 90, child: _text('Item $i')),
+              SizedBox(height: 90, child: squareText('Item $i')),
           ],
         ),
       ),

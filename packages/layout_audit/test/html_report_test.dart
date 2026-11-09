@@ -1,54 +1,17 @@
 import 'dart:io';
 import 'dart:ui' show Rect, Size;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
-LayoutFinding _finding(
-  LayoutSeverity severity,
-  String message, {
-  LayoutFindingKind kind = LayoutFindingKind.overlap,
-  List<Rect> rects = const [],
-}) =>
-    LayoutFinding(
-      kind: kind,
-      severity: severity,
-      message: message,
-      rects: rects,
-    );
-
-LayoutReport _report(
-  List<LayoutFinding> findings, {
-  String name = '홈 화면',
-  Size? viewSize,
-}) =>
-    LayoutReport(
-      name: name,
-      caseLabel: '360x800',
-      findings: findings,
-      viewSize: viewSize,
-    );
-
-Directory _tempDir() {
-  final dir = Directory.systemTemp.createTempSync('layout_audit_');
-  addTearDown(() => dir.deleteSync(recursive: true));
-  return dir;
-}
-
-LayoutReportSink _sink(Directory dir, {Map<String, String> env = const {}}) =>
-    LayoutReportSink(
-      reportDir: dir.path,
-      environment: env,
-      writeLine: (_) {},
-    );
+import 'support.dart';
 
 void main() {
   test('HTML 보고서는 머리말을 한 번만 쓰고 섹션을 덧붙인다', () {
-    final dir = _tempDir();
-    final report = _report([_finding(LayoutSeverity.warning, '경고')]);
+    final dir = tempDir();
+    final report = makeReport([makeFinding(LayoutSeverity.warning, '경고')]);
 
-    emitLayoutReport(report, strict: false, sink: _sink(dir));
-    emitLayoutReport(report, strict: false, sink: _sink(dir));
+    emitLayoutReport(report, strict: false, sink: sinkFor(dir));
+    emitLayoutReport(report, strict: false, sink: sinkFor(dir));
 
     final file = File('${dir.path}/홈_화면.html');
     expect(file.existsSync(), isTrue);
@@ -60,17 +23,17 @@ void main() {
   });
 
   test('HTML 표는 심각도 클래스와 종류 데이터로 거를 수 있다', () {
-    final dir = _tempDir();
+    final dir = tempDir();
     emitLayoutReport(
-      _report([
-        _finding(LayoutSeverity.warning, '넘침',
+      makeReport([
+        makeFinding(LayoutSeverity.warning, '넘침',
             kind: LayoutFindingKind.overflow),
-        _finding(LayoutSeverity.notice, '겹침'),
-        _finding(LayoutSeverity.info, '말줄임',
+        makeFinding(LayoutSeverity.notice, '겹침'),
+        makeFinding(LayoutSeverity.info, '말줄임',
             kind: LayoutFindingKind.truncation),
       ]),
       strict: false,
-      sink: _sink(dir),
+      sink: sinkFor(dir),
     );
 
     final html = File('${dir.path}/홈_화면.html').readAsStringSync();
@@ -100,14 +63,14 @@ void main() {
   test('겹침은 뷰포트 축소판 SVG에 두 상자와 교차 영역을 그린다', () {
     const a = Rect.fromLTWH(10, 20, 100, 30);
     const b = Rect.fromLTWH(50.25, 25, 100, 30);
-    final overlap = _finding(
+    final overlap = makeFinding(
       LayoutSeverity.warning,
       '겹침',
       rects: [a, b, a.intersect(b)],
     );
 
     final section =
-        _report([overlap], viewSize: const Size(360, 800)).toHtmlSection();
+        makeReport([overlap], viewSize: const Size(360, 800)).toHtmlSection();
     expect('<svg'.allMatches(section), hasLength(1));
     expect(section, contains('viewBox="0 0 360 800"'));
     expect(section, contains('width="160"'));
@@ -116,9 +79,9 @@ void main() {
     expect(section, contains('x="50.3" y="25.0" width="100.0" height="30.0"'));
     expect(section, contains('x="50.3" y="25.0" width="59.8" height="25.0"'));
 
-    expect(_report([overlap]).toHtmlSection(), isNot(contains('<svg')));
+    expect(makeReport([overlap]).toHtmlSection(), isNot(contains('<svg')));
     expect(
-      _report([_finding(LayoutSeverity.warning, '위치 없음')],
+      makeReport([makeFinding(LayoutSeverity.warning, '위치 없음')],
               viewSize: const Size(360, 800))
           .toHtmlSection(),
       isNot(contains('<svg')),
@@ -126,8 +89,8 @@ void main() {
   });
 
   test('HTML은 메시지의 특수 문자를 이스케이프한다', () {
-    final section = _report(
-      [_finding(LayoutSeverity.warning, 'a<b & "c" | d')],
+    final section = makeReport(
+      [makeFinding(LayoutSeverity.warning, 'a<b & "c" | d')],
       name: '<이름>',
     ).toHtmlSection();
 
@@ -137,13 +100,13 @@ void main() {
   });
 
   test('발견이 없거나 LAYOUT_AUDIT=off면 HTML도 쓰지 않는다', () {
-    final dir = _tempDir();
+    final dir = tempDir();
 
-    emitLayoutReport(_report(const []), sink: _sink(dir));
+    emitLayoutReport(makeReport(const []), sink: sinkFor(dir));
     emitLayoutReport(
-      _report([_finding(LayoutSeverity.warning, '경고')]),
+      makeReport([makeFinding(LayoutSeverity.warning, '경고')]),
       strict: false,
-      sink: _sink(dir, env: const {'LAYOUT_AUDIT': 'off'}),
+      sink: sinkFor(dir, env: const {'LAYOUT_AUDIT': 'off'}),
     );
 
     expect(dir.listSync(), isEmpty);
