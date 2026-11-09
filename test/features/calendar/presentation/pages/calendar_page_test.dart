@@ -5,11 +5,11 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
 import '../../../../helpers/fake_rest_clients.dart';
@@ -55,52 +55,83 @@ void main() {
 
   CalendarSettingsState settings() => container.read(calendarSettingsProvider);
 
-  testWidgets('월 보기 제목과 고른 날짜를 보이고, 이전·다음은 달을 옮긴다', (tester) async {
+  testWidgets('화살표 사이에 보는 달을 보이고, 이전·다음은 달만 옮기고 고른 날은 둔다', (tester) async {
     await pumpPage(tester);
 
+    expect(find.text('달력'), findsOneWidget);
     expect(find.text('2026년 11월'), findsOneWidget);
-    expect(find.text('11월 9일 (월)'), findsOneWidget);
 
-    await tapVisible(tester, find.byIcon(Icons.chevron_left).first);
+    await tapVisible(tester, find.byTooltip('이전'));
     expect(find.text('2026년 10월'), findsOneWidget);
-    await tapVisible(tester, find.byIcon(Icons.chevron_right).first);
-    await tapVisible(tester, find.byIcon(Icons.chevron_right).first);
+    await tapVisible(tester, find.byTooltip('다음'));
+    await tapVisible(tester, find.byTooltip('다음'));
     expect(find.text('2026년 12월'), findsOneWidget);
+    expect(settings().selectedDate, DateTime(2026, 11, 9));
   });
 
-  testWidgets('오늘은 오늘이 든 달로 돌아간다', (tester) async {
+  testWidgets('달력을 넘기면 화살표 사이의 달도 바뀐다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.byTooltip('오늘'));
+    await tester.fling(
+      find.byType(CalendarViewWidget),
+      const Offset(-600, 0),
+      2000,
+    );
+    await tester.pumpAndSettle();
 
+    expect(find.text('2026년 12월'), findsOneWidget);
+    expect(settings().displayDate, DateTime(2026, 12, 1));
+  });
+
+  testWidgets('오늘이 보는 기간에 없으면 오늘로 가기로 읽히고, 누르면 오늘을 고르고 그 달로 간다', (
+    tester,
+  ) async {
+    await pumpPage(tester);
     final now = DateTime.now();
+    final viewingToday = now.year == 2026 && now.month == 11;
+    expect(
+      find.byTooltip('오늘로 가기'),
+      viewingToday ? findsNothing : findsOneWidget,
+    );
+
+    await tapVisible(tester, find.byTooltip('이전'));
+    expect(find.byTooltip('오늘로 가기'), findsOneWidget);
+    expect(find.text('${now.day}'), findsWidgets);
+    await tapVisible(tester, find.byTooltip('오늘로 가기'));
+
     expect(find.text('${now.year}년 ${now.month}월'), findsOneWidget);
+    expect(find.byTooltip('오늘로 가기'), findsNothing);
+    expect(find.byTooltip('오늘'), findsOneWidget);
     expect(settings().selectedDate.day, now.day);
   });
 
-  testWidgets('보기를 바꾸면 제목 형식과 이동 단위가 바뀐다', (tester) async {
+  testWidgets('보기를 바꾸면 고른 날이 든 기간을 보이고 그 단위로 옮긴다', (tester) async {
     await pumpPage(tester);
-
-    String dayTitle(DateTime d) =>
-        DateFormat('yyyy년 M월 d일 (E)', 'ko').format(d);
 
     await tapVisible(tester, find.byTooltip('일간'));
     expect(settings().viewType, CalendarViewType.day);
-    final shown = settings().displayDate;
-    expect(find.text(dayTitle(shown)), findsOneWidget);
-    await tapVisible(tester, find.byIcon(Icons.chevron_right).first);
-    expect(
-      find.text(dayTitle(shown.add(const Duration(days: 1)))),
-      findsOneWidget,
-    );
+    expect(find.text('2026년 11월 9일 (월)'), findsOneWidget);
+    await tapVisible(tester, find.byTooltip('다음'));
+    expect(find.text('2026년 11월 10일 (화)'), findsOneWidget);
 
     await tapVisible(tester, find.byTooltip('주간'));
     expect(settings().viewType, CalendarViewType.week);
-    expect(find.textContaining(' - '), findsOneWidget);
+    expect(find.text('11월 8일 – 14일'), findsOneWidget);
   });
 
-  testWidgets('제목을 누르면 날짜를 골라 그 날짜로 옮긴다', (tester) async {
+  testWidgets('주가 두 달에 걸치면 끝에도 달을 쓴다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.text('2026년 11월'));
+    container.read(calendarSettingsProvider.notifier)
+      ..setSelectedDate(DateTime(2026, 11, 30))
+      ..setViewType(CalendarViewType.week);
+    await tester.pumpAndSettle();
+
+    expect(find.text('11월 29일 – 12월 5일'), findsOneWidget);
+  });
+
+  testWidgets('보는 기간을 누르면 날짜를 골라 그날을 고르고 그 기간으로 간다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.byTooltip('다음'));
+    await tapVisible(tester, find.text('2026년 12월'));
     await tapVisible(
       tester,
       find.descendant(
@@ -111,7 +142,7 @@ void main() {
     await tapVisible(tester, find.text('확인'));
 
     expect(settings().selectedDate, DateTime(2026, 11, 20));
-    expect(find.text('11월 20일 (금)'), findsOneWidget);
+    expect(find.text('2026년 11월'), findsOneWidget);
   });
 
   testWidgets('추가 버튼은 새 일정 시트를 연다', (tester) async {

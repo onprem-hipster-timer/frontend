@@ -34,13 +34,9 @@ class CalendarPage extends ConsumerWidget {
     );
   }
 
-  /// AppBar 빌드
   PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(calendarSettingsProvider);
-    final colorScheme = Theme.of(context).colorScheme;
-
     return AppBar(
-      title: _buildTitle(context, ref, settings),
+      title: const Text('달력'),
       centerTitle: true,
       leading: IconButton(
         icon: const Icon(Icons.menu),
@@ -50,128 +46,22 @@ class CalendarPage extends ConsumerWidget {
         },
       ),
       actions: [
-        // 오늘 버튼
-        IconButton(
-          icon: const Icon(Icons.today),
-          tooltip: '오늘',
-          onPressed: () {
-            ref.read(calendarSettingsProvider.notifier).goToToday();
-          },
-        ),
-        // 뷰 선택기 (컴팩트)
+        const _TodayButton(),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 8.0),
           child: CalendarViewSelector(isCompact: true),
         ),
-        // 필터 버튼
         IconButton(
           icon: const Icon(Icons.filter_list),
           tooltip: '필터',
-          onPressed: () {
-            _showFilterSheet(context, ref);
-          },
+          onPressed: () => _showFilterSheet(context, ref),
         ),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: _buildNavigationBar(context, ref, settings, colorScheme),
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(48),
+        child: _PeriodBar(),
       ),
     );
-  }
-
-  /// 타이틀 빌드
-  Widget _buildTitle(
-    BuildContext context,
-    WidgetRef ref,
-    CalendarSettingsState settings,
-  ) {
-    final displayDate = settings.displayDate;
-    String titleText;
-
-    switch (settings.viewType) {
-      case CalendarViewType.day:
-        titleText = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(displayDate);
-        break;
-      case CalendarViewType.week:
-        final weekStart = startOfWeek(displayDate, settings.firstDayOfWeek);
-        final endOfWeek = weekStart.add(const Duration(days: 6));
-        titleText =
-            '${DateFormat('M/d', 'ko').format(weekStart)} - ${DateFormat('M/d', 'ko').format(endOfWeek)}';
-        break;
-      case CalendarViewType.month:
-      case CalendarViewType.year:
-      case CalendarViewType.agenda:
-        titleText = DateFormat('yyyy년 M월', 'ko').format(displayDate);
-        break;
-    }
-
-    return GestureDetector(
-      onTap: () => _showDatePicker(context, ref),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(titleText),
-          const SizedBox(width: 4),
-          const Icon(Icons.arrow_drop_down, size: 20),
-        ],
-      ),
-    );
-  }
-
-  /// 네비게이션 바 빌드
-  Widget _buildNavigationBar(
-    BuildContext context,
-    WidgetRef ref,
-    CalendarSettingsState settings,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // 이전 버튼
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () {
-              ref.read(calendarSettingsProvider.notifier).goToPrevious();
-            },
-          ),
-          // 선택된 날짜 표시
-          Text(
-            DateFormat('M월 d일 (E)', 'ko').format(settings.selectedDate),
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          // 다음 버튼
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () {
-              ref.read(calendarSettingsProvider.notifier).goToNext();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 날짜 선택기 표시
-  Future<void> _showDatePicker(BuildContext context, WidgetRef ref) async {
-    final settings = ref.read(calendarSettingsProvider);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: settings.selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      locale: const Locale('ko', 'KR'),
-    );
-
-    if (picked != null) {
-      ref.read(calendarSettingsProvider.notifier).setSelectedDate(picked);
-      ref.read(calendarSettingsProvider.notifier).setDisplayDate(picked);
-    }
   }
 
   /// 필터 시트 표시
@@ -246,6 +136,137 @@ class _FilterSheetContent extends ConsumerWidget {
                 },
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 지금 보는 기간의 이름(월: '2026년 11월', 주: '11월 8일 – 14일', 일: '2026년 11월 9일 (월)')
+String periodLabel(CalendarSettingsState settings) {
+  final start = settings.displayDate;
+  switch (settings.viewType) {
+    case CalendarViewType.day:
+      return DateFormat('yyyy년 M월 d일 (E)', 'ko').format(start);
+    case CalendarViewType.week:
+      final end = start.add(const Duration(days: DateTime.daysPerWeek - 1));
+      final endFormat = end.month == start.month ? 'd일' : 'M월 d일';
+      return '${DateFormat('M월 d일', 'ko').format(start)} – '
+          '${DateFormat(endFormat, 'ko').format(end)}';
+    case CalendarViewType.month:
+    case CalendarViewType.agenda:
+      return DateFormat('yyyy년 M월', 'ko').format(start);
+    case CalendarViewType.year:
+      return DateFormat('yyyy년', 'ko').format(start);
+  }
+}
+
+/// 이전·다음 기간 버튼과 지금 보는 기간. 기간을 누르면 날짜를 골라 그날로 간다
+class _PeriodBar extends ConsumerWidget {
+  const _PeriodBar();
+
+  Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
+    final settings = ref.read(calendarSettingsProvider);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: settings.selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      locale: const Locale('ko', 'KR'),
+    );
+    if (picked != null) {
+      ref.read(calendarSettingsProvider.notifier).goToDate(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(calendarSettingsProvider);
+    final notifier = ref.read(calendarSettingsProvider.notifier);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            tooltip: '이전',
+            onPressed: notifier.goToPrevious,
+          ),
+          Flexible(
+            child: TextButton.icon(
+              onPressed: () => _pickDate(context, ref),
+              iconAlignment: IconAlignment.end,
+              icon: const Icon(Icons.arrow_drop_down),
+              label: Text(
+                periodLabel(settings),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            tooltip: '다음',
+            onPressed: notifier.goToNext,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 오늘로 가는 버튼. 달력 아이콘에 오늘 날짜를 넣어 보이고, 지금 보는 기간에 오늘이 없으면
+/// 연한 배경을 칠하고 '오늘로 가기'로 읽힌다
+class _TodayButton extends ConsumerWidget {
+  const _TodayButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(calendarSettingsProvider);
+    final today = DateTime.now();
+    final todayInView = periodContains(
+      settings.viewType,
+      settings.displayDate,
+      today,
+      settings.firstDayOfWeek,
+    );
+    final goToToday = ref.read(calendarSettingsProvider.notifier).goToToday;
+    final icon = _TodayIcon(day: today.day);
+    return todayInView
+        ? IconButton(icon: icon, tooltip: '오늘', onPressed: goToToday)
+        : IconButton.filledTonal(
+            icon: icon,
+            tooltip: '오늘로 가기',
+            onPressed: goToToday,
+          );
+  }
+}
+
+/// 날짜 숫자를 넣은 달력 아이콘
+class _TodayIcon extends StatelessWidget {
+  const _TodayIcon({required this.day});
+
+  final int day;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = IconTheme.of(context).color;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        const Icon(Icons.calendar_today_outlined),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            '$day',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: color,
+              height: 1,
+            ),
           ),
         ),
       ],

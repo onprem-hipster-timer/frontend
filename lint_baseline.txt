@@ -42,8 +42,6 @@ max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerGall
 max_build_lines lib/features/timer/presentation/widgets/timer_dial.dart _TimerDialState.build 86
 max_build_lines lib/shared/pages/security_warning_page.dart SecurityWarningPage.build 107
 no_widget_helper_methods lib/features/calendar/presentation/pages/calendar_page.dart CalendarPage._buildAppBar -
-no_widget_helper_methods lib/features/calendar/presentation/pages/calendar_page.dart CalendarPage._buildNavigationBar -
-no_widget_helper_methods lib/features/calendar/presentation/pages/calendar_page.dart CalendarPage._buildTitle -
 no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildActionButtons -
 no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildBody -
 no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildScheduleHeader -

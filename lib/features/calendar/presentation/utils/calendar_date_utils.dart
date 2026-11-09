@@ -60,3 +60,43 @@ DateTime startOfWeek(DateTime date, int firstDayOfWeek) {
       );
   }
 }
+
+/// [viewType]으로 볼 때 [date]가 든 기간의 첫날(로컬 자정).
+/// 월·아젠다는 그달 1일, 주는 주 시작일, 일은 그날, 연은 1월 1일.
+DateTime periodStart(
+  CalendarViewType viewType,
+  DateTime date,
+  int firstDayOfWeek,
+) => switch (viewType) {
+  CalendarViewType.day => DateTime(date.year, date.month, date.day),
+  CalendarViewType.week => startOfWeek(date, firstDayOfWeek),
+  CalendarViewType.month ||
+  CalendarViewType.agenda => DateTime(date.year, date.month, 1),
+  CalendarViewType.year => DateTime(date.year, 1, 1),
+};
+
+/// [start]에서 시작하는 기간을 [step]만큼(음수면 이전) 옮긴 기간의 첫날.
+DateTime shiftPeriod(CalendarViewType viewType, DateTime start, int step) =>
+    switch (viewType) {
+      CalendarViewType.day => DateTime(
+        start.year,
+        start.month,
+        start.day + step,
+      ),
+      CalendarViewType.week => DateTime(
+        start.year,
+        start.month,
+        start.day + DateTime.daysPerWeek * step,
+      ),
+      CalendarViewType.month ||
+      CalendarViewType.agenda => DateTime(start.year, start.month + step, 1),
+      CalendarViewType.year => DateTime(start.year + step, 1, 1),
+    };
+
+/// [start]에서 시작하는 기간에 [date]가 드는지.
+bool periodContains(
+  CalendarViewType viewType,
+  DateTime start,
+  DateTime date,
+  int firstDayOfWeek,
+) => periodStart(viewType, date, firstDayOfWeek) == start;
