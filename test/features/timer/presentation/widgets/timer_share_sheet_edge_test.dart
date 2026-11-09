@@ -514,6 +514,115 @@ void main() {
       expect(canSave(tester), isTrue);
     });
 
+    group('칸에 적고 더하지 않은 값', () {
+      /// [field]에 [text]를 적기만 하고 더하지 않는다
+      Future<void> type(WidgetTester tester, Finder field, String text) async {
+        await tester.ensureVisible(field);
+        await tester.pumpAndSettle();
+        await tester.enterText(field, text);
+        await tester.pump();
+      }
+
+      testWidgets('저장하면 더한 항목 뒤에 더해 보낸다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
+        await type(tester, emailField(), 'lee@example.com');
+        await type(tester, domainField(), 'example.org');
+
+        await save(tester);
+
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(
+            level: VisibilityLevel.allowedEmails,
+            allowedEmails: ['kim@example.com', 'lee@example.com'],
+            allowedDomains: ['example.org'],
+          ),
+        );
+        expect(sheet(), findsNothing);
+        expect(find.text('공유 설정을 저장했습니다'), findsOneWidget);
+      });
+
+      for (final (label, field, text, emails, domains) in [
+        ('이메일', emailField, 'lee@example.com', ['lee@example.com'], <String>[]),
+        ('도메인', domainField, 'example.org', <String>[], ['example.org']),
+      ]) {
+        testWidgets('목록이 비어도 형식에 맞는 $label을 적으면 저장할 수 있고 그 값을 보낸다', (
+          tester,
+        ) async {
+          await open(tester);
+          await choose(tester, '이메일·도메인 지정');
+          expect(canSave(tester), isFalse);
+
+          await type(tester, field(), text);
+          expect(canSave(tester), isTrue);
+          await save(tester);
+
+          expect(
+            repository.visibilityUpdate,
+            VisibilityUpdate(
+              level: VisibilityLevel.allowedEmails,
+              allowedEmails: emails,
+              allowedDomains: domains,
+            ),
+          );
+          expect(sheet(), findsNothing);
+        });
+      }
+
+      testWidgets('형식이 맞지 않으면 저장하지 않고 칸에 알리며 시트에 머문다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
+        await type(tester, emailField(), 'lee@');
+
+        await save(tester);
+
+        expect(saves(), isEmpty);
+        expect(sheet(), findsOneWidget);
+        expect(find.text('이메일 형식이 아닙니다'), findsOneWidget);
+        expect(tester.widget<TextField>(emailField()).controller!.text, 'lee@');
+        expect(find.text('공유 설정을 저장했습니다'), findsNothing);
+
+        // 고치면 오류를 지우고 저장한다
+        await type(tester, emailField(), 'lee@example.com');
+        expect(find.text('이메일 형식이 아닙니다'), findsNothing);
+        await save(tester);
+
+        expect(saves(), ['setVisibility:timer-1']);
+        expect(repository.visibilityUpdate?.allowedEmails, [
+          'kim@example.com',
+          'lee@example.com',
+        ]);
+      });
+
+      testWidgets('목록이 비었고 칸의 값이 형식에 맞지 않으면 저장할 수 없다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+
+        await type(tester, emailField(), 'lee@');
+        await type(tester, domainField(), 'example');
+
+        expect(canSave(tester), isFalse);
+      });
+
+      testWidgets('다른 범위로 저장하면 칸에 적은 값은 보내지 않는다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await type(tester, emailField(), 'lee@');
+        await choose(tester, '전체 공개');
+
+        await save(tester);
+
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(level: VisibilityLevel.public),
+        );
+        expect(sheet(), findsNothing);
+      });
+    });
+
     testWidgets('칩을 모두 지우면 다시 저장할 수 없다', (tester) async {
       repository.visibilityOf = (_) async => makeVisibility(
         level: VisibilityLevel.allowedEmails,

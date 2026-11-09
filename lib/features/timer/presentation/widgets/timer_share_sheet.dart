@@ -53,7 +53,8 @@ final _domainPattern = RegExp(r'^[^@\s]+\.[^@\s]+$');
 /// 내 타이머 [timer]의 공유 범위를 고르는 바텀 시트를 연다
 ///
 /// 지금 설정을 읽어 고른 상태로 보여 준다. 저장하면 비공개는 설정을 지우고(DELETE),
-/// 그 외는 그 범위가 쓰는 목록만 보낸다(PUT). 저장하면 시트를 닫고 그 타이머를 다시 읽어
+/// 그 외는 그 범위가 쓰는 목록만 보낸다(PUT). 이메일·도메인 칸에 적고 더하지 않은 값도 더해 보낸다.
+/// 저장하면 시트를 닫고 그 타이머를 다시 읽어
 /// 대시보드와 타이머 목록에 반영한다. 저장에 실패하면 알리고 고른 값을 둔 채 머문다.
 ///
 /// 테스트: test/features/timer/presentation/widgets/timer_share_sheet_test.dart
@@ -152,9 +153,15 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
   ];
 
   /// 선택한 친구는 친구를, 이메일·도메인은 항목을 하나 이상 골라야 저장한다
+  ///
+  /// 칸에 적고 더하지 않은 값도 형식에 맞으면 항목으로 본다.
   bool _canSave(List<FriendRead>? friends) => switch (_level) {
     VisibilityLevel.selected => _selectedFriendIds(friends).isNotEmpty,
-    VisibilityLevel.allowedEmails => _emails.isNotEmpty || _domains.isNotEmpty,
+    VisibilityLevel.allowedEmails =>
+      _emails.isNotEmpty ||
+          _domains.isNotEmpty ||
+          _emailPattern.hasMatch(_email.text.trim()) ||
+          _domainPattern.hasMatch(_domain.text.trim()),
     VisibilityLevel.$unknown => false,
     _ => true,
   };
@@ -177,6 +184,12 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
   Future<void> _save(List<FriendRead>? friends) async {
     // 다시 그리기 전에 연달아 누른 저장은 보내지 않는다
     if (_saving) return;
+    // 칸에 적고 더하지 않은 값도 더해 보낸다. 형식이 맞지 않으면 칸에 알리고 머문다
+    if (_level == VisibilityLevel.allowedEmails) {
+      _addEmail();
+      _addDomain();
+      if (_emailError != null || _domainError != null) return;
+    }
     final update = _update(friends);
     final timerId = widget.timer.id;
     // 저장하는 사이 시트가 닫혀도 결과를 알리고 반영한다
@@ -387,7 +400,7 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     _entryChips(_domains),
   ];
 
-  /// 값을 적어 [onAdd]로 목록에 더하는 칸. 고치기 시작하면 [onEdit]로 오류를 지운다
+  /// 값을 적어 [onAdd]로 목록에 더하는 칸. 고치면 [onEdit]로 오류를 지우고 저장할 수 있는지 다시 본다
   Widget _entryField({
     required TextEditingController controller,
     required String label,
@@ -414,9 +427,7 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
           onPressed: _saving ? null : onAdd,
         ),
       ),
-      onChanged: (_) {
-        if (error != null) setState(onEdit);
-      },
+      onChanged: (_) => setState(onEdit),
       onSubmitted: (_) => onAdd(),
     );
   }
