@@ -54,8 +54,8 @@ Duration snapDialDuration(Duration duration, Duration face) {
 
 /// 남은 시간을 12시부터 시계 방향으로 채운 원판으로 보여 주는 다이얼.
 ///
-/// [onChanged]가 있으면 다이얼을 누르거나 끌어 시간을 고른다. 끄는 동안 원판은 [dialDragStep] 단위로 손가락을 따라가고
-/// 그 값을 [onPreview]로 알린다. 놓거나 끌기가 취소되면 가장 가까운 [dialStep] 단위로 맞춰 [onChanged]를 부르고
+/// [onChanged]가 있으면 다이얼을 누르거나 끌어 시간을 고른다. 끄는 동안 원판은 [dialDragStep] 단위로 손가락을 따라가고,
+/// [onPreview]에는 놓으면 고를 값(가장 가까운 [dialStep] 단위)을 알린다. 놓거나 끌기가 취소되면 가장 가까운 [dialStep] 단위로 맞춰 [onChanged]를 부르고
 /// [onPreview]에 null을 넘기며, 원판은 맞춘 값으로 짧게 움직인다. 끄는 동안 [dialStep] 경계를 넘을 때마다 선택 햅틱을 낸다.
 /// 스크린 리더에는 [label] 이름의 슬라이더로 보이고, 초점을 받으면 방향키(위·오른쪽은 늘리기, 아래·왼쪽은 줄이기)와
 /// +·-로 [dialStep]씩 [dialStep]~한 바퀴 시간 안에서 바꾼다.
@@ -135,7 +135,7 @@ class _TimerDialState extends State<TimerDial>
       HapticFeedback.selectionClick();
     }
     setState(() => _dragged = picked);
-    widget.onPreview?.call(picked);
+    widget.onPreview?.call(snapDialDuration(picked, _face));
   }
 
   void _release() {

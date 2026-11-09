@@ -1359,7 +1359,7 @@ void main() {
           Offset(math.sin(angle), -math.cos(angle)) * radius;
     }
 
-    testWidgets('다이얼을 끄는 동안 시계는 10초 단위로 따라가고 놓으면 30초로 맞춘 값으로 시작한다', (
+    testWidgets('다이얼을 끄는 동안 시계는 놓으면 고를 30초 단위 값만 보이고 놓은 값 그대로 시작한다', (
       tester,
     ) async {
       final controller = _FakeTimerController();
@@ -1368,7 +1368,7 @@ void main() {
       final gesture = await tester.startGesture(dialAt(tester, 600));
       await gesture.moveTo(dialAt(tester, 760));
       await tester.pump();
-      expect(_clockText(tester), '00:12:40');
+      expect(_clockText(tester), '00:12:30');
 
       await gesture.up();
       await tester.pumpAndSettle();

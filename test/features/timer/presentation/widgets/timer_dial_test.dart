@@ -413,14 +413,14 @@ void main() {
     Offset at(WidgetTester tester, int seconds) =>
         _dialPoint(tester.getCenter(find.byType(TimerDial)), 90, seconds);
 
-    testWidgets('끄는 동안은 10초 단위로 미리 보이고 고르지 않는다', (tester) async {
+    testWidgets('끄는 동안은 놓으면 고를 30초 단위 값을 미리 보이고 고르지 않는다', (tester) async {
       final result = await pumpDragged(tester);
 
       final gesture = await tester.startGesture(at(tester, 600));
       await gesture.moveTo(at(tester, 760));
       await tester.pump();
 
-      expect(result.previews.last, const Duration(minutes: 12, seconds: 40));
+      expect(result.previews.last, const Duration(minutes: 12, seconds: 30));
       expect(result.picked, isEmpty);
       await gesture.up();
     });
