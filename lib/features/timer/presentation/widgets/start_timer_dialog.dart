@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
@@ -183,7 +184,7 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
           const SizedBox(height: 16),
           InkWell(
             onTap: linkable == null ? null : () => _pickTodo(linkable),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.smAll,
             child: InputDecorator(
               decoration: InputDecoration(
                 labelText: '할 일 연결 (선택)',

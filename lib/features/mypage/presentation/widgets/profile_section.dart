@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
@@ -74,7 +75,7 @@ class ProfileSection extends ConsumerWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.smAll,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -83,7 +84,7 @@ class ProfileSection extends ConsumerWidget {
                       height: 16,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.smAll,
                       ),
                     ),
                   ],

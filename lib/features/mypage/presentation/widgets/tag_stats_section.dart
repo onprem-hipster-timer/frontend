@@ -60,7 +60,7 @@ class TagStatsSection extends ConsumerWidget {
                           context,
                           tagItem.tagName,
                           tagItem.count,
-                          _getTagColor(tagItem.tagId),
+                          _getTagColor(context, tagItem.tagId),
                         ),
                       )
                       .toList(),
@@ -76,7 +76,7 @@ class TagStatsSection extends ConsumerWidget {
                     height: 36,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: AppRadius.pillAll,
                     ),
                   ),
                 ),
@@ -104,7 +104,7 @@ class TagStatsSection extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.pillAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -122,7 +122,7 @@ class TagStatsSection extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.lgAll,
             ),
             child: Text(
               '$count',
@@ -137,19 +137,8 @@ class TagStatsSection extends ConsumerWidget {
     );
   }
 
-  Color _getTagColor(String tagId) {
-    final colors = [
-      Colors.blue,
-      Colors.purple,
-      Colors.orange,
-      Colors.green,
-      Colors.red,
-      Colors.teal,
-      Colors.indigo,
-      Colors.pink,
-      Colors.amber,
-      Colors.cyan,
-    ];
+  Color _getTagColor(BuildContext context, String tagId) {
+    final colors = AppColors.of(context).categorical;
 
     final index = tagId.hashCode.abs() % colors.length;
     return colors[index];

@@ -26,12 +26,6 @@ const double kIndentWidth = 24.0;
 /// 드래그 피드백 투명도
 const double kDraggingOpacity = 0.5;
 
-/// 드롭 대상 하이라이트 색상
-const Color kDropTargetColor = Colors.blue;
-
-/// 드롭 불가 색상
-const Color kInvalidDropColor = Colors.red;
-
 /// Todo 트리 타일 위젯
 ///
 /// 단일 Todo 노드와 그 자식들을 재귀적으로 렌더링합니다.
@@ -140,17 +134,17 @@ class TodoTreeTile extends ConsumerWidget {
         );
       },
       builder: (context, candidateData, rejectedData) {
-        final isValidTarget = candidateData.isNotEmpty;
-        final isInvalidTarget = rejectedData.isNotEmpty;
+        final scheme = Theme.of(context).colorScheme;
+        final border = candidateData.isNotEmpty
+            ? scheme.primary
+            : rejectedData.isNotEmpty
+            ? scheme.error
+            : null;
 
         return Container(
           decoration: BoxDecoration(
-            border: isValidTarget
-                ? Border.all(color: kDropTargetColor, width: 2)
-                : isInvalidTarget
-                ? Border.all(color: kInvalidDropColor, width: 2)
-                : null,
-            borderRadius: BorderRadius.circular(4),
+            border: border == null ? null : Border.all(color: border, width: 2),
+            borderRadius: AppRadius.smAll,
           ),
           child: child,
         );
@@ -179,13 +173,13 @@ class TodoTreeTile extends ConsumerWidget {
       },
       feedback: Material(
         elevation: 4,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.mdAll,
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.mdAll,
           ),
           child: Text(
             node.todo.title,
@@ -223,7 +217,7 @@ class TodoTreeTile extends ConsumerWidget {
           color: isSelected
               ? Theme.of(context).colorScheme.primaryContainer.withAlpha(77)
               : null,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppRadius.smAll,
         ),
         child: Padding(
           // 깊이에 비례하는 들여쓰기
@@ -304,7 +298,7 @@ class TodoTreeTile extends ConsumerWidget {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: AppRadius.lgAll,
                               ),
                               child: Text(
                                 '${node.children.length}',
@@ -549,7 +543,7 @@ class _TodoElapsedBadge extends ConsumerWidget {
           color: isActive
               ? theme.colorScheme.primaryContainer
               : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.mdAll,
         ),
         child: Text(
           formatDuration(Duration(seconds: finished + (active ?? 0))),
@@ -728,14 +722,14 @@ class TodoRootDropTarget extends ConsumerWidget {
           decoration: BoxDecoration(
             border: Border.all(
               color: isValidTarget
-                  ? kDropTargetColor
+                  ? theme.colorScheme.primary
                   : theme.colorScheme.outline.withValues(alpha: 0.3),
               width: isValidTarget ? 2 : 1,
               style: BorderStyle.solid,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.mdAll,
             color: isValidTarget
-                ? kDropTargetColor.withValues(alpha: 0.1)
+                ? theme.colorScheme.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
           ),
           child: Center(
@@ -746,7 +740,7 @@ class TodoRootDropTarget extends ConsumerWidget {
                   Icons.arrow_upward,
                   size: 16,
                   color: isValidTarget
-                      ? kDropTargetColor
+                      ? theme.colorScheme.primary
                       : theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
@@ -754,7 +748,7 @@ class TodoRootDropTarget extends ConsumerWidget {
                   '루트로 이동',
                   style: TextStyle(
                     color: isValidTarget
-                        ? kDropTargetColor
+                        ? theme.colorScheme.primary
                         : theme.colorScheme.onSurfaceVariant,
                     fontWeight: isValidTarget
                         ? FontWeight.bold

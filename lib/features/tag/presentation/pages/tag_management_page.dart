@@ -269,7 +269,7 @@ class TagManagementPage extends ConsumerWidget {
         // Interaction: 탭하면 수정 폼
         onTap: () => _showEditTagSheet(context, ref, tag, parentGroup),
 
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
         tileColor: theme.colorScheme.surface,
         hoverColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
       ),

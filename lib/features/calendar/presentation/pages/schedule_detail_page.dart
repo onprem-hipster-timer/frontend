@@ -111,10 +111,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   }
 
   Widget _buildScheduleInfo(BuildContext context, ScheduleRead schedule) {
-    final statusColor = getScheduleStatusColor(
-      schedule.state,
-      Theme.of(context).brightness,
-    );
+    final statusColor = getScheduleStatusColor(context, schedule.state);
     final statusText = getScheduleStatusText(schedule.state);
 
     return Column(
@@ -147,7 +144,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.lgAll,
             ),
             child: Text(
               statusText,
@@ -182,12 +179,16 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       children: [
         Row(
           children: [
-            Icon(Icons.label, size: 20, color: Colors.grey[600]),
+            Icon(
+              Icons.label,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Text(
               '태그',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -210,7 +211,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.xlAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
@@ -244,9 +245,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
           label: const Text('연결된 TODO 보기'),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
           ),
         ),
       );
@@ -260,9 +259,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
             : () => _handleConvertToTodo(context, ref, schedule),
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
         ),
         child: _pendingAction == _PendingAction.convert
             ? const SizedBox(
@@ -297,9 +294,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
             label: const Text('수정'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
             ),
           ),
         ),
@@ -320,12 +315,10 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
               _pendingAction == _PendingAction.delete ? '삭제 중...' : '삭제',
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
             ),
           ),
         ),

@@ -154,7 +154,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           selectionDecoration: BoxDecoration(
             color: colorScheme.primary.withValues(alpha: 0.1),
             border: Border.all(color: colorScheme.primary, width: 1.5),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.smAll,
           ),
 
           // ============================================================
@@ -530,8 +530,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                     constraints: const BoxConstraints(maxWidth: 60),
                     child: Text(
                       holiday.dateName,
-                      style: const TextStyle(
-                        color: Colors.red,
+                      style: TextStyle(
+                        color: AppColors.of(context).holiday,
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                       ),
@@ -631,10 +631,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final isSaturday = date.weekday == DateTime.saturday;
 
     if (isHoliday || (highlightWeekends && isSunday)) {
-      return (color: Colors.red, weight: FontWeight.w600);
+      return (color: AppColors.of(context).holiday, weight: FontWeight.w600);
     }
     if (highlightWeekends && isSaturday) {
-      return (color: Colors.blue, weight: FontWeight.w600);
+      return (color: AppColors.of(context).saturday, weight: FontWeight.w600);
     }
     final base = isCurrentMonth
         ? colorScheme.onSurface
@@ -661,10 +661,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                 startTime: holidayDate,
                 endTime: holidayDate.add(const Duration(days: 1)),
                 text: holiday.dateName,
-                color: Colors.red.withValues(alpha: 0.1),
+                color: AppColors.of(context).holiday.withValues(alpha: 0.1),
                 enablePointerInteraction: false,
-                textStyle: const TextStyle(
-                  color: Colors.red,
+                textStyle: TextStyle(
+                  color: AppColors.of(context).holiday,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 
 /// 떠있는(Floating) 하단 네비게이션 바가 있는 스캐폴드
@@ -52,7 +53,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
         // 테마에 맞는 표면 색상 사용
         color: theme.colorScheme.surfaceContainer,
         // 완벽한 알약(Pill) 모양을 위한 둥근 모서리
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: AppRadius.pillAll,
         // 입체감을 주는 그림자 효과
         boxShadow: [
           BoxShadow(
@@ -65,7 +66,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
       ),
       child: ClipRRect(
         // 컨테이너와 동일한 둥근 모서리로 자식 위젯 클리핑
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: AppRadius.pillAll,
         child: BottomNavigationBar(
           // ============================================================
           // 기본 BottomNavigationBar 설정

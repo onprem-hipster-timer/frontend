@@ -39,7 +39,7 @@ class ActivityStatsSection extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.mdAll,
                     child: LinearProgressIndicator(
                       value: stats.completionRate,
                       minHeight: 10,
@@ -107,7 +107,7 @@ class ActivityStatsSection extends ConsumerWidget {
                     height: 20,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppRadius.smAll,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -116,7 +116,7 @@ class ActivityStatsSection extends ConsumerWidget {
                     height: 10,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.mdAll,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -125,7 +125,7 @@ class ActivityStatsSection extends ConsumerWidget {
                     height: 20,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: AppRadius.smAll,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -136,7 +136,7 @@ class ActivityStatsSection extends ConsumerWidget {
                           height: 60,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.lgAll,
                           ),
                         ),
                       ),
@@ -146,7 +146,7 @@ class ActivityStatsSection extends ConsumerWidget {
                           height: 60,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.lgAll,
                           ),
                         ),
                       ),
@@ -156,7 +156,7 @@ class ActivityStatsSection extends ConsumerWidget {
                           height: 60,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.lgAll,
                           ),
                         ),
                       ),
@@ -166,7 +166,7 @@ class ActivityStatsSection extends ConsumerWidget {
                           height: 60,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.lgAll,
                           ),
                         ),
                       ),
@@ -198,7 +198,7 @@ class ActivityStatsSection extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.lgAll,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(

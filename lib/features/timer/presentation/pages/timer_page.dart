@@ -347,7 +347,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
               message: '시간 정하기',
               child: InkWell(
                 onTap: _pickPendingDuration,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.mdAll,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   // 좁은 오른쪽 칸(가로 휴대폰)에서는 연필 표시까지 함께 줄인다
@@ -1308,15 +1308,15 @@ class _SharedTimerList extends ConsumerWidget {
     case TimerStatus.running:
       return (
         icon: Icons.play_arrow,
-        bg: Colors.green.shade100,
-        fg: Colors.green.shade800,
+        bg: AppColors.of(context).successContainer,
+        fg: AppColors.of(context).onSuccessContainer,
         label: '진행 중',
       );
     case TimerStatus.paused:
       return (
         icon: Icons.pause,
-        bg: Colors.orange.shade100,
-        fg: Colors.orange.shade800,
+        bg: AppColors.of(context).warningContainer,
+        fg: AppColors.of(context).onWarningContainer,
         label: '일시정지',
       );
     case TimerStatus.cancelled:
@@ -1346,10 +1346,7 @@ class _TimerStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: style.bg,
-        borderRadius: BorderRadius.circular(4),
-      ),
+      decoration: BoxDecoration(color: style.bg, borderRadius: AppRadius.smAll),
       child: Text(
         style.label,
         maxLines: 1,

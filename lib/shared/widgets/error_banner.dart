@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 인라인 에러 배너 (AnimatedSize로 부드럽게 표시/숨김)
 ///
@@ -34,7 +35,7 @@ class ErrorBanner extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.lgAll,
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -16,11 +17,11 @@ class TodoGroupCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.lgAll,
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.lgAll,
             border: Border.all(
               color: groupColor.withValues(alpha: 0.3),
               width: 2,
@@ -38,7 +39,7 @@ class TodoGroupCard extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: groupColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.mdAll,
                       ),
                       child: Icon(
                         Icons.folder_rounded,

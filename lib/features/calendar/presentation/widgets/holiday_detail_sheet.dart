@@ -28,12 +28,12 @@ class HolidayDetailSheet extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(30),
+                  color: AppColors.of(context).holiday.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.pillAll,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.calendar_today,
-                  color: Colors.red,
+                  color: AppColors.of(context).holiday,
                   size: 30,
                 ),
               ),
@@ -45,7 +45,7 @@ class HolidayDetailSheet extends StatelessWidget {
                 holiday.dateName,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.red,
+                  color: AppColors.of(context).holiday,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -70,7 +70,7 @@ class HolidayDetailSheet extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.lgAll,
                     ),
                   ),
                   child: const Text('닫기'),

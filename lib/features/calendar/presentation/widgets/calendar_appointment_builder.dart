@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 
@@ -20,7 +21,7 @@ class ScheduleAppointmentBuilder {
       margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
       decoration: BoxDecoration(
         color: appointment.color.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: AppRadius.xsAll,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       child: Text(
@@ -50,7 +51,7 @@ class ScheduleAppointmentBuilder {
       margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: appointment.color.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.smAll,
         border: Border.all(
           color: appointment.color.withValues(alpha: 0.3),
           width: 0.5,
@@ -64,7 +65,7 @@ class ScheduleAppointmentBuilder {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.smAll,
         child: Stack(
           children: [
             // 왼쪽 색상 바
@@ -158,7 +159,7 @@ class ScheduleAppointmentBuilder {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.smAll,
         border: Border(left: BorderSide(color: appointment.color, width: 3)),
       ),
       alignment: Alignment.centerLeft,
@@ -197,7 +198,7 @@ class ScheduleAppointmentBuilder {
       margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
       decoration: BoxDecoration(
         color: appointment.color,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.smAll,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: Text(

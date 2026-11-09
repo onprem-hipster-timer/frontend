@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
@@ -54,12 +55,12 @@ void main() {
       expect(find.text('비공휴 기념일'), findsNothing);
     });
 
-    testWidgets('일요일 날짜는 공휴일 데이터와 무관하게 빨간색으로 렌더링된다', (tester) async {
+    testWidgets('일요일 날짜는 공휴일 데이터와 무관하게 공휴일 색으로 렌더링된다', (tester) async {
       await _pumpCalendar(tester);
 
       final redSundayDateExists = tester
           .widgetList<Text>(find.text('5'))
-          .any((text) => text.style?.color == Colors.red);
+          .any((text) => text.style?.color == AppColors.light.holiday);
 
       expect(redSundayDateExists, isTrue);
     });

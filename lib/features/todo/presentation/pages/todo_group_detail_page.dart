@@ -270,8 +270,14 @@ class TodoGroupDetailPage extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('그룹 삭제', style: TextStyle(color: Colors.red)),
+              leading: Icon(
+                Icons.delete,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                '그룹 삭제',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _showDeleteGroupDialog(context, ref, group);

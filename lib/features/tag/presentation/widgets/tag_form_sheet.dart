@@ -173,7 +173,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
               border: Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.5),
               ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.lgAll,
               color: theme.colorScheme.surfaceContainerHighest.withValues(
                 alpha: 0.3,
               ),
@@ -258,7 +258,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.mdAll,
                       ),
                       child: Text(
                         '${group.tagCount}',

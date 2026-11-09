@@ -105,7 +105,7 @@ class ScheduleListSheet extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           color: tagColor,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: AppRadius.xsAll,
         ),
       ),
       title: Text(

@@ -359,7 +359,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.mdAll,
             ),
             child: Row(
               children: [
@@ -398,7 +398,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: groupColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.pillAll,
         border: Border.all(color: groupColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(

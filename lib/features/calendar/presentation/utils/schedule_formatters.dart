@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -73,21 +74,15 @@ String getScheduleStatusText(ScheduleState state) => switch (state) {
   ScheduleState.$unknown => '알 수 없음',
 };
 
-/// 상태 배지 색상.
-///
-/// 시맨틱 색(계획=주황/확정=초록/취소=빨강/알 수 없음=회색)은 유지하되,
-/// [brightness]에 따라 shade를 골라 라이트/다크 모드 모두에서 대비를 확보한다.
-Color getScheduleStatusColor(ScheduleState state, Brightness brightness) {
-  final isDark = brightness == Brightness.dark;
+/// 상태 배지 색상(계획=경고, 확정=성공, 취소=오류, 알 수 없음=흐림).
+Color getScheduleStatusColor(BuildContext context, ScheduleState state) {
+  final colors = AppColors.of(context);
+  final scheme = Theme.of(context).colorScheme;
   return switch (state) {
-    ScheduleState.planned =>
-      isDark ? Colors.orange.shade300 : Colors.orange.shade700,
-    ScheduleState.confirmed =>
-      isDark ? Colors.green.shade300 : Colors.green.shade700,
-    ScheduleState.cancelled =>
-      isDark ? Colors.red.shade300 : Colors.red.shade700,
-    ScheduleState.$unknown =>
-      isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+    ScheduleState.planned => colors.warning,
+    ScheduleState.confirmed => colors.success,
+    ScheduleState.cancelled => scheme.error,
+    ScheduleState.$unknown => scheme.onSurfaceVariant,
   };
 }
 
@@ -104,14 +99,16 @@ IconData getTimerStatusIcon(TimerStatus status) => switch (status) {
   TimerStatus.$unknown => Icons.timer,
 };
 
-Color getTimerStatusColor(TimerStatus status) => switch (status) {
-  TimerStatus.notStarted => Colors.blueGrey,
-  TimerStatus.running => Colors.green,
-  TimerStatus.paused => Colors.orange,
-  TimerStatus.completed => Colors.blue,
-  TimerStatus.cancelled => Colors.grey,
-  TimerStatus.$unknown => Colors.grey,
-};
+Color getTimerStatusColor(BuildContext context, TimerStatus status) {
+  final scheme = Theme.of(context).colorScheme;
+  return switch (status) {
+    TimerStatus.notStarted => scheme.outline,
+    TimerStatus.running => AppColors.of(context).success,
+    TimerStatus.paused => AppColors.of(context).warning,
+    TimerStatus.completed => scheme.primary,
+    TimerStatus.cancelled || TimerStatus.$unknown => scheme.onSurfaceVariant,
+  };
+}
 
 String getTimerStatusText(TimerStatus status) => switch (status) {
   TimerStatus.notStarted => '시작 전',

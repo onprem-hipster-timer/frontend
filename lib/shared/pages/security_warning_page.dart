@@ -89,7 +89,7 @@ class SecurityWarningPage extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: colorScheme.errorContainer.withAlpha(77),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.lgAll,
                       border: Border.all(
                         color: colorScheme.error.withAlpha(77),
                       ),
