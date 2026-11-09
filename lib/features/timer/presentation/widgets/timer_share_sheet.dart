@@ -171,24 +171,11 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     final theme = Theme.of(context);
 
     if (_loading) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(heightFactor: 1, child: CircularProgressIndicator()),
-      );
+      return const Padding(padding: EdgeInsets.all(32), child: AppLoading());
     }
 
     if (_loadError != null) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('공유 설정을 불러오지 못했습니다', style: theme.textTheme.bodyLarge),
-            const SizedBox(height: 16),
-            FilledButton.tonal(onPressed: _retry, child: const Text('다시 시도')),
-          ],
-        ),
-      );
+      return AppErrorState(title: '공유 설정을 불러오지 못했습니다', onRetry: _retry);
     }
 
     final friends = _level == VisibilityLevel.selected
@@ -242,10 +229,8 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: friends.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(child: CircularProgressIndicator()),
-        ),
+        loading: () =>
+            const Padding(padding: EdgeInsets.all(16), child: AppLoading()),
         error: (error, _) => ListTile(
           title: const Text('친구 목록을 불러오지 못했습니다'),
           trailing: TextButton(

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
@@ -28,16 +29,21 @@ class TodoDashboardPage extends ConsumerWidget {
       body: tagGroupsAsync.when(
         data: (tagGroups) {
           if (tagGroups.isEmpty) {
-            return _buildEmptyState(context, theme);
+            return AppEmptyState(
+              icon: Icons.folder_open_rounded,
+              title: '그룹이 없습니다',
+              message: '첫 번째 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
+              actionLabel: '첫 그룹 만들기',
+              onAction: () => _showCreateGroupDialog(context),
+            );
           }
 
           return _buildGroupGrid(context, theme, tagGroups);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(
-          context,
-          theme,
-          error,
+        loading: () => const AppLoading(),
+        error: (error, stack) => AppErrorState(
+          title: '그룹을 불러오지 못했습니다',
+          error: error,
           onRetry: () => ref.invalidate(tagGroupsRawProvider),
         ),
       ),
@@ -128,97 +134,6 @@ class TodoDashboardPage extends ConsumerWidget {
         // 하단 여백 (FAB 가리지 않도록)
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
-    );
-  }
-
-  /// 빈 상태 위젯
-  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.folder_open_rounded,
-              size: 80,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '그룹이 없습니다',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '첫 번째 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => _showCreateGroupDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('첫 그룹 만들기'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 에러 상태 위젯
-  Widget _buildErrorState(
-    BuildContext context,
-    ThemeData theme,
-    Object error, {
-    required VoidCallback onRetry,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              '그룹을 불러오지 못했습니다',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('다시 시도'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

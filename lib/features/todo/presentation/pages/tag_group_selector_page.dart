@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
@@ -27,13 +28,24 @@ class TagGroupSelectorPage extends ConsumerWidget {
       body: tagGroupsAsync.when(
         data: (tagGroups) {
           if (tagGroups.isEmpty) {
-            return _buildEmptyState(context, theme);
+            return AppEmptyState(
+              icon: Icons.folder_off_outlined,
+              title: '태그 그룹이 없습니다',
+              message: '먼저 태그 그룹을 만들어주세요.\n그룹을 만든 후 할 일을 정리할 수 있습니다.',
+              actionLabel: '새 그룹 만들기',
+              onAction: () => showTagGroupFormSheet(context),
+            );
           }
 
           return _buildTagGroupGrid(context, theme, tagGroups);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(context, theme, error),
+        loading: () => const AppLoading(),
+        error: (error, stack) => AppErrorState(
+          title: '태그 그룹을 불러오지 못했습니다',
+          error: error,
+          secondaryLabel: '돌아가기',
+          onSecondary: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
@@ -212,86 +224,6 @@ class TagGroupSelectorPage extends ConsumerWidget {
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 빈 상태 위젯
-  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.folder_off_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '태그 그룹이 없습니다',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '먼저 태그 그룹을 만들어주세요.\n그룹을 만든 후 할 일을 정리할 수 있습니다.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => showTagGroupFormSheet(context),
-              icon: const Icon(Icons.add),
-              label: const Text('새 그룹 만들기'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 에러 상태 위젯
-  Widget _buildErrorState(BuildContext context, ThemeData theme, Object error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              '태그 그룹을 불러오지 못했습니다',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('돌아가기'),
             ),
           ],
         ),

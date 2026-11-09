@@ -5,6 +5,7 @@
 // 라우팅 설정 with 인증 리다이렉트 로직
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
@@ -320,8 +321,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.loading.path,
         name: AppRoute.loading.name,
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        builder: (context, state) => const Scaffold(body: AppLoading()),
       ),
 
       // ============================================================

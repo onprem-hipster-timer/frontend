@@ -57,10 +57,10 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     final availableGroupsAsync = ref.watch(tagTreeProvider);
 
     return availableGroupsAsync.when(
-      loading: () =>
-          const SafeArea(child: Center(child: CircularProgressIndicator())),
-      error: (error, stack) =>
-          SafeArea(child: Center(child: Text('태그 그룹을 불러올 수 없습니다: $error'))),
+      loading: () => const SafeArea(child: AppLoading()),
+      error: (error, stack) => SafeArea(
+        child: AppErrorState(title: '태그 그룹을 불러올 수 없습니다', error: error),
+      ),
       data: (availableGroups) =>
           _buildFormSheet(context, theme, isLoading, availableGroups),
     );

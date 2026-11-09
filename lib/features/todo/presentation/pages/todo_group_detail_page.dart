@@ -45,11 +45,15 @@ class TodoGroupDetailPage extends ConsumerWidget {
               // Todo list content
               todoTreeAsync.when(
                 data: (tree) => _buildTodoList(context, ref, tree),
-                loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+                loading: () => const SliverFillRemaining(child: AppLoading()),
                 error: (error, stack) => SliverFillRemaining(
-                  child: _buildErrorState(context, ref, error),
+                  child: AppErrorState(
+                    title: '할 일을 불러오지 못했습니다',
+                    error: error,
+                    secondaryLabel: '대시보드로',
+                    onSecondary: () => context.go(AppRoute.todo.path),
+                    onRetry: () => ref.invalidate(todosProvider(groupId)),
+                  ),
                 ),
               ),
             ],
@@ -61,7 +65,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
               color: Theme.of(
                 context,
               ).colorScheme.shadow.withValues(alpha: 0.3),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const AppLoading(),
             ),
         ],
       ),
@@ -163,7 +167,14 @@ class TodoGroupDetailPage extends ConsumerWidget {
   Widget _buildTodoList(BuildContext context, WidgetRef ref, dynamic tree) {
     if (tree.roots.isEmpty) {
       return SliverFillRemaining(
-        child: _buildEmptyState(context, Theme.of(context)),
+        child: AppEmptyState(
+          icon: Icons.task_alt_rounded,
+          title: '이 그룹에는 할 일이 없습니다',
+          message: '첫 번째 할 일을 추가해서\n체계적으로 작업을 관리해보세요!',
+          actionLabel: '첫 할 일 추가하기',
+          actionIcon: Icons.add_task,
+          onAction: () => _showCreateTodoDialog(context),
+        ),
       );
     }
 
@@ -229,104 +240,6 @@ class TodoGroupDetailPage extends ConsumerWidget {
           );
         },
         childCount: tree.roots.length + 3, // 안내 카드 + 드롭 타겟 + 아이템들 + 하단 여백
-      ),
-    );
-  }
-
-  /// 빈 상태 위젯
-  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.task_alt_rounded,
-              size: 80,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '이 그룹에는 할 일이 없습니다',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '첫 번째 할 일을 추가해서\n체계적으로 작업을 관리해보세요!',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => _showCreateTodoDialog(context),
-              icon: const Icon(Icons.add_task),
-              label: const Text('첫 할 일 추가하기'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 에러 상태 위젯
-  Widget _buildErrorState(BuildContext context, WidgetRef ref, Object error) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              '할 일을 불러오지 못했습니다',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => context.go(AppRoute.todo.path),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('대시보드로'),
-                ),
-                const SizedBox(width: 12),
-                FilledButton.icon(
-                  onPressed: () => ref.invalidate(todosProvider(groupId)),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('다시 시도'),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

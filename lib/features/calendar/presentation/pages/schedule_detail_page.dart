@@ -50,26 +50,11 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       ),
       body: scheduleAsync.when(
         data: (schedule) => _buildBody(context, ref, theme, schedule),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text('일정을 불러올 수 없습니다', style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 8),
-              FilledButton.tonal(
-                onPressed: () =>
-                    ref.invalidate(scheduleDetailProvider(widget.scheduleId)),
-                child: const Text('다시 시도'),
-              ),
-            ],
-          ),
+        loading: () => const AppLoading(),
+        error: (error, stack) => AppErrorState(
+          title: '일정을 불러올 수 없습니다',
+          onRetry: () =>
+              ref.invalidate(scheduleDetailProvider(widget.scheduleId)),
         ),
       ),
     );

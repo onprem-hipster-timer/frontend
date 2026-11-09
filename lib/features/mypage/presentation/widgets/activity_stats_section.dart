@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
@@ -177,35 +178,9 @@ class ActivityStatsSection extends ConsumerWidget {
                   ),
                 ],
               ),
-              error: (error, stack) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: theme.colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '통계 데이터를 불러올 수 없습니다',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () => ref.invalidate(todosProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('다시 시도'),
-                    ),
-                  ),
-                ],
+              error: (error, stack) => AppErrorState(
+                title: '통계 데이터를 불러올 수 없습니다',
+                onRetry: () => ref.invalidate(todosProvider),
               ),
             ),
           ),

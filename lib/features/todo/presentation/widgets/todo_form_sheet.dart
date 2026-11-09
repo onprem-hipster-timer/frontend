@@ -319,7 +319,13 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 (tagGroup) => _buildTagGroupSection(theme, tagGroup),
               )
             else
-              _buildEmptyTagState(theme),
+              AppEmptyState(
+                icon: Icons.label_outline,
+                title: '아직 태그가 없습니다',
+                message: '새 태그를 만들어 할 일을 분류해보세요',
+                actionLabel: '첫 태그 만들기',
+                onAction: () => _showCreateTagDialog(context),
+              ),
           ],
         );
       },
@@ -467,53 +473,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           }).toList(),
         ),
       ],
-    );
-  }
-
-  /// 빈 태그 상태 (태그가 없을 때)
-  Widget _buildEmptyTagState(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.label_outline,
-            size: 48,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '아직 태그가 없습니다',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '새 태그를 만들어 할 일을 분류해보세요',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: () => _showCreateTagDialog(context),
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('첫 태그 만들기'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

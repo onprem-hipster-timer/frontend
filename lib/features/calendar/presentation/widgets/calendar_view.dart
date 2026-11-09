@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
@@ -74,7 +75,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         _EmptyDataSource(),
         isLoading: true,
       ),
-      error: (error, stack) => _buildErrorView(context, error),
+      error: (error, stack) => AppErrorState(
+        title: '일정을 불러올 수 없습니다',
+        error: error,
+        onRetry: () => ref.invalidate(currentSchedulesProvider),
+      ),
     );
   }
 
@@ -246,7 +251,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           Positioned.fill(
             child: Container(
               color: colorScheme.surface.withValues(alpha: 0.5),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const AppLoading(),
             ),
           ),
       ],
@@ -436,47 +441,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
             newStartTime: details.startTime,
             newEndTime: details.endTime!,
           ),
-    );
-  }
-
-  /// 에러 뷰
-  Widget _buildErrorView(BuildContext context, Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '일정을 불러올 수 없습니다',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error.toString(),
-            style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref.invalidate(currentSchedulesProvider),
-            icon: const Icon(Icons.refresh),
-            label: const Text('다시 시도'),
-          ),
-        ],
-      ),
     );
   }
 

@@ -27,8 +27,12 @@ class TagManagementPage extends ConsumerWidget {
       ),
       body: tagTreeAsync.when(
         data: (tagGroups) => _buildTagList(context, ref, tagGroups),
-        loading: () => _buildLoadingView(),
-        error: (error, stack) => _buildErrorView(context, ref, error),
+        loading: () => const AppLoading(message: '태그를 불러오는 중...'),
+        error: (error, stack) => AppErrorState(
+          title: '태그를 불러올 수 없습니다',
+          error: error,
+          onRetry: () => ref.invalidate(tagGroupsRawProvider),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateGroupSheet(context),
@@ -46,7 +50,13 @@ class TagManagementPage extends ConsumerWidget {
     List<TagGroupWithTags> tagGroups,
   ) {
     if (tagGroups.isEmpty) {
-      return _buildEmptyView(context);
+      return AppEmptyState(
+        icon: Icons.label_outline,
+        title: '아직 태그가 없습니다',
+        message: '태그 그룹을 만들어 태그를 정리해보세요',
+        actionLabel: '첫 태그 그룹 만들기',
+        onAction: () => _showCreateGroupSheet(context),
+      );
     }
 
     return CustomScrollView(
@@ -264,94 +274,6 @@ class TagManagementPage extends ConsumerWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         tileColor: theme.colorScheme.surface,
         hoverColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-      ),
-    );
-  }
-
-  /// 로딩 뷰
-  Widget _buildLoadingView() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('태그를 불러오는 중...'),
-        ],
-      ),
-    );
-  }
-
-  /// 에러 뷰
-  Widget _buildErrorView(BuildContext context, WidgetRef ref, Object error) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              '태그를 불러올 수 없습니다',
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => ref.invalidate(tagGroupsRawProvider),
-              icon: const Icon(Icons.refresh),
-              label: const Text('다시 시도'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 빈 상태 뷰
-  Widget _buildEmptyView(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.label_outline,
-              size: 64,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '아직 태그가 없습니다',
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '태그 그룹을 만들어 태그를 정리해보세요',
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _showCreateGroupSheet(context),
-              icon: const Icon(Icons.add),
-              label: const Text('첫 태그 그룹 만들기'),
-            ),
-          ],
-        ),
       ),
     );
   }
