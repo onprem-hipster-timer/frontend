@@ -95,6 +95,10 @@ void main() {
         overrides: [
           ...common(friends: friends, friendActivity: friendActivity),
           activeTimerProvider.overrideWithValue(AsyncData(active)),
+          // 휴식이 보는 내 활성 타이머 목록은 고정한 활성 타이머 하나로 맞춘다
+          myActiveTimersProvider.overrideWithBuild(
+            (ref, _) => [?ref.watch(activeTimerProvider).value],
+          ),
           timerHistoryProvider.overrideWith((ref) async {
             if (historyError != null) throw historyError;
             return history ?? [?active];

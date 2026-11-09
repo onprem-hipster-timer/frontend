@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -209,6 +210,101 @@ void main() {
       });
     });
   }
+
+  group('활성 타이머가 여럿이면', () {
+    /// 서버 기준 현재 시각
+    final serverNow = DateTime.utc(2026, 11, 9, 10, 10);
+
+    // 10:00에 시작해 실행 중인 A와 10:05에 시작해 일시정지한 B. 가장 최근 타이머는 B다
+    final runningA = makeTimer(
+      id: 'a',
+      status: TimerStatus.running,
+      startedAt: DateTime.utc(2026, 11, 9, 10),
+      allocatedDuration: 25 * 60,
+    );
+    final pausedB = makeTimer(
+      id: 'b',
+      status: TimerStatus.paused,
+      startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+      allocatedDuration: 25 * 60,
+      elapsedTime: 60,
+    );
+
+    /// [active]를 활성 타이머 목록으로 받아 둔 컨테이너
+    Future<ProviderContainer> bootWith(List<TimerRead> active) async {
+      repository.listActive = () async => active;
+      final container = ProviderContainer(
+        overrides: [
+          timerRepositoryProvider.overrideWithValue(repository),
+          timerWsClientProvider.overrideWithValue(null),
+          currentUserProvider.overrideWithValue(null),
+          timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+          breakClockProvider.overrideWithValue(() => now),
+          serverClockProvider.overrideWithValue(
+            ServerClock(deviceNow: () => serverNow),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(myActiveTimersProvider, (_, _) {});
+      await container.read(myActiveTimersProvider.future);
+      return container;
+    }
+
+    test('가장 최근 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식을 두지 않는다', () async {
+      final container = await bootWith([runningA, pausedB]);
+      expect(container.read(activeTimerProvider).value?.id, 'b');
+
+      breakTimer(container).start(const Duration(minutes: 5));
+
+      expect(container.read(breakTimerProvider), isNull);
+    });
+
+    test('휴식 중에 가장 최근이 아닌 타이머가 실행 중이 되면 휴식이 끝난다', () async {
+      final pausedA = runningA.copyWith(
+        status: TimerStatus.paused,
+        elapsedTime: 2 * 60,
+      );
+      final container = await bootWith([pausedA, pausedB]);
+      breakTimer(container).start(const Duration(minutes: 5));
+      expect(container.read(breakTimerProvider), isNotNull);
+
+      container
+          .read(myActiveTimersProvider.notifier)
+          .apply(runningA.copyWith(updatedAt: serverNow));
+
+      expect(container.read(activeTimerProvider).value?.id, 'b');
+      expect(container.read(breakTimerProvider), isNull);
+    });
+
+    test('시간이 끝난 실행 중 타이머는 휴식을 막지 않는다', () async {
+      // 9:00에 시작한 25분 타이머는 서버 시각 10:10에 시간이 끝나 있다
+      final timeUp = runningA.copyWith(startedAt: DateTime.utc(2026, 11, 9, 9));
+      final container = await bootWith([timeUp]);
+
+      breakTimer(container).start(const Duration(minutes: 5));
+
+      expect(container.read(breakTimerProvider), isNotNull);
+    });
+
+    test('blocksBreak은 시간이 남은 실행 중 타이머가 하나라도 있을 때만 참이다', () {
+      final timeUp = runningA.copyWith(startedAt: DateTime.utc(2026, 11, 9, 9));
+
+      expect(blocksBreak([pausedB, runningA], serverNow), isTrue);
+      expect(blocksBreak([pausedB, timeUp], serverNow), isFalse);
+      expect(blocksBreak([pausedB], serverNow), isFalse);
+      expect(blocksBreak(const [], serverNow), isFalse);
+      // 끝나기 1초 전까지는 막는다
+      expect(
+        blocksBreak([runningA], DateTime.utc(2026, 11, 9, 10, 24, 59)),
+        isTrue,
+      );
+      expect(
+        blocksBreak([runningA], DateTime.utc(2026, 11, 9, 10, 25)),
+        isFalse,
+      );
+    });
+  });
 
   group('사용자가 바뀌면', () {
     AuthUser user(String id, {String? email}) => AuthUser(

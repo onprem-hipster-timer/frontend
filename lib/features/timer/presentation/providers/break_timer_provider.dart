@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/timer_elapsed.dart';
 
 part 'break_timer_provider.g.dart';
 
@@ -36,20 +38,28 @@ class BreakSession {
   }
 }
 
+/// [timers] 중 시간이 남은 실행 중(RUNNING) 타이머가 있어 휴식을 둘 수 없는지. [now]는 서버 기준 시각이다
+///
+/// 시간이 끝난 RUNNING 타이머는 서버가 일시정지로 돌려주므로 휴식을 막지 않는다.
+bool blocksBreak(Iterable<TimerRead> timers, DateTime now) => timers.any(
+  (timer) => timer.status == TimerStatus.running && !isTimeUp(timer, now),
+);
+
 /// 휴식 카운트다운
 ///
 /// 기기 안에서만 센다. 서버에 보내지 않으므로 타이머 목록·친구 알림에 나오지 않는다.
-/// 활성 타이머가 실행 중(RUNNING)이면 휴식이 없다. 휴식 중에 활성 타이머가 실행 중이 되면 바로 끝낸다.
-/// 일시정지한 타이머는 휴식을 끝내지 않는다. 로그인한 사용자가 바뀌면(로그아웃 포함) 휴식을 버린다.
+/// 내 활성 타이머 중 하나라도 시간이 남은 채 실행 중(RUNNING)이면 휴식이 없다([blocksBreak]).
+/// 휴식 중에 그런 타이머가 생기면 바로 끝낸다. 일시정지한 타이머는 휴식을 끝내지 않는다.
+/// 로그인한 사용자가 바뀌면(로그아웃 포함) 휴식을 버린다.
 ///
 /// 테스트: test/features/timer/presentation/providers/break_timer_provider_test.dart
 @Riverpod(keepAlive: true)
 class BreakTimer extends _$BreakTimer {
-  /// 휴식 중에만 두는 활성 타이머 구독
+  /// 휴식 중에만 두는 내 활성 타이머 구독
   ///
   /// 이 provider를 보는 화면이 없으면(다른 탭) provider 안의 `ref.listen`은 쉬어서 그사이 실행된 타이머를
   /// 놓치므로 컨테이너에서 듣는다. 사용자가 바뀌면 닫아 이전 사용자의 타이머를 붙잡지 않는다.
-  ProviderSubscription<AsyncValue<TimerRead?>>? _activeTimer;
+  ProviderSubscription<AsyncValue<List<TimerRead>>>? _timers;
 
   @override
   BreakSession? build() {
@@ -60,17 +70,17 @@ class BreakTimer extends _$BreakTimer {
 
   /// [total] 길이의 휴식을 시작한다. 진행 중인 휴식은 새 휴식으로 바꾼다.
   ///
-  /// 활성 타이머가 실행 중이면 휴식을 두지 않는다.
+  /// 시간이 남은 실행 중 타이머가 있으면 휴식을 두지 않는다.
   void start(Duration total) {
-    final activeTimer = _activeTimer ??= ref.container.listen(
-      activeTimerProvider,
-      (_, next) => _endIfRunning(next),
+    final timers = _timers ??= ref.container.listen(
+      myActiveTimersProvider,
+      (_, next) => _endIfBlocked(next),
     );
     state = BreakSession(
       endAt: ref.read(breakClockProvider)().add(total),
       total: total,
     );
-    _endIfRunning(activeTimer.read());
+    _endIfBlocked(timers.read());
   }
 
   /// 휴식을 끝낸다
@@ -80,12 +90,13 @@ class BreakTimer extends _$BreakTimer {
   }
 
   void _unsubscribe() {
-    _activeTimer?.close();
-    _activeTimer = null;
+    _timers?.close();
+    _timers = null;
   }
 
-  void _endIfRunning(AsyncValue<TimerRead?> activeTimer) {
-    if (activeTimer.value?.status == TimerStatus.running) end();
+  void _endIfBlocked(AsyncValue<List<TimerRead>> timers) {
+    final now = ref.read(serverClockProvider).now();
+    if (blocksBreak(timers.value ?? const [], now)) end();
   }
 }
 

@@ -215,6 +215,11 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     final breakOver = breakSession != null && breakRemaining == Duration.zero;
     final idle = breakSession == null && activeTimer == null;
     final pending = _breakSelected ? _pendingBreakDuration : _pendingDuration;
+    // 보이는 타이머가 일시정지여도 시간이 남은 채 실행 중인 다른 내 타이머가 있으면 휴식 버튼을 두지 않는다
+    final breakBlocked = blocksBreak(
+      ref.watch(myActiveTimersProvider).value ?? const [],
+      now,
+    );
 
     final timeUp =
         breakSession == null &&
@@ -348,9 +353,11 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                   timeUp: timeUp,
                   breakSelected: _breakSelected,
                   onStart: () => _showStartTimerDialog(context, ref),
-                  onStartBreak: () => ref
-                      .read(breakTimerProvider.notifier)
-                      .start(_pendingBreakDuration),
+                  onStartBreak: breakBlocked
+                      ? null
+                      : () => ref
+                            .read(breakTimerProvider.notifier)
+                            .start(_pendingBreakDuration),
                   onStop: () => _stopTimer(context, ref),
                   onPause: () => _pauseTimer(context, ref),
                   onResume: () => _resumeTimer(context, ref),
@@ -604,14 +611,14 @@ class CurrentTaskDisplay extends StatelessWidget {
 /// 새 타이머 시작만 응답을 기다리고([starting]), 그동안 시작 버튼 안에 진행 표시를 둔다.
 /// 집중 시간이 끝나면([timeUp]) 일시정지·재개 대신 연장([onExtend]) 버튼을 둔다.
 /// 활성 타이머 없이 휴식을 골랐으면([breakSelected]) 시작 버튼이 휴식을 바로 시작하고([onStartBreak]),
-/// 시간이 남은 일시정지 타이머에는 휴식 버튼을 더 둔다.
+/// 시간이 남은 일시정지 타이머에는 휴식 버튼을 더 둔다. 휴식을 시작할 수 없으면 [onStartBreak]이 null이고 휴식 버튼이 없다.
 class TimerControlButton extends StatelessWidget {
   final TimerRead? activeTimer;
   final bool starting;
   final bool timeUp;
   final bool breakSelected;
   final VoidCallback onStart;
-  final VoidCallback onStartBreak;
+  final VoidCallback? onStartBreak;
   final VoidCallback onStop;
   final VoidCallback onPause;
   final VoidCallback onResume;
@@ -720,13 +727,15 @@ class TimerControlButton extends StatelessWidget {
             backgroundColor: theme.colorScheme.primary,
             child: Icon(Icons.play_arrow, color: theme.colorScheme.onPrimary),
           ),
-          const SizedBox(width: 40),
-          FloatingActionButton.small(
-            onPressed: onStartBreak,
-            tooltip: '휴식',
-            backgroundColor: theme.colorScheme.tertiary,
-            child: Icon(Icons.coffee, color: theme.colorScheme.onTertiary),
-          ),
+          if (onStartBreak != null) ...[
+            const SizedBox(width: 40),
+            FloatingActionButton.small(
+              onPressed: onStartBreak,
+              tooltip: '휴식',
+              backgroundColor: theme.colorScheme.tertiary,
+              child: Icon(Icons.coffee, color: theme.colorScheme.onTertiary),
+            ),
+          ],
         ],
       );
     }

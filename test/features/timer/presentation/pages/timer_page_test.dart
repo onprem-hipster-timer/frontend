@@ -166,8 +166,11 @@ void main() {
           timerTickerProvider.overrideWith(
             (ref) => Stream.value(Duration.zero),
           ),
-          // 휴식은 로그인한 사용자를 본다
+          // 휴식은 로그인한 사용자와 내 활성 타이머 목록을 본다
           currentUserProvider.overrideWithValue(null),
+          myActiveTimersProvider.overrideWithBuild(
+            (ref, _) => const <TimerRead>[],
+          ),
         ],
       );
     }
@@ -1544,6 +1547,77 @@ void main() {
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
     });
 
+    testWidgets(
+      '가장 최근 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식 버튼이 없고, 그 타이머가 멈추면 다시 보인다',
+      (tester) async {
+        final clock = DateTime.utc(2026, 11, 9, 10, 10);
+        // 10:00에 시작해 실행 중인 A와 10:05에 시작해 일시정지한 B
+        final runningA = makeTimer(
+          id: 'a',
+          status: TimerStatus.running,
+          startedAt: DateTime.utc(2026, 11, 9, 10),
+          allocatedDuration: 25 * 60,
+        );
+        final pausedB = makeTimer(
+          id: 'b',
+          status: TimerStatus.paused,
+          startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+          allocatedDuration: 25 * 60,
+          elapsedTime: 60,
+        ).copyWith(title: 'B 작업');
+        final repository = FakeTimerRepository()
+          ..listActive = () async => [runningA, pausedB];
+        await tester.pumpWidget(
+          pumpApp(
+            const TimerPage(),
+            overrides: [
+              allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
+              timerFriendActivityProvider.overrideWith(
+                (ref) => const Stream<TimerWsTimerEvent>.empty(),
+              ),
+              timerRepositoryProvider.overrideWithValue(repository),
+              timerWsClientProvider.overrideWithValue(null),
+              currentUserProvider.overrideWithValue(null),
+              serverClockProvider.overrideWithValue(
+                ServerClock(deviceNow: () => clock),
+              ),
+              breakClockProvider.overrideWithValue(() => breakNow),
+              timerHistoryProvider.overrideWith(
+                (ref) async => [pausedB, runningA],
+              ),
+              timerTickerProvider.overrideWith((ref) {
+                final active = ref.watch(activeTimerProvider).value;
+                return Stream.value(
+                  active == null
+                      ? Duration.zero
+                      : displayRemaining(active, clock),
+                );
+              }),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('B 작업')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
+
+        ProviderScope.containerOf(tester.element(find.byType(TimerPage)))
+            .read(myActiveTimersProvider.notifier)
+            .apply(
+              runningA.copyWith(
+                status: TimerStatus.paused,
+                elapsedTime: 10 * 60,
+                updatedAt: clock,
+              ),
+            );
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('B 작업')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+      },
+    );
+
     group('경계', () {
       void setSize(WidgetTester tester, Size size) {
         tester.view.physicalSize = size;
@@ -2084,6 +2158,9 @@ void main() {
                 (ref) => const Stream<TimerWsTimerEvent>.empty(),
               ),
               activeTimerProvider.overrideWithValue(const AsyncLoading()),
+              myActiveTimersProvider.overrideWithBuild(
+                (ref, _) => Completer<List<TimerRead>>().future,
+              ),
               timerHistoryProvider.overrideWith(
                 (ref) => Future.value(<TimerRead>[]),
               ),
@@ -3123,8 +3200,11 @@ List<Override> _timerOverrides({
       );
     }),
     timerControllerProvider.overrideWith(() => controller),
-    // 휴식은 로그인한 사용자를 본다
+    // 휴식은 로그인한 사용자와 내 활성 타이머 목록을 본다. 목록은 덮어쓴 활성 타이머 하나로 맞춘다
     currentUserProvider.overrideWithValue(null),
+    myActiveTimersProvider.overrideWithBuild(
+      (ref, _) => [?ref.watch(activeTimerProvider).value],
+    ),
   ];
 }
 
