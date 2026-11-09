@@ -46,7 +46,6 @@ List<LayoutFinding> auditLayout(
   return auditRenderTree(
     _roots(tester, within),
     viewRect: _viewRect(tester),
-    hitTest: (position) => tester.hitTestOnBinding(position),
     options: options,
     previousFrame: previousFrame,
   );
@@ -94,12 +93,11 @@ Rect _viewRect(WidgetTester tester) =>
 List<LayoutFinding> auditRenderTree(
   Iterable<RenderObject> roots, {
   required Rect viewRect,
-  required HitTestResult Function(Offset global) hitTest,
   LayoutAuditOptions options = const LayoutAuditOptions(),
   Map<RenderObject, List<Rect>>? previousFrame,
 }) {
   try {
-    return _Audit(viewRect, hitTest, options, previousFrame).run(roots);
+    return _Audit(viewRect, options, previousFrame).run(roots);
   } on Object catch (error) {
     return [LayoutFinding.auditFailed(error)];
   }
@@ -113,10 +111,9 @@ class _Raw {
 }
 
 class _Audit {
-  _Audit(this.viewRect, this.hitTest, this.options, this.previousFrame);
+  _Audit(this.viewRect, this.options, this.previousFrame);
 
   final Rect viewRect;
-  final HitTestResult Function(Offset global) hitTest;
   final LayoutAuditOptions options;
   final Map<RenderObject, List<Rect>>? previousFrame;
 
@@ -245,8 +242,13 @@ class _Audit {
         ? LayoutSeverity.warning
         : LayoutSeverity.notice;
 
-    final top = _topLeaf(a, b, focus);
-    final first = top ?? a;
+    final top = _paintedOnTop(a, b);
+    // 순서를 모르면 소스 위치 순으로 두어 같은 쌍이 보고서에서 한 묶음이 되게 한다.
+    final first = top ??
+        ('${sourceLocationOf(a.box)}'.compareTo('${sourceLocationOf(b.box)}') <=
+                0
+            ? a
+            : b);
     final second = identical(first, a) ? b : a;
 
     final chainFirst = [first.box, ...first.ancestors];
@@ -304,32 +306,27 @@ class _Audit {
     return total == 0 ? 0 : covered / total;
   }
 
-  /// 교차 영역 몇 곳을 히트 테스트해 더 자주 맨 앞에 맞은 쪽. 같거나 아무도 안 맞으면 null.
-  ContentLeaf? _topLeaf(ContentLeaf a, ContentLeaf b, Rect focus) {
-    final points = [
-      focus.center,
-      for (final dx in const [0.25, 0.75])
-        for (final dy in const [0.25, 0.75])
-          Offset(focus.left + focus.width * dx, focus.top + focus.height * dy),
-    ];
-    var votesA = 0;
-    var votesB = 0;
-    for (final point in points) {
-      for (final entry in hitTest(point).path) {
-        if (isRenderObjectAncestorOfTarget(a.box, entry.target)) {
-          votesA++;
-          break;
-        }
-        if (isRenderObjectAncestorOfTarget(b.box, entry.target)) {
-          votesB++;
-          break;
-        }
-      }
-    }
-    if (votesA == votesB) {
+  /// 공통 조상이 자식을 목록 순서대로 그리면 뒤에 오는 쪽이 위다. 그리는 순서를 알 수 없으면 null.
+  ContentLeaf? _paintedOnTop(ContentLeaf a, ContentLeaf b) {
+    final chainA = [a.box, ...a.ancestors];
+    final chainB = [b.box, ...b.ancestors];
+    final lcaIndexA = chainA.indexWhere(chainB.toSet().contains);
+    if (lcaIndexA <= 0) {
       return null;
     }
-    return votesA > votesB ? a : b;
+    final lca = chainA[lcaIndexA];
+    final lcaIndexB = chainB.indexOf(lca);
+    if (lcaIndexB <= 0 || !_paintsChildrenInOrder(lca)) {
+      return null;
+    }
+    final order = <RenderObject>[];
+    lca.visitChildren(order.add);
+    final indexA = order.indexOf(chainA[lcaIndexA - 1]);
+    final indexB = order.indexOf(chainB[lcaIndexB - 1]);
+    if (indexA < 0 || indexB < 0 || indexA == indexB) {
+      return null;
+    }
+    return indexA > indexB ? a : b;
   }
 
   List<_Raw> _edges(ContentLeaf leaf) {
@@ -432,3 +429,10 @@ String _describe(ContentLeaf leaf) {
       : "'${leaf.text.length > 20 ? '${leaf.text.substring(0, 20)}…' : leaf.text}'";
   return '$text(${sourceLocationOf(leaf.box) ?? '위치 불명'})';
 }
+
+/// 자식 목록 순서가 곧 그리는 순서인 위젯(Stack·Flex·Wrap·Overlay 등). 뷰포트는 역순으로 그릴 수
+/// 있고 Flow는 delegate가 순서를 정하며, ListTile처럼 칸으로 자식을 두는 위젯은 칸마다 다르다.
+bool _paintsChildrenInOrder(RenderObject object) =>
+    object is ContainerRenderObjectMixin &&
+    object is! RenderViewportBase &&
+    object is! RenderFlow;

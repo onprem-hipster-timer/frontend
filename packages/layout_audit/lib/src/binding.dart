@@ -184,11 +184,6 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
           ...auditRenderTree(
             [renderView],
             viewRect: Offset.zero & logical,
-            hitTest: (position) {
-              final result = HitTestResult();
-              hitTestInView(result, position, view.viewId);
-              return result;
-            },
             options: config.options,
           ),
         ],

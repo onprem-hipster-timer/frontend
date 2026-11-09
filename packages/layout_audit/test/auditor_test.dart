@@ -279,24 +279,29 @@ void main() {
     expect(auditLayout(tester), isEmpty);
   });
 
-  testWidgets('IgnorePointer 아래 겹침은 순서 불명으로 보고한다', (tester) async {
+  testWidgets('칸별로 그리는 ListTile 안의 겹침은 순서 불명으로 보고한다', (tester) async {
     await pumpInApp(
       tester,
-      IgnorePointer(
-        child: Stack(
-          children: [
-            at(10, 10, squareText('AAAA')),
-            at(20, 15, squareText('BBBB'))
-          ],
+      ListTile(
+        title: SizedBox(
+          width: 20,
+          height: 20,
+          child: OverflowBox(
+            maxWidth: 400,
+            alignment: Alignment.centerLeft,
+            child: squareText('A' * 16),
+          ),
         ),
+        trailing: squareText('BB'),
       ),
     );
 
-    final overlap = auditLayout(tester).single;
+    final overlap =
+        ofKind(auditLayout(tester), LayoutFindingKind.overlap).single;
 
     expect(overlap.zOrderKnown, isFalse);
     expect(overlap.coveringRoot, isNull);
-    expect(overlap.message, contains('70.0x15.0 겹칩니다 (순서 불명)'));
+    expect(overlap.message, contains('겹칩니다 (순서 불명)'));
   });
 
   testWidgets('within 밖의 겹침은 보고하지 않는다', (tester) async {
@@ -463,5 +468,54 @@ void main() {
     );
 
     expect(auditLayout(tester), isEmpty);
+  });
+
+  testWidgets('앞에 그려진 글자가 IgnorePointer여도 그리는 순서로 위를 판단한다', (tester) async {
+    await pumpInApp(
+      tester,
+      Stack(
+        children: [
+          at(10, 10, squareText('AAAA')),
+          at(20, 15, IgnorePointer(child: squareText('BBBB'))),
+        ],
+      ),
+    );
+
+    final overlap = auditLayout(tester).single;
+    expect(overlap.zOrderKnown, isTrue);
+    expect(overlap.texts, ['BBBB', 'AAAA']);
+  });
+
+  testWidgets('순서를 모르는 겹침은 왼쪽 위치와 상관없이 같은 쌍을 한 묶음으로 센다', (tester) async {
+    // 첫 타일은 제목이 오른쪽으로, 둘째 타일은 trailing이 왼쪽으로 넘쳐 왼쪽에 오는 글자가 바뀐다.
+    // 두 글자의 생성 위치가 달라야 하므로 공용 헬퍼 대신 여기서 만든다.
+    Widget tile(String title, String trailing) => ListTile(
+          title: SizedBox(
+            width: 20,
+            height: 20,
+            child: OverflowBox(
+              maxWidth: 400,
+              alignment: Alignment.centerLeft,
+              child: Text(title, style: squareStyle),
+            ),
+          ),
+          trailing: SizedBox(
+            width: 20,
+            height: 20,
+            child: OverflowBox(
+              maxWidth: 400,
+              alignment: Alignment.centerRight,
+              child: Text(trailing, style: squareStyle),
+            ),
+          ),
+        );
+    await pumpInApp(
+      tester,
+      Column(children: [tile('A' * 16, 'B'), tile('A', 'B' * 17)]),
+    );
+
+    final overlap =
+        ofKind(auditLayout(tester), LayoutFindingKind.overlap).single;
+    expect(overlap.count, 2);
   });
 }
