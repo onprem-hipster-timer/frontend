@@ -123,13 +123,10 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
               TextFormField(
                 controller: _titleController,
                 autofocus: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: '제목',
                   hintText: '일정 제목을 입력하세요',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.title),
+                  prefixIcon: Icon(Icons.title),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -277,13 +274,10 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
               // 설명 입력
               TextFormField(
                 controller: _descriptionController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: '설명 (선택사항)',
                   hintText: '일정에 대한 메모를 작성하세요',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.notes),
+                  prefixIcon: Icon(Icons.notes),
                   alignLabelWithHint: true,
                 ),
                 maxLines: 3,

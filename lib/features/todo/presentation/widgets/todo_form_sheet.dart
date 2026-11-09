@@ -159,11 +159,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     return TextFormField(
       controller: _titleController,
       autofocus: true,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: '할 일 제목',
         hintText: '할 일을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: const Icon(Icons.task_alt),
+        prefixIcon: Icon(Icons.task_alt),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -182,11 +181,10 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: '설명 (선택사항)',
         hintText: '상세 설명을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: const Icon(Icons.notes),
+        prefixIcon: Icon(Icons.notes),
         alignLabelWithHint: true,
       ),
       maxLines: 3,
@@ -870,7 +868,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       // 태그 그룹이 없으면 기본 그룹 생성
       if (tagGroups.isEmpty) {
         try {
-          final defaultGroup = TagGroupCreate(
+          final defaultGroup = const TagGroupCreate(
             name: '기본 그룹',
             color: '#2196F3', // 파란색
             description: '할 일을 위한 기본 태그 그룹입니다.',

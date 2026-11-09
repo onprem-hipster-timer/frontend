@@ -27,7 +27,6 @@ max_widget_class_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState 391
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart TimerHistoryItem 224
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState 502
-max_widget_class_lines lib/features/timer/presentation/widgets/start_timer_dialog.dart _StartTimerDialogState 201
 max_widget_class_lines lib/features/timer/presentation/widgets/timer_share_sheet.dart _TimerShareSheetState 225
 max_widget_class_lines lib/features/todo/presentation/pages/tag_group_selector_page.dart TagGroupSelectorPage 290
 max_widget_class_lines lib/features/todo/presentation/pages/todo_dashboard_page.dart TodoDashboardPage 216

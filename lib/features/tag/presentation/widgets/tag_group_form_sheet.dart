@@ -115,7 +115,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       decoration: InputDecoration(
         labelText: '그룹 이름',
         hintText: '태그 그룹 이름을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -143,11 +142,10 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: '설명 (선택사항)',
         hintText: '그룹에 대한 간단한 설명을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: const Icon(Icons.notes),
+        prefixIcon: Icon(Icons.notes),
         alignLabelWithHint: true,
       ),
       maxLines: 3,

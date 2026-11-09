@@ -311,9 +311,9 @@ class TodoGroupCard extends StatelessWidget {
                 ],
 
                 // 하단 정보 (TODO: 실제 할 일 개수 표시)
-                Row(
+                const Row(
                   children: [
-                    const Spacer(),
+                    Spacer(),
                     // TODO: 실제 할 일 개수 표시
                     // Text(
                     //   'N개',

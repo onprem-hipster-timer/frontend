@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 #### UI
+- 입력 칸은 화면마다 테두리를 정하지 않고 테마의 외곽선(모서리 12)을 따른다. 로그인·가입 입력 칸도 같은 모서리로 맞춘다
 - 하단 시트를 `showAppSheet`·`showAppScrollableSheet`로 연다. 모든 시트가 하단 내비게이션까지 덮고, 손잡이·배경·모서리·키보드 여백을 한 곳에서 정한다
 - 앱 테마를 `lib/shared/ui/theme`(`AppTheme`, `AppColors`, `AppRadius`)로 모은다. 입력 칸은 모서리 12의 외곽선, 하단 시트는 표면색과 윗모서리 20, SnackBar는 떠 있는 모양이 기본이다
 

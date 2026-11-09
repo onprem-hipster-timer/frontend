@@ -124,7 +124,6 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       decoration: InputDecoration(
         labelText: '태그 이름',
         hintText: '태그 이름을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: Container(
           margin: const EdgeInsets.all(12),
           width: 16,
@@ -232,9 +231,8 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
           // ⭐️ 핵심 Fix: 드롭다운이 넓이를 안전하게 잡도록 보장
           isExpanded: true,
           initialValue: _selectedGroupId.isNotEmpty ? _selectedGroupId : null,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: const Icon(Icons.folder_outlined),
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.folder_outlined),
           ),
           items: availableGroups.map((group) {
             return DropdownMenuItem<String>(

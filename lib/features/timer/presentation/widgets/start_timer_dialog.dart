@@ -178,7 +178,6 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
               hintText: '어떤 작업을 시작할까요?',
               helperText: several ? '할 일마다 그 제목으로 타이머를 하나씩 시작합니다' : null,
               helperMaxLines: 2,
-              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -192,7 +191,6 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
                     ? '할 일을 불러오지 못했습니다'
                     : null,
                 enabled: linkable != null,
-                border: const OutlineInputBorder(),
                 suffixIcon: const Icon(Icons.arrow_drop_down),
               ),
               child: Text(
@@ -252,7 +250,6 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
                         ],
                         decoration: InputDecoration(
                           suffixText: '분',
-                          border: const OutlineInputBorder(),
                           errorText: minutes == null
                               ? '1~$_maxFocusMinutes분'
                               : null,
@@ -346,7 +343,6 @@ class _TodoPickerState extends State<_TodoPicker> {
                 decoration: const InputDecoration(
                   hintText: '제목으로 찾기',
                   prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
