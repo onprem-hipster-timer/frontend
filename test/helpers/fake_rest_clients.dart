@@ -179,6 +179,12 @@ class FakeTodosClient extends Fake implements TodosClient {
   final updated = <(String, TodoUpdate, RequestOptions?)>[];
   final deleted = <(String, LinkedSchedulePolicy?, LinkedTimerPolicy?)>[];
 
+  /// 목록 조회마다 받은 `group_ids` 필터.
+  final readGroupIds = <List<String>?>[];
+
+  /// 설정하면 목록 조회가 이 오류로 실패한다.
+  Object? readError;
+
   /// 설정하면 쓰기 요청이 이 오류로 실패한다.
   Object? writeError;
 
@@ -193,7 +199,14 @@ class FakeTodosClient extends Fake implements TodosClient {
     String? timezone,
     ResourceScope? scope = ResourceScope.mine,
     RequestOptions? options,
-  }) async => [...todos];
+  }) async {
+    readGroupIds.add(groupIds);
+    if (readError != null) throw readError!;
+    return [
+      for (final todo in todos)
+        if (groupIds == null || groupIds.contains(todo.tagGroupId)) todo,
+    ];
+  }
 
   @override
   Future<TodoRead> createTodoV1TodosPost({
