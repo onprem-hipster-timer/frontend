@@ -1,6 +1,7 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// '시간 정하기'에서 고를 수 있는 가장 긴 시간
 const maxPickedDuration = Duration(minutes: 600);
@@ -14,11 +15,8 @@ const maxPickedDuration = Duration(minutes: 600);
 Future<Duration?> showDurationPickerSheet(
   BuildContext context, {
   required Duration initial,
-}) => showModalBottomSheet<Duration>(
-  context: context,
-  useRootNavigator: true,
-  // 기본 높이 제한(화면의 9/16)이면 가로 휴대폰에서 바퀴가 잘린다
-  isScrollControlled: true,
+}) => showAppSheet<Duration>(
+  context,
   builder: (_) => _DurationPickerSheet(initial: initial),
 );
 
@@ -40,7 +38,7 @@ class _DurationPickerSheetState extends State<_DurationPickerSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

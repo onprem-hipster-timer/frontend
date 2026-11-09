@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/core/utils/color_utils.dart';
@@ -30,76 +31,53 @@ class ScheduleListSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Material(
-      color: colorScheme.surface,
-      clipBehavior: Clip.antiAlias,
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(20),
-        topRight: Radius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 핸들
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // 날짜 헤더
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 20,
-                  color: colorScheme.primary,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 날짜 헤더
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+          child: Row(
+            children: [
+              Icon(Icons.calendar_today, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 12),
+              Text(
+                _headerDateFormat.format(date),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  _headerDateFormat.format(date),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${schedules.length}개 일정',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${schedules.length}개 일정',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
 
-          const Divider(height: 1),
+        const Divider(height: 1),
 
-          // 일정 목록
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: schedules.length,
-              separatorBuilder: (context, index) =>
-                  const Divider(height: 1, indent: 56),
-              itemBuilder: (context, index) {
-                final schedule = schedules[index];
-                return _buildScheduleTile(context, theme, schedule);
-              },
-            ),
+        // 일정 목록
+        Flexible(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: schedules.length,
+            separatorBuilder: (context, index) =>
+                const Divider(height: 1, indent: 56),
+            itemBuilder: (context, index) {
+              final schedule = schedules[index];
+              return _buildScheduleTile(context, theme, schedule);
+            },
           ),
+        ),
 
-          // 안전 영역
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-        ],
-      ),
+        // 안전 영역
+        SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+      ],
     );
   }
 
@@ -162,14 +140,13 @@ Future<void> showScheduleListSheet(
   DateTime date,
   List<ScheduleRead> schedules,
 ) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.5,
+  return showAppSheet<void>(
+    context,
+    builder: (context) => ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+      ),
+      child: ScheduleListSheet(date: date, schedules: schedules),
     ),
-    builder: (context) => ScheduleListSheet(date: date, schedules: schedules),
   );
 }

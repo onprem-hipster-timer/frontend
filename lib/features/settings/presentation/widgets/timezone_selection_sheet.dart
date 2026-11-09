@@ -4,6 +4,7 @@
 // IANA 타임존 DB에서 전체 목록을 표시하며 검색 필터를 제공합니다.
 
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
@@ -59,17 +60,6 @@ class _TimezoneSelectionSheetState
       height: MediaQuery.of(context).size.height * 0.7,
       child: Column(
         children: [
-          // 핸들 바
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
           // 헤더
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
@@ -190,15 +180,8 @@ class _TimezoneSelectionSheetState
 ///
 /// useRootNavigator: true 옵션을 사용하여 네비게이션 바 딤 이슈를 방지합니다.
 Future<void> showTimezoneSelectionSheet(BuildContext context) {
-  // 배경은 시트 자체(Material)에 칠해야 목록 항목의 물결 효과가 보인다
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    useRootNavigator: true, // 중요: 네비게이션 바 딤 이슈 방지
+  return showAppSheet<void>(
+    context,
     builder: (context) => const TimezoneSelectionSheet(),
   );
 }

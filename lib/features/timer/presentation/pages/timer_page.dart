@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
@@ -106,18 +107,10 @@ class _TimerPageState extends ConsumerState<TimerPage> {
   }
 
   void _showHistorySheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        maxChildSize: 0.95,
-        builder: (_, scrollController) =>
-            TimerHistoryList(scrollController: scrollController),
-      ),
+    showAppScrollableSheet<void>(
+      context,
+      builder: (_, scrollController) =>
+          TimerHistoryList(scrollController: scrollController),
     );
   }
 }

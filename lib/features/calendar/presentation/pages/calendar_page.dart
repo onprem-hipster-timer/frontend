@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
@@ -175,19 +176,12 @@ class CalendarPage extends ConsumerWidget {
 
   /// 필터 시트 표시
   void _showFilterSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.25,
-        maxChildSize: 0.75,
-        expand: false,
-        builder: (context, scrollController) {
-          return _FilterSheetContent(scrollController: scrollController);
-        },
-      ),
+    showAppScrollableSheet<void>(
+      context,
+      initialSize: 0.5,
+      maxSize: 0.75,
+      builder: (context, scrollController) =>
+          _FilterSheetContent(scrollController: scrollController),
     );
   }
 }
@@ -201,23 +195,12 @@ class _FilterSheetContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(calendarFilterProvider);
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       children: [
-        // 핸들
-        Container(
-          margin: const EdgeInsets.only(top: 12),
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: colorScheme.outline.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
         // 헤더
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

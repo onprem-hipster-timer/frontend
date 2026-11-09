@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -54,62 +55,38 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         ? ref.watch(updateTagGroupMutation).isPending
         : ref.watch(createTagGroupMutation).isPending;
 
-    // [Fix] viewInsets 패딩을 가장 바깥 Padding에만 적용한다.
-    // ─ 이전 구조: Container > Padding(viewInsets) > SingleChildScrollView
-    //   → Padding이 키보드 높이만큼 늘어나면서 SingleChildScrollView에
-    //     unbounded height가 전달되어 "RenderBox was not laid out" 에러 발생.
-    // ─ 수정 구조: Padding(viewInsets) > Container(maxHeight 제한) > SingleChildScrollView
-    return Padding(
-      // 키보드 패딩은 가장 바깥에서만 처리
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        // 최대 높이를 명시해 SingleChildScrollView에 bounded constraint 전달
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 헤더
-                _buildHeader(theme, isEditMode),
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더
+            _buildHeader(theme, isEditMode),
 
-                const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-                // 그룹 이름 입력
-                _buildNameField(),
+            // 그룹 이름 입력
+            _buildNameField(),
 
-                const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-                // 설명 입력
-                _buildDescriptionField(),
+            // 설명 입력
+            _buildDescriptionField(),
 
-                const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-                // 색상 선택
-                _buildColorPicker(theme),
+            // 색상 선택
+            _buildColorPicker(theme),
 
-                const SizedBox(height: 32),
+            const SizedBox(height: 32),
 
-                // 버튼 영역
-                _buildButtonBar(isEditMode, isLoading),
-              ],
-            ),
-          ),
+            // 버튼 영역
+            _buildButtonBar(isEditMode, isLoading),
+          ],
         ),
       ),
     );
@@ -119,18 +96,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
   Widget _buildHeader(ThemeData theme, bool isEditMode) {
     return Column(
       children: [
-        // 핸들
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.outline.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
         // 제목
         Text(
           isEditMode ? '그룹 수정' : '새 그룹 만들기',
@@ -414,11 +379,8 @@ Future<void> showTagGroupFormSheet(
   BuildContext context, {
   TagGroupReadWithTags? tagGroup,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showAppSheet<void>(
+    context,
     builder: (context) => TagGroupFormSheet(tagGroup: tagGroup),
   );
 }

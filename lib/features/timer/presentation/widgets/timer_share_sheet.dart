@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -48,11 +49,8 @@ Future<void> showTimerShareSheet(
   BuildContext context, {
   required TimerRead timer,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (_) => _TimerShareSheet(timer: timer),
   );
 }
@@ -197,54 +195,50 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
         ? ref.watch(friendsProvider)
         : null;
 
-    // 키보드가 올라오면 시트를 그만큼 올려 굴리는 영역이 키보드 위에 남게 한다
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '공유 설정',
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '공유 설정',
+            style: theme.textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          RadioGroup<VisibilityLevel>(
+            groupValue: _level,
+            onChanged: (level) {
+              if (level != null) setState(() => _level = level);
+            },
+            child: Column(
+              children: [
+                for (final option in _options)
+                  RadioListTile<VisibilityLevel>(
+                    value: option.level,
+                    enabled: !_saving,
+                    title: Text(option.label),
+                    subtitle: Text(option.description),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            RadioGroup<VisibilityLevel>(
-              groupValue: _level,
-              onChanged: (level) {
-                if (level != null) setState(() => _level = level);
-              },
-              child: Column(
-                children: [
-                  for (final option in _options)
-                    RadioListTile<VisibilityLevel>(
-                      value: option.level,
-                      enabled: !_saving,
-                      title: Text(option.label),
-                      subtitle: Text(option.description),
-                    ),
-                ],
-              ),
-            ),
-            if (friends != null) _friendList(friends),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: !_saving && _canSave(friends?.value)
-                  ? () => _save(friends?.value)
-                  : null,
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('저장'),
-            ),
-          ],
-        ),
+          ),
+          if (friends != null) _friendList(friends),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: !_saving && _canSave(friends?.value)
+                ? () => _save(friends?.value)
+                : null,
+            child: _saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('저장'),
+          ),
+        ],
       ),
     );
   }

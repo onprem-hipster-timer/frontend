@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
@@ -100,13 +101,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
         : ref.watch(createScheduleMutation).isPending;
 
     return Padding(
-      // 키보드가 올라왔을 때 UI가 가려지지 않도록 처리
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -114,21 +109,6 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bottom Sheet 핸들
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
               // 헤더
               Text(
                 widget.existingSchedule != null ? '일정 수정' : '새 일정',
@@ -638,12 +618,8 @@ Future<void> showScheduleFormSheet(
     defaultEndTime = defaultStartTime.add(const Duration(hours: 1));
   }
 
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true, // 키보드가 올라와도 전체 크기 유지
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: _sheetShape,
+  return showAppSheet<void>(
+    context,
     builder: (context) => ScheduleFormSheet(
       initialStartTime: defaultStartTime,
       initialEndTime: defaultEndTime,
@@ -663,17 +639,8 @@ Future<void> showScheduleEditSheet(
   BuildContext context,
   ScheduleRead existingSchedule,
 ) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: _sheetShape,
+  return showAppSheet<void>(
+    context,
     builder: (context) => ScheduleFormSheet(existingSchedule: existingSchedule),
   );
 }
-
-// 시트 배경은 시트 자체(Material)에 칠해야 종일 스위치의 물결 효과가 보인다
-const _sheetShape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-);

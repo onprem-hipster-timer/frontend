@@ -3472,8 +3472,9 @@ void main() {
               friendsProvider.overrideWith((ref) async => const <FriendRead>[]),
             ],
           );
-          // 셸은 아래 100을 내비 바 자리로 비워 둔다
-          final pageBottom = size.height - 100;
+          // 셸은 아래 100을 내비 바 자리로 비워 둔다. 좁은 화면의 목록은
+          // 내비 바까지 덮는 시트로 열린다
+          final pageBottom = size.width < 600 ? size.height : size.height - 100;
 
           /// [text]가 넘침 없이 굴려서라도 셸 위 화면 안에 보인다
           Future<void> expectShown(String text) async {

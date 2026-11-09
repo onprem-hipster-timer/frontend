@@ -8,7 +8,6 @@ max_file_lines lib/features/calendar/presentation/widgets/calendar_view.dart - 7
 max_file_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart - 690
 max_file_lines lib/features/tag/presentation/pages/tag_management_page.dart - 495
 max_file_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart - 536
-max_file_lines lib/features/tag/presentation/widgets/tag_group_form_sheet.dart - 424
 max_file_lines lib/features/timer/presentation/pages/timer_page.dart - 1747
 max_file_lines lib/features/timer/presentation/providers/timer_providers.dart - 682
 max_file_lines lib/features/todo/presentation/pages/todo_group_detail_page.dart - 445
@@ -40,7 +39,6 @@ max_build_lines lib/features/auth/presentation/pages/forgot_password_page.dart _
 max_build_lines lib/features/auth/presentation/pages/login_page.dart _LoginPageState.build 128
 max_build_lines lib/features/auth/presentation/pages/signup_page.dart _SignupPageState.build 138
 max_build_lines lib/features/auth/presentation/pages/verification_page.dart _VerificationPageState.build 91
-max_build_lines lib/features/calendar/presentation/widgets/holiday_detail_sheet.dart HolidayDetailSheet.build 94
 max_build_lines lib/features/calendar/presentation/widgets/schedule_create_dialog.dart _ScheduleCreateDialogState.build 148
 max_build_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState.build 274
 max_build_lines lib/features/mypage/presentation/widgets/activity_stats_section.dart ActivityStatsSection.build 205

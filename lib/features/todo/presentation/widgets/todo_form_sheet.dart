@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -90,62 +91,48 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         ? ref.watch(updateTodoMutation).isPending
         : ref.watch(createTodoMutation).isPending;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 헤더
-                _buildHeader(theme),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 헤더
+              _buildHeader(theme),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                // 할 일 제목 입력
-                _buildTitleField(),
+              // 할 일 제목 입력
+              _buildTitleField(),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-                // 설명 입력
-                _buildDescriptionField(),
+              // 설명 입력
+              _buildDescriptionField(),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-                // 상태 선택
-                _buildStatusSelector(theme),
+              // 상태 선택
+              _buildStatusSelector(theme),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-                // 마감일 선택
-                _buildDeadlineSelector(theme),
+              // 마감일 선택
+              _buildDeadlineSelector(theme),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                // 태그 선택
-                _buildTagSelector(theme),
+              // 태그 선택
+              _buildTagSelector(theme),
 
-                const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-                // 버튼 영역
-                _buildButtonBar(isLoading),
-              ],
-            ),
+              // 버튼 영역
+              _buildButtonBar(isLoading),
+            ],
           ),
         ),
       ),
@@ -156,18 +143,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   Widget _buildHeader(ThemeData theme) {
     return Column(
       children: [
-        // 핸들
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.outline.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
         // 제목
         Text(
           _isEditMode ? '할 일 수정' : '새 할 일 만들기',
@@ -1123,11 +1098,8 @@ Future<void> showTodoFormSheet(
   String? defaultParentId,
   String? defaultTagGroupId,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showAppSheet<void>(
+    context,
     builder: (context) => TodoFormSheet(
       todo: todo,
       defaultParentId: defaultParentId,

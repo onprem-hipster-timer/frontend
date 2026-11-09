@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
@@ -76,41 +77,25 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       _selectedGroupId = widget.defaultGroupId ?? availableGroups.first.groupId;
     }
 
-    // [안전한 바텀 시트 레이아웃 구조]
-    // SafeArea로 가장 바깥을 감싸고, padding으로 키보드 높이를 처리합니다.
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // 내부 콘텐츠 크기만큼만 높이 차지
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(theme),
-                  const SizedBox(height: 24),
-                  _buildNameField(),
-                  const SizedBox(height: 20),
-                  _buildGroupSelector(theme, availableGroups),
-                  const SizedBox(height: 24),
-                  _buildColorPicker(theme),
-                  const SizedBox(height: 32),
-                  _buildButtonBar(isLoading),
-                ],
-              ),
-            ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min, // 내부 콘텐츠 크기만큼만 높이 차지
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(theme),
+              const SizedBox(height: 24),
+              _buildNameField(),
+              const SizedBox(height: 20),
+              _buildGroupSelector(theme, availableGroups),
+              const SizedBox(height: 24),
+              _buildColorPicker(theme),
+              const SizedBox(height: 32),
+              _buildButtonBar(isLoading),
+            ],
           ),
         ),
       ),
@@ -121,15 +106,6 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     return Center(
       child: Column(
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
           Text(
             _isEditMode ? '태그 수정' : '새 태그 만들기',
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -525,11 +501,8 @@ Future<void> showTagFormSheet(
   TagRead? tag,
   String? defaultGroupId,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showAppSheet<void>(
+    context,
     builder: (context) =>
         TagFormSheet(tag: tag, defaultGroupId: defaultGroupId),
   );
