@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/utils/time_formatters.dart';
+import 'package:momeet/features/timer/presentation/widgets/duration_picker_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -54,6 +56,8 @@ String startFailureMessage(List<TodoRead> failed) =>
 
 /// 새 작업 시작 다이얼로그. 분 칸을 [initialDuration]으로 채우고 [initialTodo]를 연결해 연다. 취소하면 null
 ///
+/// [initialDuration]에 초가 있으면 분 칸 대신 그 시간을 그대로 보이고 '변경'으로 '시간 정하기'를 다시 연다.
+/// 집중 시간 칩을 누르면 분 칸으로 돌아간다.
 /// 할 일은 [allTodosProvider] 중 [canLinkTimer]인 것을 제목으로 찾아 고르고, 체크해 여럿을 고를 수 있다.
 /// 할 일을 하나 고르면 작업명이 비었거나 앞서 고른 할 일의 제목 그대로일 때 그 할 일의 제목으로 채운다.
 /// 둘 이상 고르면 작업명 칸을 막는다. 할 일마다 그 제목으로 타이머를 하나씩 시작한다.
@@ -90,6 +94,11 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
     text: '${widget.initialDuration.inMinutes}',
   );
 
+  /// 초까지 고른 집중 시간. 분 칸으로 고르면 null
+  late Duration? _exact = widget.initialDuration.inSeconds % 60 == 0
+      ? null
+      : widget.initialDuration;
+
   /// 연결할 할 일. 연결하지 않으면 비어 있다
   late List<TodoRead> _todos = [?widget.initialTodo];
 
@@ -120,7 +129,20 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
     });
   }
 
-  void _submit(int minutes) {
+  Future<void> _changeExact(Duration current) async {
+    final picked = await showDurationPickerSheet(context, initial: current);
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (picked.inSeconds % 60 == 0) {
+        _exact = null;
+        _minutes.text = '${picked.inMinutes}';
+      } else {
+        _exact = picked;
+      }
+    });
+  }
+
+  void _submit(Duration duration) {
     final typed = _title.text.trim();
     final title = typed.isNotEmpty
         ? typed
@@ -129,7 +151,7 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
       StartTimerInput(
         title: title.isEmpty ? '새 작업' : title,
         todos: _todos,
-        duration: Duration(minutes: minutes),
+        duration: duration,
       ),
     );
   }
@@ -190,6 +212,7 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
             valueListenable: _minutes,
             builder: (_, value, _) {
               final minutes = _focusMinutes(value.text);
+              final exact = _exact;
               return Wrap(
                 spacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -197,24 +220,45 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
                   for (final preset in _focusDurationPresets)
                     ChoiceChip(
                       label: Text('${preset.inMinutes}분'),
-                      selected: preset.inMinutes == minutes,
-                      onSelected: (_) => _minutes.text = '${preset.inMinutes}',
+                      selected: exact == null && preset.inMinutes == minutes,
+                      onSelected: (_) {
+                        setState(() => _exact = null);
+                        _minutes.text = '${preset.inMinutes}';
+                      },
                     ),
-                  SizedBox(
-                    width: 96,
-                    child: TextFormField(
-                      controller: _minutes,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        suffixText: '분',
-                        border: const OutlineInputBorder(),
-                        errorText: minutes == null
-                            ? '1~$_maxFocusMinutes분'
-                            : null,
+                  if (exact != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          formatDuration(exact),
+                          key: const ValueKey('start-timer-exact-duration'),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        TextButton(
+                          onPressed: () => _changeExact(exact),
+                          child: const Text('변경'),
+                        ),
+                      ],
+                    )
+                  else
+                    SizedBox(
+                      width: 96,
+                      child: TextFormField(
+                        controller: _minutes,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          suffixText: '분',
+                          border: const OutlineInputBorder(),
+                          errorText: minutes == null
+                              ? '1~$_maxFocusMinutes분'
+                              : null,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               );
             },
@@ -229,9 +273,14 @@ class _StartTimerDialogState extends ConsumerState<_StartTimerDialog> {
         ValueListenableBuilder<TextEditingValue>(
           valueListenable: _minutes,
           builder: (_, value, _) {
-            final minutes = _focusMinutes(value.text);
+            final duration =
+                _exact ??
+                switch (_focusMinutes(value.text)) {
+                  final minutes? => Duration(minutes: minutes),
+                  null => null,
+                };
             return FilledButton(
-              onPressed: minutes == null ? null : () => _submit(minutes),
+              onPressed: duration == null ? null : () => _submit(duration),
               child: const Text('시작'),
             );
           },

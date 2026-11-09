@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/timer/presentation/widgets/duration_picker_sheet.dart';
 import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
@@ -172,7 +173,8 @@ const _sideControlsMinWidth = 232.0;
 /// 활성 타이머가 둘 이상이면 다이얼 자리에 타이머마다 한 쪽씩 다이얼을 둔 갤러리([_TimerGallery])를 두고,
 /// 보이는 쪽의 타이머를 고릅니다. 활성 타이머가 있으면 굴리지 않는 '새 타이머' 칩으로 다른 타이머가 도는 중에도
 /// 새 작업을 시작합니다. 휴식 중에는 갤러리와 '새 타이머' 칩이 없습니다.
-/// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌어 각각의 시간을 고릅니다. 휴식은 서버에 보내지 않고 바로 시작합니다.
+/// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌거나 시계를 눌러 '시간 정하기'에서 각각의 시간을 초 단위로 고릅니다.
+/// 휴식은 서버에 보내지 않고 바로 시작합니다.
 class TimerDashboard extends ConsumerStatefulWidget {
   const TimerDashboard({super.key});
 
@@ -181,11 +183,14 @@ class TimerDashboard extends ConsumerStatefulWidget {
 }
 
 class _TimerDashboardState extends ConsumerState<TimerDashboard> {
-  /// 다이얼로 고른 새 작업의 집중 시간
+  /// 다이얼이나 '시간 정하기'로 고른 새 작업의 집중 시간 (초 단위)
   Duration _pendingDuration = defaultFocusDuration;
 
-  /// 다이얼로 고른 휴식 시간
+  /// 다이얼이나 '시간 정하기'로 고른 휴식 시간 (초 단위)
   Duration _pendingBreakDuration = defaultBreakDuration;
+
+  /// 다이얼을 끄는 동안 손가락이 가리키는 시간. 끌지 않으면 null
+  Duration? _dragPreview;
 
   /// 대기 상태에서 작업 대신 휴식을 골랐는지
   bool _breakSelected = false;
@@ -272,6 +277,8 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 remaining: pending,
                 color: dialColor,
                 label: _breakSelected ? '휴식 시간' : '집중 시간',
+                onPreview: (duration) =>
+                    setState(() => _dragPreview = duration),
                 onChanged: (duration) => setState(() {
                   if (_breakSelected) {
                     _pendingBreakDuration = duration;
@@ -333,17 +340,47 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 },
               );
 
+        final clock = DigitalClock(
+          duration: breakSession != null
+              ? breakRemaining
+              : activeTimer == null
+              ? _dragPreview ?? pending
+              : remaining,
+          timeUp: timeUp,
+          idle: idle,
+          compact: short,
+        );
+
         final controls = [
-          DigitalClock(
-            duration: breakSession != null
-                ? breakRemaining
-                : activeTimer == null
-                ? pending
-                : remaining,
-            timeUp: timeUp,
-            idle: idle,
-            compact: short,
-          ),
+          if (idle)
+            Tooltip(
+              message: '시간 정하기',
+              child: InkWell(
+                onTap: _pickPendingDuration,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  // 좁은 오른쪽 칸(가로 휴대폰)에서는 연필 표시까지 함께 줄인다
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        clock,
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            clock,
           if (caption != null)
             Text(
               caption,
@@ -464,6 +501,22 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         );
       },
     );
+  }
+
+  /// '시간 정하기'에서 고른 시간을 고른 모드(작업·휴식)의 시간으로 둔다
+  Future<void> _pickPendingDuration() async {
+    final picked = await showDurationPickerSheet(
+      context,
+      initial: _breakSelected ? _pendingBreakDuration : _pendingDuration,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (_breakSelected) {
+        _pendingBreakDuration = picked;
+      } else {
+        _pendingDuration = picked;
+      }
+    });
   }
 
   /// 새 작업 시작 다이얼로그를 열고 고른 값으로 타이머를 시작한다

@@ -77,7 +77,7 @@ void main() {
       await pump(tester, remaining: const Duration(minutes: 600));
     });
 
-    testWidgets('중심을 가로질러 끌어도 마지막 위치로 끝난다', (tester) async {
+    testWidgets('중심을 가로질러 끌어도 놓은 위치의 값 하나만 고른다', (tester) async {
       final picked = <Duration>[];
       await pump(
         tester,
@@ -90,8 +90,7 @@ void main() {
       await gesture.moveTo(center + const Offset(-90, 0));
       await gesture.up();
       await tester.pump();
-      expect(picked.first, const Duration(minutes: 15));
-      expect(picked.last, const Duration(minutes: 45));
+      expect(picked, [const Duration(minutes: 45)]);
       expect(tester.takeException(), isNull);
     });
   });

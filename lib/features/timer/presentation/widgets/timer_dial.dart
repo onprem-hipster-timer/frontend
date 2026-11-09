@@ -15,11 +15,22 @@ Duration dialFaceFor(Duration duration) {
   return Duration(minutes: hours * 60);
 }
 
+/// 다이얼로 고르는 시간의 단위. 끌기를 놓을 때, 스크린 리더와 키보드로 바꿀 때 이 단위로 옮긴다
+const dialStep = Duration(seconds: 30);
+
+/// 다이얼을 끄는 동안 원판과 시계가 따라가는 단위
+const dialDragStep = Duration(seconds: 10);
+
 /// 한 변이 [size]인 다이얼 위의 [local] 위치가 가리키는 시간.
 ///
-/// 12시에서 시계 방향으로 잰 각도를 분 단위로 반올림하고 1~[face] 분으로 자른다.
+/// 12시에서 시계 방향으로 잰 각도를 [step] 단위로 반올림하고 [step]~[face]로 자른다.
 /// 중심에서 [size]의 5% 안쪽은 각도가 불안정해 null.
-Duration? dialDurationAt(Offset local, double size, Duration face) {
+Duration? dialDurationAt(
+  Offset local,
+  double size,
+  Duration face, {
+  Duration step = dialStep,
+}) {
   final center = size / 2;
   final dx = local.dx - center;
   final dy = local.dy - center;
@@ -27,24 +38,35 @@ Duration? dialDurationAt(Offset local, double size, Duration face) {
 
   var angle = math.atan2(dx, -dy);
   if (angle < 0) angle += 2 * math.pi;
-  final minutes = (angle / (2 * math.pi) * face.inMinutes).round().clamp(
-    1,
-    face.inMinutes,
-  );
-  return Duration(minutes: minutes);
+  final steps = face.inSeconds ~/ step.inSeconds;
+  return step * (angle / (2 * math.pi) * steps).round().clamp(1, steps);
+}
+
+/// [duration]을 가장 가까운 [dialStep] 단위로 반올림하고 [dialStep]~[face]로 자른 값
+Duration snapDialDuration(Duration duration, Duration face) {
+  final steps = face.inSeconds ~/ dialStep.inSeconds;
+  return dialStep *
+      (duration.inMilliseconds / dialStep.inMilliseconds).round().clamp(
+        1,
+        steps,
+      );
 }
 
 /// 남은 시간을 12시부터 시계 방향으로 채운 원판으로 보여 주는 다이얼.
 ///
-/// [onChanged]가 있으면 다이얼을 누르거나 끌어 시간을 고른다. 스크린 리더에는 [label] 이름의 분 단위 슬라이더로
-/// 보이고, 초점을 받으면 방향키(위·오른쪽은 늘리기, 아래·왼쪽은 줄이기)와 +·-로 1분씩 1분~한 바퀴 시간 안에서 바꾼다.
-class TimerDial extends StatelessWidget {
+/// [onChanged]가 있으면 다이얼을 누르거나 끌어 시간을 고른다. 끄는 동안 원판은 [dialDragStep] 단위로 손가락을 따라가고
+/// 그 값을 [onPreview]로 알린다. 놓거나 끌기가 취소되면 가장 가까운 [dialStep] 단위로 맞춰 [onChanged]를 부르고
+/// [onPreview]에 null을 넘기며, 원판은 맞춘 값으로 짧게 움직인다. 끄는 동안 [dialStep] 경계를 넘을 때마다 선택 햅틱을 낸다.
+/// 스크린 리더에는 [label] 이름의 슬라이더로 보이고, 초점을 받으면 방향키(위·오른쪽은 늘리기, 아래·왼쪽은 줄이기)와
+/// +·-로 [dialStep]씩 [dialStep]~한 바퀴 시간 안에서 바꾼다.
+class TimerDial extends StatefulWidget {
   const TimerDial({
     super.key,
     required this.remaining,
     required this.color,
     this.face,
     this.onChanged,
+    this.onPreview,
     this.label,
   });
 
@@ -55,9 +77,18 @@ class TimerDial extends StatelessWidget {
   final Duration? face;
   final ValueChanged<Duration>? onChanged;
 
+  /// 끄는 동안 손가락이 가리키는 값. 끌기가 끝나면 null
+  final ValueChanged<Duration?>? onPreview;
+
   /// 고르는 시간의 이름 (스크린 리더용)
   final String? label;
 
+  @override
+  State<TimerDial> createState() => _TimerDialState();
+}
+
+class _TimerDialState extends State<TimerDial>
+    with SingleTickerProviderStateMixin {
   static const _stepShortcuts = <ShortcutActivator, Intent>{
     SingleActivator(LogicalKeyboardKey.arrowUp): _StepIntent(1),
     SingleActivator(LogicalKeyboardKey.arrowRight): _StepIntent(1),
@@ -67,50 +98,105 @@ class TimerDial extends StatelessWidget {
     CharacterActivator('-'): _StepIntent(-1),
   };
 
+  /// 끄는 동안 손가락이 가리키는 값. 끌지 않으면 null
+  Duration? _dragged;
+
+  /// 놓은 뒤 맞춘 값으로 움직이기 시작한 원판의 비율
+  double? _settleFrom;
+
+  late final _settle = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 150),
+  );
+
+  @override
+  void dispose() {
+    _settle.dispose();
+    super.dispose();
+  }
+
+  Duration get _face => widget.face ?? dialFaceFor(widget.remaining);
+
+  double _fraction(Duration face) {
+    final target =
+        (_dragged ?? widget.remaining).inMicroseconds / face.inMicroseconds;
+    final from = _settleFrom;
+    if (from == null || !_settle.isAnimating) return target;
+    return from + (target - from) * Curves.easeOut.transform(_settle.value);
+  }
+
+  void _drag(Offset local, double side) {
+    final picked = dialDurationAt(local, side, _face, step: dialDragStep);
+    if (picked == null || picked == _dragged) return;
+    final previous = _dragged;
+    if (previous != null &&
+        previous.inSeconds ~/ dialStep.inSeconds !=
+            picked.inSeconds ~/ dialStep.inSeconds) {
+      HapticFeedback.selectionClick();
+    }
+    setState(() => _dragged = picked);
+    widget.onPreview?.call(picked);
+  }
+
+  void _release() {
+    final dragged = _dragged;
+    if (dragged == null) return;
+    final face = _face;
+    final snapped = snapDialDuration(dragged, face);
+    setState(() {
+      _settleFrom = dragged.inMicroseconds / face.inMicroseconds;
+      _dragged = null;
+    });
+    _settle.forward(from: 0);
+    widget.onPreview?.call(null);
+    if (snapped != widget.remaining) widget.onChanged?.call(snapped);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final dialFace = face ?? dialFaceFor(remaining);
+    final dialFace = _face;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final side = math.min(constraints.maxWidth, constraints.maxHeight);
         Widget dial = SizedBox.square(
           dimension: side,
-          child: CustomPaint(
-            painter: _TimerDialPainter(
-              fraction: remaining.inMicroseconds / dialFace.inMicroseconds,
-              face: dialFace,
-              fillColor: color,
-              faceColor: colorScheme.surfaceContainerHighest,
-              tickColor: colorScheme.onSurfaceVariant,
-              knobColor: colorScheme.onSurfaceVariant,
-              labelStyle:
-                  Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: side * 0.055,
-                  ) ??
-                  TextStyle(fontSize: side * 0.055),
+          child: AnimatedBuilder(
+            animation: _settle,
+            builder: (context, _) => CustomPaint(
+              painter: _TimerDialPainter(
+                fraction: _fraction(dialFace),
+                face: dialFace,
+                fillColor: widget.color,
+                faceColor: colorScheme.surfaceContainerHighest,
+                tickColor: colorScheme.onSurfaceVariant,
+                knobColor: colorScheme.onSurfaceVariant,
+                labelStyle:
+                    Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: side * 0.055,
+                    ) ??
+                    TextStyle(fontSize: side * 0.055),
+              ),
             ),
           ),
         );
 
-        final onChanged = this.onChanged;
+        final onChanged = widget.onChanged;
         if (onChanged != null) {
-          void pick(Offset local) {
-            final picked = dialDurationAt(local, side, dialFace);
-            if (picked != null && picked != remaining) onChanged(picked);
-          }
+          final remaining = widget.remaining;
 
-          // minutes분 옮긴 값. 1분~한 바퀴 시간 밖이라 그대로면 null
-          Duration? stepped(int minutes) {
+          // steps번 [dialStep]만큼 옮긴 값. [dialStep]~한 바퀴 시간 밖이라 그 쪽으로 옮겨지지 않으면 null
+          Duration? stepped(int steps) {
             final next = Duration(
-              minutes: (remaining.inMinutes + minutes).clamp(
-                1,
-                dialFace.inMinutes,
+              seconds: (remaining.inSeconds + steps * dialStep.inSeconds).clamp(
+                dialStep.inSeconds,
+                dialFace.inSeconds,
               ),
             );
-            return next == remaining ? null : next;
+            final moved = steps > 0 ? next > remaining : next < remaining;
+            return moved ? next : null;
           }
 
           final up = stepped(1);
@@ -118,10 +204,10 @@ class TimerDial extends StatelessWidget {
           dial = Semantics(
             container: true,
             slider: true,
-            label: label,
-            value: _minutesText(remaining),
-            increasedValue: up == null ? null : _minutesText(up),
-            decreasedValue: down == null ? null : _minutesText(down),
+            label: widget.label,
+            value: _durationText(remaining),
+            increasedValue: up == null ? null : _durationText(up),
+            decreasedValue: down == null ? null : _durationText(down),
             onIncrease: up == null ? null : () => onChanged(up),
             onDecrease: down == null ? null : () => onChanged(down),
             child: FocusableActionDetector(
@@ -129,7 +215,7 @@ class TimerDial extends StatelessWidget {
               actions: {
                 _StepIntent: CallbackAction<_StepIntent>(
                   onInvoke: (intent) {
-                    final next = stepped(intent.minutes);
+                    final next = stepped(intent.steps);
                     if (next != null) onChanged(next);
                     return null;
                   },
@@ -139,8 +225,10 @@ class TimerDial extends StatelessWidget {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 excludeFromSemantics: true,
-                onPanDown: (details) => pick(details.localPosition),
-                onPanUpdate: (details) => pick(details.localPosition),
+                onPanDown: (details) => _drag(details.localPosition, side),
+                onPanUpdate: (details) => _drag(details.localPosition, side),
+                onPanEnd: (_) => _release(),
+                onPanCancel: _release,
                 child: dial,
               ),
             ),
@@ -152,14 +240,19 @@ class TimerDial extends StatelessWidget {
     );
   }
 
-  static String _minutesText(Duration duration) => '${duration.inMinutes}분';
+  static String _durationText(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    if (seconds == 0) return '$minutes분';
+    return minutes == 0 ? '$seconds초' : '$minutes분 $seconds초';
+  }
 }
 
-/// 다이얼 시간을 [minutes]분 옮긴다
+/// 다이얼 시간을 [steps]번 [dialStep]만큼 옮긴다
 class _StepIntent extends Intent {
-  const _StepIntent(this.minutes);
+  const _StepIntent(this.steps);
 
-  final int minutes;
+  final int steps;
 }
 
 class _TimerDialPainter extends CustomPainter {

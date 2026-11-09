@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1346,7 +1348,226 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('대기 상태의 다이얼은 고르는 시간의 이름을 스크린 리더에 알리고 1분씩 바꾼다', (tester) async {
+    /// 대기 다이얼의 [seconds]초 자리 (60분 다이얼)
+    Offset dialAt(WidgetTester tester, int seconds) {
+      final dial = find.byType(TimerDial);
+      final size = tester.getSize(dial);
+      final radius =
+          (size.width < size.height ? size.width : size.height) * 0.4;
+      final angle = seconds / 3600 * 2 * math.pi;
+      return tester.getCenter(dial) +
+          Offset(math.sin(angle), -math.cos(angle)) * radius;
+    }
+
+    testWidgets('다이얼을 끄는 동안 시계는 10초 단위로 따라가고 놓으면 30초로 맞춘 값으로 시작한다', (
+      tester,
+    ) async {
+      final controller = _FakeTimerController();
+      await _pumpTimerPage(tester, timer: null, controller: controller);
+
+      final gesture = await tester.startGesture(dialAt(tester, 600));
+      await gesture.moveTo(dialAt(tester, 760));
+      await tester.pump();
+      expect(_clockText(tester), '00:12:40');
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(_clockText(tester), '00:12:30');
+
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('start-timer-exact-duration')),
+        findsOneWidget,
+      );
+      expect(find.text('00:12:30'), findsWidgets);
+      await tester.tap(find.widgetWithText(FilledButton, '시작'));
+      await tester.pumpAndSettle();
+
+      expect(controller.startedAllocatedDurationSeconds, 750);
+    });
+
+    group('시간 정하기', () {
+      Future<void> openPicker(WidgetTester tester) async {
+        await tester.tap(find.byTooltip('시간 정하기'));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> pick(WidgetTester tester, Duration duration) async {
+        tester
+            .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
+            .onTimerDurationChanged(duration);
+        await tester.pump();
+      }
+
+      Finder confirm() => find.widgetWithText(FilledButton, '확인');
+
+      testWidgets('대기 상태의 시계를 누르면 지금 고른 시간으로 시·분·초 바퀴를 연다', (tester) async {
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+
+        await openPicker(tester);
+
+        final picker = tester.widget<CupertinoTimerPicker>(
+          find.byType(CupertinoTimerPicker),
+        );
+        expect(picker.mode, CupertinoTimerPickerMode.hms);
+        expect(picker.initialTimerDuration, const Duration(minutes: 25));
+        expect(find.text('시간 정하기'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, '취소'), findsOneWidget);
+      });
+
+      testWidgets('12분 34초를 확인하면 시계가 00:12:34이고 754초로 시작한다', (tester) async {
+        final controller = _FakeTimerController();
+        await _pumpTimerPage(tester, timer: null, controller: controller);
+
+        await openPicker(tester);
+        await pick(tester, const Duration(minutes: 12, seconds: 34));
+        await tester.tap(confirm());
+        await tester.pumpAndSettle();
+        expect(_clockText(tester), '00:12:34');
+
+        await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const ValueKey('start-timer-exact-duration')),
+              )
+              .data,
+          '00:12:34',
+        );
+        // 집중 시간 칩은 그대로 쓸 수 있다
+        expect(find.widgetWithText(ChoiceChip, '25분'), findsOneWidget);
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+
+        expect(controller.startedAllocatedDurationSeconds, 754);
+      });
+
+      testWidgets('새 작업 시작에서 칩을 누르면 분 단위로 돌아간다', (tester) async {
+        final controller = _FakeTimerController();
+        await _pumpTimerPage(tester, timer: null, controller: controller);
+        await openPicker(tester);
+        await pick(tester, const Duration(minutes: 12, seconds: 34));
+        await tester.tap(confirm());
+        await tester.pumpAndSettle();
+        await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(ChoiceChip, '15분'));
+        await tester.pump();
+        expect(
+          find.byKey(const ValueKey('start-timer-exact-duration')),
+          findsNothing,
+        );
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+
+        expect(controller.startedAllocatedDurationSeconds, 15 * 60);
+      });
+
+      testWidgets('새 작업 시작의 변경으로 시간 정하기를 다시 열어 바꾼다', (tester) async {
+        final controller = _FakeTimerController();
+        await _pumpTimerPage(tester, timer: null, controller: controller);
+        await openPicker(tester);
+        await pick(tester, const Duration(minutes: 12, seconds: 34));
+        await tester.tap(confirm());
+        await tester.pumpAndSettle();
+        await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(TextButton, '변경'));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
+              .initialTimerDuration,
+          const Duration(minutes: 12, seconds: 34),
+        );
+        await pick(tester, const Duration(minutes: 1, seconds: 5));
+        await tester.tap(confirm());
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+
+        expect(controller.startedAllocatedDurationSeconds, 65);
+      });
+
+      testWidgets('취소하면 고른 시간을 그대로 둔다', (tester) async {
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+
+        await openPicker(tester);
+        await pick(tester, const Duration(minutes: 12, seconds: 34));
+        await tester.tap(find.widgetWithText(TextButton, '취소'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CupertinoTimerPicker), findsNothing);
+        expect(_clockText(tester), '00:25:00');
+      });
+
+      testWidgets('600분보다 길게 고르면 600분으로 자른다', (tester) async {
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+
+        await openPicker(tester);
+        await pick(tester, const Duration(hours: 11, seconds: 5));
+        await tester.tap(confirm());
+        await tester.pumpAndSettle();
+
+        expect(_clockText(tester), '10:00:00');
+      });
+
+      testWidgets('0초는 확인할 수 없다', (tester) async {
+        await _pumpTimerPage(
+          tester,
+          timer: null,
+          controller: _FakeTimerController(),
+        );
+
+        await openPicker(tester);
+        await pick(tester, Duration.zero);
+
+        expect(tester.widget<FilledButton>(confirm()).onPressed, isNull);
+        await pick(tester, const Duration(seconds: 1));
+        expect(tester.widget<FilledButton>(confirm()).onPressed, isNotNull);
+      });
+
+      for (final size in const [Size(360, 560), Size(844, 390)]) {
+        testWidgets(
+          '${size.width.toInt()}x${size.height.toInt()} 화면에서 시계와 시간 정하기가 넘치지 않는다',
+          (tester) async {
+            tester.view.physicalSize = size;
+            tester.view.devicePixelRatio = 1;
+            addTearDown(tester.view.reset);
+            await _pumpTimerPage(
+              tester,
+              timer: null,
+              controller: _FakeTimerController(),
+            );
+            expect(tester.takeException(), isNull);
+
+            await openPicker(tester);
+
+            expect(tester.takeException(), isNull);
+            final button = tester.getRect(confirm());
+            expect(button.bottom, lessThanOrEqualTo(size.height));
+          },
+        );
+      }
+    });
+
+    testWidgets('대기 상태의 다이얼은 고르는 시간의 이름을 스크린 리더에 알리고 30초씩 바꾼다', (tester) async {
       final handle = tester.ensureSemantics();
       await _pumpTimerPage(
         tester,
@@ -1360,7 +1581,7 @@ void main() {
       );
       tester.semantics.increase(find.semantics.byLabel('집중 시간'));
       await tester.pump();
-      expect(_clockText(tester), '00:26:00');
+      expect(_clockText(tester), '00:25:30');
 
       await tester.tap(_mode('휴식'));
       await tester.pumpAndSettle();
@@ -1572,6 +1793,37 @@ void main() {
       expect(
         tester.widget<TimerDial>(find.byType(TimerDial)).color,
         cs.tertiary,
+      );
+    });
+
+    testWidgets('시간 정하기로 고른 45초 휴식은 00:00:45부터 센다', (tester) async {
+      await pump(tester);
+      await chooseBreak(tester);
+
+      await tester.tap(find.byTooltip('시간 정하기'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
+            .initialTimerDuration,
+        const Duration(minutes: 5),
+      );
+      tester
+          .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
+          .onTimerDurationChanged(const Duration(seconds: 45));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, '확인'));
+      await tester.pumpAndSettle();
+      expect(_clockText(tester), '00:00:45');
+
+      await tester.tap(_dashboardFabByIcon(Icons.coffee));
+      await tester.pumpAndSettle();
+
+      expect(inDashboard(find.text('휴식')), findsOneWidget);
+      expect(_clockText(tester), '00:00:45');
+      expect(
+        tester.widget<TimerDial>(find.byType(TimerDial)).remaining,
+        const Duration(seconds: 45),
       );
     });
 
@@ -2077,7 +2329,7 @@ void main() {
         // 9시에서 12시 바로 왼쪽까지 끈다
         await tester.dragFrom(
           center + Offset(-radius, 0),
-          Offset(radius * 0.97, -radius),
+          Offset(radius * 0.995, -radius),
         );
         await tester.pump();
 
