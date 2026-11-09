@@ -62,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### API
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
+#### Tooling
+- Material·Cupertino 위젯을 `material_ui`·`cupertino_ui` 패키지에서 가져온다
+- 아키텍처 린트(`packages/momeet_lints`)를 새 analyzer 플러그인(`analysis_server_plugin`)으로 옮긴다. `dart analyze`와 IDE에서 함께 돌고, CI 분석 단계는 `dart analyze --fatal-infos`가 맡는다. `dart run custom_lint` 단계는 없앤다
+
 ### Added
 
 #### Timer

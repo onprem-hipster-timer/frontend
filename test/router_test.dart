@@ -1,4 +1,3 @@
-// ignore_for_file: no_manual_route_path
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/router.dart';
 

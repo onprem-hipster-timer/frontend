@@ -1,13 +1,12 @@
+import 'package:analyzer/analysis_rule/analysis_rule.dart';
+import 'package:analyzer/analysis_rule/rule_context.dart';
+import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
-// ignore_for_file: deprecated_member_use
-import 'package:analyzer/error/error.dart' show ErrorSeverity;
-import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/error/error.dart';
+import 'package:momeet_lints/src/paths.dart';
 
 const _authProviderFile = 'auth_provider.dart';
-
-const _buildRequiredMethods = ['build'];
 
 const _actionMethodNames = {
   'signInWithEmail',
@@ -24,51 +23,48 @@ const _actionMethodNames = {
   'completeGoogleAccountLink',
 };
 
-const _classifyRequiredMethodNames = _actionMethodNames;
-
 // ============================================================
 // 액션 메서드에서 AuthStatus.loading() 금지
 // ============================================================
 
 /// AuthNotifier의 액션 메서드에서 AuthStatus.loading()을 사용하는 것을 금지합니다.
-class AuthActionNoLoadingState extends DartLintRule {
-  const AuthActionNoLoadingState() : super(code: _loadingCode);
+class AuthActionNoLoadingState extends AnalysisRule {
+  AuthActionNoLoadingState()
+      : super(name: code.lowerCaseName, description: code.problemMessage);
 
-  static const _loadingCode = LintCode(
-    name: 'auth_action_no_loading_state',
-    problemMessage: '액션 메서드에서 AuthStatus.loading()을 사용하면 안 됩니다. '
+  static const code = LintCode(
+    'auth_action_no_loading_state',
+    '액션 메서드에서 AuthStatus.loading()을 사용하면 안 됩니다. '
         'loading 상태는 앱 초기화(build) 전용이며, '
         '사용 시 라우터가 /loading으로 리다이렉트하여 무한 로딩 버그가 발생합니다.',
-    errorSeverity: ErrorSeverity.ERROR,
+    severity: DiagnosticSeverity.ERROR,
   );
 
   @override
-  void run(
-    CustomLintResolver resolver,
-    ErrorReporter reporter,
-    CustomLintContext context,
+  DiagnosticCode get diagnosticCode => code;
+
+  @override
+  void registerNodeProcessors(
+    RuleVisitorRegistry registry,
+    RuleContext context,
   ) {
-    if (!resolver.path.endsWith(_authProviderFile)) return;
+    registry.addClassDeclaration(this, _LoadingVisitor(this, context));
+  }
+}
 
-    context.registry.addClassDeclaration((node) {
-      if (node.name.lexeme != 'AuthNotifier') return;
+class _LoadingVisitor extends SimpleAstVisitor<void> {
+  _LoadingVisitor(this.rule, this.context);
 
-      for (final member in node.members) {
-        if (member is! MethodDeclaration) continue;
-        final name = member.name.lexeme;
-        if (_buildRequiredMethods.contains(name)) continue;
-        if (!_actionMethodNames.contains(name)) continue;
+  final AnalysisRule rule;
+  final RuleContext context;
 
-        final body = member.body;
-        if (body is! BlockFunctionBody) continue;
-
-        final loadingChecker = _LoadingUsageChecker();
-        body.block.accept(loadingChecker);
-        for (final usage in loadingChecker.violations) {
-          reporter.atNode(usage, _loadingCode);
-        }
-      }
-    });
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    for (final body in _actionBodies(node, context)) {
+      final loadingChecker = _LoadingUsageChecker();
+      body.block.accept(loadingChecker);
+      loadingChecker.violations.forEach(rule.reportAtNode);
+    }
   }
 }
 
@@ -78,49 +74,61 @@ class AuthActionNoLoadingState extends DartLintRule {
 
 /// AuthNotifier 액션 메서드의 모든 예외 처리 블록(catch / on-only)에서
 /// AuthErrorType.classify를 사용하도록 강제합니다.
-class AuthCatchRequireClassify extends DartLintRule {
-  const AuthCatchRequireClassify() : super(code: _code);
+class AuthCatchRequireClassify extends AnalysisRule {
+  AuthCatchRequireClassify()
+      : super(name: code.lowerCaseName, description: code.problemMessage);
 
-  static const _code = LintCode(
-    name: 'auth_catch_require_classify',
-    problemMessage: '예외 처리 블록에서 AuthErrorType.classify를 사용해야 합니다. '
+  static const code = LintCode(
+    'auth_catch_require_classify',
+    '예외 처리 블록에서 AuthErrorType.classify를 사용해야 합니다. '
         '직접 에러 메시지를 파싱하는 것은 금지됩니다.',
-    errorSeverity: ErrorSeverity.WARNING,
+    severity: DiagnosticSeverity.WARNING,
   );
 
   @override
-  void run(
-    CustomLintResolver resolver,
-    ErrorReporter reporter,
-    CustomLintContext context,
+  DiagnosticCode get diagnosticCode => code;
+
+  @override
+  void registerNodeProcessors(
+    RuleVisitorRegistry registry,
+    RuleContext context,
   ) {
-    if (!resolver.path.endsWith(_authProviderFile)) return;
+    registry.addClassDeclaration(this, _ClassifyVisitor(this, context));
+  }
+}
 
-    context.registry.addClassDeclaration((node) {
-      if (node.name.lexeme != 'AuthNotifier') return;
+class _ClassifyVisitor extends SimpleAstVisitor<void> {
+  _ClassifyVisitor(this.rule, this.context);
 
-      for (final member in node.members) {
-        if (member is! MethodDeclaration) continue;
-        final name = member.name.lexeme;
-        if (_buildRequiredMethods.contains(name)) continue;
-        if (!_classifyRequiredMethodNames.contains(name)) continue;
+  final AnalysisRule rule;
+  final RuleContext context;
 
-        final body = member.body;
-        if (body is! BlockFunctionBody) continue;
-
-        final catchFinder = _CatchBlockFinder();
-        body.block.accept(catchFinder);
-
-        for (final catchClause in catchFinder.catchClauses) {
-          final classifyChecker = _ClassifyUsageChecker();
-          catchClause.accept(classifyChecker);
-
-          if (!classifyChecker.hasClassify) {
-            reporter.atNode(catchClause, _code);
-          }
-        }
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    for (final body in _actionBodies(node, context)) {
+      final catchFinder = _CatchBlockFinder();
+      body.block.accept(catchFinder);
+      for (final catchClause in catchFinder.catchClauses) {
+        final classifyChecker = _ClassifyUsageChecker();
+        catchClause.accept(classifyChecker);
+        if (!classifyChecker.hasClassify) rule.reportAtNode(catchClause);
       }
-    });
+    }
+  }
+}
+
+/// AuthNotifier 액션 메서드들의 블록 본문
+Iterable<BlockFunctionBody> _actionBodies(
+  ClassDeclaration node,
+  RuleContext context,
+) sync* {
+  if (!currentPath(context).endsWith(_authProviderFile)) return;
+  if (node.namePart.typeName.lexeme != 'AuthNotifier') return;
+  for (final member in node.body.members) {
+    if (member is! MethodDeclaration) continue;
+    if (!_actionMethodNames.contains(member.name.lexeme)) continue;
+    final body = member.body;
+    if (body is BlockFunctionBody) yield body;
   }
 }
 

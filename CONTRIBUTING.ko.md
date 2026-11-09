@@ -122,8 +122,7 @@ cd packages/layout_audit && fvm flutter test
 | Hook | 명령 | 설명 |
 |------|------|------|
 | `pre-commit` | `dart format` | staged 파일 포맷 검사 및 자동 수정 |
-| `pre-commit` | `flutter analyze` | 정적 분석 |
-| `pre-commit` | `dart run custom_lint` | 아키텍처 린트 |
+| `pre-commit` | `dart analyze` | 정적 분석(아키텍처 린트 포함) |
 | `pre-push` | `flutter test` | 전체 테스트 |
 
 > FVM이 설치되어 있으면 자동으로 `fvm` 경유, 없으면 시스템 Flutter/Dart를 사용합니다.
@@ -145,9 +144,13 @@ git commit --no-verify -m "hotfix: ..."
 
 ### 아키텍처 린트 실행
 
+아키텍처 린트(`packages/momeet_lints`)는 analyzer 플러그인이라 `dart analyze`와 IDE에서 함께 돈다. `flutter analyze`는 플러그인 결과를 기다리지 않으므로 `dart analyze`를 쓴다.
+
 ```bash
-# 아키텍처 린트 검사
-fvm dart run custom_lint
+fvm dart analyze --fatal-infos
+
+# 규칙 자체의 테스트
+cd packages/momeet_lints && fvm dart test
 ```
 
 검출되는 규칙:
@@ -157,8 +160,9 @@ fvm dart run custom_lint
 | `no_direct_kratos_client` | `lib/shared/api/kratos/`와 `auth_provider.dart` 밖에서 `KratosClient` 사용 금지 |
 | `auth_action_no_loading_state` | 액션 메서드에서 `AuthStatus.loading()` 사용 금지 |
 | `auth_catch_require_classify` | catch 블록에서 `AuthErrorType.classify` 사용 강제 |
+| `no_manual_route_path` | `AppRoute.xxx.path`를 문자열로 결합하는 것 금지(`goNamed`/`pushNamed` 사용) |
 
-> IDE에 `custom_lint` 플러그인이 활성화되어 있으면 코드 작성 시 실시간 경고가 표시됩니다.
+> 한 줄만 예외로 둘 때는 `// ignore: momeet_lints/<규칙>`을 쓴다. 플러그인 코드를 바꾸면 IDE의 분석 서버를 재시작해야 반영된다.
 
 ---
 
@@ -251,8 +255,7 @@ Closes #42
 ### 제출 전 체크리스트
 
 - [ ] 모든 테스트 통과 (`fvm flutter test`)
-- [ ] 코드 분석 통과 (`fvm flutter analyze`)
-- [ ] 아키텍처 린트 통과 (`fvm dart run custom_lint`)
+- [ ] 코드 분석·아키텍처 린트 통과 (`fvm dart analyze --fatal-infos`)
 - [ ] 새 코드에 적절한 테스트 작성
 - [ ] 코드 생성 정상 동작 (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] 필요시 문서 업데이트

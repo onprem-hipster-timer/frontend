@@ -122,8 +122,7 @@ This project uses [Lefthook](https://github.com/evilmartians/lefthook) to manage
 | Hook | Command | Description |
 |------|---------|-------------|
 | `pre-commit` | `dart format` | Format staged files and auto-fix |
-| `pre-commit` | `flutter analyze` | Static analysis |
-| `pre-commit` | `dart run custom_lint` | Architecture lints |
+| `pre-commit` | `dart analyze` | Static analysis (includes architecture lints) |
 | `pre-push` | `flutter test` | Full test suite |
 
 > If FVM is installed, commands run via `fvm` automatically. Otherwise, system Flutter/Dart is used.
@@ -145,9 +144,13 @@ git commit --no-verify -m "hotfix: ..."
 
 ### Running Architecture Lints
 
+The architecture lints (`packages/momeet_lints`) are an analyzer plugin, so they run inside `dart analyze` and the IDE. `flutter analyze` does not wait for plugin results, so use `dart analyze`.
+
 ```bash
-# Run architecture lint checks
-fvm dart run custom_lint
+fvm dart analyze --fatal-infos
+
+# Tests for the rules themselves
+cd packages/momeet_lints && fvm dart test
 ```
 
 Rules enforced:
@@ -157,8 +160,9 @@ Rules enforced:
 | `no_direct_kratos_client` | Disallow using `KratosClient` outside `lib/shared/api/kratos/` and `auth_provider.dart` |
 | `auth_action_no_loading_state` | Disallow `AuthStatus.loading()` in action methods |
 | `auth_catch_require_classify` | Require `AuthErrorType.classify` in catch blocks |
+| `no_manual_route_path` | Disallow building paths from `AppRoute.xxx.path` strings (use `goNamed`/`pushNamed`) |
 
-> If the `custom_lint` plugin is active in your IDE, warnings will appear in real-time as you write code.
+> To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
 
 ---
 
@@ -280,8 +284,7 @@ Fixes #87
 ### Before Submitting
 
 - [ ] All tests pass (`fvm flutter test`)
-- [ ] Code follows style guidelines (`fvm flutter analyze`)
-- [ ] Architecture lints pass (`fvm dart run custom_lint`)
+- [ ] Analysis and architecture lints pass (`fvm dart analyze --fatal-infos`)
 - [ ] New code has appropriate tests
 - [ ] Code generation runs cleanly (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] Documentation updated if needed

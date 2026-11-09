@@ -86,11 +86,6 @@ dev_dependencies:
   mocktail: ^1.0.4
   fake_async: ^1.3.3
 
-  # Architecture Lints
-  custom_lint:
-  momeet_lints:
-    path: packages/momeet_lints
-
   # Layout audit (overlap, clipping, overflow in widget tests)
   layout_audit:
     path: packages/layout_audit

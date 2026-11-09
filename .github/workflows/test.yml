@@ -87,17 +87,18 @@ jobs:
       - name: Check formatting
         run: dart format --set-exit-if-changed .
 
+      # flutter analyze는 analyzer 플러그인(momeet_lints) 결과를 기다리지 않는다
       - name: Analyze
-        run: flutter analyze --fatal-infos
-
-      - name: Architecture lints
-        run: dart run custom_lint
+        run: dart analyze --fatal-infos
 
       - name: Run tests
         run: flutter test
 
       - name: Layout audit library tests
         run: cd packages/layout_audit && flutter pub get && flutter test
+
+      - name: Lint rule tests
+        run: cd packages/momeet_lints && dart pub get && dart test
 
   arch-guard:
     name: Auth Architecture Guard
