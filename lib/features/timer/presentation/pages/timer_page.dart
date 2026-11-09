@@ -262,6 +262,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
             ? TimerDial(
                 remaining: pending,
                 color: dialColor,
+                label: _breakSelected ? '휴식 시간' : '집중 시간',
                 onChanged: (duration) => setState(() {
                   if (_breakSelected) {
                     _pendingBreakDuration = duration;

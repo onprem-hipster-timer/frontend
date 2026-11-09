@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// 다이얼 한 바퀴의 기본 시간
 const dialFaceDuration = Duration(minutes: 60);
@@ -35,7 +36,8 @@ Duration? dialDurationAt(Offset local, double size, Duration face) {
 
 /// 남은 시간을 12시부터 시계 방향으로 채운 원판으로 보여 주는 다이얼.
 ///
-/// [onChanged]가 있으면 다이얼을 누르거나 끌어 시간을 고른다.
+/// [onChanged]가 있으면 다이얼을 누르거나 끌어 시간을 고른다. 스크린 리더에는 [label] 이름의 분 단위 슬라이더로
+/// 보이고, 초점을 받으면 방향키(위·오른쪽은 늘리기, 아래·왼쪽은 줄이기)와 +·-로 1분씩 1분~한 바퀴 시간 안에서 바꾼다.
 class TimerDial extends StatelessWidget {
   const TimerDial({
     super.key,
@@ -43,6 +45,7 @@ class TimerDial extends StatelessWidget {
     required this.color,
     this.face,
     this.onChanged,
+    this.label,
   });
 
   final Duration remaining;
@@ -51,6 +54,18 @@ class TimerDial extends StatelessWidget {
   /// 한 바퀴 시간. 없으면 [dialFaceFor] ([remaining])
   final Duration? face;
   final ValueChanged<Duration>? onChanged;
+
+  /// 고르는 시간의 이름 (스크린 리더용)
+  final String? label;
+
+  static const _stepShortcuts = <ShortcutActivator, Intent>{
+    SingleActivator(LogicalKeyboardKey.arrowUp): _StepIntent(1),
+    SingleActivator(LogicalKeyboardKey.arrowRight): _StepIntent(1),
+    CharacterActivator('+'): _StepIntent(1),
+    SingleActivator(LogicalKeyboardKey.arrowDown): _StepIntent(-1),
+    SingleActivator(LogicalKeyboardKey.arrowLeft): _StepIntent(-1),
+    CharacterActivator('-'): _StepIntent(-1),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -87,11 +102,48 @@ class TimerDial extends StatelessWidget {
             if (picked != null && picked != remaining) onChanged(picked);
           }
 
-          dial = GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onPanDown: (details) => pick(details.localPosition),
-            onPanUpdate: (details) => pick(details.localPosition),
-            child: dial,
+          // minutes분 옮긴 값. 1분~한 바퀴 시간 밖이라 그대로면 null
+          Duration? stepped(int minutes) {
+            final next = Duration(
+              minutes: (remaining.inMinutes + minutes).clamp(
+                1,
+                dialFace.inMinutes,
+              ),
+            );
+            return next == remaining ? null : next;
+          }
+
+          final up = stepped(1);
+          final down = stepped(-1);
+          dial = Semantics(
+            container: true,
+            slider: true,
+            label: label,
+            value: _minutesText(remaining),
+            increasedValue: up == null ? null : _minutesText(up),
+            decreasedValue: down == null ? null : _minutesText(down),
+            onIncrease: up == null ? null : () => onChanged(up),
+            onDecrease: down == null ? null : () => onChanged(down),
+            child: FocusableActionDetector(
+              shortcuts: _stepShortcuts,
+              actions: {
+                _StepIntent: CallbackAction<_StepIntent>(
+                  onInvoke: (intent) {
+                    final next = stepped(intent.minutes);
+                    if (next != null) onChanged(next);
+                    return null;
+                  },
+                ),
+              },
+              // 끌기는 스크린 리더에 늘리기·줄이기로 대신 내보인다
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onPanDown: (details) => pick(details.localPosition),
+                onPanUpdate: (details) => pick(details.localPosition),
+                child: dial,
+              ),
+            ),
           );
         }
 
@@ -99,6 +151,15 @@ class TimerDial extends StatelessWidget {
       },
     );
   }
+
+  static String _minutesText(Duration duration) => '${duration.inMinutes}분';
+}
+
+/// 다이얼 시간을 [minutes]분 옮긴다
+class _StepIntent extends Intent {
+  const _StepIntent(this.minutes);
+
+  final int minutes;
 }
 
 class _TimerDialPainter extends CustomPainter {

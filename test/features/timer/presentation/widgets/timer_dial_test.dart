@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 
@@ -115,6 +117,169 @@ void main() {
         ),
         findsNothing,
       );
+    });
+
+    group('스크린 리더와 키보드', () {
+      /// [remaining]에서 시작해 고른 값으로 다시 그리는 다이얼. 고른 값을 모은다
+      Future<List<Duration>> pumpPicker(
+        WidgetTester tester, {
+        Duration remaining = const Duration(minutes: 25),
+      }) async {
+        final picked = <Duration>[];
+        var current = remaining;
+        await tester.pumpWidget(
+          pumpApp(
+            Center(
+              child: SizedBox.square(
+                dimension: 200,
+                child: StatefulBuilder(
+                  builder: (context, setState) => TimerDial(
+                    remaining: current,
+                    color: Colors.red,
+                    label: '휴식 시간',
+                    onChanged: (duration) {
+                      picked.add(duration);
+                      setState(() => current = duration);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        return picked;
+      }
+
+      final node = find.semantics.byLabel('휴식 시간');
+
+      SemanticsNode dialNode(WidgetTester tester) =>
+          tester.getSemantics(find.bySemanticsLabel('휴식 시간'));
+
+      testWidgets('고를 수 있는 다이얼은 이름과 분 값을 가진 슬라이더이고 끌기 동작은 내보이지 않는다', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await pumpPicker(tester);
+
+        expect(
+          dialNode(tester),
+          isSemantics(
+            isSlider: true,
+            isFocusable: true,
+            label: '휴식 시간',
+            value: '25분',
+            increasedValue: '26분',
+            decreasedValue: '24분',
+            hasIncreaseAction: true,
+            hasDecreaseAction: true,
+            hasScrollUpAction: false,
+            hasScrollDownAction: false,
+            hasScrollLeftAction: false,
+            hasScrollRightAction: false,
+          ),
+        );
+        handle.dispose();
+      });
+
+      testWidgets('스크린 리더의 늘리기·줄이기로 1분씩 바꾼다', (tester) async {
+        final handle = tester.ensureSemantics();
+        final picked = await pumpPicker(tester);
+
+        tester.semantics.increase(node);
+        await tester.pump();
+        tester.semantics.increase(node);
+        await tester.pump();
+        tester.semantics.decrease(node);
+        await tester.pump();
+
+        expect(picked, [26.minutes, 27.minutes, 26.minutes]);
+        expect(dialNode(tester), isSemantics(value: '26분'));
+        handle.dispose();
+      });
+
+      for (final (minutes, increase, decrease) in [
+        (1, true, false),
+        (60, false, true),
+      ]) {
+        testWidgets('$minutes분에서는 1~60분 밖으로 바꾸지 않는다', (tester) async {
+          final handle = tester.ensureSemantics();
+          final picked = await pumpPicker(tester, remaining: minutes.minutes);
+
+          expect(
+            dialNode(tester),
+            isSemantics(
+              value: '$minutes분',
+              hasIncreaseAction: increase,
+              hasDecreaseAction: decrease,
+            ),
+          );
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.sendKeyEvent(
+            increase
+                ? LogicalKeyboardKey.arrowDown
+                : LogicalKeyboardKey.arrowUp,
+          );
+          await tester.pump();
+
+          expect(picked, isEmpty);
+          handle.dispose();
+        });
+      }
+
+      testWidgets('Tab으로 초점을 옮기고 방향키와 +·-로 1분씩 바꾼다', (tester) async {
+        final picked = await pumpPicker(tester);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(
+          FocusManager.instance.primaryFocus?.context
+              ?.findAncestorWidgetOfExactType<TimerDial>(),
+          isNotNull,
+        );
+
+        for (final key in [
+          LogicalKeyboardKey.arrowUp,
+          LogicalKeyboardKey.arrowRight,
+          LogicalKeyboardKey.arrowDown,
+          LogicalKeyboardKey.arrowLeft,
+          LogicalKeyboardKey.arrowLeft,
+        ]) {
+          await tester.sendKeyEvent(key);
+          await tester.pump();
+        }
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.equal, character: '+');
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.equal);
+        await tester.pump();
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.minus, character: '-');
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.minus);
+        await tester.pump();
+
+        expect(picked, [
+          26.minutes,
+          27.minutes,
+          26.minutes,
+          25.minutes,
+          24.minutes,
+          25.minutes,
+          24.minutes,
+        ]);
+      });
+
+      testWidgets('고를 수 없는 다이얼은 슬라이더가 아니고 초점을 받지 않는다', (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpDial(tester);
+
+        expect(find.bySemanticsLabel('휴식 시간'), findsNothing);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(
+          FocusManager.instance.primaryFocus?.context
+              ?.findAncestorWidgetOfExactType<TimerDial>(),
+          isNull,
+        );
+        handle.dispose();
+      });
     });
 
     testWidgets('작은 다이얼(80px)도 숫자 없이 그린다', (tester) async {

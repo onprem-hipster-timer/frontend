@@ -1216,6 +1216,33 @@ void main() {
       await tester.pump();
     }
 
+    testWidgets('대기 상태의 다이얼은 고르는 시간의 이름을 스크린 리더에 알리고 1분씩 바꾼다', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        controller: _FakeTimerController(),
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('집중 시간')),
+        isSemantics(isSlider: true, value: '25분'),
+      );
+      tester.semantics.increase(find.semantics.byLabel('집중 시간'));
+      await tester.pump();
+      expect(_clockText(tester), '00:26:00');
+
+      await tester.tap(_mode('휴식'));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('집중 시간'), findsNothing);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('휴식 시간')),
+        isSemantics(isSlider: true, value: '5분'),
+      );
+      handle.dispose();
+    });
+
     testWidgets('활성 타이머가 없으면 다이얼을 끌어 고른 시간으로 새 작업을 연다', (tester) async {
       final controller = _FakeTimerController();
 
