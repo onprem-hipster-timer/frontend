@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'format.dart';
 import 'finding.dart';
 import 'leaf_geometry.dart';
 import 'rect_math.dart';
@@ -187,7 +188,8 @@ class _Audit {
           LayoutFinding(
             kind: LayoutFindingKind.moving,
             severity: LayoutSeverity.notice,
-            message: '[이동] ${_describe(leaf)} 프레임 사이에 ${_px(shift)}px 이동했습니다',
+            message:
+                '[이동] ${_describe(leaf)} 프레임 사이에 ${formatPx(shift)}px 이동했습니다',
             rects: [leaf.bounds],
             locations: [sourceLocationOf(leaf.box)],
             texts: [leaf.text],
@@ -270,12 +272,12 @@ class _Audit {
     ].join(', ');
     final body = top != null
         ? '${_describe(first)}이 ${_describe(second)}을 ${(fraction * 100).round()}% 가립니다'
-        : "${_describe(first)}와 ${_describe(second)}가 ${_px(focus.width)}x${_px(focus.height)} 겹칩니다 (순서 불명)";
+        : "${_describe(first)}와 ${_describe(second)}가 ${formatPx(focus.width)}x${formatPx(focus.height)} 겹칩니다 (순서 불명)";
     return LayoutFinding(
       kind: LayoutFindingKind.overlap,
       severity: severity,
       message:
-          '[겹침] $body${where.isEmpty ? '' : ' ($where)'} | ∩=${_rect(focus)}',
+          '[겹침] $body${where.isEmpty ? '' : ' ($where)'} | ∩=(${formatLtrb(focus)})',
       rects: [first.bounds, second.bounds, focus],
       locations: [sourceLocationOf(first.box), sourceLocationOf(second.box)],
       texts: [first.text, second.text],
@@ -370,7 +372,7 @@ class _Audit {
         add(
           LayoutFindingKind.clipped,
           LayoutSeverity.warning,
-          '[잘라냄] ${_describe(leaf)} 글자가 상자 밖으로 ${_px(clipped)}px 잘려 나갑니다',
+          '[잘라냄] ${_describe(leaf)} 글자가 상자 밖으로 ${formatPx(clipped)}px 잘려 나갑니다',
         );
       }
     }
@@ -381,7 +383,7 @@ class _Audit {
         add(
           LayoutFindingKind.offscreen,
           LayoutSeverity.warning,
-          '[이탈] ${_describe(leaf)} 화면 $side 밖으로 ${_px(outside)}px 나갑니다',
+          '[이탈] ${_describe(leaf)} 화면 $side 밖으로 ${formatPx(outside)}px 나갑니다',
         );
       }
     }
@@ -434,8 +436,3 @@ String _describe(ContentLeaf leaf) {
       : "'${leaf.text.length > 20 ? '${leaf.text.substring(0, 20)}…' : leaf.text}'";
   return '$text(${sourceLocationOf(leaf.box) ?? '위치 불명'})';
 }
-
-String _px(double value) => value.toStringAsFixed(1);
-
-String _rect(Rect rect) =>
-    '(${_px(rect.left)},${_px(rect.top)},${_px(rect.right)},${_px(rect.bottom)})';

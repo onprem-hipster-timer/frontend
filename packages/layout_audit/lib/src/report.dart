@@ -4,6 +4,7 @@ import 'dart:ui' show Rect, Size;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'format.dart';
 import 'finding.dart';
 import 'source_location.dart';
 
@@ -92,19 +93,18 @@ class LayoutReport {
     if (view == null || rects.isEmpty || view.isEmpty) {
       return '';
     }
-    final height = _decimal(_miniMapWidth * view.height / view.width);
+    final height = formatPx(_miniMapWidth * view.height / view.width);
     final boxes = [
       for (final (i, r) in rects.indexed)
-        '<rect class="${_rectClass(i, rects.length)}" x="${_decimal(r.left)}" '
-            'y="${_decimal(r.top)}" width="${_decimal(r.width)}" '
-            'height="${_decimal(r.height)}"><title>${i + 1}: '
-            '${_decimal(r.left)}, ${_decimal(r.top)}, ${_decimal(r.right)}, '
-            '${_decimal(r.bottom)}</title></rect>',
+        '<rect class="${_rectClass(i, rects.length)}" x="${formatPx(r.left)}" '
+            'y="${formatPx(r.top)}" width="${formatPx(r.width)}" '
+            'height="${formatPx(r.height)}"><title>${i + 1}: '
+            '${formatLtrb(r, separator: ', ')}</title></rect>',
     ];
-    return '<svg viewBox="0 0 ${_number(view.width)} ${_number(view.height)}" '
+    return '<svg viewBox="0 0 ${formatCompact(view.width)} ${formatCompact(view.height)}" '
         'width="$_miniMapWidth" height="$height">'
-        '<rect class="view" width="${_number(view.width)}" '
-        'height="${_number(view.height)}"/>${boxes.join()}</svg>';
+        '<rect class="view" width="${formatCompact(view.width)}" '
+        'height="${formatCompact(view.height)}"/>${boxes.join()}</svg>';
   }
 }
 
@@ -116,12 +116,6 @@ String _rectClass(int index, int length) {
   }
   return index == 0 ? 'first' : 'second';
 }
-
-String _decimal(double value) => value.toStringAsFixed(1);
-
-String _number(double value) => value == value.roundToDouble()
-    ? value.toInt().toString()
-    : value.toStringAsFixed(1);
 
 String _escapeHtml(String value) => value
     .replaceAll('&', '&amp;')

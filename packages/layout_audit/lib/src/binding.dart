@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'format.dart';
 import 'auditor.dart';
 import 'finding.dart';
 import 'overflow_recorder.dart';
@@ -170,9 +171,10 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
       final renderView = views.first;
       final view = renderView.flutterView;
       final logical = view.physicalSize / view.devicePixelRatio;
-      caseLabel = '${_number(logical.width)}x${_number(logical.height)}'
-          '@${_number(view.devicePixelRatio)}, '
-          '글자 ${_number(platformDispatcher.textScaleFactor)}배';
+      caseLabel =
+          '${formatCompact(logical.width)}x${formatCompact(logical.height)}'
+          '@${formatCompact(view.devicePixelRatio)}, '
+          '글자 ${formatCompact(platformDispatcher.textScaleFactor)}배';
       return LayoutReport(
         name: name,
         caseLabel: caseLabel,
@@ -220,7 +222,3 @@ LayoutFinding _failure(Object error) => LayoutFinding(
       severity: LayoutSeverity.info,
       message: '[점검 실패] 자동 레이아웃 점검 중 오류가 났습니다: $error',
     );
-
-String _number(double value) => value == value.roundToDouble()
-    ? value.toInt().toString()
-    : value.toStringAsFixed(2);

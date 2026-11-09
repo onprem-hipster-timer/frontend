@@ -1,6 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import 'format.dart';
 import 'finding.dart';
 import 'source_location.dart';
 
@@ -84,7 +85,7 @@ LayoutFinding? _overflowFinding(FlutterErrorDetails details) {
     body = 'ListTile의 위젯이 타일 폭을 전부 차지합니다';
   } else if (flex != null) {
     final widget = creator?.element.widget.runtimeType.toString() ?? flex[1]!;
-    final pixels = double.parse(flex[2]!).toStringAsFixed(1);
+    final pixels = formatPx(double.parse(flex[2]!));
     body = '$widget가 ${_sides[flex[3]]}으로 ${pixels}px 넘칩니다';
   } else {
     body = text.split('\n').first;
