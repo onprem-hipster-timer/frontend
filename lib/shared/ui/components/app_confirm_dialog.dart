@@ -3,21 +3,21 @@ import 'package:material_ui/material_ui.dart';
 /// 범용 확인 다이얼로그
 ///
 /// ```dart
-/// final confirmed = await showConfirmDialog(
+/// final confirmed = await showAppConfirmDialog(
 ///   context,
 ///   title: '로그아웃',
 ///   content: '정말 로그아웃하시겠습니까?',
 ///   confirmText: '로그아웃',
 /// );
 /// ```
-class ConfirmDialog extends StatelessWidget {
+class AppConfirmDialog extends StatelessWidget {
   final String title;
   final String content;
   final String cancelText;
   final String confirmText;
   final bool destructive;
 
-  const ConfirmDialog({
+  const AppConfirmDialog({
     super.key,
     required this.title,
     required this.content,
@@ -56,7 +56,7 @@ class ConfirmDialog extends StatelessWidget {
 /// 확인 다이얼로그를 표시하고 사용자의 선택을 반환합니다.
 ///
 /// [destructive]가 true이면 확인 버튼이 error 색상으로 강조됩니다.
-Future<bool> showConfirmDialog(
+Future<bool> showAppConfirmDialog(
   BuildContext context, {
   required String title,
   required String content,
@@ -67,7 +67,7 @@ Future<bool> showConfirmDialog(
   final confirmed = await showDialog<bool>(
     context: context,
     useRootNavigator: true,
-    builder: (context) => ConfirmDialog(
+    builder: (context) => AppConfirmDialog(
       title: title,
       content: content,
       cancelText: cancelText,

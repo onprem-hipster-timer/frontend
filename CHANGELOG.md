@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 #### UI
+- 확인·선택 다이얼로그를 `lib/shared/ui`로 옮기고 `showAppConfirmDialog`·`showAppChoiceDialog`로 부른다
 - 누르면 날짜·시간 선택 창을 여는 줄(할 일 마감일, 일정 시작·종료)을 입력 칸 모양의 `AppPickerField`로 그린다. 이름표는 칸 안에 두고, 일정 시간 오류는 종료 칸 아래에 보인다
 - 폼 아래 버튼 줄을 `AppFormActionBar`(취소 + 넓은 저장)로 맞춘다. 공유 설정과 시간 정하기에도 취소가 생기고, 저장 중 진행 표시는 막힌 버튼 위에서도 보이는 색으로 그린다
 - 폼의 소제목을 `AppSectionHeader`로 그린다. 일정 폼의 '시작'·'종료'도 다른 폼과 같은 크기로 맞춘다

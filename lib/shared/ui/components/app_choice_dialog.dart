@@ -1,8 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
 /// 선택지 하나
-class DialogChoice<T> {
-  const DialogChoice({
+class AppDialogChoice<T> {
+  const AppDialogChoice({
     required this.value,
     required this.label,
     this.description,
@@ -16,11 +16,11 @@ class DialogChoice<T> {
 /// 선택지 중 하나를 고르는 다이얼로그. 닫으면 null.
 ///
 /// 서버가 기본값 없이 클라이언트의 결정을 요구하는 정책(연결 일정·원본 할 일 처리)을 물을 때 쓴다.
-Future<T?> showChoiceDialog<T>(
+Future<T?> showAppChoiceDialog<T>(
   BuildContext context, {
   required String title,
   required String content,
-  required List<DialogChoice<T>> choices,
+  required List<AppDialogChoice<T>> choices,
 }) {
   return showDialog<T>(
     context: context,

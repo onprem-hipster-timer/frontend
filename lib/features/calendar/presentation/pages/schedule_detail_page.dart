@@ -14,7 +14,7 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_form_shee
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
@@ -413,7 +413,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     WidgetRef ref,
     ScheduleRead schedule,
   ) async {
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '일정 삭제',
       content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',

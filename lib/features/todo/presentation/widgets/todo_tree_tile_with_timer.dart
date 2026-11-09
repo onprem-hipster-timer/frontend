@@ -5,7 +5,7 @@ import 'package:momeet/features/todo/presentation/providers/timer_providers.dart
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
 import 'package:momeet/shared/api/rest/models/todo_status.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 타이머 기능이 통합된 Todo Tree Tile
 ///
@@ -363,7 +363,7 @@ class TimerControlButtons extends ConsumerWidget {
     ActiveTimerState timerState,
   ) async {
     if (ref.read(timerControllerProvider).isLoading) return;
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '타이머 정지',
       content: '현재 진행 중인 타이머를 정지하시겠습니까?\n경과 시간: ${timerState.formattedTime}',

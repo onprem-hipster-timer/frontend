@@ -6,7 +6,7 @@ import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 태그 관리 페이지
 ///
@@ -387,7 +387,7 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagGroupWithTags tagGroup,
   ) async {
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '그룹 삭제',
       content:
@@ -454,7 +454,7 @@ class TagManagementPage extends ConsumerWidget {
     WidgetRef ref,
     TagRead tag,
   ) async {
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '태그 삭제',
       content:

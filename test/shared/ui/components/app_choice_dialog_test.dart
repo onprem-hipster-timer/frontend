@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/shared/widgets/choice_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 void main() {
   /// 다이얼로그를 열고, 닫힌 뒤 결과를 돌려줄 getter를 준다.
@@ -12,13 +12,13 @@ void main() {
         home: Builder(
           builder: (context) => TextButton(
             onPressed: () async {
-              result = await showChoiceDialog<String>(
+              result = await showAppChoiceDialog<String>(
                 context,
                 title: '제목',
                 content: '내용',
                 choices: const [
-                  DialogChoice(value: 'a', label: '첫째', description: '설명'),
-                  DialogChoice(value: 'b', label: '둘째'),
+                  AppDialogChoice(value: 'a', label: '첫째', description: '설명'),
+                  AppDialogChoice(value: 'b', label: '둘째'),
                 ],
               );
               closed = true;

@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 void main() {
   Widget buildTestApp({required Widget child}) {
@@ -8,13 +8,13 @@ void main() {
   }
 
   // ============================================================
-  // ConfirmDialog 위젯
+  // AppConfirmDialog 위젯
   // ============================================================
-  group('ConfirmDialog 위젯', () {
+  group('AppConfirmDialog 위젯', () {
     testWidgets('제목, 내용, 기본 버튼 텍스트가 표시된다', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          child: const ConfirmDialog(title: '확인 제목', content: '확인 내용'),
+          child: const AppConfirmDialog(title: '확인 제목', content: '확인 내용'),
         ),
       );
 
@@ -27,7 +27,7 @@ void main() {
     testWidgets('커스텀 버튼 텍스트가 반영된다', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          child: const ConfirmDialog(
+          child: const AppConfirmDialog(
             title: '항목 삭제',
             content: '삭제하시겠습니까?',
             cancelText: '아니요',
@@ -45,7 +45,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          child: const ConfirmDialog(title: '경고', content: msg),
+          child: const AppConfirmDialog(title: '경고', content: msg),
         ),
       );
 
@@ -60,7 +60,7 @@ void main() {
           child: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
-                result = await showConfirmDialog(
+                result = await showAppConfirmDialog(
                   context,
                   title: '제목',
                   content: '내용',
@@ -89,7 +89,7 @@ void main() {
           child: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
-                result = await showConfirmDialog(
+                result = await showAppConfirmDialog(
                   context,
                   title: '제목',
                   content: '내용',
@@ -118,7 +118,7 @@ void main() {
           child: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
-                result = await showConfirmDialog(
+                result = await showAppConfirmDialog(
                   context,
                   title: '제목',
                   content: '내용',
@@ -147,7 +147,7 @@ void main() {
           child: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
-                result = await showConfirmDialog(
+                result = await showAppConfirmDialog(
                   context,
                   title: '로그아웃',
                   content: '정말 로그아웃하시겠습니까?',
@@ -181,7 +181,7 @@ void main() {
           child: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
-                result = await showConfirmDialog(
+                result = await showAppConfirmDialog(
                   context,
                   title: '항목 삭제',
                   content: '삭제하시겠습니까?',
@@ -212,7 +212,7 @@ void main() {
     testWidgets('destructive가 false이면 기본 스타일이 적용된다', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          child: const ConfirmDialog(title: '제목', content: '내용'),
+          child: const AppConfirmDialog(title: '제목', content: '내용'),
         ),
       );
 
@@ -223,7 +223,7 @@ void main() {
     testWidgets('destructive가 true이면 error 색상 스타일이 적용된다', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          child: const ConfirmDialog(
+          child: const AppConfirmDialog(
             title: '삭제',
             content: '삭제하시겠습니까?',
             destructive: true,
@@ -237,16 +237,19 @@ void main() {
   });
 
   // ============================================================
-  // showConfirmDialog 헬퍼 함수
+  // showAppConfirmDialog 헬퍼 함수
   // ============================================================
-  group('showConfirmDialog 헬퍼', () {
+  group('showAppConfirmDialog 헬퍼', () {
     testWidgets('기본 파라미터로 호출하면 취소/확인 버튼이 표시된다', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           child: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () =>
-                  showConfirmDialog(context, title: '기본 제목', content: '기본 내용'),
+              onPressed: () => showAppConfirmDialog(
+                context,
+                title: '기본 제목',
+                content: '기본 내용',
+              ),
               child: const Text('열기'),
             ),
           ),
@@ -267,7 +270,7 @@ void main() {
         buildTestApp(
           child: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => showConfirmDialog(
+              onPressed: () => showAppConfirmDialog(
                 context,
                 title: '삭제 확인',
                 content: '삭제합니다',

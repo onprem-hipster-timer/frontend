@@ -6,7 +6,7 @@ import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_d
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 할 일 관련 공통 액션 유틸리티
 class TodoActions {
@@ -29,7 +29,7 @@ class TodoActions {
         ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.'
         : '';
 
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '할 일 삭제',
       content:

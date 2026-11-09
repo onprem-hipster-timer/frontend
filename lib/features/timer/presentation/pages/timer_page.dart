@@ -18,7 +18,6 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/providers/friend_providers.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 /// 이 폭보다 좁으면 다이얼만 두고 타이머 목록은 바텀 시트로 연다
@@ -143,7 +142,7 @@ const _stopTimerConfirmContent =
 
 /// 타이머 완료 확인 다이얼로그. 사용자가 완료를 확인하면 true.
 Future<bool> _confirmStopTimer(BuildContext context) {
-  return showConfirmDialog(
+  return showAppConfirmDialog(
     context,
     title: _stopTimerConfirmTitle,
     content: _stopTimerConfirmContent,
