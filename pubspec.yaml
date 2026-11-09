@@ -99,6 +99,14 @@ flutter:
     - assets/.env
     - assets/preview.webp
     - assets/gwiyeowo.webp
+    - assets/google_g_logo.png
+
+  # Google 로그인 버튼 전용. 기본 라틴 글자만 담은 Medium 서브셋 (라이선스: assets/fonts/OFL.txt)
+  fonts:
+    - family: Google Sans
+      fonts:
+        - asset: assets/fonts/GoogleSans-Medium.ttf
+          weight: 500
 
   # assets:
   #   - images/a_dot_burr.jpeg
