@@ -160,12 +160,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '태그 그룹',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const AppSectionHeader('태그 그룹'),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
@@ -220,12 +215,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '태그 그룹',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        const AppSectionHeader('태그 그룹'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           // ⭐️ 핵심 Fix: 드롭다운이 넓이를 안전하게 잡도록 보장
@@ -302,12 +292,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '색상 선택',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        const AppSectionHeader('색상 선택'),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,

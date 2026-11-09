@@ -164,12 +164,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '색상 선택',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        const AppSectionHeader('색상 선택'),
 
         const SizedBox(height: 12),
 

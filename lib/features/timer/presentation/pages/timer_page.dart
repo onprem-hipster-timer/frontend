@@ -1152,19 +1152,13 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
   @override
   Widget build(BuildContext context) {
     final historyAsync = ref.watch(timerHistoryProvider);
-    final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '타이머 목록',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const AppSectionHeader('타이머 목록'),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,

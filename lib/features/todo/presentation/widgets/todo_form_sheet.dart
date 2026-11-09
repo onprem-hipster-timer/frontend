@@ -203,12 +203,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '상태',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        const AppSectionHeader('상태'),
         const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -259,12 +254,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '마감일',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        const AppSectionHeader('마감일'),
         const SizedBox(height: 8),
         InkWell(
           onTap: () => _selectDeadline(context),
@@ -336,28 +326,20 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 태그 섹션 헤더 (제목 + 새 태그 추가 버튼)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '태그',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+            AppSectionHeader(
+              '태그',
+              trailing: TextButton.icon(
+                onPressed: () => _showCreateTagDialog(context),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('새 태그'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(context),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('새 태그'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
 
             const SizedBox(height: 8),
@@ -387,12 +369,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       loading: () => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '태그',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const AppSectionHeader('태그'),
           const SizedBox(height: 8),
           const Center(
             child: Padding(
@@ -405,24 +382,14 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       error: (error, stack) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '태그',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () => _showCreateTagDialog(context),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('새 태그'),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ],
+          AppSectionHeader(
+            '태그',
+            trailing: TextButton.icon(
+              onPressed: () => _showCreateTagDialog(context),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('새 태그'),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            ),
           ),
           const SizedBox(height: 8),
           Container(

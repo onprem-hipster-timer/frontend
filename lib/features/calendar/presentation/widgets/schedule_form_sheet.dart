@@ -174,12 +174,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
               const SizedBox(height: 16),
 
               // 시작 시간
-              Text(
-                '시작',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              const AppSectionHeader('시작'),
               const SizedBox(height: 8),
               InkWell(
                 onTap: () => _selectDateTime(context, isStartTime: true),
@@ -217,12 +212,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
               const SizedBox(height: 16),
 
               // 종료 시간
-              Text(
-                '종료',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              const AppSectionHeader('종료'),
               const SizedBox(height: 8),
               InkWell(
                 onTap: () => _selectDateTime(context, isStartTime: false),
