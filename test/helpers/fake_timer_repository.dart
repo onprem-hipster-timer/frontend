@@ -10,6 +10,12 @@ class FakeTimerRepository implements TimerRepository {
   /// 호출 순서 (`create`, `pause:<id>`, `list` 등)
   final calls = <String>[];
   TimerCreate? created;
+
+  /// 받은 만들기 요청 (createTimer) 차례대로
+  final creates = <TimerCreate>[];
+
+  /// 설정하면 createTimer가 [respond] 대신 이 값을 돌려준다. 던지면 그 만들기만 실패한다
+  TimerRead Function(TimerCreate data)? createResponse;
   TimerUpdate? updated;
 
   /// 마지막으로 저장한 공유 설정 (setVisibility)
@@ -53,7 +59,15 @@ class FakeTimerRepository implements TimerRepository {
   @override
   Future<TimerRead> createTimer(TimerCreate data) async {
     created = data;
-    return _command('create', 'timer-1', TimerStatus.running);
+    creates.add(data);
+    final response = createResponse;
+    if (response == null) {
+      return _command('create', 'timer-1', TimerStatus.running);
+    }
+    calls.add('create');
+    await gate;
+    if (error != null) throw error!;
+    return response(data);
   }
 
   @override

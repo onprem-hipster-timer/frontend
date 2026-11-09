@@ -419,24 +419,55 @@ class TimerController extends _$TimerController {
     state = const AsyncValue.loading();
 
     try {
-      final timer = await ref
-          .read(timerRepositoryProvider)
-          .createTimer(
-            TimerCreate(
-              todoId: relatedTodoId,
-              scheduleId: scheduleId,
-              title: title ?? '새 작업',
-              allocatedDuration:
-                  allocatedDurationSeconds ?? defaultFocusDuration.inSeconds,
-            ),
-          );
-      _apply(timer);
-      ref.read(focusedTimerIdProvider.notifier).focus(timer.id);
+      await _create(
+        TimerCreate(
+          todoId: relatedTodoId,
+          scheduleId: scheduleId,
+          title: title ?? '새 작업',
+          allocatedDuration:
+              allocatedDurationSeconds ?? defaultFocusDuration.inSeconds,
+        ),
+      );
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow;
     }
+  }
+
+  /// [todos]마다 [duration] 길이의 타이머를 그 할 일의 제목으로 연결해 하나씩 시작한다
+  ///
+  /// 차례대로 보내고, 실패한 할 일이 있어도 나머지를 보내며 시작한 타이머는 그대로 둔다.
+  /// 시작하지 못한 할 일을 [todos] 순서대로 돌려준다. 마지막으로 시작한 타이머를 대시보드가 보이게 고른다.
+  Future<List<TodoRead>> startTimers({
+    required List<TodoRead> todos,
+    required Duration duration,
+  }) async {
+    state = const AsyncValue.loading();
+    final failed = <TodoRead>[];
+    for (final todo in todos) {
+      try {
+        await _create(
+          TimerCreate(
+            todoId: todo.id,
+            title: todo.title,
+            allocatedDuration: duration.inSeconds,
+          ),
+        );
+      } catch (error) {
+        debugPrint('타이머 시작 실패 (${todo.id}): $error');
+        failed.add(todo);
+      }
+    }
+    state = const AsyncValue.data(null);
+    return failed;
+  }
+
+  /// [data]로 타이머를 만들어 반영하고 대시보드가 보이게 고른다
+  Future<void> _create(TimerCreate data) async {
+    final timer = await ref.read(timerRepositoryProvider).createTimer(data);
+    _apply(timer);
+    ref.read(focusedTimerIdProvider.notifier).focus(timer.id);
   }
 
   /// 타이머 정지

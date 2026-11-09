@@ -144,6 +144,37 @@ void main() {
       expect(repository.calls, ['list']);
     });
 
+    test('여러 할 일로 시작하면 시작한 타이머를 모두 반영하고 마지막으로 시작한 타이머를 보인다', () async {
+      final container = await boot([runningA, pausedB]);
+      focus(container, 'b');
+      repository.createResponse = (data) {
+        if (data.todoId == 'todo-2') throw Exception('서버 오류');
+        return makeTimer(
+          id: 'timer-${data.todoId}',
+          status: TimerStatus.running,
+          startedAt: clock,
+        ).copyWith(todoId: data.todoId, updatedAt: clock);
+      };
+
+      final failed = await controller(container).startTimers(
+        todos: [
+          makeTodo(id: 'todo-1'),
+          makeTodo(id: 'todo-2'),
+          makeTodo(id: 'todo-3'),
+        ],
+        duration: const Duration(minutes: 25),
+      );
+
+      expect(failed.map((todo) => todo.id), ['todo-2']);
+      final ids = container
+          .read(myActiveTimersProvider)
+          .value!
+          .map((timer) => timer.id);
+      expect(ids, containsAll(['a', 'b', 'timer-todo-1', 'timer-todo-3']));
+      expect(ids, isNot(contains('timer-todo-2')));
+      expect(activeId(container), 'timer-todo-3');
+    });
+
     test('새 타이머를 시작하면 고른 타이머 대신 시작한 타이머를 보인다', () async {
       final container = await boot([runningA, pausedB]);
       focus(container, 'b');
