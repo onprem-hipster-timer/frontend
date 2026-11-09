@@ -155,10 +155,14 @@ const _extendBy = Duration(minutes: 5);
 /// 다이얼 옆에 둘 때 작업 제목·시계·버튼 칸의 가장 좁은 폭. 일시정지 타이머의 버튼 세 개(216)가 들어간다
 const _sideControlsMinWidth = 232.0;
 
+/// 낮은 칸에서 다이얼을 옆에 둘 때 다이얼이 이보다 작아지면 위아래로 둔다
+const _sideDialMinSide = 80.0;
+
 /// 타이머 대시보드
 ///
 /// 작업 제목, 다이얼, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
-/// 높이 400 미만에 폭이 높이의 1.5배 이상인 칸(가로 휴대폰)은 다이얼을 왼쪽에 두고 제목부터 나머지를 오른쪽에 둡니다.
+/// 높이 400 미만이고 폭이 높이 이상이며 옆에 두어도 다이얼이 [_sideDialMinSide] 이상인 칸(가로 휴대폰)은
+/// 다이얼을 왼쪽에 두고 제목부터 나머지를 오른쪽에 둡니다.
 /// 휴식 중이면 휴식을, 아니면 고른 활성 타이머([activeTimerProvider])를 보여 주고, 다이얼은 남은 시간만 보여 줍니다.
 /// 활성 타이머가 둘 이상이면 다이얼 자리에 타이머마다 한 쪽씩 다이얼을 둔 갤러리([_TimerGallery])를 두고,
 /// 보이는 쪽의 타이머를 고릅니다. 활성 타이머가 있으면 굴리지 않는 '새 타이머' 칩으로 다른 타이머가 도는 중에도
@@ -432,41 +436,15 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         ];
 
         // 낮고 넓은 칸(가로 휴대폰)은 다이얼 오른쪽에 나머지를 두고, 나머지가 칸보다 길면 굴린다
-        if (short && constraints.maxWidth >= constraints.maxHeight * 1.5) {
-          final controlsWidth = math.max(
-            _sideControlsMinWidth,
-            (constraints.maxWidth - 24 * 2 - 16) / 2,
-          );
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(child: gallery ?? dial),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: controlsWidth,
-                  child: Column(
-                    children: [
-                      if (addTimer != null)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: addTimer,
-                        ),
-                      Expanded(
-                        child: Center(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [header, gap, ...controls],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        final sideDialWidth =
+            constraints.maxWidth - 24 * 2 - 16 - _sideControlsMinWidth;
+        if (short &&
+            constraints.maxWidth >= constraints.maxHeight &&
+            sideDialWidth >= _sideDialMinSide) {
+          return _SideBySideDashboard(
+            dial: gallery ?? dial,
+            addTimer: addTimer,
+            children: [header, gap, ...controls],
           );
         }
 
@@ -1361,7 +1339,61 @@ class _TimerStatusChip extends StatelessWidget {
   }
 }
 
-/// 타이머 목록 항목에서 버튼 말고 한 줄에 필요한 폭 (여백, 상태 아이콘, 제목, 남은 시간)
+/// 낮고 넓은 칸의 대시보드. 다이얼을 왼쪽에, [addTimer]와 [children]을 오른쪽에 두고 오른쪽이 길면 굴린다
+class _SideBySideDashboard extends StatelessWidget {
+  const _SideBySideDashboard({
+    required this.dial,
+    required this.addTimer,
+    required this.children,
+  });
+
+  final Widget dial;
+  final Widget? addTimer;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final addTimer = this.addTimer;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final controlsWidth = math.max(
+          _sideControlsMinWidth,
+          (constraints.maxWidth - 24 * 2 - 16) / 2,
+        );
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(child: dial),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: controlsWidth,
+                child: Column(
+                  children: [
+                    if (addTimer != null)
+                      Align(alignment: Alignment.centerRight, child: addTimer),
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: children,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 타이머 목록 항목에서 버튼 말고 한 줄에 필요한 폭 (여백, 상태 아이콘, 제목, 남은 시간). 글자 배율만큼 늘린다
 const _historyItemBaseWidth = 280.0;
 
 /// 타이머 목록 항목의 버튼 하나의 폭 (탭 영역 48)
@@ -1372,7 +1404,7 @@ const _historyItemButtonWidth = 48.0;
 /// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·완료 버튼을 제공합니다.
 /// 집중 시간이 끝난 타이머는 일시정지·재개 대신 연장 버튼을 둡니다. 재개·연장하면 그 타이머를 대시보드가 보이게 고릅니다.
 /// 내 타이머는 맨 뒤에 공유 범위 버튼을 둡니다.
-/// 버튼까지 한 줄에 두면 제목 자리가 모자란 폭이면 버튼을 아래 줄로 내립니다.
+/// 버튼까지 한 줄에 두면 제목 자리가 모자란 폭이면 시간과 버튼을 제목 아래 줄로 내립니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
 
@@ -1534,65 +1566,102 @@ class TimerHistoryItem extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // 좁으면 버튼을 아래 줄로 내려 제목 자리를 남긴다
-          final stacked =
-              buttons.isNotEmpty &&
-              constraints.maxWidth <
-                  _historyItemBaseWidth +
-                      _historyItemButtonWidth * buttons.length;
-          final tile = ListTile(
-            leading: CircleAvatar(
-              backgroundColor: style.bg,
-              child: Icon(style.icon, color: style.fg),
-            ),
-            title: Text(
-              taskName,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-            subtitle: Row(
-              children: [
-                if (isActive) ...[
-                  Flexible(child: _TimerStatusChip(style)),
-                  const SizedBox(width: 8),
-                ],
-                Flexible(
-                  child: Text(
-                    '$startTime - $endTime',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            trailing: stacked
-                ? durationText
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      durationText,
-                      if (isActive) const SizedBox(width: 4),
-                      ...buttons,
-                    ],
-                  ),
-          );
-          if (!stacked) return tile;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              tile,
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: buttons,
-                ),
-              ),
+      child: _HistoryItemLayout(
+        leading: CircleAvatar(
+          backgroundColor: style.bg,
+          child: Icon(style.icon, color: style.fg),
+        ),
+        title: Text(
+          taskName,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Row(
+          children: [
+            if (isActive) ...[
+              Flexible(child: _TimerStatusChip(style)),
+              const SizedBox(width: 8),
             ],
-          );
-        },
+            Flexible(
+              child: Text(
+                '$startTime - $endTime',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        time: durationText,
+        timeGap: isActive ? 4 : 0,
+        buttons: buttons,
       ),
+    );
+  }
+}
+
+/// 타이머 목록 항목의 배치. 폭이 넉넉하면 [time]과 [buttons]를 제목 줄 오른쪽에 두고,
+/// 모자라면 제목 아래 줄로 내린다(시간은 왼쪽, 버튼 묶음은 오른쪽, 그래도 모자라면 버튼 묶음을 다음 줄로)
+class _HistoryItemLayout extends StatelessWidget {
+  const _HistoryItemLayout({
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.timeGap,
+    required this.buttons,
+  });
+
+  final Widget leading;
+  final Widget title;
+  final Widget subtitle;
+  final Widget time;
+  final double timeGap;
+  final List<Widget> buttons;
+
+  @override
+  Widget build(BuildContext context) {
+    final baseWidth = MediaQuery.textScalerOf(
+      context,
+    ).scale(_historyItemBaseWidth);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked =
+            buttons.isNotEmpty &&
+            constraints.maxWidth <
+                baseWidth + _historyItemButtonWidth * buttons.length;
+        final tile = ListTile(
+          leading: leading,
+          title: title,
+          subtitle: subtitle,
+          trailing: stacked
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    time,
+                    SizedBox(width: timeGap),
+                    ...buttons,
+                  ],
+                ),
+        );
+        if (!stacked) return tile;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            tile,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  time,
+                  Row(mainAxisSize: MainAxisSize.min, children: buttons),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -3607,11 +3607,17 @@ void main() {
                 reason: which,
               );
               expect(overlaps(button, time), isFalse, reason: which);
-              // 한 줄에 다 들어가지 않으면 버튼을 시간 아래 줄로 내린다
+              // 한 줄에 다 들어가지 않으면 시간과 버튼을 제목 아래 줄로 내린다
               if (width < oneRowWidth) {
+                final title = tester.getRect(find.text(longTitle));
                 expect(
                   button.top,
-                  greaterThanOrEqualTo(time.bottom),
+                  greaterThanOrEqualTo(title.bottom),
+                  reason: which,
+                );
+                expect(
+                  time.top,
+                  greaterThanOrEqualTo(title.bottom),
                   reason: which,
                 );
               } else {
@@ -3628,7 +3634,7 @@ void main() {
 
     for (final (textScale, widths) in const [
       (1.5, [240.0, 328.0, 424.0, 600.0]),
-      (2.0, [328.0, 424.0, 600.0]),
+      (2.0, [240.0, 273.0, 328.0, 424.0, 600.0]),
     ]) {
       testWidgets('글자 $textScale배에서도 일시정지 항목이 넘치지 않고 48 버튼이 겹치지 않는다', (
         tester,
