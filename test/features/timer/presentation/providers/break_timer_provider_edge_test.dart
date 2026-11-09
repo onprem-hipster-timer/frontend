@@ -382,6 +382,55 @@ void main() {
       expect(container.read(breakTimerProvider), isNull);
     });
 
+    test('사용자가 바뀐 뒤 시작한 휴식도 새 사용자의 타이머가 실행되면 끝난다', () async {
+      final bTimer = makeTimer(id: 'b-1', status: TimerStatus.paused);
+      repository.listActive = () async => [secret];
+      final container = bootSignedIn();
+      signIn(container, user('user-a'));
+      container.listen(breakTimerProvider, (_, _) {});
+      await container.read(myActiveTimersProvider.future);
+      breakTimer(container).start(const Duration(minutes: 5));
+
+      repository.listActive = () async => [bTimer];
+      signIn(container, user('user-b'));
+      await pumpEventQueue();
+      expect(container.read(breakTimerProvider), isNull);
+      expect(
+        (await container.read(myActiveTimersProvider.future)).map((t) => t.id),
+        ['b-1'],
+      );
+
+      breakTimer(container).start(const Duration(minutes: 5));
+      expect(container.read(breakTimerProvider), isNotNull);
+      container
+          .read(myActiveTimersProvider.notifier)
+          .apply(
+            bTimer.copyWith(
+              status: TimerStatus.running,
+              updatedAt: DateTime.utc(2026, 1, 1, 0, 1),
+            ),
+          );
+      await pumpEventQueue();
+
+      expect(container.read(breakTimerProvider), isNull);
+    });
+
+    test('로그아웃했다가 같은 사용자로 다시 들어와도 휴식은 다시 시작해야 한다', () async {
+      repository.listActive = () async => [secret];
+      final container = bootSignedIn();
+      signIn(container, user('user-a'));
+      container.listen(breakTimerProvider, (_, _) {});
+      await container.read(myActiveTimersProvider.future);
+      breakTimer(container).start(const Duration(minutes: 5));
+
+      signIn(container, null);
+      await pumpEventQueue();
+      signIn(container, user('user-a'));
+      await pumpEventQueue();
+
+      expect(container.read(breakTimerProvider), isNull);
+    });
+
     test('같은 사용자의 정보만 바뀌면 휴식은 그대로다', () async {
       repository.listActive = () async => [secret];
       final container = bootSignedIn();
