@@ -44,7 +44,8 @@ class _TimerPageState extends ConsumerState<TimerPage> {
       next,
     ) {
       next.whenData((event) {
-        if (!context.mounted) return;
+        // 시간 종료(expire)는 함께 오는 명령(정지 등)의 알림과 겹치므로 띄우지 않는다
+        if (event.payload.action == 'expire' || !context.mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(friendActivityMessage(event))));
@@ -118,7 +119,7 @@ class _TimerPageState extends ConsumerState<TimerPage> {
 
 /// 친구의 타이머 이벤트를 SnackBar 문구로 변환한다.
 ///
-/// `payload.action` 중 start/pause/resume/stop/expire만 매핑하고,
+/// `payload.action` 중 start/pause/resume/stop만 매핑하고,
 /// 그 외 action은 generic fallback 문구로 처리한다.
 /// `payload.actor_name`이 없거나 빈 문자열이면 `친구`로 대체한다.
 String friendActivityMessage(TimerWsTimerEvent event) {
@@ -134,7 +135,6 @@ String friendActivityMessage(TimerWsTimerEvent event) {
     'pause' => '$friendName님이 $target를 일시정지했습니다',
     'resume' => '$friendName님이 $target를 재개했습니다',
     'stop' => '$friendName님이 $target를 정지했습니다',
-    'expire' => '$friendName님의 $target가 끝났습니다',
     _ => '$friendName님의 타이머 상태가 변경되었습니다',
   };
 }

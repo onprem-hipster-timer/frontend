@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - PATCH 응답이 PAUSED가 아니면(서버가 아직 실행 중으로 둔 타이머) 재개를 보내지 않는다
   - 늘리는 사이 완료하면 늘린 뒤 재개하지 않고 완료한다. '작업을 완료했습니다'는 정지 응답을 받은 뒤에 띄운다
 - `displayElapsed`는 `allocated_duration`을 넘지 않는다
-- 친구 알림에 `expire`(타이머 종료) 문구를 더한다
+- 친구 알림은 타이머 시간 종료(`expire`) 이벤트를 띄우지 않는다. 시간이 끝난 타이머를 친구가 완료하면 정지 알림 하나만 뜬다
 
 #### Timer WebSocket
 - 소켓을 수신 전용으로 바꿈. 클라이언트는 45초마다 `ping`만 보낸다

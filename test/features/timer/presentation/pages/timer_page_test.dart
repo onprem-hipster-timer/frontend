@@ -99,15 +99,6 @@ void main() {
           '철수님이 타이머를 정지했습니다',
         );
       });
-
-      test('expire', () {
-        expect(
-          friendActivityMessage(
-            activity(action: 'expire', displayName: '철수', timerTitle: '집중'),
-          ),
-          '철수님의 집중 타이머가 끝났습니다',
-        );
-      });
     });
 
     group('그 외 action — generic fallback', () {
@@ -198,6 +189,30 @@ void main() {
       await tester.pump();
 
       expect(find.text('친구님이 타이머를 일시정지했습니다'), findsOneWidget);
+    });
+
+    testWidgets('친구 타이머의 시간 종료(expire)는 알리지 않고 이어 온 정지만 알린다', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pump();
+
+      // 시간이 끝난 타이머를 완료하면 서버는 expire, stop을 차례로 보낸다
+      controller.add(
+        activity(action: 'expire', displayName: '철수', timerTitle: '집중'),
+      );
+      controller.add(
+        activity(action: 'stop', displayName: '철수', timerTitle: '집중'),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('철수님이 집중 타이머를 정지했습니다'), findsOneWidget);
+
+      // 정지 알림이 사라진 뒤에도 시간 종료 알림은 뜨지 않는다
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
     });
   });
 
