@@ -3048,6 +3048,55 @@ void main() {
         },
       );
     }
+
+    for (final (textScale, widths) in const [
+      (1.5, [240.0, 328.0, 424.0, 600.0]),
+      (2.0, [328.0, 424.0, 600.0]),
+    ]) {
+      testWidgets('글자 $textScale배에서도 일시정지 항목이 넘치지 않고 48 버튼이 겹치지 않는다', (
+        tester,
+      ) async {
+        tester.platformDispatcher.textScaleFactorTestValue = textScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        const tooltips = ['재개', '완료', '공유 설정'];
+        for (final width in widths) {
+          await pumpItem(
+            tester,
+            makeTimer(
+              id: 'timer-1',
+              status: TimerStatus.paused,
+              allocatedDuration: 25 * 60,
+              elapsedTime: 5 * 60,
+            ).copyWith(title: longTitle),
+            width,
+          );
+          final reason = '${width.toInt()} 폭';
+          expect(tester.takeException(), isNull, reason: reason);
+          final item = tester.getRect(find.byType(TimerHistoryItem));
+          final buttons = [
+            for (final tooltip in tooltips)
+              tester.getRect(
+                find.ancestor(
+                  of: find.byTooltip(tooltip),
+                  matching: find.byType(IconButton),
+                ),
+              ),
+          ];
+          for (final (i, button) in buttons.indexed) {
+            expect(button.width, greaterThanOrEqualTo(48), reason: reason);
+            expect(button.right, lessThanOrEqualTo(item.right), reason: reason);
+            expect(
+              button.bottom,
+              lessThanOrEqualTo(item.bottom),
+              reason: reason,
+            );
+            for (final other in buttons.skip(i + 1)) {
+              expect(overlaps(button, other), isFalse, reason: reason);
+            }
+          }
+        }
+      });
+    }
   });
 
   group('공유 설정', () {
