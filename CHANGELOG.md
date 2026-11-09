@@ -162,6 +162,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### MyPage
 - 활동 요약이 통계를 불러오지 못했을 때 '다시 시도'를 누르면 할 일 목록을 다시 받는다
 
+#### Settings
+- 타임존 선택 시트가 디버그 빌드에서 목록 항목 때문에 오류로 그려지지 않던 문제를 고친다. 시트 배경을 시트 자체에 칠한다
+
 #### Tag
 - 태그 관리 화면이 태그를 불러오지 못했을 때 '다시 시도'를 누르면 태그 그룹을 다시 받는다
 

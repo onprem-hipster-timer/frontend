@@ -55,12 +55,8 @@ class _TimezoneSelectionSheetState
         ref.watch(timezoneProvider).value ?? defaultTimezone;
     final theme = Theme.of(context);
 
-    return Container(
+    return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       child: Column(
         children: [
           // 핸들 바
@@ -194,10 +190,14 @@ class _TimezoneSelectionSheetState
 ///
 /// useRootNavigator: true 옵션을 사용하여 네비게이션 바 딤 이슈를 방지합니다.
 Future<void> showTimezoneSelectionSheet(BuildContext context) {
+  // 배경은 시트 자체(Material)에 칠해야 목록 항목의 물결 효과가 보인다
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
     useRootNavigator: true, // 중요: 네비게이션 바 딤 이슈 방지
     builder: (context) => const TimezoneSelectionSheet(),
   );
