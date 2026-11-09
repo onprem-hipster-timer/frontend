@@ -1823,12 +1823,14 @@ void main() {
         id: 'a',
         status: TimerStatus.running,
         startedAt: DateTime.utc(2026, 11, 9, 10),
+        createdAt: DateTime.utc(2026, 11, 9, 9, 30),
         allocatedDuration: 25 * 60,
       );
       final pausedB = makeTimer(
         id: 'b',
         status: TimerStatus.paused,
         startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+        createdAt: DateTime.utc(2026, 11, 9, 9),
         allocatedDuration: 25 * 60,
         elapsedTime: 60,
       ).copyWith(title: 'B 작업');
@@ -1904,12 +1906,14 @@ void main() {
         id: 'a',
         status: TimerStatus.running,
         startedAt: DateTime.utc(2026, 11, 9, 9),
+        createdAt: DateTime.utc(2026, 11, 9, 9),
         allocatedDuration: 25 * 60,
       );
       final pausedB = makeTimer(
         id: 'b',
         status: TimerStatus.paused,
         startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+        createdAt: DateTime.utc(2026, 11, 9, 8),
         allocatedDuration: 25 * 60,
         elapsedTime: 60,
       ).copyWith(title: 'B 작업');
@@ -3819,25 +3823,28 @@ void main() {
   group('여러 타이머', () {
     final clock = DateTime.utc(2026, 11, 9, 10, 10);
 
-    // 10:00에 시작해 실행 중인 A(15분 남음)와 10:05에 시작해 일시정지한 B(20분 남음)
+    // 9:30에 만들어 10:00에 시작해 실행 중인 A(15분 남음)와 9:00에 만들어 10:05에 시작해 일시정지한 B(20분 남음)
     final runningA = makeTimer(
       id: 'a',
       status: TimerStatus.running,
       startedAt: DateTime.utc(2026, 11, 9, 10),
+      createdAt: DateTime.utc(2026, 11, 9, 9, 30),
       allocatedDuration: 25 * 60,
     ).copyWith(title: 'A 작업');
     final pausedB = makeTimer(
       id: 'b',
       status: TimerStatus.paused,
       startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+      createdAt: DateTime.utc(2026, 11, 9, 9),
       allocatedDuration: 25 * 60,
       elapsedTime: 5 * 60,
     ).copyWith(title: 'B 작업');
-    // 9:50에 시작해 실행 중인 C(20분 남음)
+    // 9:40에 만들어 9:50에 시작해 실행 중인 C(20분 남음)
     final runningC = makeTimer(
       id: 'c',
       status: TimerStatus.running,
       startedAt: DateTime.utc(2026, 11, 9, 9, 50),
+      createdAt: DateTime.utc(2026, 11, 9, 9, 40),
       allocatedDuration: 40 * 60,
     ).copyWith(title: 'C 작업');
 
@@ -3952,16 +3959,14 @@ void main() {
       expect(addChip(), findsNothing);
     });
 
-    testWidgets('둘 이상이면 최근에 시작한 순으로 쪽을 두고 실행 중인 타이머의 쪽을 기본으로 보인다', (
-      tester,
-    ) async {
+    testWidgets('둘 이상이면 만든 순으로 쪽을 두고 실행 중인 타이머의 쪽을 기본으로 보인다', (tester) async {
       await pumpLive(tester, [runningA, pausedB]);
 
       expect(gallery(), findsOneWidget);
       expect(indicator(), findsOneWidget);
       expect(tester.getSemantics(indicator()).label, '타이머 2/2');
       expect(addChip(), findsOneWidget);
-      // B가 더 나중에 시작해 첫 쪽이지만 실행 중인 A를 보인다
+      // B가 먼저 만들어져 첫 쪽이지만 실행 중인 A를 보인다
       expect(shown(tester), 'a');
       expect(dial(tester).remaining, const Duration(minutes: 15));
       expect(title('A 작업'), findsOneWidget);
@@ -4097,9 +4102,7 @@ void main() {
       expect(_clockText(tester), '00:20:00');
     });
 
-    testWidgets('타이머가 늘거나 줄어도 보이던 타이머의 쪽에 머물고 쪽 순서는 최근에 시작한 순이다', (
-      tester,
-    ) async {
+    testWidgets('재개해 가장 최근에 시작한 타이머가 되어도 쪽 순서는 그대로다', (tester) async {
       final pausedA = runningA.copyWith(
         status: TimerStatus.paused,
         elapsedTime: 10 * 60,
@@ -4107,33 +4110,63 @@ void main() {
       await pumpLive(tester, [pausedA, pausedB]);
       await swipe(tester, forward: true);
       expect(shown(tester), 'a');
+      expect(tester.getSemantics(indicator()).label, '타이머 2/2');
 
-      // 다른 기기에서 더 나중에 시작한 일시정지 D가 생겨 첫 쪽에 든다
-      final pausedD = makeTimer(
-        id: 'd',
+      await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'resume:a']);
+      expect(
+        container(
+          tester,
+        ).read(myActiveTimersProvider).value!.map((timer) => timer.id),
+        ['a', 'b'],
+      );
+      expect(shown(tester), 'a');
+      expect(title('A 작업'), findsOneWidget);
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+      expect(tester.getSemantics(indicator()).label, '타이머 2/2');
+
+      await swipe(tester, forward: false);
+      expect(shown(tester), 'b');
+      expect(tester.getSemantics(indicator()).label, '타이머 1/2');
+    });
+
+    testWidgets('타이머가 늘면 끝 쪽에 붙고 줄어도 남은 쪽의 순서와 보이던 타이머의 쪽이 그대로다', (
+      tester,
+    ) async {
+      final pausedA = runningA.copyWith(
         status: TimerStatus.paused,
+        elapsedTime: 10 * 60,
+      );
+      await pumpLive(tester, [pausedA, pausedB, runningC]);
+      // B, A, C 순서에서 실행 중인 C를 보이므로 A로 넘긴다
+      expect(shown(tester), 'c');
+      await swipe(tester, forward: false);
+      expect(shown(tester), 'a');
+      expect(tester.getSemantics(indicator()).label, '타이머 2/3');
+
+      // 다른 기기에서 만들고 시작한 D는 끝 쪽에 붙는다
+      final runningD = makeTimer(
+        id: 'd',
+        status: TimerStatus.running,
         startedAt: DateTime.utc(2026, 11, 9, 10, 8),
+        createdAt: DateTime.utc(2026, 11, 9, 10, 8),
         allocatedDuration: 25 * 60,
       ).copyWith(title: 'D 작업', updatedAt: clock);
       final timers = container(tester).read(myActiveTimersProvider.notifier);
-      timers.apply(pausedD);
+      timers.apply(runningD);
       // 넘기는 애니메이션 없이 다음 프레임에 A의 쪽에 있다
       await tester.pump();
       await tester.pump();
       expect(shown(tester), 'a');
       await tester.pumpAndSettle();
 
-      expect(
-        container(
-          tester,
-        ).read(myActiveTimersProvider).value!.map((timer) => timer.id),
-        ['d', 'b', 'a'],
-      );
       expect(shown(tester), 'a');
       expect(title('A 작업'), findsOneWidget);
-      expect(tester.getSemantics(indicator()).label, '타이머 3/3');
+      expect(tester.getSemantics(indicator()).label, '타이머 2/4');
 
-      // 앞 쪽의 B가 빠져도 A에 머문다
+      // 앞 쪽의 B가 빠져도 A에 머물고 나머지는 C, D 순서다
       timers.apply(
         pausedB.copyWith(status: TimerStatus.completed, updatedAt: clock),
       );
@@ -4141,7 +4174,10 @@ void main() {
 
       expect(shown(tester), 'a');
       expect(title('A 작업'), findsOneWidget);
-      await swipe(tester, forward: false);
+      expect(tester.getSemantics(indicator()).label, '타이머 1/3');
+      await swipe(tester, forward: true);
+      expect(shown(tester), 'c');
+      await swipe(tester, forward: true);
       expect(shown(tester), 'd');
     });
 
@@ -4230,16 +4266,17 @@ void main() {
         await tester.tap(_dashboardFabByIcon(Icons.add));
         await tester.pumpAndSettle();
         expect(repository.calls.take(2), ['list', 'update:a']);
-        // 연장해 다시 시작한 A는 가장 최근에 시작한 타이머라 첫 쪽으로 옮기고 그 쪽에 머문다
-        expect(shown(tester), 'a');
+        // 연장해 다시 시작한 A는 가장 최근에 시작한 타이머지만 쪽은 그대로 둘째다
         expect(
           container(
             tester,
           ).read(myActiveTimersProvider).value!.map((timer) => timer.id),
           ['a', 'b'],
         );
+        expect(shown(tester), 'a');
+        expect(tester.getSemantics(indicator()).label, '타이머 2/2');
 
-        await swipe(tester, forward: true);
+        await swipe(tester, forward: false);
         expect(shown(tester), 'b');
         await tester.tap(_dashboardFabByIcon(Icons.check));
         await tester.pumpAndSettle();
@@ -4443,6 +4480,7 @@ void main() {
           id: 'new',
           status: status,
           startedAt: clock,
+          createdAt: clock,
           allocatedDuration: 25 * 60,
         ).copyWith(title: '새 작업', updatedAt: clock);
 
@@ -4456,7 +4494,7 @@ void main() {
         expect(repository.calls, ['list', 'create']);
         expect(shown(tester), 'new');
         expect(title('새 작업'), findsOneWidget);
-        expect(tester.getSemantics(indicator()).label, '타이머 1/3');
+        expect(tester.getSemantics(indicator()).label, '타이머 3/3');
       });
     });
 
@@ -4484,6 +4522,7 @@ void main() {
               id: 't$i',
               status: TimerStatus.paused,
               startedAt: DateTime.utc(2026, 11, 9, 10, i),
+              createdAt: DateTime.utc(2026, 11, 9, 9, i),
               allocatedDuration: 25 * 60,
             ).copyWith(title: '아주 긴 작업 이름 $i번이 제목 칸에서 잘린다'),
         ];
@@ -4495,7 +4534,7 @@ void main() {
         expect(add.left, greaterThanOrEqualTo(0));
         expect(add.right, lessThanOrEqualTo(360));
         for (var i = 0; i < 4; i++) {
-          await swipe(tester, forward: true);
+          await swipe(tester, forward: false);
         }
         expect(shown(tester), 't0');
         expect(title('아주 긴 작업 이름 0번이 제목 칸에서 잘린다'), findsOneWidget);

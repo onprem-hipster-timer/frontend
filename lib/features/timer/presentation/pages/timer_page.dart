@@ -290,7 +290,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
 
         final gallery = galleryShown
             ? _TimerGallery(
-                timers: myTimers,
+                timers: _galleryOrder(myTimers),
                 focusedId: activeTimer?.id,
                 arrows: _showGalleryArrows(context),
                 onFocus: (timerId) =>
@@ -630,9 +630,16 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
   }
 }
 
+/// [timers]를 갤러리의 쪽 순서로. 만든 순(오래된 것부터)이라 재개·일시정지로 쪽이 옮겨 가지 않는다
+List<TimerRead> _galleryOrder(List<TimerRead> timers) =>
+    [...timers]..sort((a, b) {
+      final created = a.createdAt.compareTo(b.createdAt);
+      return created != 0 ? created : a.id.compareTo(b.id);
+    });
+
 /// 활성 타이머 갤러리
 ///
-/// [timers](최근에 시작한 순)마다 한 쪽씩 [pageBuilder]로 그려 옆으로 넘기고, 보이는 쪽이 [focusedId] 타이머다.
+/// [timers]마다 한 쪽씩 [pageBuilder]로 그려 옆으로 넘기고, 보이는 쪽이 [focusedId] 타이머다.
 /// 넘기면 [onFocus]로 그 타이머를 고르고, [focusedId]가 다른 곳에서 바뀌면 그 쪽으로 넘어간다.
 /// 타이머가 늘거나 줄어도 보이던 타이머의 쪽을 그대로 보인다.
 /// 아래에 쪽 표시를 두고, [arrows]면 그 양옆에 이전·다음 버튼을 둔다. 갤러리에 초점이 있으면 왼쪽·오른쪽 방향키로 넘긴다.

@@ -21,12 +21,14 @@ void main() {
     id: 'a',
     status: TimerStatus.running,
     startedAt: DateTime.utc(2026, 11, 9, 10),
+    createdAt: DateTime.utc(2026, 11, 9, 9, 30),
     allocatedDuration: 25 * 60,
   ).copyWith(title: 'A 작업');
   final pausedB = makeTimer(
     id: 'b',
     status: TimerStatus.paused,
     startedAt: DateTime.utc(2026, 11, 9, 10, 5),
+    createdAt: DateTime.utc(2026, 11, 9, 9),
     allocatedDuration: 25 * 60,
     elapsedTime: 5 * 60,
   ).copyWith(title: 'B 작업');

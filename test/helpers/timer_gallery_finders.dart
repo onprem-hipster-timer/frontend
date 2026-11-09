@@ -27,7 +27,7 @@ String shownTimerPage(WidgetTester tester) {
   return (pages.single.key! as ValueKey<String>).value.substring(prefix.length);
 }
 
-/// 갤러리를 한 쪽 넘긴다. [forward]면 다음(먼저 시작한) 타이머 쪽으로
+/// 갤러리를 한 쪽 넘긴다. [forward]면 다음(나중에 만든) 타이머 쪽으로
 Future<void> swipeTimerGallery(
   WidgetTester tester, {
   required bool forward,
