@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -39,7 +40,7 @@ class BreakSession {
 ///
 /// 기기 안에서만 센다. 서버에 보내지 않으므로 타이머 목록·친구 알림에 나오지 않는다.
 /// 활성 타이머가 실행 중(RUNNING)이면 휴식이 없다. 휴식 중에 활성 타이머가 실행 중이 되면 바로 끝낸다.
-/// 일시정지한 타이머는 휴식을 끝내지 않는다.
+/// 일시정지한 타이머는 휴식을 끝내지 않는다. 로그인한 사용자가 바뀌면(로그아웃 포함) 휴식을 버린다.
 ///
 /// 테스트: test/features/timer/presentation/providers/break_timer_provider_test.dart
 @Riverpod(keepAlive: true)
@@ -47,11 +48,15 @@ class BreakTimer extends _$BreakTimer {
   /// 휴식 중에만 두는 활성 타이머 구독
   ///
   /// 이 provider를 보는 화면이 없으면(다른 탭) provider 안의 `ref.listen`은 쉬어서 그사이 실행된 타이머를
-  /// 놓치므로 컨테이너에서 듣는다.
+  /// 놓치므로 컨테이너에서 듣는다. 사용자가 바뀌면 닫아 이전 사용자의 타이머를 붙잡지 않는다.
   ProviderSubscription<AsyncValue<TimerRead?>>? _activeTimer;
 
   @override
-  BreakSession? build() => null;
+  BreakSession? build() {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    ref.onDispose(_unsubscribe);
+    return null;
+  }
 
   /// [total] 길이의 휴식을 시작한다. 진행 중인 휴식은 새 휴식으로 바꾼다.
   ///
@@ -70,9 +75,13 @@ class BreakTimer extends _$BreakTimer {
 
   /// 휴식을 끝낸다
   void end() {
+    _unsubscribe();
+    state = null;
+  }
+
+  void _unsubscribe() {
     _activeTimer?.close();
     _activeTimer = null;
-    state = null;
   }
 
   void _endIfRunning(AsyncValue<TimerRead?> activeTimer) {

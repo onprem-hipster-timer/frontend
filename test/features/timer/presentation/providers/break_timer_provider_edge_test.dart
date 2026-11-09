@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -209,6 +210,97 @@ void main() {
     });
   }
 
+  group('사용자가 바뀌면', () {
+    AuthUser user(String id, {String? email}) => AuthUser(
+      id: id,
+      email: email ?? '$id@example.com',
+      emailVerified: true,
+      createdAt: DateTime.utc(2026),
+    );
+
+    final secret = makeTimer(
+      id: 'a-1',
+      status: TimerStatus.paused,
+      startedAt: DateTime.utc(2026, 11, 9, 9),
+    ).copyWith(title: 'A의 작업');
+
+    /// 로그인한 사용자를 [_SignedIn]으로 바꿀 수 있는 컨테이너
+    ProviderContainer bootSignedIn() {
+      final container = ProviderContainer(
+        overrides: [
+          timerRepositoryProvider.overrideWithValue(repository),
+          timerWsClientProvider.overrideWithValue(null),
+          currentUserProvider.overrideWith((ref) => ref.watch(_signedIn)),
+          timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+          breakClockProvider.overrideWithValue(() => now),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    void signIn(ProviderContainer container, AuthUser? signedIn) =>
+        container.read(_signedIn.notifier).set(signedIn);
+
+    test(
+      '휴식 중 로그아웃하면 휴식을 버리고, 다음 사용자는 첫 조회가 실패해도 이전 사용자의 타이머를 보지 않는다',
+      () async {
+        repository.listActive = () async => [secret];
+        final container = bootSignedIn();
+        signIn(container, user('user-a'));
+        // A가 일시정지한 타이머 위에서 휴식을 시작한 타이머 화면
+        final screen = container.listen(activeTimerProvider, (_, _) {});
+        await container.read(myActiveTimersProvider.future);
+        breakTimer(container).start(const Duration(minutes: 5));
+        expect(container.read(breakTimerProvider), isNotNull);
+
+        // 로그아웃하면 타이머 화면이 사라지고 인증 없는 조회는 실패한다
+        screen.close();
+        repository.listActive = () async => throw Exception('401');
+        signIn(container, null);
+        await pumpEventQueue();
+
+        expect(container.read(breakTimerProvider), isNull);
+
+        // B의 첫 활성 타이머 조회가 네트워크 오류로 실패한다
+        repository.listActive = () async => throw Exception('network');
+        signIn(container, user('user-b'));
+        await pumpEventQueue();
+
+        expect(await container.read(myActiveTimersProvider.future), isEmpty);
+        expect(container.read(activeTimerProvider).value, isNull);
+      },
+    );
+
+    test('다른 사용자로 바로 바뀌어도 휴식을 버린다', () async {
+      repository.listActive = () async => [secret];
+      final container = bootSignedIn();
+      signIn(container, user('user-a'));
+      container.listen(breakTimerProvider, (_, _) {});
+      await container.read(myActiveTimersProvider.future);
+      breakTimer(container).start(const Duration(minutes: 5));
+
+      signIn(container, user('user-b'));
+      await pumpEventQueue();
+
+      expect(container.read(breakTimerProvider), isNull);
+    });
+
+    test('같은 사용자의 정보만 바뀌면 휴식은 그대로다', () async {
+      repository.listActive = () async => [secret];
+      final container = bootSignedIn();
+      signIn(container, user('user-a'));
+      container.listen(breakTimerProvider, (_, _) {});
+      await container.read(myActiveTimersProvider.future);
+      breakTimer(container).start(const Duration(minutes: 5));
+
+      signIn(container, user('user-a', email: 'new@example.com'));
+      await pumpEventQueue();
+
+      expect(container.read(breakTimerProvider), isNotNull);
+    });
+  });
+
   test('남은 시간을 다시 지켜보면 그동안 흐른 시간을 바로 반영한다', () {
     fakeAsync((async) {
       final container = boot();
@@ -243,3 +335,13 @@ void main() {
     });
   });
 }
+
+/// 테스트에서 바꾸는 로그인한 사용자
+class _SignedIn extends Notifier<AuthUser?> {
+  @override
+  AuthUser? build() => null;
+
+  void set(AuthUser? user) => state = user;
+}
+
+final _signedIn = NotifierProvider<_SignedIn, AuthUser?>(_SignedIn.new);

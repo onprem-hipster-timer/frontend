@@ -166,6 +166,8 @@ void main() {
           timerTickerProvider.overrideWith(
             (ref) => Stream.value(Duration.zero),
           ),
+          // 휴식은 로그인한 사용자를 본다
+          currentUserProvider.overrideWithValue(null),
         ],
       );
     }
@@ -2090,6 +2092,7 @@ void main() {
               ),
               timerControllerProvider.overrideWith(_FakeTimerController.new),
               breakClockProvider.overrideWithValue(() => breakNow),
+              currentUserProvider.overrideWithValue(null),
             ],
           ),
         );
@@ -3120,6 +3123,8 @@ List<Override> _timerOverrides({
       );
     }),
     timerControllerProvider.overrideWith(() => controller),
+    // 휴식은 로그인한 사용자를 본다
+    currentUserProvider.overrideWithValue(null),
   ];
 }
 
