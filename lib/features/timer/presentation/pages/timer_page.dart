@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
@@ -157,9 +159,13 @@ Future<bool> _confirmStopTimer(BuildContext context) {
 /// 시간이 끝난 타이머를 한 번에 늘리는 시간
 const _extendBy = Duration(minutes: 5);
 
+/// 다이얼 옆에 둘 때 작업 제목·시계·버튼 칸의 가장 좁은 폭. 일시정지 타이머의 버튼 세 개(216)가 들어간다
+const _sideControlsMinWidth = 232.0;
+
 /// 타이머 대시보드
 ///
 /// 다이얼, 작업 제목, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
+/// 높이 400 미만에 폭이 높이의 1.5배 이상인 칸(가로 휴대폰)은 다이얼을 왼쪽에 두고 나머지를 오른쪽에 둡니다.
 /// 휴식 중이면 휴식을, 아니면 활성 타이머를 보여 주고, 다이얼은 남은 시간만 보여 줍니다.
 /// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌어 각각의 시간을 고릅니다. 휴식은 서버에 보내지 않고 바로 시작합니다.
 class TimerDashboard extends ConsumerStatefulWidget {
@@ -244,6 +250,147 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final short = constraints.maxHeight < 400;
+        final gap = SizedBox(height: short ? 8 : 16);
+
+        final dial = breakSession != null
+            ? TimerDial(
+                remaining: breakRemaining,
+                face: dialFaceFor(breakSession.total),
+                color: dialColor,
+              )
+            : activeTimer == null
+            ? TimerDial(
+                remaining: pending,
+                color: dialColor,
+                onChanged: (duration) => setState(() {
+                  if (_breakSelected) {
+                    _pendingBreakDuration = duration;
+                  } else {
+                    _pendingDuration = duration;
+                  }
+                }),
+              )
+            : TimerDial(
+                remaining: remaining,
+                face: dialFaceFor(
+                  Duration(seconds: activeTimer.allocatedDuration),
+                ),
+                color: dialColor,
+              );
+
+        final controls = [
+          if (breakSession != null)
+            Text(
+              '휴식',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          else
+            CurrentTaskDisplay(
+              timer: activeTimer,
+              onTodoChanged: (todo) {
+                if (!context.mounted) return;
+                ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
+              },
+            ),
+          DigitalClock(
+            duration: breakSession != null
+                ? breakRemaining
+                : activeTimer == null
+                ? pending
+                : remaining,
+            timeUp: timeUp,
+            idle: idle,
+            compact: short,
+          ),
+          if (caption != null)
+            Text(
+              caption,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: timeUp
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          gap,
+          if (idle) ...[
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  label: Text('작업'),
+                  icon: Icon(Icons.timer_outlined),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text('휴식'),
+                  icon: Icon(Icons.coffee_outlined),
+                ),
+              ],
+              selected: {_breakSelected},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) =>
+                  setState(() => _breakSelected = selection.single),
+            ),
+            gap,
+          ],
+          if (breakSession != null)
+            FloatingActionButton(
+              onPressed: () => ref.read(breakTimerProvider.notifier).end(),
+              tooltip: breakOver ? '확인' : '휴식 끝내기',
+              backgroundColor: theme.colorScheme.tertiary,
+              child: Icon(
+                breakOver ? Icons.check : Icons.stop,
+                color: theme.colorScheme.onTertiary,
+              ),
+            )
+          else
+            TimerControlButton(
+              activeTimer: activeTimer,
+              starting: controllerState.isLoading,
+              timeUp: timeUp,
+              breakSelected: _breakSelected,
+              onStart: () => _showStartTimerDialog(context, ref),
+              onStartBreak: breakBlocked
+                  ? null
+                  : () => ref
+                        .read(breakTimerProvider.notifier)
+                        .start(_pendingBreakDuration),
+              onStop: () => _stopTimer(context, ref),
+              onPause: () => _pauseTimer(context, ref),
+              onResume: () => _resumeTimer(context, ref),
+              onExtend: () => _extendTimer(context, ref),
+            ),
+        ];
+
+        // 낮고 넓은 칸(가로 휴대폰)은 다이얼 오른쪽에 나머지를 두고, 나머지가 칸보다 길면 굴린다
+        if (short && constraints.maxWidth >= constraints.maxHeight * 1.5) {
+          final controlsWidth = math.max(
+            _sideControlsMinWidth,
+            (constraints.maxWidth - 24 * 2 - 16) / 2,
+          );
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(child: dial),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: controlsWidth,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: controls,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
 
         return Padding(
           padding: EdgeInsets.symmetric(
@@ -252,117 +399,9 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           ),
           child: Column(
             children: [
-              Expanded(
-                child: breakSession != null
-                    ? TimerDial(
-                        remaining: breakRemaining,
-                        face: dialFaceFor(breakSession.total),
-                        color: dialColor,
-                      )
-                    : activeTimer == null
-                    ? TimerDial(
-                        remaining: pending,
-                        color: dialColor,
-                        onChanged: (duration) => setState(() {
-                          if (_breakSelected) {
-                            _pendingBreakDuration = duration;
-                          } else {
-                            _pendingDuration = duration;
-                          }
-                        }),
-                      )
-                    : TimerDial(
-                        remaining: remaining,
-                        face: dialFaceFor(
-                          Duration(seconds: activeTimer.allocatedDuration),
-                        ),
-                        color: dialColor,
-                      ),
-              ),
-              SizedBox(height: short ? 8 : 16),
-              if (breakSession != null)
-                Text(
-                  '휴식',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                )
-              else
-                CurrentTaskDisplay(
-                  timer: activeTimer,
-                  onTodoChanged: (todo) {
-                    if (!context.mounted) return;
-                    ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
-                  },
-                ),
-              DigitalClock(
-                duration: breakSession != null
-                    ? breakRemaining
-                    : activeTimer == null
-                    ? pending
-                    : remaining,
-                timeUp: timeUp,
-                idle: idle,
-                compact: short,
-              ),
-              if (caption != null)
-                Text(
-                  caption,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: timeUp
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              SizedBox(height: short ? 8 : 16),
-              if (idle) ...[
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(
-                      value: false,
-                      label: Text('작업'),
-                      icon: Icon(Icons.timer_outlined),
-                    ),
-                    ButtonSegment(
-                      value: true,
-                      label: Text('휴식'),
-                      icon: Icon(Icons.coffee_outlined),
-                    ),
-                  ],
-                  selected: {_breakSelected},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (selection) =>
-                      setState(() => _breakSelected = selection.single),
-                ),
-                SizedBox(height: short ? 8 : 16),
-              ],
-              if (breakSession != null)
-                FloatingActionButton(
-                  onPressed: () => ref.read(breakTimerProvider.notifier).end(),
-                  tooltip: breakOver ? '확인' : '휴식 끝내기',
-                  backgroundColor: theme.colorScheme.tertiary,
-                  child: Icon(
-                    breakOver ? Icons.check : Icons.stop,
-                    color: theme.colorScheme.onTertiary,
-                  ),
-                )
-              else
-                TimerControlButton(
-                  activeTimer: activeTimer,
-                  starting: controllerState.isLoading,
-                  timeUp: timeUp,
-                  breakSelected: _breakSelected,
-                  onStart: () => _showStartTimerDialog(context, ref),
-                  onStartBreak: breakBlocked
-                      ? null
-                      : () => ref
-                            .read(breakTimerProvider.notifier)
-                            .start(_pendingBreakDuration),
-                  onStop: () => _stopTimer(context, ref),
-                  onPause: () => _pauseTimer(context, ref),
-                  onResume: () => _resumeTimer(context, ref),
-                  onExtend: () => _extendTimer(context, ref),
-                ),
+              Expanded(child: dial),
+              gap,
+              ...controls,
             ],
           ),
         );

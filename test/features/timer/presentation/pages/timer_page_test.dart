@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
@@ -19,6 +20,7 @@ import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/providers/friend_providers.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/pump_app.dart';
@@ -2552,6 +2554,171 @@ void main() {
         }
       });
     }
+
+    group('하단 내비 바 셸 안의 가로 휴대폰 화면', () {
+      final paused = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 5 * 60,
+      ).copyWith(title: '아주 긴 작업 이름이 들어가도 다이얼 옆 칸에서 넘치지 않아야 한다');
+      final timeUp = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 25 * 60,
+      );
+
+      Finder dialFace() => find.descendant(
+        of: find.byType(TimerDial),
+        matching: find.byType(CustomPaint),
+      );
+
+      /// 앱처럼 하단 내비 바 셸([ScaffoldWithNavBar]) 안에 타이머 화면을 그린다
+      Future<void> pumpInShell(
+        WidgetTester tester, {
+        required Size size,
+        required double textScale,
+        required TimerRead? timer,
+      }) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = textScale;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final router = GoRouter(
+          routes: [
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, shell) =>
+                  ScaffoldWithNavBar(navigationShell: shell),
+              branches: [
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/',
+                      builder: (context, state) => const TimerPage(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._timerOverrides(
+                timer: timer,
+                history: [
+                  ?timer,
+                  makeTimer(id: 'done', status: TimerStatus.completed),
+                ],
+                controller: _FakeTimerController(),
+              ),
+              breakClockProvider.overrideWithValue(
+                () => DateTime(2026, 11, 9, 10),
+              ),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      /// 다이얼이 왼쪽에 120 이상으로 있고, 시계와 [fabs]가 그 오른쪽에 있다.
+      /// 오른쪽 칸이 길면 굴려서 [fabs]가 셸 위 화면 안에 들어와 눌린다
+      Future<void> expectSideBySide(
+        WidgetTester tester,
+        Size size,
+        List<IconData> fabs,
+      ) async {
+        expect(tester.takeException(), isNull);
+        final dial = tester.getRect(dialFace());
+        final clock = tester.getRect(find.byType(DigitalClock));
+        // 셸은 아래 100을 내비 바 자리로 비워 둔다
+        final pageBottom = size.height - 100;
+
+        expect(dial.shortestSide, greaterThanOrEqualTo(120));
+        expect(dial.right, lessThanOrEqualTo(clock.left));
+        for (final icon in fabs) {
+          final fab = _dashboardFabByIcon(icon);
+          await tester.ensureVisible(fab);
+          await tester.pumpAndSettle();
+          final rect = tester.getRect(fab);
+          expect(rect.left, greaterThanOrEqualTo(dial.right), reason: '$icon');
+          expect(rect.bottom, lessThanOrEqualTo(pageBottom), reason: '$icon');
+          expect(fab.hitTestable(), findsOneWidget, reason: '$icon');
+        }
+      }
+
+      for (final (size, textScale) in const [
+        (Size(844, 390), 1.0),
+        (Size(844, 390), 1.5),
+        (Size(800, 360), 1.0),
+      ]) {
+        final label =
+            '${size.width.toInt()}x${size.height.toInt()} 글자 $textScale배';
+
+        for (final (state, timer, fabs) in [
+          ('대기', null, [Icons.play_arrow]),
+          ('실행 중', running, [Icons.check, Icons.pause]),
+          ('일시정지', paused, [Icons.check, Icons.play_arrow, Icons.coffee]),
+          ('시간 종료', timeUp, [Icons.check, Icons.add]),
+        ]) {
+          testWidgets('$label $state: 다이얼을 왼쪽에 크게 두고 제목·시계·버튼을 오른쪽에 둔다', (
+            tester,
+          ) async {
+            await pumpInShell(
+              tester,
+              size: size,
+              textScale: textScale,
+              timer: timer,
+            );
+
+            await expectSideBySide(tester, size, fabs);
+          });
+        }
+
+        testWidgets('$label 휴식: 작업·휴식 선택과 휴식 버튼도 다이얼 오른쪽에 있다', (tester) async {
+          await pumpInShell(
+            tester,
+            size: size,
+            textScale: textScale,
+            timer: null,
+          );
+
+          await tester.tap(_mode('휴식'));
+          await tester.pumpAndSettle();
+          await expectSideBySide(tester, size, [Icons.coffee]);
+          expect(
+            tester.getRect(_modeSwitch()).left,
+            greaterThanOrEqualTo(tester.getRect(dialFace()).right),
+          );
+
+          await tester.tap(_dashboardFabByIcon(Icons.coffee));
+          await tester.pumpAndSettle();
+          await expectSideBySide(tester, size, [Icons.stop]);
+        });
+      }
+
+      testWidgets('세로 휴대폰 화면은 다이얼 아래에 제목·시계·버튼을 둔다', (tester) async {
+        await pumpInShell(
+          tester,
+          size: const Size(360, 800),
+          textScale: 1,
+          timer: paused,
+        );
+
+        expect(tester.takeException(), isNull);
+        final dial = tester.getRect(dialFace());
+        expect(
+          dial.bottom,
+          lessThanOrEqualTo(tester.getRect(find.byType(DigitalClock)).top),
+        );
+        expect(dial.shortestSide, greaterThanOrEqualTo(240));
+      });
+    });
   });
 
   group('타이머 목록 항목', () {
