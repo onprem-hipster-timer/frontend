@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "onperm-hipster-timer-backend",
-    "version": "v2026.11.09-76cce36"
+    "version": "v2026.11.09-9b8c67b"
   },
   "paths": {
     "/v1/schedules": {
@@ -1174,7 +1174,7 @@
           "Timers"
         ],
         "summary": "Update Timer",
-        "description": "\ud0c0\uc774\uba38 \uba54\ud0c0\ub370\uc774\ud130 \uc5c5\ub370\uc774\ud2b8 (title, description, tags, todo_id, schedule_id, allocated_duration)\n\nallocated_duration\uc740 \ud604\uc7ac elapsed_time\ubcf4\ub2e4 \ucee4\uc57c \ud55c\ub2e4 (\uc544\ub2c8\uba74 422). \ub9cc\ub8cc\ub41c \ud0c0\uc774\uba38\ub294 \ub298\ub9b0 \ub4a4 \uc7ac\uac1c\ud560 \uc218 \uc788\ub2e4.",
+        "description": "\ud0c0\uc774\uba38 \uba54\ud0c0\ub370\uc774\ud130 \uc5c5\ub370\uc774\ud2b8 (title, description, tags, todo_id, schedule_id, allocated_duration)\n\nallocated_duration\uc740 \ud604\uc7ac \uacbd\uacfc \uc2dc\uac04(\uc2e4\ud589 \uc911\uc774\uba74 \uc9c0\uae08\uae4c\uc9c0 \uc2e4\ud589\ud55c \uad6c\uac04 \ud3ec\ud568)\ubcf4\ub2e4 \ucee4\uc57c \ud55c\ub2e4 (\uc544\ub2c8\uba74 422). \ub9cc\ub8cc\ub41c \ud0c0\uc774\uba38\ub294 \ub298\ub9b0 \ub4a4 \uc7ac\uac1c\ud560 \uc218 \uc788\ub2e4.",
         "operationId": "update_timer_v1_timers__timer_id__patch",
         "security": [
           {
@@ -5955,6 +5955,7 @@
           },
           "allocated_duration": {
             "type": "integer",
+            "maximum": 2147483647.0,
             "title": "Allocated Duration"
           },
           "tag_ids": {
@@ -6243,12 +6244,13 @@
           },
           "allocated_duration": {
             "type": "integer",
+            "maximum": 2147483647.0,
             "title": "Allocated Duration"
           }
         },
         "type": "object",
         "title": "TimerUpdate",
-        "description": "\ud0c0\uc774\uba38 \uc5c5\ub370\uc774\ud2b8 DTO\n\ntodo_id, schedule_id \ud544\ub4dc \ub3d9\uc791:\n- \ud544\ub4dc\uac00 \uc694\uccad\uc5d0 \ud3ec\ud568\ub418\uc9c0 \uc54a\uc74c (MISSING): \uae30\uc874 \uac12 \uc720\uc9c0\n- \ud544\ub4dc\uac00 UUID \uac12: \ud574\ub2f9 ID\ub85c \uc5f0\uacb0 \ubcc0\uacbd\n- \ud544\ub4dc\uac00 null: \uc5f0\uacb0 \ud574\uc81c\n\nallocated_duration: \ud604\uc7ac elapsed_time\ubcf4\ub2e4 \ucee4\uc57c \ud568 (\uc544\ub2c8\uba74 422). \ub9cc\ub8cc\ub41c \ud0c0\uc774\uba38\ub294 \ub298\ub9b0 \ub4a4 \uc7ac\uac1c\ud560 \uc218 \uc788\ub2e4\n\nNote: \uc790\ub3d9 \uc5f0\uacb0 \uae30\ub2a5\uc740 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c (\uba85\uc2dc\uc801 \ubcc0\uacbd\ub9cc \uc218\ud589)"
+        "description": "\ud0c0\uc774\uba38 \uc5c5\ub370\uc774\ud2b8 DTO\n\ntodo_id, schedule_id \ud544\ub4dc \ub3d9\uc791:\n- \ud544\ub4dc\uac00 \uc694\uccad\uc5d0 \ud3ec\ud568\ub418\uc9c0 \uc54a\uc74c (MISSING): \uae30\uc874 \uac12 \uc720\uc9c0\n- \ud544\ub4dc\uac00 UUID \uac12: \ud574\ub2f9 ID\ub85c \uc5f0\uacb0 \ubcc0\uacbd\n- \ud544\ub4dc\uac00 null: \uc5f0\uacb0 \ud574\uc81c\n\nallocated_duration: \ud604\uc7ac \uacbd\uacfc \uc2dc\uac04(\uc2e4\ud589 \uc911\uc774\uba74 \uc9c0\uae08\uae4c\uc9c0 \uc2e4\ud589\ud55c \uad6c\uac04 \ud3ec\ud568)\ubcf4\ub2e4 \ucee4\uc57c \ud568 (\uc544\ub2c8\uba74 422). \ub9cc\ub8cc\ub41c \ud0c0\uc774\uba38\ub294 \ub298\ub9b0 \ub4a4 \uc7ac\uac1c\ud560 \uc218 \uc788\ub2e4\n\nNote: \uc790\ub3d9 \uc5f0\uacb0 \uae30\ub2a5\uc740 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c (\uba85\uc2dc\uc801 \ubcc0\uacbd\ub9cc \uc218\ud589)"
       },
       "TodoCreate": {
         "properties": {
