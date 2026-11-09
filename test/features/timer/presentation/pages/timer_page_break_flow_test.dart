@@ -21,6 +21,7 @@ import 'package:momeet/shared/domain/timer_elapsed.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import '../../../../helpers/timer_gallery_finders.dart';
 
 /// 휴식 중에 타이머를 실행하는 버튼을 누르는 흐름. 실제 TimerController로 보낸 요청까지 본다
 ///
@@ -155,8 +156,6 @@ void main() {
       )
       .data;
 
-  Finder timerChip(String id) => find.byKey(ValueKey('timer-chip-$id'));
-
   Finder listButton(String timerId, String tooltip) => find.descendant(
     of: find.byWidgetPredicate(
       (widget) => widget is TimerHistoryItem && widget.timer.id == timerId,
@@ -290,48 +289,50 @@ void main() {
 
       expect(repository.calls, ['list', 'resume:b']);
       expectRunning(tester, 'B 작업');
-      expect(tester.widget<ChoiceChip>(timerChip('b')).selected, isTrue);
-      expect(tester.widget<ChoiceChip>(timerChip('a')).selected, isFalse);
+      expect(shownTimerPage(tester), 'b');
       expect(listButton('a', '재개'), findsOneWidget);
       expect(listButton('b', '일시정지'), findsOneWidget);
     });
 
-    testWidgets(
-      '칩으로 고른 A에서 휴식을 시작하고 목록에서 B를 재개하면 휴식은 끝나지만 대시보드는 일시정지한 A에 머문다',
-      (tester) async {
-        await pumpPage(tester, [pausedA, pausedB]);
-        await tester.tap(timerChip('a'));
-        await tester.pumpAndSettle();
-        expect(title('A 작업'), findsOneWidget);
-        await startBreak(tester);
-
-        await tester.tap(listButton('b', '재개'));
-        await tester.pumpAndSettle();
-
-        expect(repository.calls, ['list', 'resume:b']);
-        expect(breakSession(tester), isNull);
-        expect(inDashboard(find.text('휴식')), findsNothing);
-        expect(title('A 작업'), findsOneWidget);
-        expect(inDashboard(find.text('일시정지')), findsOneWidget);
-        expect(fab(Icons.play_arrow), findsOneWidget);
-        // B가 실행 중이므로 휴식을 다시 시작할 수 없다
-        expect(fab(Icons.coffee), findsNothing);
-        expect(tester.widget<ChoiceChip>(timerChip('a')).selected, isTrue);
-        expect(listButton('b', '일시정지'), findsOneWidget);
-      },
-    );
-  });
-
-  group('휴식 중 대시보드', () {
-    testWidgets('일시정지 타이머에서 시작한 휴식 중에는 칩·새 타이머·재개 버튼이 없고 목록의 재개만 남는다', (
+    testWidgets('넘겨 고른 A에서 휴식을 시작하고 목록에서 B를 재개하면 휴식이 끝나고 대시보드는 재개한 B로 넘어간다', (
       tester,
     ) async {
       await pumpPage(tester, [pausedA, pausedB]);
-      expect(timerChip('a'), findsOneWidget);
+      await swipeTimerGallery(tester, forward: true);
+      expect(shownTimerPage(tester), 'a');
+      expect(title('A 작업'), findsOneWidget);
       await startBreak(tester);
 
-      expect(timerChip('a'), findsNothing);
-      expect(timerChip('b'), findsNothing);
+      await tester.tap(listButton('b', '재개'));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, ['list', 'resume:b']);
+      expect(breakSession(tester), isNull);
+      expect(inDashboard(find.text('휴식')), findsNothing);
+      expectRunning(tester, 'B 작업');
+      expect(shownTimerPage(tester), 'b');
+      // B가 실행 중이므로 휴식을 다시 시작할 수 없다
+      expect(fab(Icons.coffee), findsNothing);
+      expect(listButton('a', '재개'), findsOneWidget);
+
+      await swipeTimerGallery(tester, forward: true);
+      expect(title('A 작업'), findsOneWidget);
+      expect(inDashboard(find.text('일시정지')), findsOneWidget);
+      expect(fab(Icons.play_arrow), findsOneWidget);
+    });
+  });
+
+  group('휴식 중 대시보드', () {
+    testWidgets('일시정지 타이머에서 시작한 휴식 중에는 갤러리·새 타이머·재개 버튼이 없고 목록의 재개만 남는다', (
+      tester,
+    ) async {
+      await pumpPage(tester, [pausedA, pausedB]);
+      expect(timerGallery(), findsOneWidget);
+      await startBreak(tester);
+
+      expect(timerGallery(), findsNothing);
+      expect(timerPage('a'), findsNothing);
+      expect(timerPage('b'), findsNothing);
       expect(find.widgetWithText(ActionChip, '새 타이머'), findsNothing);
       expect(fab(Icons.play_arrow), findsNothing);
       expect(fab(Icons.stop), findsOneWidget);
@@ -485,8 +486,7 @@ void main() {
 
         expect(repository.calls, ['list', 'create']);
         expectRunning(tester, '보고서 쓰기');
-        expect(tester.widget<ChoiceChip>(timerChip('c')).selected, isTrue);
-        expect(tester.widget<ChoiceChip>(timerChip('a')).selected, isFalse);
+        expect(shownTimerPage(tester), 'c');
         expect(listButton('a', '재개'), findsOneWidget);
         await unmount(tester);
       });

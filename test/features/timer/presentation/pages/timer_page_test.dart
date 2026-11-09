@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +27,7 @@ import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import '../../../../helpers/timer_gallery_finders.dart';
 
 const _confirmTitle = '작업 완료';
 const _confirmContent =
@@ -1860,9 +1863,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // 기본으로 보이는 실행 중인 A 대신 B를 고른다
-      await tester.tap(find.byKey(const ValueKey('timer-chip-b')));
-      await tester.pumpAndSettle();
+      // 기본으로 보이는 실행 중인 A 대신 앞 쪽의 B로 넘긴다
+      await swipeTimerGallery(tester, forward: false);
 
       expect(
         find.descendant(
@@ -1943,8 +1945,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       // 시간이 끝난 A가 기본으로 보이므로 일시정지한 B를 고른다
-      await tester.tap(find.byKey(const ValueKey('timer-chip-b')));
-      await tester.pumpAndSettle();
+      await swipeTimerGallery(tester, forward: false);
 
       expect(
         find.descendant(
@@ -3813,7 +3814,7 @@ void main() {
   });
 
   // ============================================================
-  // TimerPage — 여러 활성 타이머 (칩 줄과 고른 타이머)
+  // TimerPage — 여러 활성 타이머 (갤러리와 고른 타이머)
   // ============================================================
   group('여러 타이머', () {
     final clock = DateTime.utc(2026, 11, 9, 10, 10);
@@ -3832,15 +3833,23 @@ void main() {
       allocatedDuration: 25 * 60,
       elapsedTime: 5 * 60,
     ).copyWith(title: 'B 작업');
+    // 9:50에 시작해 실행 중인 C(20분 남음)
+    final runningC = makeTimer(
+      id: 'c',
+      status: TimerStatus.running,
+      startedAt: DateTime.utc(2026, 11, 9, 9, 50),
+      allocatedDuration: 40 * 60,
+    ).copyWith(title: 'C 작업');
 
     late FakeTimerRepository repository;
 
-    /// [timers]를 내 활성 타이머로 받아 타이머 화면을 [size]로 그린다
+    /// [timers]를 내 활성 타이머로 받아 타이머 화면을 [size]로 그린다. 타이머 목록은 [history]다
     Future<void> pumpLive(
       WidgetTester tester,
       List<TimerRead> timers, {
       Size? size,
       List<TodoRead> todos = const [],
+      List<TimerRead> history = const [],
     }) async {
       if (size != null) {
         tester.view.physicalSize = size;
@@ -3871,7 +3880,7 @@ void main() {
             serverClockProvider.overrideWithValue(
               ServerClock(deviceNow: () => clock),
             ),
-            timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
+            timerHistoryProvider.overrideWith((ref) async => history),
             timerTickerProvider.overrideWith((ref) {
               final active = ref.watch(activeTimerProvider).value;
               return Stream.value(
@@ -3886,21 +3895,24 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Finder timerChip(String id) => find.byKey(ValueKey('timer-chip-$id'));
+    ProviderContainer container(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(TimerPage)));
 
-    /// [id] 칩까지 칩 줄을 굴려 누른다
-    Future<void> tapChip(WidgetTester tester, String id) async {
-      await tester.ensureVisible(timerChip(id));
-      await tester.pumpAndSettle();
-      await tester.tap(timerChip(id));
-      await tester.pumpAndSettle();
-    }
-
+    Finder gallery() => timerGallery();
+    Finder page(String id) => timerPage(id);
+    Finder indicator() => find.byKey(const ValueKey('timer-gallery-indicator'));
     Finder addChip() => find.widgetWithText(ActionChip, '새 타이머');
-    Finder inChip(String id, Finder finder) =>
-        find.descendant(of: timerChip(id), matching: finder);
-    bool selected(WidgetTester tester, String id) =>
-        tester.widget<ChoiceChip>(timerChip(id)).selected;
+    Finder previous() => find.ancestor(
+      of: find.byTooltip('이전 타이머'),
+      matching: find.byType(IconButton),
+    );
+    Finder next() => find.ancestor(
+      of: find.byTooltip('다음 타이머'),
+      matching: find.byType(IconButton),
+    );
+    String shown(WidgetTester tester) => shownTimerPage(tester);
+    Future<void> swipe(WidgetTester tester, {required bool forward}) =>
+        swipeTimerGallery(tester, forward: forward);
 
     Finder inDashboard(Finder finder) =>
         find.descendant(of: find.byType(TimerDashboard), matching: finder);
@@ -3911,40 +3923,54 @@ void main() {
       matching: find.text(text),
     );
 
-    testWidgets('활성 타이머가 하나면 타이머 칩 없이 새 타이머 칩만 둔다', (tester) async {
+    /// 보이는 쪽의 다이얼
+    TimerDial dial(WidgetTester tester) => tester.widget<TimerDial>(
+      find.descendant(
+        of: page(shown(tester)),
+        matching: find.byType(TimerDial),
+      ),
+    );
+
+    testWidgets('활성 타이머가 하나면 갤러리·쪽 표시·이전·다음 버튼 없이 다이얼과 새 타이머 칩만 둔다', (
+      tester,
+    ) async {
       await pumpLive(tester, [runningA]);
 
+      expect(gallery(), findsNothing);
+      expect(indicator(), findsNothing);
+      expect(previous(), findsNothing);
+      expect(next(), findsNothing);
+      expect(inDashboard(find.byType(TimerDial)), findsOneWidget);
       expect(addChip(), findsOneWidget);
-      expect(timerChip('a'), findsNothing);
       expect(title('A 작업'), findsOneWidget);
     });
 
-    testWidgets('활성 타이머가 없으면 칩 줄이 없다', (tester) async {
+    testWidgets('활성 타이머가 없으면 갤러리와 새 타이머 칩이 없다', (tester) async {
       await pumpLive(tester, []);
 
+      expect(gallery(), findsNothing);
       expect(addChip(), findsNothing);
-      expect(find.byType(ChoiceChip), findsNothing);
     });
 
-    testWidgets('둘 이상이면 타이머마다 제목·남은 시간·진행 중/일시정지 칩을 두고 실행 중인 타이머를 기본으로 보인다', (
+    testWidgets('둘 이상이면 최근에 시작한 순으로 쪽을 두고 실행 중인 타이머의 쪽을 기본으로 보인다', (
       tester,
     ) async {
       await pumpLive(tester, [runningA, pausedB]);
 
-      expect(inChip('a', find.text('A 작업')), findsOneWidget);
-      expect(inChip('a', find.text('00:15:00')), findsOneWidget);
-      expect(inChip('a', find.byIcon(Icons.play_arrow)), findsOneWidget);
-      expect(inChip('b', find.text('B 작업')), findsOneWidget);
-      expect(inChip('b', find.text('00:20:00')), findsOneWidget);
-      expect(inChip('b', find.byIcon(Icons.pause)), findsOneWidget);
+      expect(gallery(), findsOneWidget);
+      expect(indicator(), findsOneWidget);
+      expect(tester.getSemantics(indicator()).label, '타이머 2/2');
       expect(addChip(), findsOneWidget);
-
-      // B가 더 나중에 시작했어도 실행 중인 A를 보인다
-      expect(selected(tester, 'a'), isTrue);
-      expect(selected(tester, 'b'), isFalse);
+      // B가 더 나중에 시작해 첫 쪽이지만 실행 중인 A를 보인다
+      expect(shown(tester), 'a');
+      expect(dial(tester).remaining, const Duration(minutes: 15));
       expect(title('A 작업'), findsOneWidget);
       expect(_clockText(tester), '00:15:00');
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+
+      await swipe(tester, forward: false);
+      expect(shown(tester), 'b');
+      expect(tester.getSemantics(indicator()).label, '타이머 1/2');
     });
 
     testWidgets('실행 중인 타이머가 없으면 가장 최근에 시작한 타이머를 보인다', (tester) async {
@@ -3954,25 +3980,20 @@ void main() {
       );
       await pumpLive(tester, [pausedA, pausedB]);
 
-      expect(selected(tester, 'b'), isTrue);
+      expect(shown(tester), 'b');
       expect(title('B 작업'), findsOneWidget);
     });
 
-    testWidgets('칩을 누르면 다이얼·시계·제목·버튼이 그 타이머를 보이고 명령도 그 타이머에 보낸다', (
-      tester,
-    ) async {
+    testWidgets('넘기면 다이얼·시계·제목·버튼이 그 타이머를 보이고 명령도 그 타이머에 보낸다', (tester) async {
       await pumpLive(tester, [runningA, pausedB]);
 
-      await tapChip(tester, 'b');
+      await swipe(tester, forward: false);
 
-      expect(selected(tester, 'b'), isTrue);
-      expect(selected(tester, 'a'), isFalse);
+      expect(shown(tester), 'b');
+      expect(container(tester).read(activeTimerProvider).value?.id, 'b');
       expect(title('B 작업'), findsOneWidget);
       expect(_clockText(tester), '00:20:00');
-      expect(
-        tester.widget<TimerDial>(find.byType(TimerDial)).remaining,
-        const Duration(minutes: 20),
-      );
+      expect(dial(tester).remaining, const Duration(minutes: 20));
       expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
       expect(
         tester
@@ -3992,8 +4013,26 @@ void main() {
 
       expect(repository.calls, ['list', 'resume:b']);
       // 재개한 B가 실행 중인 채로 보인다
+      expect(shown(tester), 'b');
       expect(title('B 작업'), findsOneWidget);
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+    });
+
+    testWidgets('되돌아 넘기면 그 타이머로 바뀌고 끝 쪽에서는 더 넘어가지 않는다', (tester) async {
+      await pumpLive(tester, [runningA, pausedB]);
+
+      await swipe(tester, forward: false);
+      expect(title('B 작업'), findsOneWidget);
+      await swipe(tester, forward: false);
+      expect(shown(tester), 'b');
+
+      await swipe(tester, forward: true);
+      expect(shown(tester), 'a');
+      expect(title('A 작업'), findsOneWidget);
+      expect(_clockText(tester), '00:15:00');
+      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+      await swipe(tester, forward: true);
+      expect(shown(tester), 'a');
     });
 
     testWidgets('고른 타이머를 일시정지해도 대시보드는 그 타이머에 머문다', (tester) async {
@@ -4004,19 +4043,20 @@ void main() {
       );
       await pumpLive(tester, [runningA, runningB]);
       // 둘 다 실행 중이면 가장 최근에 시작한 B가 기본이다
-      expect(selected(tester, 'b'), isTrue);
+      expect(shown(tester), 'b');
 
       await tester.tap(_dashboardFabByIcon(Icons.pause));
       await tester.pumpAndSettle();
 
       expect(repository.calls, ['list', 'pause:b']);
+      expect(shown(tester), 'b');
       expect(title('B 작업'), findsOneWidget);
       expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
     });
 
-    testWidgets('고른 타이머를 완료하면 그 타이머에 보내고 기본 타이머로 돌아간다', (tester) async {
+    testWidgets('고른 타이머를 완료하면 그 타이머에 보내고 남은 하나는 갤러리 없이 보인다', (tester) async {
       await pumpLive(tester, [runningA, pausedB]);
-      await tapChip(tester, 'b');
+      await swipe(tester, forward: false);
 
       await tester.tap(_dashboardFabByIcon(Icons.check));
       await tester.pumpAndSettle();
@@ -4024,43 +4064,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.calls, ['list', 'stop:b']);
-      expect(timerChip('b'), findsNothing);
+      expect(gallery(), findsNothing);
+      expect(indicator(), findsNothing);
       expect(title('A 작업'), findsOneWidget);
       expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
-      // 하나만 남으면 타이머 칩 없이 새 타이머 칩만 둔다
-      expect(timerChip('a'), findsNothing);
       expect(addChip(), findsOneWidget);
     });
 
-    testWidgets('다른 칩을 누르면 그 타이머로 바뀐다', (tester) async {
-      await pumpLive(tester, [runningA, pausedB]);
-
-      await tapChip(tester, 'b');
-      expect(title('B 작업'), findsOneWidget);
-
-      await tapChip(tester, 'a');
-      expect(selected(tester, 'a'), isTrue);
-      expect(selected(tester, 'b'), isFalse);
-      expect(title('A 작업'), findsOneWidget);
-      expect(_clockText(tester), '00:15:00');
-      expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
-    });
-
-    testWidgets('고른 타이머가 다른 기기에서 완료되면 기본 타이머로 돌아간다', (tester) async {
+    testWidgets('고른 타이머가 다른 기기에서 완료되면 갤러리가 기본 타이머의 쪽으로 넘어간다', (tester) async {
       final pausedA = runningA.copyWith(
         status: TimerStatus.paused,
         elapsedTime: 10 * 60,
       );
-      final runningC = makeTimer(
-        id: 'c',
-        status: TimerStatus.running,
-        startedAt: DateTime.utc(2026, 11, 9, 9, 50),
-        allocatedDuration: 60 * 60,
-      ).copyWith(title: 'C 작업');
       await pumpLive(tester, [pausedA, pausedB, runningC]);
-      await tapChip(tester, 'b');
+      // 쪽은 B, A, C 순서다. 실행 중인 C에서 B로 넘긴다
+      expect(shown(tester), 'c');
+      await swipe(tester, forward: false);
+      await swipe(tester, forward: false);
+      expect(shown(tester), 'b');
 
-      ProviderScope.containerOf(tester.element(find.byType(TimerPage)))
+      container(tester)
           .read(myActiveTimersProvider.notifier)
           .apply(
             pausedB.copyWith(status: TimerStatus.completed, updatedAt: clock),
@@ -4068,9 +4091,106 @@ void main() {
       await tester.pumpAndSettle();
 
       // 일시정지한 A가 더 나중에 시작했어도 실행 중인 C로 돌아간다
-      expect(timerChip('b'), findsNothing);
-      expect(selected(tester, 'c'), isTrue);
+      expect(page('b'), findsNothing);
+      expect(shown(tester), 'c');
       expect(title('C 작업'), findsOneWidget);
+      expect(_clockText(tester), '00:20:00');
+    });
+
+    testWidgets('타이머가 늘거나 줄어도 보이던 타이머의 쪽에 머물고 쪽 순서는 최근에 시작한 순이다', (
+      tester,
+    ) async {
+      final pausedA = runningA.copyWith(
+        status: TimerStatus.paused,
+        elapsedTime: 10 * 60,
+      );
+      await pumpLive(tester, [pausedA, pausedB]);
+      await swipe(tester, forward: true);
+      expect(shown(tester), 'a');
+
+      // 다른 기기에서 더 나중에 시작한 일시정지 D가 생겨 첫 쪽에 든다
+      final pausedD = makeTimer(
+        id: 'd',
+        status: TimerStatus.paused,
+        startedAt: DateTime.utc(2026, 11, 9, 10, 8),
+        allocatedDuration: 25 * 60,
+      ).copyWith(title: 'D 작업', updatedAt: clock);
+      final timers = container(tester).read(myActiveTimersProvider.notifier);
+      timers.apply(pausedD);
+      // 넘기는 애니메이션 없이 다음 프레임에 A의 쪽에 있다
+      await tester.pump();
+      await tester.pump();
+      expect(shown(tester), 'a');
+      await tester.pumpAndSettle();
+
+      expect(
+        container(
+          tester,
+        ).read(myActiveTimersProvider).value!.map((timer) => timer.id),
+        ['d', 'b', 'a'],
+      );
+      expect(shown(tester), 'a');
+      expect(title('A 작업'), findsOneWidget);
+      expect(tester.getSemantics(indicator()).label, '타이머 3/3');
+
+      // 앞 쪽의 B가 빠져도 A에 머문다
+      timers.apply(
+        pausedB.copyWith(status: TimerStatus.completed, updatedAt: clock),
+      );
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), 'a');
+      expect(title('A 작업'), findsOneWidget);
+      await swipe(tester, forward: false);
+      expect(shown(tester), 'd');
+    });
+
+    testWidgets('다른 곳에서 골라 넘어가는 중에 사용자가 넘기면 사용자가 넘긴 쪽의 타이머를 고른다', (
+      tester,
+    ) async {
+      final pausedA = runningA.copyWith(
+        status: TimerStatus.paused,
+        elapsedTime: 10 * 60,
+      );
+      await pumpLive(tester, [pausedA, pausedB, runningC]);
+      // 쪽은 B, A, C 순서다
+      expect(shown(tester), 'c');
+
+      container(tester).read(focusedTimerIdProvider.notifier).focus('b');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      final width = tester.getSize(gallery()).width;
+      await tester.drag(gallery(), Offset(-width * 0.9, 0));
+      await tester.pumpAndSettle();
+
+      expect(shown(tester), 'c');
+      expect(container(tester).read(activeTimerProvider).value?.id, 'c');
+      expect(title('C 작업'), findsOneWidget);
+    });
+
+    testWidgets('넘겨도 각 타이머의 남은 시간은 서버 기준 진행 그대로다', (tester) async {
+      await pumpLive(tester, [runningA, pausedB]);
+
+      // 넘기는 중에는 두 쪽이 함께 보인다
+      final width = tester.getSize(gallery()).width;
+      final gesture = await tester.startGesture(tester.getCenter(gallery()));
+      await gesture.moveBy(const Offset(20, 0));
+      await gesture.moveBy(Offset(width * 0.3, 0));
+      await tester.pump();
+      final dials = tester
+          .widgetList<TimerDial>(
+            find.descendant(of: gallery(), matching: find.byType(TimerDial)),
+          )
+          .map((dial) => dial.remaining);
+      expect(
+        dials,
+        unorderedEquals([
+          const Duration(minutes: 15),
+          const Duration(minutes: 20),
+        ]),
+      );
+      await gesture.up();
+      await tester.pumpAndSettle();
     });
 
     group('두 타이머의 시간이 끝나면', () {
@@ -4084,34 +4204,43 @@ void main() {
         elapsedTime: 0,
       );
 
-      testWidgets('두 칩 모두 00:00:00을 에러 색으로 보이고 가장 최근에 시작한 B를 보인다', (
-        tester,
-      ) async {
+      testWidgets('두 쪽 모두 다이얼을 에러 색으로 보이고 가장 최근에 시작한 B를 보인다', (tester) async {
         await pumpLive(tester, [expiredA, expiredB]);
 
         final error = Theme.of(
           tester.element(find.byType(TimerDashboard)),
         ).colorScheme.error;
-        for (final id in ['a', 'b']) {
-          final time = inChip(id, find.text('00:00:00'));
-          expect(time, findsOneWidget);
-          expect(tester.widget<Text>(time).style?.color, error);
-        }
-        expect(selected(tester, 'b'), isTrue);
+        expect(shown(tester), 'b');
+        expect(dial(tester).color, error);
+        expect(dial(tester).remaining, Duration.zero);
         expect(title('B 작업'), findsOneWidget);
         expect(inDashboard(find.text('시간 종료')), findsOneWidget);
+
+        await swipe(tester, forward: true);
+        expect(shown(tester), 'a');
+        expect(dial(tester).color, error);
+        expect(dial(tester).remaining, Duration.zero);
       });
 
       testWidgets('완료·연장은 고른 타이머에 보내고 휴식도 시작할 수 있다', (tester) async {
         await pumpLive(tester, [expiredA, expiredB]);
-        await tapChip(tester, 'a');
+        await swipe(tester, forward: true);
 
         expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
         await tester.tap(_dashboardFabByIcon(Icons.add));
         await tester.pumpAndSettle();
         expect(repository.calls.take(2), ['list', 'update:a']);
+        // 연장해 다시 시작한 A는 가장 최근에 시작한 타이머라 첫 쪽으로 옮기고 그 쪽에 머문다
+        expect(shown(tester), 'a');
+        expect(
+          container(
+            tester,
+          ).read(myActiveTimersProvider).value!.map((timer) => timer.id),
+          ['a', 'b'],
+        );
 
-        await tapChip(tester, 'b');
+        await swipe(tester, forward: true);
+        expect(shown(tester), 'b');
         await tester.tap(_dashboardFabByIcon(Icons.check));
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(FilledButton, '완료'));
@@ -4130,29 +4259,28 @@ void main() {
       );
       await pumpLive(tester, [expiredA, pausedB]);
       // 시간이 끝났어도 실행 중인 A가 기본이다
-      expect(selected(tester, 'a'), isTrue);
+      expect(shown(tester), 'a');
       expect(inDashboard(find.text('시간 종료')), findsOneWidget);
 
       await tester.tap(_dashboardFabByIcon(Icons.coffee));
       await tester.pumpAndSettle();
       expect(inDashboard(find.text('휴식')), findsOneWidget);
-      expect(timerChip('a'), findsNothing);
+      expect(gallery(), findsNothing);
 
       await tester.tap(_dashboardFabByIcon(Icons.stop));
       await tester.pumpAndSettle();
 
-      expect(selected(tester, 'a'), isTrue);
+      expect(shown(tester), 'a');
       expect(title('A 작업'), findsOneWidget);
       expect(inDashboard(find.text('시간 종료')), findsOneWidget);
       expect(_dashboardFabByIcon(Icons.add), findsOneWidget);
-      expect(inChip('b', find.byIcon(Icons.pause)), findsOneWidget);
       expect(repository.calls, ['list']);
     });
 
     testWidgets('고른 타이머의 시간이 끝났으면 5분 연장을 그 타이머에 보낸다', (tester) async {
       final expiredB = pausedB.copyWith(elapsedTime: 25 * 60);
       await pumpLive(tester, [runningA, expiredB]);
-      await tapChip(tester, 'b');
+      await swipe(tester, forward: false);
 
       expect(inDashboard(find.text('시간 종료')), findsOneWidget);
       await tester.tap(_dashboardFabByIcon(Icons.add));
@@ -4162,106 +4290,278 @@ void main() {
       expect(repository.updated?.allocatedDuration, 30 * 60);
     });
 
-    testWidgets('창 폭이 600을 넘나들어도 고른 타이머가 그대로다', (tester) async {
-      await pumpLive(tester, [runningA, pausedB], size: const Size(360, 800));
-      await tapChip(tester, 'b');
+    group('이전·다음 버튼과 방향키', () {
+      testWidgets('넓은 화면은 이전·다음 버튼으로 넘기고 끝 쪽의 버튼은 막는다', (tester) async {
+        await pumpLive(tester, [
+          runningA,
+          pausedB,
+        ], size: const Size(1024, 800));
+        expect(shown(tester), 'a');
+        expect(tester.widget<IconButton>(next()).onPressed, isNull);
 
-      tester.view.physicalSize = const Size(1024, 800);
-      await tester.pumpAndSettle();
-      expect(find.byType(TimerHistoryList), findsOneWidget);
-      expect(selected(tester, 'b'), isTrue);
-      expect(title('B 작업'), findsOneWidget);
+        await tester.tap(previous());
+        await tester.pumpAndSettle();
 
-      tester.view.physicalSize = const Size(360, 800);
-      await tester.pumpAndSettle();
-      expect(title('B 작업'), findsOneWidget);
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+        expect(tester.widget<IconButton>(previous()).onPressed, isNull);
+
+        await tester.tap(next());
+        await tester.pumpAndSettle();
+
+        expect(shown(tester), 'a');
+        expect(title('A 작업'), findsOneWidget);
+      });
+
+      testWidgets('좁은 휴대폰 화면에는 이전·다음 버튼이 없다', (tester) async {
+        await pumpLive(tester, [runningA, pausedB], size: const Size(360, 800));
+
+        expect(gallery(), findsOneWidget);
+        expect(previous(), findsNothing);
+        expect(next(), findsNothing);
+      });
+
+      testWidgets('데스크톱은 좁은 창에도 이전·다음 버튼을 둔다', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        await pumpLive(tester, [runningA, pausedB], size: const Size(360, 800));
+
+        expect(previous(), findsOneWidget);
+        await tester.tap(previous());
+        await tester.pumpAndSettle();
+        expect(shown(tester), 'b');
+        debugDefaultTargetPlatformOverride = null;
+      });
+
+      testWidgets('갤러리에 초점이 있으면 왼쪽·오른쪽 방향키로 넘긴다', (tester) async {
+        await pumpLive(tester, [runningA, pausedB]);
+        await tester.tap(gallery());
+        await tester.pumpAndSettle();
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pumpAndSettle();
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pumpAndSettle();
+        expect(shown(tester), 'b');
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.pumpAndSettle();
+        expect(shown(tester), 'a');
+        expect(title('A 작업'), findsOneWidget);
+      });
     });
 
-    testWidgets('좁은 화면에서 칩이 많으면 옆으로 굴리고 넘치지 않는다', (tester) async {
-      final timers = [
-        for (var i = 0; i < 5; i++)
-          makeTimer(
-            id: 't$i',
-            status: TimerStatus.paused,
-            startedAt: DateTime.utc(2026, 11, 9, 10, i),
-            allocatedDuration: 25 * 60,
-          ).copyWith(title: '아주 긴 작업 이름 $i번이 칩 안에서 잘린다'),
-      ];
-      await pumpLive(tester, timers, size: const Size(360, 640));
+    group('다른 곳에서 고르면 갤러리가 따라 넘어간다', () {
+      testWidgets('목록에서 재개하면 그 타이머를 고르고 갤러리가 그 쪽으로 넘어간다', (tester) async {
+        await pumpLive(
+          tester,
+          [runningA, pausedB],
+          history: [pausedB, runningA],
+        );
+        // A를 넘겨 골라 둔다
+        await swipe(tester, forward: false);
+        await swipe(tester, forward: true);
+        expect(shown(tester), 'a');
 
-      expect(tester.takeException(), isNull);
-      final row = find.ancestor(
-        of: timerChip('t0'),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is SingleChildScrollView &&
-              widget.scrollDirection == Axis.horizontal,
-        ),
-      );
-      expect(row, findsOneWidget);
-      // 새 타이머 칩은 굴리지 않아도 보이고, 마지막 타이머 칩은 굴려야 보인다
-      expect(tester.getRect(addChip()).right, lessThanOrEqualTo(360));
-      expect(tester.getRect(timerChip('t0')).left, greaterThan(360));
+        await tester.tap(
+          find.descendant(
+            of: _historyItem('b'),
+            matching: find.byTooltip('재개'),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.drag(row, const Offset(-2000, 0));
-      await tester.pumpAndSettle();
-      expect(tester.getRect(timerChip('t0')).right, lessThanOrEqualTo(360));
-      await tapChip(tester, 't0');
-      expect(title('아주 긴 작업 이름 0번이 칩 안에서 잘린다'), findsOneWidget);
-      await tester.tap(addChip());
-      await tester.pumpAndSettle();
-      expect(find.text('새 작업 시작'), findsOneWidget);
+        expect(repository.calls, ['list', 'resume:b']);
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.pause), findsOneWidget);
+      });
+
+      testWidgets('목록에서 연장하면 그 타이머를 고르고 갤러리가 그 쪽으로 넘어간다', (tester) async {
+        final expiredB = pausedB.copyWith(elapsedTime: 25 * 60);
+        await pumpLive(
+          tester,
+          [runningA, expiredB],
+          history: [expiredB, runningA],
+        );
+        // A를 넘겨 골라 둔다
+        await swipe(tester, forward: false);
+        await swipe(tester, forward: true);
+        expect(shown(tester), 'a');
+
+        await tester.tap(
+          find.descendant(
+            of: _historyItem('b'),
+            matching: find.byTooltip('5분 연장'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(repository.calls.take(2), ['list', 'update:b']);
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+      });
+
+      testWidgets('좁은 화면의 목록 시트에서 재개해도 갤러리가 그 쪽으로 넘어간다', (tester) async {
+        await pumpLive(
+          tester,
+          [runningA, pausedB],
+          size: const Size(360, 800),
+          history: [pausedB, runningA],
+        );
+        await swipe(tester, forward: false);
+        await swipe(tester, forward: true);
+        expect(shown(tester), 'a');
+        await tester.tap(find.byTooltip('타이머 목록'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: _historyItem('b'),
+            matching: find.byTooltip('재개'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tapAt(const Offset(180, 20));
+        await tester.pumpAndSettle();
+
+        expect(repository.calls, ['list', 'resume:b']);
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+      });
+
+      testWidgets('새 타이머 칩은 다른 타이머가 실행 중이어도 새 작업 시작을 열고 시작한 타이머의 쪽으로 넘어간다', (
+        tester,
+      ) async {
+        await pumpLive(tester, [runningA, pausedB]);
+        await swipe(tester, forward: false);
+        expect(shown(tester), 'b');
+        repository.respond = (timerId, status) => makeTimer(
+          id: 'new',
+          status: status,
+          startedAt: clock,
+          allocatedDuration: 25 * 60,
+        ).copyWith(title: '새 작업', updatedAt: clock);
+
+        await tester.tap(addChip());
+        await tester.pumpAndSettle();
+        expect(find.text('새 작업 시작'), findsOneWidget);
+        await tester.enterText(find.widgetWithText(TextField, '작업명'), '새 작업');
+        await tester.tap(find.widgetWithText(FilledButton, '시작'));
+        await tester.pumpAndSettle();
+
+        expect(repository.calls, ['list', 'create']);
+        expect(shown(tester), 'new');
+        expect(title('새 작업'), findsOneWidget);
+        expect(tester.getSemantics(indicator()).label, '타이머 1/3');
+      });
     });
 
-    testWidgets('새 타이머 칩은 다른 타이머가 실행 중이어도 새 작업 시작을 열고 시작한 타이머를 보인다', (
-      tester,
-    ) async {
-      await pumpLive(tester, [runningA, pausedB]);
-      await tapChip(tester, 'b');
-      repository.respond = (timerId, status) => makeTimer(
-        id: 'c',
-        status: status,
-        startedAt: clock,
-        allocatedDuration: 25 * 60,
-      ).copyWith(title: 'C 작업', updatedAt: clock);
+    group('화면 크기', () {
+      testWidgets('창 폭이 600을 넘나들어도 고른 타이머의 쪽이 그대로다', (tester) async {
+        await pumpLive(tester, [runningA, pausedB], size: const Size(360, 800));
+        await swipe(tester, forward: false);
 
-      await tester.tap(addChip());
-      await tester.pumpAndSettle();
-      expect(find.text('새 작업 시작'), findsOneWidget);
-      await tester.enterText(find.widgetWithText(TextField, '작업명'), 'C 작업');
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+        tester.view.physicalSize = const Size(1024, 800);
+        await tester.pumpAndSettle();
+        expect(find.byType(TimerHistoryList), findsOneWidget);
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
 
-      expect(repository.calls, ['list', 'create']);
-      expect(timerChip('c'), findsOneWidget);
-      expect(selected(tester, 'c'), isTrue);
-      expect(title('C 작업'), findsOneWidget);
+        tester.view.physicalSize = const Size(360, 800);
+        await tester.pumpAndSettle();
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+      });
+
+      testWidgets('좁은 화면에서 타이머가 많아도 넘치지 않고 새 타이머 칩이 화면 안에 있다', (tester) async {
+        final timers = [
+          for (var i = 0; i < 5; i++)
+            makeTimer(
+              id: 't$i',
+              status: TimerStatus.paused,
+              startedAt: DateTime.utc(2026, 11, 9, 10, i),
+              allocatedDuration: 25 * 60,
+            ).copyWith(title: '아주 긴 작업 이름 $i번이 제목 칸에서 잘린다'),
+        ];
+        await pumpLive(tester, timers, size: const Size(360, 640));
+
+        expect(tester.takeException(), isNull);
+        expect(shown(tester), 't4');
+        final add = tester.getRect(addChip());
+        expect(add.left, greaterThanOrEqualTo(0));
+        expect(add.right, lessThanOrEqualTo(360));
+        for (var i = 0; i < 4; i++) {
+          await swipe(tester, forward: true);
+        }
+        expect(shown(tester), 't0');
+        expect(title('아주 긴 작업 이름 0번이 제목 칸에서 잘린다'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(addChip());
+        await tester.pumpAndSettle();
+        expect(find.text('새 작업 시작'), findsOneWidget);
+      });
+
+      testWidgets('가로 휴대폰은 갤러리를 왼쪽에 두고 새 타이머 칩은 오른쪽 칸 맨 위에서 굴리지 않는다', (
+        tester,
+      ) async {
+        await pumpLive(tester, [runningA, pausedB], size: const Size(800, 360));
+
+        expect(tester.takeException(), isNull);
+        final dashboard = tester.getRect(find.byType(TimerDashboard));
+        final galleryRect = tester.getRect(gallery());
+        final clockRect = tester.getRect(find.byType(DigitalClock));
+        expect(galleryRect.right, lessThan(clockRect.left));
+        expect(galleryRect.center.dx, lessThan(dashboard.center.dx));
+        final addRect = tester.getRect(addChip());
+        expect(addRect.left, greaterThan(galleryRect.right));
+        expect(addRect.top, lessThan(clockRect.top));
+        expect(
+          find.ancestor(
+            of: addChip(),
+            matching: find.byType(SingleChildScrollView),
+          ),
+          findsNothing,
+        );
+
+        await swipe(tester, forward: false);
+        expect(shown(tester), 'b');
+        expect(title('B 작업'), findsOneWidget);
+        expect(tester.getRect(addChip()), addRect);
+      });
     });
 
-    testWidgets('휴식 중에는 칩 줄을 숨기고 휴식을 끝내면 다시 보인다', (tester) async {
+    testWidgets('휴식 중에는 갤러리와 새 타이머 칩을 숨기고 휴식을 끝내면 다시 보인다', (tester) async {
       final pausedA = runningA.copyWith(
         status: TimerStatus.paused,
         elapsedTime: 10 * 60,
       );
       await pumpLive(tester, [pausedA, pausedB]);
-      expect(timerChip('a'), findsOneWidget);
+      expect(gallery(), findsOneWidget);
 
       await tester.tap(_dashboardFabByIcon(Icons.coffee));
       await tester.pumpAndSettle();
 
       expect(inDashboard(find.text('휴식')), findsOneWidget);
-      expect(timerChip('a'), findsNothing);
+      expect(gallery(), findsNothing);
+      expect(indicator(), findsNothing);
+      expect(previous(), findsNothing);
       expect(addChip(), findsNothing);
 
       await tester.tap(_dashboardFabByIcon(Icons.stop));
       await tester.pumpAndSettle();
-      expect(timerChip('a'), findsOneWidget);
+      expect(gallery(), findsOneWidget);
+      expect(shown(tester), 'b');
       expect(addChip(), findsOneWidget);
     });
 
     testWidgets('고른 타이머가 일시정지여도 다른 타이머가 실행 중이면 휴식 버튼이 없다', (tester) async {
       await pumpLive(tester, [runningA, pausedB]);
-      await tapChip(tester, 'b');
+      await swipe(tester, forward: false);
 
       expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
       expect(_dashboardFabByIcon(Icons.coffee), findsNothing);

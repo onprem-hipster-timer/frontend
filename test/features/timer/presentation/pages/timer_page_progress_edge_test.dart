@@ -12,6 +12,7 @@ import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import '../../../../helpers/timer_gallery_finders.dart';
 
 /// 실제 1초 틱([timerTickerProvider])으로 센 대시보드 시계가 화면 변화에도 서버 기준 진행을 잃지 않는지
 void main() {
@@ -89,9 +90,10 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  Future<void> tapChip(WidgetTester tester, String id) async {
-    await tester.tap(find.byKey(ValueKey('timer-chip-$id')));
-    await tester.pump();
+  /// 갤러리를 넘겨 [id] 타이머를 고른다. 쪽은 최근에 시작한 B, A 순서다
+  Future<void> swipeTo(WidgetTester tester, String id) async {
+    await swipeTimerGallery(tester, forward: id == 'a');
+    expect(shownTimerPage(tester), id);
   }
 
   testWidgets('타이머를 오가며 골라도 어느 쪽의 진행도 처음으로 돌아가지 않는다', (tester) async {
@@ -104,13 +106,13 @@ void main() {
     await tick(tester, 3);
     expect(clockText(tester), '00:14:57');
 
-    await tapChip(tester, 'b');
+    await swipeTo(tester, 'b');
     expect(clockText(tester), '00:20:00');
     await tick(tester, 2);
     expect(clockText(tester), '00:20:00');
 
     // 다시 고른 순간부터 그동안 흐른 시간을 반영한다
-    await tapChip(tester, 'a');
+    await swipeTo(tester, 'a');
     expect(clockText(tester), '00:14:55');
     await tick(tester, 1);
     expect(clockText(tester), '00:14:54');

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
@@ -167,8 +169,9 @@ const _sideControlsMinWidth = 232.0;
 /// 다이얼, 작업 제목, 디지털 시계, 상태 캡션, 제어 버튼을 위에서부터 둡니다. 다이얼이 남는 높이를 모두 씁니다.
 /// 높이 400 미만에 폭이 높이의 1.5배 이상인 칸(가로 휴대폰)은 다이얼을 왼쪽에 두고 나머지를 오른쪽에 둡니다.
 /// 휴식 중이면 휴식을, 아니면 고른 활성 타이머([activeTimerProvider])를 보여 주고, 다이얼은 남은 시간만 보여 줍니다.
-/// 활성 타이머가 있으면 맨 위에 활성 타이머 칩 줄을 둡니다. 둘 이상이면 타이머마다 칩을 두고 누른 타이머를 보여 주며,
-/// 끝에 '새 타이머' 칩으로 다른 타이머가 도는 중에도 새 작업을 시작합니다. 휴식 중에는 칩 줄이 없습니다.
+/// 활성 타이머가 둘 이상이면 다이얼 자리에 타이머마다 한 쪽씩 다이얼을 둔 갤러리([_TimerGallery])를 두고,
+/// 보이는 쪽의 타이머를 고릅니다. 활성 타이머가 있으면 굴리지 않는 '새 타이머' 칩으로 다른 타이머가 도는 중에도
+/// 새 작업을 시작합니다. 휴식 중에는 갤러리와 '새 타이머' 칩이 없습니다.
 /// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌어 각각의 시간을 고릅니다. 휴식은 서버에 보내지 않고 바로 시작합니다.
 class TimerDashboard extends ConsumerStatefulWidget {
   const TimerDashboard({super.key});
@@ -224,18 +227,26 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     final myTimers = ref.watch(myActiveTimersProvider).value ?? const [];
     // 보이는 타이머가 일시정지여도 시간이 남은 채 실행 중인 다른 내 타이머가 있으면 휴식 버튼을 두지 않는다
     final breakBlocked = blocksBreak(myTimers, now);
+    final galleryShown = breakSession == null && myTimers.length >= 2;
+    // 갤러리의 다른 쪽도 서버 기준 시각으로 1초마다 센다
+    final pageNow = galleryShown
+        ? ref.watch(serverNowProvider).value ?? now
+        : now;
 
     final timeUp =
         breakSession == null &&
         activeTimer != null &&
         (remaining == Duration.zero || isTimeUp(activeTimer, now));
-    final dialColor = breakSession != null || (idle && _breakSelected)
-        ? theme.colorScheme.tertiary
-        : timeUp
+    Color timerColor(TimerRead timer, {required bool timeUp}) => timeUp
         ? theme.colorScheme.error
-        : activeTimer?.status == TimerStatus.paused
+        : timer.status == TimerStatus.paused
         ? theme.colorScheme.primary.withValues(alpha: 0.5)
         : theme.colorScheme.primary;
+    final dialColor = breakSession != null || (idle && _breakSelected)
+        ? theme.colorScheme.tertiary
+        : activeTimer == null
+        ? theme.colorScheme.primary
+        : timerColor(activeTimer, timeUp: timeUp);
 
     final caption = breakSession != null
         ? (breakOver ? '휴식 종료' : null)
@@ -277,12 +288,33 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 color: dialColor,
               );
 
-        final chips = breakSession == null && myTimers.isNotEmpty
-            ? _ActiveTimerChips(
+        final gallery = galleryShown
+            ? _TimerGallery(
                 timers: myTimers,
                 focusedId: activeTimer?.id,
-                starting: controllerState.isLoading,
-                onAdd: () => _showStartTimerDialog(context, ref),
+                arrows: _showGalleryArrows(context),
+                onFocus: (timerId) =>
+                    ref.read(focusedTimerIdProvider.notifier).focus(timerId),
+                pageBuilder: (timer) {
+                  if (timer.id == activeTimer?.id) return dial;
+                  return TimerDial(
+                    remaining: displayRemaining(timer, pageNow),
+                    face: dialFaceFor(
+                      Duration(seconds: timer.allocatedDuration),
+                    ),
+                    color: timerColor(timer, timeUp: isTimeUp(timer, pageNow)),
+                  );
+                },
+              )
+            : null;
+
+        final addTimer = breakSession == null && myTimers.isNotEmpty
+            ? ActionChip(
+                avatar: const Icon(Icons.add),
+                label: const Text('새 타이머'),
+                onPressed: controllerState.isLoading
+                    ? null
+                    : () => _showStartTimerDialog(context, ref),
               )
             : null;
 
@@ -382,17 +414,28 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Row(
               children: [
-                Expanded(child: dial),
+                Expanded(child: gallery ?? dial),
                 const SizedBox(width: 16),
                 SizedBox(
                   width: controlsWidth,
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [?chips, if (chips != null) gap, ...controls],
+                  child: Column(
+                    children: [
+                      if (addTimer != null)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: addTimer,
+                        ),
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: controls,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
@@ -407,9 +450,11 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           ),
           child: Column(
             children: [
-              ?chips,
-              if (chips != null) gap,
-              Expanded(child: dial),
+              if (addTimer != null) ...[
+                Align(alignment: Alignment.centerRight, child: addTimer),
+                gap,
+              ],
+              Expanded(child: gallery ?? dial),
               gap,
               ...controls,
             ],
@@ -521,6 +566,17 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     }
   }
 
+  /// 넓은 화면이나 웹·데스크톱이면 갤러리에 이전·다음 버튼을 둔다
+  static bool _showGalleryArrows(BuildContext context) =>
+      kIsWeb ||
+      MediaQuery.sizeOf(context).width >= _wideLayoutMinWidth ||
+      switch (defaultTargetPlatform) {
+        TargetPlatform.linux ||
+        TargetPlatform.macOS ||
+        TargetPlatform.windows => true,
+        _ => false,
+      };
+
   /// 보이는 타이머를 [timerId]로 묶어 둔다. 명령으로 기본 타이머가 바뀌어도 대시보드가 다른 타이머로 넘어가지 않는다
   void _keepFocus(String timerId) =>
       ref.read(focusedTimerIdProvider.notifier).focus(timerId);
@@ -574,99 +630,197 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
   }
 }
 
-/// 대시보드 맨 위의 활성 타이머 칩 줄
+/// 활성 타이머 갤러리
 ///
-/// [timers]가 둘 이상이면 타이머마다 제목, 남은 시간, 진행 중·일시정지 아이콘을 담은 칩을 두고,
-/// 누르면 그 타이머를 대시보드가 보이게 고른다. 타이머 칩은 폭이 모자라면 옆으로 굴린다.
-/// 오른쪽 끝의 '새 타이머' 칩은 굴리지 않고 늘 보이며 [onAdd]로 새 작업 시작을 연다.
-class _ActiveTimerChips extends ConsumerWidget {
-  const _ActiveTimerChips({
+/// [timers](최근에 시작한 순)마다 한 쪽씩 [pageBuilder]로 그려 옆으로 넘기고, 보이는 쪽이 [focusedId] 타이머다.
+/// 넘기면 [onFocus]로 그 타이머를 고르고, [focusedId]가 다른 곳에서 바뀌면 그 쪽으로 넘어간다.
+/// 타이머가 늘거나 줄어도 보이던 타이머의 쪽을 그대로 보인다.
+/// 아래에 쪽 표시를 두고, [arrows]면 그 양옆에 이전·다음 버튼을 둔다. 갤러리에 초점이 있으면 왼쪽·오른쪽 방향키로 넘긴다.
+class _TimerGallery extends StatefulWidget {
+  const _TimerGallery({
     required this.timers,
     required this.focusedId,
-    required this.starting,
-    required this.onAdd,
+    required this.arrows,
+    required this.onFocus,
+    required this.pageBuilder,
   });
 
   final List<TimerRead> timers;
-
-  /// 대시보드가 보이는 타이머 id
   final String? focusedId;
-
-  /// 새 타이머를 시작하는 중. 그동안 '새 타이머'를 누를 수 없다
-  final bool starting;
-  final VoidCallback onAdd;
+  final bool arrows;
+  final ValueChanged<String> onFocus;
+  final Widget Function(TimerRead timer) pageBuilder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final now =
-        ref.watch(serverNowProvider).value ??
-        ref.watch(serverClockProvider).now();
+  State<_TimerGallery> createState() => _TimerGalleryState();
+}
 
-    return Row(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+class _TimerGalleryState extends State<_TimerGallery> {
+  late final _controller = PageController(initialPage: _focusedIndex);
+  final _focusNode = FocusNode(debugLabel: 'timer-gallery');
+
+  /// 보이는 쪽의 타이머 id
+  late String? _shownId = widget.focusedId;
+
+  /// 코드로 쪽을 옮기는 중. 그사이 지나는 쪽은 고르지 않는다
+  bool _moving = false;
+
+  int get _focusedIndex => math.max(
+    0,
+    widget.timers.indexWhere((timer) => timer.id == widget.focusedId),
+  );
+
+  @override
+  void didUpdateWidget(_TimerGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final listChanged = !listEquals(
+      [for (final timer in oldWidget.timers) timer.id],
+      [for (final timer in widget.timers) timer.id],
+    );
+    if (listChanged || widget.focusedId != _shownId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// 보이던 타이머의 쪽으로 바로 옮긴 뒤, 고른 타이머가 다르면 그 쪽으로 넘긴다
+  Future<void> _sync() async {
+    if (!mounted || !_controller.hasClients || _moving) return;
+    final timers = widget.timers;
+    final targetId = widget.focusedId;
+    _moving = true;
+    try {
+      final shown = timers.indexWhere((timer) => timer.id == _shownId);
+      if (shown >= 0 && shown != _controller.page?.round()) {
+        _controller.jumpToPage(shown);
+      }
+      final target = _focusedIndex;
+      if (target != _controller.page?.round()) {
+        await _controller.animateToPage(
+          target,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } finally {
+      _moving = false;
+    }
+    if (!mounted || !_controller.hasClients) return;
+    final page = _controller.page!.round();
+    if (page < widget.timers.length) _shownId = widget.timers[page].id;
+    if (_shownId == widget.focusedId) return;
+    if (widget.focusedId != targetId) {
+      // 옮기는 사이 다른 곳에서 또 골랐다
+      _sync();
+    } else if (_shownId != null) {
+      // 옮기는 사이 사용자가 넘겼다
+      widget.onFocus(_shownId!);
+    }
+  }
+
+  void _onPageChanged(int index) {
+    if (_moving) return;
+    _shownId = widget.timers[index].id;
+    widget.onFocus(_shownId!);
+  }
+
+  /// [index] 쪽의 타이머를 고른다. 쪽은 [didUpdateWidget]에서 넘긴다
+  void _go(int index) {
+    if (index < 0 || index >= widget.timers.length) return;
+    widget.onFocus(widget.timers[index].id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final timers = widget.timers;
+    final index = _focusedIndex;
+
+    final pages = GestureDetector(
+      onTap: _focusNode.requestFocus,
+      child: PageView.builder(
+        key: const ValueKey('timer-gallery'),
+        controller: _controller,
+        itemCount: timers.length,
+        onPageChanged: _onPageChanged,
+        findChildIndexCallback: (key) {
+          final found = timers.indexWhere(
+            (timer) => key == ValueKey('timer-page-${timer.id}'),
+          );
+          return found < 0 ? null : found;
+        },
+        itemBuilder: (context, i) => KeyedSubtree(
+          key: ValueKey('timer-page-${timers[i].id}'),
+          child: widget.pageBuilder(timers[i]),
+        ),
+      ),
+    );
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+            _go(index - 1),
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+            _go(index + 1),
+      },
+      child: Focus(
+        focusNode: _focusNode,
+        child: Column(
+          children: [
+            Expanded(child: pages),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (timers.length >= 2)
-                  for (final timer in timers)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        key: ValueKey('timer-chip-${timer.id}'),
-                        showCheckmark: false,
-                        selected: timer.id == focusedId,
-                        avatar: Icon(
-                          timer.status == TimerStatus.running
-                              ? Icons.play_arrow
-                              : Icons.pause,
-                          semanticLabel: timer.status == TimerStatus.running
-                              ? '진행 중'
-                              : '일시정지',
-                        ),
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 120),
-                              child: Text(
-                                timer.title ??
-                                    timer.todo?.title ??
-                                    timer.schedule?.title ??
-                                    '알 수 없는 작업',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                if (widget.arrows)
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    tooltip: '이전 타이머',
+                    onPressed: index > 0 ? () => _go(index - 1) : null,
+                  ),
+                Semantics(
+                  key: const ValueKey('timer-gallery-indicator'),
+                  container: true,
+                  label: '타이머 ${index + 1}/${timers.length}',
+                  child: ExcludeSemantics(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < timers.length; i++)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: i == index
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              formatDuration(displayRemaining(timer, now)),
-                              style: TextStyle(
-                                fontFamily: 'monospace',
-                                color: isTimeUp(timer, now)
-                                    ? theme.colorScheme.error
-                                    : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                        onSelected: (_) => ref
-                            .read(focusedTimerIdProvider.notifier)
-                            .focus(timer.id),
-                      ),
+                          ),
+                      ],
                     ),
+                  ),
+                ),
+                if (widget.arrows)
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: '다음 타이머',
+                    onPressed: index < timers.length - 1
+                        ? () => _go(index + 1)
+                        : null,
+                  ),
               ],
             ),
-          ),
+          ],
         ),
-        ActionChip(
-          avatar: const Icon(Icons.add),
-          label: const Text('새 타이머'),
-          onPressed: starting ? null : onAdd,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1240,7 +1394,8 @@ const _historyItemButtonWidth = 48.0;
 /// 타이머 히스토리 항목
 ///
 /// RUNNING/PAUSED일 때 실시간 남은 시간을, 끝난 타이머는 경과 시간을 표시하고, 일시정지·재개·완료 버튼을 제공합니다.
-/// 집중 시간이 끝난 타이머는 일시정지·재개 대신 연장 버튼을 둡니다. 내 타이머는 맨 뒤에 공유 범위 버튼을 둡니다.
+/// 집중 시간이 끝난 타이머는 일시정지·재개 대신 연장 버튼을 둡니다. 재개·연장하면 그 타이머를 대시보드가 보이게 고릅니다.
+/// 내 타이머는 맨 뒤에 공유 범위 버튼을 둡니다.
 /// 버튼까지 한 줄에 두면 제목 자리가 모자란 폭이면 버튼을 아래 줄로 내립니다.
 class TimerHistoryItem extends ConsumerWidget {
   final TimerRead timer;
@@ -1270,6 +1425,10 @@ class TimerHistoryItem extends ConsumerWidget {
       }
     }
   }
+
+  /// 재개·연장한 타이머를 대시보드가 보이게 고른다
+  void _focus(WidgetRef ref) =>
+      ref.read(focusedTimerIdProvider.notifier).focus(timer.id);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1322,9 +1481,12 @@ class TimerHistoryItem extends ConsumerWidget {
             onPressed: () => _runTimerAction(
               context,
               ref,
-              action: () => ref
-                  .read(timerControllerProvider.notifier)
-                  .extendTimer(timerId: timer.id, by: _extendBy),
+              action: () {
+                _focus(ref);
+                return ref
+                    .read(timerControllerProvider.notifier)
+                    .extendTimer(timerId: timer.id, by: _extendBy);
+              },
               errorLabel: '연장',
             ),
             tooltip: '5분 연장',
@@ -1354,9 +1516,12 @@ class TimerHistoryItem extends ConsumerWidget {
             onPressed: () => _runTimerAction(
               context,
               ref,
-              action: () => ref
-                  .read(timerControllerProvider.notifier)
-                  .resumeTimer(timerId: timer.id),
+              action: () {
+                _focus(ref);
+                return ref
+                    .read(timerControllerProvider.notifier)
+                    .resumeTimer(timerId: timer.id);
+              },
               errorLabel: '재개',
             ),
             tooltip: '재개',
