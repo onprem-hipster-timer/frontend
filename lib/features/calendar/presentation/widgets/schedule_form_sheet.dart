@@ -103,127 +103,88 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
         ? ref.watch(updateScheduleMutation).isPending
         : ref.watch(createScheduleMutation).isPending;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 헤더
-              Text(
-                widget.existingSchedule != null ? '일정 수정' : '새 일정',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // 제목 입력
-              TextFormField(
-                controller: _titleController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: '제목',
-                  hintText: '일정 제목을 입력하세요',
-                  prefixIcon: Icon(Icons.title),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return '제목을 입력해주세요';
-                  }
-                  return null;
-                },
-                textInputAction: TextInputAction.next,
-              ),
-
-              const SizedBox(height: 16),
-
-              // 종일 토글
-              SwitchListTile(
-                title: const Text('종일'),
-                subtitle: Text(
-                  _isAllDay ? '하루 종일 일정으로 설정됩니다' : '시간을 지정할 수 있습니다',
-                  style: theme.textTheme.bodySmall,
-                ),
-                value: _isAllDay,
-                onChanged: (value) {
-                  setState(() {
-                    _isAllDay = value;
-                    if (_isAllDay) {
-                      // 종일로 설정하면 시간을 00:00과 23:59로 조정
-                      final startDate = DateTime(
-                        _startTime.year,
-                        _startTime.month,
-                        _startTime.day,
-                      );
-                      _startTime = startDate;
-                      _endTime = DateTime(
-                        _endTime.year,
-                        _endTime.month,
-                        _endTime.day,
-                        23,
-                        59,
-                      );
-                    }
-                  });
-                },
-                contentPadding: EdgeInsets.zero,
-              ),
-
-              const SizedBox(height: 16),
-
-              AppPickerField(
-                label: '시작',
-                icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
-                value: _format(_startTime),
-                onTap: () => _selectDateTime(context, isStartTime: true),
-              ),
-
-              const SizedBox(height: 16),
-
-              AppPickerField(
-                label: '종료',
-                icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
-                value: _format(_endTime),
-                onTap: () => _selectDateTime(context, isStartTime: false),
-                errorText: !_isAllDay && _endTime.isBefore(_startTime)
-                    ? '종료 시간은 시작 시간보다 늦어야 합니다'
-                    : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              // 설명 입력
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: '설명 (선택사항)',
-                  hintText: '일정에 대한 메모를 작성하세요',
-                  prefixIcon: Icon(Icons.notes),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 3,
-                textInputAction: TextInputAction.newline,
-              ),
-
-              const SizedBox(height: 32),
-
-              AppFormActionBar(
-                submitLabel: widget.existingSchedule != null ? '수정' : '저장',
-                onSubmit: _handleSubmit,
-                busy: isLoading,
-              ),
-
-              // 키보드 여백
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
+    return AppFormSheet(
+      title: widget.existingSchedule != null ? '일정 수정' : '새 일정',
+      formKey: _formKey,
+      actions: AppFormActionBar(
+        submitLabel: widget.existingSchedule != null ? '수정' : '저장',
+        onSubmit: _handleSubmit,
+        busy: isLoading,
       ),
+      children: [
+        TextFormField(
+          controller: _titleController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '제목',
+            hintText: '일정 제목을 입력하세요',
+            prefixIcon: Icon(Icons.title),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '제목을 입력해주세요';
+            }
+            return null;
+          },
+          textInputAction: TextInputAction.next,
+        ),
+        SwitchListTile(
+          title: const Text('종일'),
+          subtitle: Text(
+            _isAllDay ? '하루 종일 일정으로 설정됩니다' : '시간을 지정할 수 있습니다',
+            style: theme.textTheme.bodySmall,
+          ),
+          value: _isAllDay,
+          onChanged: (value) {
+            setState(() {
+              _isAllDay = value;
+              if (_isAllDay) {
+                // 종일로 설정하면 시간을 00:00과 23:59로 조정
+                final startDate = DateTime(
+                  _startTime.year,
+                  _startTime.month,
+                  _startTime.day,
+                );
+                _startTime = startDate;
+                _endTime = DateTime(
+                  _endTime.year,
+                  _endTime.month,
+                  _endTime.day,
+                  23,
+                  59,
+                );
+              }
+            });
+          },
+          contentPadding: EdgeInsets.zero,
+        ),
+        AppPickerField(
+          label: '시작',
+          icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
+          value: _format(_startTime),
+          onTap: () => _selectDateTime(context, isStartTime: true),
+        ),
+        AppPickerField(
+          label: '종료',
+          icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
+          value: _format(_endTime),
+          onTap: () => _selectDateTime(context, isStartTime: false),
+          errorText: !_isAllDay && _endTime.isBefore(_startTime)
+              ? '종료 시간은 시작 시간보다 늦어야 합니다'
+              : null,
+        ),
+        TextFormField(
+          controller: _descriptionController,
+          decoration: const InputDecoration(
+            labelText: '설명 (선택사항)',
+            hintText: '일정에 대한 메모를 작성하세요',
+            prefixIcon: Icon(Icons.notes),
+            alignLabelWithHint: true,
+          ),
+          maxLines: 3,
+          textInputAction: TextInputAction.newline,
+        ),
+      ],
     );
   }
 

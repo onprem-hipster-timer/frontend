@@ -91,78 +91,29 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         ? ref.watch(updateTodoMutation).isPending
         : ref.watch(createTodoMutation).isPending;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 헤더
-              _buildHeader(theme),
-
-              const SizedBox(height: 24),
-
-              // 할 일 제목 입력
-              _buildTitleField(),
-
-              const SizedBox(height: 20),
-
-              // 설명 입력
-              _buildDescriptionField(),
-
-              const SizedBox(height: 20),
-
-              // 상태 선택
-              _buildStatusSelector(theme),
-
-              const SizedBox(height: 20),
-
-              // 마감일 선택
-              AppPickerField(
-                label: '마감일',
-                icon: Icons.calendar_today,
-                value: _selectedDeadline == null
-                    ? null
-                    : '${_selectedDeadline!.year}년 ${_selectedDeadline!.month}월 ${_selectedDeadline!.day}일',
-                placeholder: '선택 안 함',
-                onTap: () => _selectDeadline(context),
-                onClear: () => setState(() => _selectedDeadline = null),
-              ),
-
-              const SizedBox(height: 24),
-
-              // 태그 선택
-              _buildTagSelector(theme),
-
-              const SizedBox(height: 32),
-
-              // 버튼 영역
-              AppFormActionBar(
-                submitLabel: _isEditMode ? '수정' : '생성',
-                onSubmit: _handleSubmit,
-                busy: isLoading,
-              ),
-            ],
-          ),
-        ),
+    return AppFormSheet(
+      title: _isEditMode ? '할 일 수정' : '새 할 일 만들기',
+      formKey: _formKey,
+      actions: AppFormActionBar(
+        submitLabel: _isEditMode ? '수정' : '생성',
+        onSubmit: _handleSubmit,
+        busy: isLoading,
       ),
-    );
-  }
-
-  /// 헤더 (제목과 핸들)
-  Widget _buildHeader(ThemeData theme) {
-    return Column(
       children: [
-        // 제목
-        Text(
-          _isEditMode ? '할 일 수정' : '새 할 일 만들기',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        _buildTitleField(),
+        _buildDescriptionField(),
+        _buildStatusSelector(theme),
+        AppPickerField(
+          label: '마감일',
+          icon: Icons.calendar_today,
+          value: _selectedDeadline == null
+              ? null
+              : '${_selectedDeadline!.year}년 ${_selectedDeadline!.month}월 ${_selectedDeadline!.day}일',
+          placeholder: '선택 안 함',
+          onTap: () => _selectDeadline(context),
+          onClear: () => setState(() => _selectedDeadline = null),
         ),
+        _buildTagSelector(theme),
       ],
     );
   }

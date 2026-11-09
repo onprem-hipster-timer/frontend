@@ -77,47 +77,19 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       _selectedGroupId = widget.defaultGroupId ?? availableGroups.first.groupId;
     }
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // 내부 콘텐츠 크기만큼만 높이 차지
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(theme),
-              const SizedBox(height: 24),
-              _buildNameField(),
-              const SizedBox(height: 20),
-              _buildGroupSelector(theme, availableGroups),
-              const SizedBox(height: 24),
-              _buildColorPicker(theme),
-              const SizedBox(height: 32),
-              AppFormActionBar(
-                submitLabel: _isEditMode ? '수정' : '생성',
-                onSubmit: _handleSubmit,
-                busy: isLoading,
-              ),
-            ],
-          ),
-        ),
+    return AppFormSheet(
+      title: _isEditMode ? '태그 수정' : '새 태그 만들기',
+      formKey: _formKey,
+      actions: AppFormActionBar(
+        submitLabel: _isEditMode ? '수정' : '생성',
+        onSubmit: _handleSubmit,
+        busy: isLoading,
       ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    return Center(
-      child: Column(
-        children: [
-          Text(
-            _isEditMode ? '태그 수정' : '새 태그 만들기',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+      children: [
+        _buildNameField(),
+        _buildGroupSelector(theme, availableGroups),
+        _buildColorPicker(theme),
+      ],
     );
   }
 

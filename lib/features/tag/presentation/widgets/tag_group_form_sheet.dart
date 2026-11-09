@@ -55,58 +55,18 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         ? ref.watch(updateTagGroupMutation).isPending
         : ref.watch(createTagGroupMutation).isPending;
 
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 헤더
-            _buildHeader(theme, isEditMode),
-
-            const SizedBox(height: 24),
-
-            // 그룹 이름 입력
-            _buildNameField(),
-
-            const SizedBox(height: 20),
-
-            // 설명 입력
-            _buildDescriptionField(),
-
-            const SizedBox(height: 24),
-
-            // 색상 선택
-            _buildColorPicker(theme),
-
-            const SizedBox(height: 32),
-
-            // 버튼 영역
-            AppFormActionBar(
-              submitLabel: isEditMode ? '수정' : '생성',
-              onSubmit: _handleSubmit,
-              busy: isLoading,
-            ),
-          ],
-        ),
+    return AppFormSheet(
+      title: isEditMode ? '그룹 수정' : '새 그룹 만들기',
+      formKey: _formKey,
+      actions: AppFormActionBar(
+        submitLabel: isEditMode ? '수정' : '생성',
+        onSubmit: _handleSubmit,
+        busy: isLoading,
       ),
-    );
-  }
-
-  /// 헤더 (제목과 핸들)
-  Widget _buildHeader(ThemeData theme, bool isEditMode) {
-    return Column(
       children: [
-        // 제목
-        Text(
-          isEditMode ? '그룹 수정' : '새 그룹 만들기',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        _buildNameField(),
+        _buildDescriptionField(),
+        _buildColorPicker(theme),
       ],
     );
   }

@@ -7,7 +7,6 @@ max_file_lines lib/features/calendar/presentation/pages/schedule_detail_page.dar
 max_file_lines lib/features/calendar/presentation/widgets/calendar_view.dart - 718
 max_file_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart - 690
 max_file_lines lib/features/tag/presentation/pages/tag_management_page.dart - 495
-max_file_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart - 536
 max_file_lines lib/features/timer/presentation/pages/timer_page.dart - 1747
 max_file_lines lib/features/timer/presentation/providers/timer_providers.dart - 682
 max_file_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart - 1137
@@ -68,11 +67,9 @@ no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildColorPicker -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildFormSheet -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildGroupSelector -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildHeader -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildNameField -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildColorPicker -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildDescriptionField -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildHeader -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildNameField -
 no_widget_helper_methods lib/features/timer/presentation/pages/timer_page.dart _TimerHistoryListState._buildHistoryList -
 no_widget_helper_methods lib/features/timer/presentation/widgets/timer_share_sheet.dart _TimerShareSheetState._friendList -
@@ -81,7 +78,6 @@ no_widget_helper_methods lib/features/todo/presentation/pages/todo_dashboard_pag
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildAppBar -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildTodoList -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildHeader -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTagGroup -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTags -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildStatusSelector -

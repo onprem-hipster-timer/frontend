@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 #### UI
+- 할 일·태그·태그 그룹·일정 폼 시트도 `AppFormSheet` 틀(제목, 칸 사이 20, 버튼 줄)을 쓴다
 - 스크린리더가 할 일 줄·타임존의 선택 상태, 활동 요약의 수와 이름을 함께, 태그 관리 버튼의 대상(예: '업무 그룹에 태그 추가')을 읽는다
 - 새 작업 시작을 다이얼로그에서 하단 시트(`AppFormSheet`)로 바꾼다. 칸은 '작업 제목', '할 일', '집중 시간'(칩 + '직접 입력' 또는 '정한 시간')이고, 할 일은 할 일 고르기 화면에서 고른다
 - 할 일 트리 한 줄을 표시만 하는 `TodoTreeTileView`와 고칠 수 있는 `EditableTodoTreeTile`(끌어 옮기기·선택·펼침·상태·수정·삭제·타이머)로 나눈다
