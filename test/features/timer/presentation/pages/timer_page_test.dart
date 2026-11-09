@@ -3542,6 +3542,7 @@ void main() {
           payload: TimerWsEventPayload(action: 'pause', timer: running),
         ),
       );
+      await tester.pump(sharedTimersRefetchDelay);
       await tester.pumpAndSettle();
 
       expect(reads, 2);

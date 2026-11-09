@@ -632,6 +632,7 @@ void main() {
         failing = false;
         if (recover == '친구 활동 이벤트') {
           activity.add(event(timer));
+          await tester.pump(sharedTimersRefetchDelay);
           await tester.pumpAndSettle();
         } else {
           await tester.tap(myTab());

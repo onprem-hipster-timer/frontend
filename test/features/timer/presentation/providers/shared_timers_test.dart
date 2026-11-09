@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/network/server_clock.dart';
@@ -60,31 +61,33 @@ void main() {
       expect(repository.calls, ['listShared']);
     });
 
-    test('친구의 타이머 이벤트가 오면 다시 읽는다', () async {
-      var reads = 0;
-      repository.listShared = () async {
-        reads++;
-        return [shared('read-$reads')];
-      };
-      await watch();
+    test('친구의 타이머 이벤트가 오면 잠시 뒤 다시 읽는다', () {
+      fakeAsync((async) {
+        var reads = 0;
+        repository.listShared = () async {
+          reads++;
+          return [shared('read-$reads')];
+        };
+        container.listen(sharedTimersProvider, (_, _) {});
+        async.flushMicrotasks();
 
-      activity.add(
-        TimerWsTimerEvent(
-          id: 'msg-1',
-          type: 'timer.updated',
-          fromUser: 'friend-1',
-          timestamp: DateTime.utc(2026, 11, 9),
-          payload: TimerWsEventPayload(
-            action: 'start',
-            timer: shared('read-1'),
+        activity.add(
+          TimerWsTimerEvent(
+            id: 'msg-1',
+            type: 'timer.updated',
+            fromUser: 'friend-1',
+            timestamp: DateTime.utc(2026, 11, 9),
+            payload: TimerWsEventPayload(
+              action: 'start',
+              timer: shared('read-1'),
+            ),
           ),
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
-      final timers = await container.read(sharedTimersProvider.future);
+        );
+        async.elapse(sharedTimersRefetchDelay);
 
-      expect(reads, 2);
-      expect(timers.single.id, 'read-2');
+        expect(reads, 2);
+        expect(container.read(sharedTimersProvider).value?.single.id, 'read-2');
+      });
     });
   });
 

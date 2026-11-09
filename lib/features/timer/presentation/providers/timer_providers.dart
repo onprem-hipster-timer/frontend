@@ -297,15 +297,23 @@ Future<List<TimerRead>> timerHistory(Ref ref) async {
   }
 }
 
+/// 친구의 타이머 이벤트가 이만큼 더 오지 않으면 [sharedTimersProvider]를 다시 읽는다
+const sharedTimersRefetchDelay = Duration(milliseconds: 500);
+
 /// 다른 사용자가 나에게 공유한 타이머. 최근에 시작한 순
 ///
-/// 친구의 타이머 이벤트([timerFriendActivityProvider])가 오면 다시 읽는다.
+/// 친구의 타이머 이벤트([timerFriendActivityProvider])가 오면 마지막 이벤트 뒤
+/// [sharedTimersRefetchDelay]를 기다려 한 번 다시 읽는다.
 ///
 /// 테스트: test/features/timer/presentation/providers/shared_timers_test.dart
 @riverpod
 Future<List<TimerRead>> sharedTimers(Ref ref) async {
+  Timer? refetch;
+  ref.onDispose(() => refetch?.cancel());
   ref.listen(timerFriendActivityProvider, (_, next) {
-    if (next is AsyncData) ref.invalidateSelf();
+    if (next is! AsyncData) return;
+    refetch?.cancel();
+    refetch = Timer(sharedTimersRefetchDelay, ref.invalidateSelf);
   });
   final timers = await ref.watch(timerRepositoryProvider).listSharedTimers();
   return [...timers]..sort(
