@@ -384,4 +384,74 @@ void main() {
 
     expect(await c.read(myActiveTimersProvider.future), isEmpty);
   });
+
+  group('끝난 타이머', () {
+    test('응답을 기다리는 사이 다시 맞춘 목록에서 빠지면 더 나중 응답이 와도 되살리지 않는다', () async {
+      final c = await boot([_timer('t1', TimerStatus.running, minute: 1)]);
+      final gate = Completer<void>();
+      repository.gate = gate.future;
+      repository.respond = (id, status) =>
+          _timer(id, status, minute: 4, elapsed: 240);
+
+      final pause = controller(c).pauseTimer(timerId: 't1');
+      await pumpEventQueue();
+      expect(held(c, 't1').status, TimerStatus.paused);
+      // 다른 기기에서 끝내 다시 맞춘 목록에 없다
+      repository.listActive = () async => [];
+      await emit(const TimerWsConnected());
+      expect(c.read(myActiveTimersProvider).requireValue, isEmpty);
+
+      gate.complete();
+      await pause;
+      await pumpEventQueue();
+
+      expect(c.read(myActiveTimersProvider).requireValue, isEmpty);
+      expect(c.read(activeTimerProvider).value, isNull);
+    });
+
+    test('정지 이벤트를 받은 뒤 온 재개 응답은 updated_at이 나중이어도 되살리지 않는다', () async {
+      final c = await boot([
+        _timer('t1', TimerStatus.paused, minute: 1, elapsed: 60),
+      ]);
+      final gate = Completer<void>();
+      repository.gate = gate.future;
+      repository.respond = (id, status) =>
+          _timer(id, status, minute: 4, elapsed: 60, startedAt: _at(4));
+
+      final resume = controller(c).resumeTimer(timerId: 't1');
+      await pumpEventQueue();
+      await emit(
+        _event(
+          _timer('t1', TimerStatus.completed, minute: 3, elapsed: 60),
+          action: 'stop',
+        ),
+      );
+      gate.complete();
+      await resume;
+      await pumpEventQueue();
+
+      expect(c.read(myActiveTimersProvider).requireValue, isEmpty);
+      expect(
+        c.read(myActiveTimersProvider.notifier).timer('t1')!.status,
+        TimerStatus.completed,
+      );
+    });
+
+    test('사용자가 바뀌면 다시 맞추기로 끝난 것으로 본 타이머를 잊는다', () async {
+      final c = await boot([_timer('t1', TimerStatus.running, minute: 1)]);
+      repository.listActive = () async => [];
+      await emit(const TimerWsConnected());
+      expect(c.read(myActiveTimersProvider).requireValue, isEmpty);
+
+      repository.listActive = () async => [
+        _timer('t1', TimerStatus.running, minute: 2),
+      ];
+      c.read(_signedIn.notifier).set(_user('other'));
+      await pumpEventQueue();
+
+      expect((await c.read(myActiveTimersProvider.future)).map((t) => t.id), [
+        't1',
+      ]);
+    });
+  });
 }

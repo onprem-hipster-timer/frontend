@@ -34,11 +34,32 @@ void main() {
     expect(ledger.active, isEmpty);
   });
 
-  test('끝난 타이머 뒤에 더 나중 시각의 RUNNING이 오면 다시 활성이 된다', () {
+  test('끝난 타이머 뒤에 더 나중 시각의 RUNNING이 와도 다시 활성이 되지 않는다', () {
     ledger.apply(_timer('t1', TimerStatus.completed, updatedMinute: 1));
     ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 2));
+    ledger.applyPartial(_timer('t1', TimerStatus.paused, updatedMinute: 3));
+    ledger.resync([_timer('t1', TimerStatus.running, updatedMinute: 4)]);
 
-    expect(ledger.active.single.id, 't1');
+    expect(ledger.active, isEmpty);
+    expect(ledger['t1']!.status, TimerStatus.completed);
+  });
+
+  test('끝난 값은 가진 활성 값보다 이전 updated_at이어도 반영한다', () {
+    ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 5));
+    ledger.applyPartial(_timer('t1', TimerStatus.cancelled, updatedMinute: 4));
+
+    expect(ledger.active, isEmpty);
+    expect(ledger['t1']!.status, TimerStatus.cancelled);
+  });
+
+  test('끝난 타이머는 명령 응답 전에 먼저 보이지 않는다', () {
+    final held = _timer('t1', TimerStatus.completed, updatedMinute: 1);
+    ledger
+      ..apply(held)
+      ..showPending(held.copyWith(status: TimerStatus.paused));
+
+    expect(ledger.active, isEmpty);
+    expect(ledger['t1'], same(held));
   });
 
   test('빈 목록으로 다시 맞추면 활성 타이머가 모두 빠진다', () {
@@ -50,13 +71,46 @@ void main() {
     expect(ledger.active, isEmpty);
   });
 
-  test('다시 맞춘 뒤 목록에서 빠진 타이머의 늦은 이벤트는 다시 넣는다', () {
-    // 목록에 없는 것은 "지금은 활성이 아님"이지 삭제가 아니다
+  test('다시 맞춘 목록에 없어도 가진 적 없는 타이머의 늦은 이벤트는 넣는다', () {
+    // 목록을 받은 뒤에 만들어진 타이머는 목록에 없다
     ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
     ledger.resync([]);
-    ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 5));
+    ledger.applyPartial(_timer('t2', TimerStatus.running, updatedMinute: 5));
 
-    expect(ledger.active.single.id, 't1');
+    expect(ledger.active.single.id, 't2');
+  });
+
+  test('다시 맞춘 뒤 목록에서 빠진 타이머의 늦은 이벤트는 다시 넣지 않는다', () {
+    ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
+    ledger.resync([]);
+    ledger.apply(_timer('t1', TimerStatus.paused, updatedMinute: 5));
+    ledger.applyPartial(_timer('t1', TimerStatus.running, updatedMinute: 6));
+    ledger.resync([_timer('t1', TimerStatus.running, updatedMinute: 7)]);
+
+    expect(ledger.active, isEmpty);
+  });
+
+  test('다시 맞추기 목록에서 빠져 끝난 것으로 본 타이머는 최근 finishedLimit개까지만 기억한다', () {
+    const count = TimerLedger.finishedLimit + 1;
+    for (var i = 0; i < count; i++) {
+      ledger.apply(_timer('t$i', TimerStatus.running, updatedMinute: 1));
+    }
+    ledger.resync([]);
+
+    ledger
+      ..apply(_timer('t0', TimerStatus.running, updatedMinute: 2))
+      ..apply(_timer('t1', TimerStatus.running, updatedMinute: 2));
+
+    expect(ledger.active.map((t) => t.id), ['t0']);
+  });
+
+  test('끝난 상태를 받았다가 목록에서 빠진 타이머는 그 뒤 다시 맞추기에서도 끝난 채로 둔다', () {
+    ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
+    ledger.applyPartial(_timer('t1', TimerStatus.completed, updatedMinute: 2));
+    ledger.resync([]);
+    ledger.applyPartial(_timer('t1', TimerStatus.paused, updatedMinute: 3));
+
+    expect(ledger.active, isEmpty);
   });
 
   test('같은 타이머를 두 번 지워도 문제없다', () {
@@ -102,7 +156,7 @@ void main() {
     expect(ledger.active.single.todo, isNull);
   });
 
-  test('다시 맞추기로 목록에서 빠졌던 타이머의 이벤트는 다시 읽기를 요청한다', () {
+  test('다시 맞추기로 목록에서 빠졌던 타이머의 이벤트는 버리고 다시 읽기를 요청하지 않는다', () {
     ledger.apply(_read('t1', TimerStatus.running, updatedMinute: 1));
     ledger.resync([]);
 
@@ -110,8 +164,8 @@ void main() {
       _timer('t1', TimerStatus.running, updatedMinute: 5),
     );
 
-    expect(needsRead, isTrue);
-    expect(ledger.active.single.todo, isNull);
+    expect(needsRead, isFalse);
+    expect(ledger.active, isEmpty);
   });
 
   test('다시 맞추기 목록에 든 타이머는 그 뒤 이벤트에서 다시 읽지 않는다', () {

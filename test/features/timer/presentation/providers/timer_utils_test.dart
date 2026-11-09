@@ -81,6 +81,13 @@ void main() {
       expect(timerView({'t1': view}, listed), same(view));
     });
 
+    test('끝난 목록 값은 updated_at이 더 이전이어도 끝나지 않은 값 대신 보인다', () {
+      final view = timer(TimerStatus.paused, second: 2, history: 3);
+      final listed = timer(TimerStatus.completed, second: 1);
+
+      expect(timerView({'t1': view}, listed), same(listed));
+    });
+
     test('목록 값의 updated_at이 더 나중이면 목록 값을 보인다', () {
       final view = timer(TimerStatus.paused, history: 3);
       final listed = timer(TimerStatus.running, second: 1);

@@ -185,12 +185,12 @@ void main() {
       expect(ledger.active, isEmpty);
     });
 
-    test('목록에서 뺀 타이머라도 더 나중 이벤트는 다시 넣는다', () {
+    test('목록에서 뺀 타이머는 더 나중 이벤트여도 다시 넣지 않는다', () {
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 5));
       ledger.resync([]);
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 7));
 
-      expect(ledger.active.single.id, 't1');
+      expect(ledger.active, isEmpty);
     });
 
     test('목록의 타이머에도 updated_at 규칙을 쓴다', () {
