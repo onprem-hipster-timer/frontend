@@ -63,9 +63,6 @@ void main() {
   Finder sheet() => find.byType(BottomSheet);
   Finder radios() => find.byType(RadioGroup<VisibilityLevel>);
   Finder saveButton() => find.widgetWithText(FilledButton, '저장');
-  Finder emailField() => find.widgetWithText(TextField, '이메일');
-  Finder domainField() => find.widgetWithText(TextField, '도메인');
-  Finder chip(String label) => find.widgetWithText(InputChip, label);
   Finder friendTile(String name) => find.widgetWithText(CheckboxListTile, name);
   Finder progress() => find.descendant(
     of: sheet(),
@@ -100,19 +97,6 @@ void main() {
   );
 
   Future<void> save(WidgetTester tester) => tapInSheet(tester, saveButton());
-
-  /// [field]에 [text]를 적고 [tooltip] 버튼으로 더한다
-  Future<void> addEntry(
-    WidgetTester tester,
-    Finder field,
-    String text,
-    String tooltip,
-  ) async {
-    await tester.ensureVisible(field);
-    await tester.pumpAndSettle();
-    await tester.enterText(field, text);
-    await tapInSheet(tester, find.byTooltip(tooltip));
-  }
 
   group('저장하는 동안', () {
     testWidgets('저장을 연달아 눌러도 한 번만 보낸다', (tester) async {
@@ -200,7 +184,7 @@ void main() {
       repository.error = Exception('서버 오류');
 
       await open(tester);
-      await choose(tester, '전체 공개');
+      await choose(tester, '친구 공개');
       await save(tester);
       expect(sheet(), findsOneWidget);
 
@@ -213,7 +197,7 @@ void main() {
       expect(saves(), ['setVisibility:timer-1', 'setVisibility:timer-1']);
       expect(
         repository.visibilityUpdate,
-        const VisibilityUpdate(level: VisibilityLevel.public),
+        const VisibilityUpdate(level: VisibilityLevel.friends),
       );
       expect(sheet(), findsNothing);
       expect(find.text('공유 설정을 저장했습니다'), findsOneWidget);
@@ -268,9 +252,8 @@ void main() {
         reads++;
         if (reads == 1) throw Exception('네트워크 오류');
         return makeVisibility(
-          level: VisibilityLevel.allowedEmails,
-          allowedEmails: ['kim@example.com'],
-          allowedDomains: ['example.org'],
+          level: VisibilityLevel.selected,
+          allowedUserIds: ['friend-1'],
         );
       };
 
@@ -282,15 +265,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(reads, 2);
-      expect(chip('kim@example.com'), findsOneWidget);
-      expect(chip('example.org'), findsOneWidget);
+      expect(checked(tester, '영희'), isTrue);
       await save(tester);
       expect(
         repository.visibilityUpdate,
         const VisibilityUpdate(
-          level: VisibilityLevel.allowedEmails,
-          allowedEmails: ['kim@example.com'],
-          allowedDomains: ['example.org'],
+          level: VisibilityLevel.selected,
+          allowedUserIds: ['friend-1'],
         ),
       );
     });
@@ -320,10 +301,10 @@ void main() {
       expect(progress(), findsOneWidget);
       expect(find.text('공유 설정을 불러오지 못했습니다'), findsNothing);
 
-      third.complete(makeVisibility(level: VisibilityLevel.public));
+      third.complete(makeVisibility(level: VisibilityLevel.friends));
       await tester.pumpAndSettle();
 
-      expect(chosen(tester), VisibilityLevel.public);
+      expect(chosen(tester), VisibilityLevel.friends);
       expect(canSave(tester), isTrue);
     });
 
@@ -368,42 +349,6 @@ void main() {
       );
     });
 
-    testWidgets('이메일을 더한 뒤 전체 공개로 바꾸면 목록 없이 보낸다', (tester) async {
-      await open(tester);
-      await choose(tester, '이메일·도메인 지정');
-      await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
-      await addEntry(tester, domainField(), 'example.org', '도메인 추가');
-      await choose(tester, '전체 공개');
-      await save(tester);
-
-      expect(
-        repository.visibilityUpdate,
-        const VisibilityUpdate(level: VisibilityLevel.public),
-      );
-    });
-
-    testWidgets('저장된 이메일 지정에서 선택한 친구로 바꾸면 고른 친구만 보낸다', (tester) async {
-      repository.visibilityOf = (_) async => makeVisibility(
-        level: VisibilityLevel.allowedEmails,
-        allowedEmails: ['kim@example.com'],
-        allowedDomains: ['example.org'],
-      );
-
-      await open(tester);
-      await choose(tester, '선택한 친구');
-      expect(canSave(tester), isFalse);
-      await tapInSheet(tester, friendTile('철수'));
-      await save(tester);
-
-      expect(
-        repository.visibilityUpdate,
-        const VisibilityUpdate(
-          level: VisibilityLevel.selected,
-          allowedUserIds: ['friend-2'],
-        ),
-      );
-    });
-
     testWidgets('설정이 없던 타이머도 비공개로 저장하면 설정을 지운다', (tester) async {
       await open(tester);
       expect(chosen(tester), VisibilityLevel.private);
@@ -443,403 +388,6 @@ void main() {
       expect(chosen(tester), VisibilityLevel.selected);
       expect(checked(tester, '철수'), isTrue);
       expect(checked(tester, '영희'), isFalse);
-    });
-  });
-
-  group('입력 경계', () {
-    testWidgets('빈 칸이나 공백만 넣고 더하면 칩을 만들지 않는다', (tester) async {
-      await open(tester);
-      await choose(tester, '이메일·도메인 지정');
-
-      for (final (field, tooltip) in [
-        (emailField(), '이메일 추가'),
-        (domainField(), '도메인 추가'),
-      ]) {
-        for (final blank in ['', '   ']) {
-          await addEntry(tester, field, blank, tooltip);
-
-          expect(find.byType(InputChip), findsNothing, reason: tooltip);
-          expect(canSave(tester), isFalse, reason: tooltip);
-        }
-      }
-    });
-
-    testWidgets('도메인 앞뒤 공백은 지우고 더하고, 가운데 공백은 형식 오류다', (tester) async {
-      await open(tester);
-      await choose(tester, '이메일·도메인 지정');
-
-      await addEntry(tester, domainField(), 'exa mple.com', '도메인 추가');
-      expect(find.text('도메인 형식이 아닙니다 (예: example.com)'), findsOneWidget);
-      expect(find.byType(InputChip), findsNothing);
-
-      await addEntry(tester, domainField(), '  example.org  ', '도메인 추가');
-      expect(chip('example.org'), findsOneWidget);
-      expect(find.text('도메인 형식이 아닙니다 (예: example.com)'), findsNothing);
-    });
-
-    testWidgets('불러온 항목과 대소문자만 다른 이메일·도메인은 더하지 않는다', (tester) async {
-      repository.visibilityOf = (_) async => makeVisibility(
-        level: VisibilityLevel.allowedEmails,
-        allowedEmails: ['kim@example.com'],
-        allowedDomains: ['example.org'],
-      );
-
-      await open(tester);
-      await addEntry(tester, emailField(), 'KIM@EXAMPLE.COM', '이메일 추가');
-      await addEntry(tester, domainField(), 'Example.Org', '도메인 추가');
-
-      expect(find.byType(InputChip), findsNWidgets(2));
-      await save(tester);
-      expect(
-        repository.visibilityUpdate,
-        const VisibilityUpdate(
-          level: VisibilityLevel.allowedEmails,
-          allowedEmails: ['kim@example.com'],
-          allowedDomains: ['example.org'],
-        ),
-      );
-    });
-
-    testWidgets('도메인은 호스트 이름만 더하고 URL·와일드카드·경로·밑줄은 형식 오류다', (tester) async {
-      await open(tester);
-      await choose(tester, '이메일·도메인 지정');
-
-      for (final invalid in [
-        'https://example.com',
-        'example.com:8080',
-        '*.example.com',
-        'example.com/path',
-        'ex_ample.com',
-        '-example.com',
-        'example-.com',
-        'example..com',
-        '.example.com',
-        'example.com.',
-      ]) {
-        await addEntry(tester, domainField(), invalid, '도메인 추가');
-
-        expect(
-          find.text('도메인 형식이 아닙니다 (예: example.com)'),
-          findsOneWidget,
-          reason: invalid,
-        );
-        expect(find.byType(InputChip), findsNothing, reason: invalid);
-        expect(canSave(tester), isFalse, reason: invalid);
-      }
-
-      for (final valid in ['www.example.com', 'mail-1.example.co.kr']) {
-        await addEntry(tester, domainField(), valid, '도메인 추가');
-        expect(chip(valid), findsOneWidget, reason: valid);
-      }
-    });
-
-    testWidgets('이메일·도메인은 소문자로 바꿔 더하고 보낸다', (tester) async {
-      await open(tester);
-      await choose(tester, '이메일·도메인 지정');
-      await addEntry(tester, emailField(), 'Kim@Example.COM', '이메일 추가');
-      await addEntry(tester, domainField(), 'WWW.Example.Org', '도메인 추가');
-
-      expect(chip('kim@example.com'), findsOneWidget);
-      expect(chip('www.example.org'), findsOneWidget);
-
-      await save(tester);
-      expect(
-        repository.visibilityUpdate,
-        const VisibilityUpdate(
-          level: VisibilityLevel.allowedEmails,
-          allowedEmails: ['kim@example.com'],
-          allowedDomains: ['www.example.org'],
-        ),
-      );
-    });
-
-    testWidgets('불러온 대문자 항목은 소문자로 바꾸고 겹치는 항목을 빼서 보낸다', (tester) async {
-      repository.visibilityOf = (_) async => makeVisibility(
-        level: VisibilityLevel.allowedEmails,
-        allowedEmails: [
-          'Kim@Example.com',
-          'kim@example.com',
-          'lee@example.com',
-        ],
-        allowedDomains: ['Example.Org', 'example.org'],
-      );
-
-      await open(tester);
-      await save(tester);
-
-      expect(
-        repository.visibilityUpdate,
-        const VisibilityUpdate(
-          level: VisibilityLevel.allowedEmails,
-          allowedEmails: ['kim@example.com', 'lee@example.com'],
-          allowedDomains: ['example.org'],
-        ),
-      );
-    });
-
-    testWidgets('도메인 칸도 키보드의 완료로 더하고 칸을 비운다', (tester) async {
-      await open(tester);
-      await choose(tester, '이메일·도메인 지정');
-      await tester.ensureVisible(domainField());
-      await tester.pumpAndSettle();
-      await tester.enterText(domainField(), 'example.org');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pumpAndSettle();
-
-      expect(chip('example.org'), findsOneWidget);
-      expect(tester.widget<TextField>(domainField()).controller!.text, isEmpty);
-      expect(canSave(tester), isTrue);
-    });
-
-    group('칸에 적고 더하지 않은 값', () {
-      /// [field]에 [text]를 적기만 하고 더하지 않는다
-      Future<void> type(WidgetTester tester, Finder field, String text) async {
-        await tester.ensureVisible(field);
-        await tester.pumpAndSettle();
-        await tester.enterText(field, text);
-        await tester.pump();
-      }
-
-      testWidgets('저장하면 더한 항목 뒤에 더해 보낸다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
-        await type(tester, emailField(), 'lee@example.com');
-        await type(tester, domainField(), 'example.org');
-
-        await save(tester);
-
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(
-            level: VisibilityLevel.allowedEmails,
-            allowedEmails: ['kim@example.com', 'lee@example.com'],
-            allowedDomains: ['example.org'],
-          ),
-        );
-        expect(sheet(), findsNothing);
-        expect(find.text('공유 설정을 저장했습니다'), findsOneWidget);
-      });
-
-      for (final (label, field, text, emails, domains) in [
-        ('이메일', emailField, 'lee@example.com', ['lee@example.com'], <String>[]),
-        ('도메인', domainField, 'example.org', <String>[], ['example.org']),
-      ]) {
-        testWidgets('목록이 비어도 형식에 맞는 $label을 적으면 저장할 수 있고 그 값을 보낸다', (
-          tester,
-        ) async {
-          await open(tester);
-          await choose(tester, '이메일·도메인 지정');
-          expect(canSave(tester), isFalse);
-
-          await type(tester, field(), text);
-          expect(canSave(tester), isTrue);
-          await save(tester);
-
-          expect(
-            repository.visibilityUpdate,
-            VisibilityUpdate(
-              level: VisibilityLevel.allowedEmails,
-              allowedEmails: emails,
-              allowedDomains: domains,
-            ),
-          );
-          expect(sheet(), findsNothing);
-        });
-      }
-
-      testWidgets('형식이 맞지 않으면 저장하지 않고 칸에 알리며 시트에 머문다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
-        await type(tester, emailField(), 'lee@');
-
-        await save(tester);
-
-        expect(saves(), isEmpty);
-        expect(sheet(), findsOneWidget);
-        expect(find.text('이메일 형식이 아닙니다'), findsOneWidget);
-        expect(tester.widget<TextField>(emailField()).controller!.text, 'lee@');
-        expect(find.text('공유 설정을 저장했습니다'), findsNothing);
-
-        // 고치면 오류를 지우고 저장한다
-        await type(tester, emailField(), 'lee@example.com');
-        expect(find.text('이메일 형식이 아닙니다'), findsNothing);
-        await save(tester);
-
-        expect(saves(), ['setVisibility:timer-1']);
-        expect(repository.visibilityUpdate?.allowedEmails, [
-          'kim@example.com',
-          'lee@example.com',
-        ]);
-      });
-
-      testWidgets('목록이 비었고 칸의 값이 형식에 맞지 않으면 저장할 수 없다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-
-        await type(tester, emailField(), 'lee@');
-        await type(tester, domainField(), 'example');
-
-        expect(canSave(tester), isFalse);
-      });
-
-      testWidgets('대문자로 적은 값도 저장할 수 있고 소문자로 보낸다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-
-        await type(tester, emailField(), ' Lee@Example.COM ');
-        await type(tester, domainField(), 'Example.ORG');
-        expect(canSave(tester), isTrue);
-
-        await save(tester);
-
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(
-            level: VisibilityLevel.allowedEmails,
-            allowedEmails: ['lee@example.com'],
-            allowedDomains: ['example.org'],
-          ),
-        );
-      });
-
-      testWidgets('목록이 비었고 칸의 도메인이 URL이면 저장할 수 없다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-
-        await type(tester, domainField(), 'https://example.com');
-
-        expect(canSave(tester), isFalse);
-      });
-
-      testWidgets('이메일은 맞고 도메인이 틀리면 저장하지 않고, 고쳐 저장하면 이메일을 한 번만 보낸다', (
-        tester,
-      ) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await type(tester, emailField(), 'lee@example.com');
-        await type(tester, domainField(), 'example');
-
-        await save(tester);
-        expect(saves(), isEmpty);
-        expect(sheet(), findsOneWidget);
-        expect(find.text('도메인 형식이 아닙니다 (예: example.com)'), findsOneWidget);
-
-        await type(tester, domainField(), 'example.org');
-        await save(tester);
-
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(
-            level: VisibilityLevel.allowedEmails,
-            allowedEmails: ['lee@example.com'],
-            allowedDomains: ['example.org'],
-          ),
-        );
-        expect(sheet(), findsNothing);
-      });
-
-      testWidgets('더한 항목과 대소문자·앞뒤 공백만 다른 값은 겹쳐 보내지 않는다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
-        await addEntry(tester, domainField(), 'example.org', '도메인 추가');
-        await type(tester, emailField(), ' KIM@example.com ');
-        await type(tester, domainField(), '  Example.Org  ');
-
-        await save(tester);
-
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(
-            level: VisibilityLevel.allowedEmails,
-            allowedEmails: ['kim@example.com'],
-            allowedDomains: ['example.org'],
-          ),
-        );
-      });
-
-      testWidgets('저장이 실패한 뒤 다시 저장해도 칸에 적었던 값을 겹쳐 보내지 않는다', (tester) async {
-        repository.error = Exception('서버 오류');
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await type(tester, emailField(), 'lee@example.com');
-
-        await save(tester);
-        expect(sheet(), findsOneWidget);
-
-        repository.error = null;
-        await save(tester);
-        await tester.pump(const Duration(seconds: 5));
-        await tester.pumpAndSettle();
-
-        expect(saves(), ['setVisibility:timer-1', 'setVisibility:timer-1']);
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(
-            level: VisibilityLevel.allowedEmails,
-            allowedEmails: ['lee@example.com'],
-            allowedDomains: [],
-          ),
-        );
-        expect(sheet(), findsNothing);
-      });
-
-      testWidgets('공백만 적힌 칸은 무시하고 더한 항목만 보낸다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
-        await type(tester, domainField(), '   ');
-
-        expect(canSave(tester), isTrue);
-        await save(tester);
-
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(
-            level: VisibilityLevel.allowedEmails,
-            allowedEmails: ['kim@example.com'],
-            allowedDomains: [],
-          ),
-        );
-        expect(sheet(), findsNothing);
-      });
-
-      testWidgets('다른 범위로 저장하면 칸에 적은 값은 보내지 않는다', (tester) async {
-        await open(tester);
-        await choose(tester, '이메일·도메인 지정');
-        await type(tester, emailField(), 'lee@');
-        await choose(tester, '전체 공개');
-
-        await save(tester);
-
-        expect(
-          repository.visibilityUpdate,
-          const VisibilityUpdate(level: VisibilityLevel.public),
-        );
-        expect(sheet(), findsNothing);
-      });
-    });
-
-    testWidgets('칩을 모두 지우면 다시 저장할 수 없다', (tester) async {
-      repository.visibilityOf = (_) async => makeVisibility(
-        level: VisibilityLevel.allowedEmails,
-        allowedDomains: ['example.org'],
-      );
-
-      await open(tester);
-      expect(canSave(tester), isTrue);
-      await tapInSheet(
-        tester,
-        find.descendant(
-          of: chip('example.org'),
-          matching: find.byIcon(Icons.clear),
-        ),
-      );
-
-      expect(find.byType(InputChip), findsNothing);
-      expect(canSave(tester), isFalse);
     });
   });
 
@@ -933,23 +481,11 @@ void main() {
           await open(tester);
           expect(tester.takeException(), isNull);
 
-          for (final label in [
-            '친구 공개',
-            '선택한 친구',
-            '전체 공개',
-            '비공개',
-            '이메일·도메인 지정',
-          ]) {
+          for (final label in ['친구 공개', '비공개', '선택한 친구']) {
             await choose(tester, label);
             expect(tester.takeException(), isNull, reason: label);
           }
-          await addEntry(
-            tester,
-            emailField(),
-            'a-very-long-address-for-sharing@example-company.co.kr',
-            '이메일 추가',
-          );
-          await addEntry(tester, domainField(), 'example.org', '도메인 추가');
+          await tapInSheet(tester, friendTile('철수'));
           expect(tester.takeException(), isNull);
 
           await save(tester);
@@ -959,54 +495,9 @@ void main() {
           expect(
             repository.visibilityUpdate,
             const VisibilityUpdate(
-              level: VisibilityLevel.allowedEmails,
-              allowedEmails: [
-                'a-very-long-address-for-sharing@example-company.co.kr',
-              ],
-              allowedDomains: ['example.org'],
+              level: VisibilityLevel.selected,
+              allowedUserIds: ['friend-2'],
             ),
-          );
-        },
-      );
-    }
-
-    for (final (size, keyboard) in const [
-      (Size(360, 800), 336.0),
-      (Size(360, 560), 250.0),
-      (Size(844, 390), 180.0),
-    ]) {
-      testWidgets(
-        '${size.width.toInt()}x${size.height.toInt()}에서 키보드가 올라와도 입력 칸이 키보드에 가리지 않는다',
-        (tester) async {
-          setSize(tester, size);
-
-          await open(tester);
-          await choose(tester, '이메일·도메인 지정');
-          await tester.ensureVisible(emailField());
-          await tester.pumpAndSettle();
-          await tester.showKeyboard(emailField());
-          tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
-          await tester.pumpAndSettle();
-
-          expect(tester.takeException(), isNull);
-          expect(
-            tester.getRect(emailField()).bottom,
-            lessThanOrEqualTo(size.height - keyboard),
-          );
-
-          await tester.enterText(emailField(), 'kim@example.com');
-          await tester.testTextInput.receiveAction(TextInputAction.done);
-          await tester.pumpAndSettle();
-
-          expect(tester.takeException(), isNull);
-          expect(chip('kim@example.com'), findsOneWidget);
-
-          await tester.showKeyboard(domainField());
-          await tester.pumpAndSettle();
-
-          expect(
-            tester.getRect(domainField()).bottom,
-            lessThanOrEqualTo(size.height - keyboard),
           );
         },
       );

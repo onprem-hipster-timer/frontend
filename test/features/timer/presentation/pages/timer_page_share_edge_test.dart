@@ -321,7 +321,7 @@ void main() {
       repository
         ..listActive = (() async => [running])
         ..getOne = (timerId) async =>
-            running.copyWith(visibilityLevel: VisibilityLevel.public);
+            running.copyWith(visibilityLevel: VisibilityLevel.friends);
       var reads = 0;
       final container = await pumpLive(
         tester,
@@ -334,13 +334,13 @@ void main() {
 
       await tester.tap(dashboardShare());
       await tester.pumpAndSettle();
-      await chooseAndSave(tester, '전체 공개');
+      await chooseAndSave(tester, '친구 공개');
 
       expect(reads, greaterThan(before));
-      expect(iconOf(tester, dashboardShare()), Icons.public);
+      expect(iconOf(tester, dashboardShare()), Icons.group_outlined);
       expect(
         container.read(myActiveTimersProvider).value?.single.visibilityLevel,
-        VisibilityLevel.public,
+        VisibilityLevel.friends,
       );
     });
 

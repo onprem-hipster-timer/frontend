@@ -3503,7 +3503,7 @@ void main() {
     testWidgets('타이머 목록의 공유 버튼은 그 타이머의 공유 설정 시트를 연다', (tester) async {
       final repository = FakeTimerRepository()
         ..visibilityOf = (timerId) async =>
-            makeVisibility(timerId: timerId, level: VisibilityLevel.public);
+            makeVisibility(timerId: timerId, level: VisibilityLevel.friends);
       final completed = makeTimer(id: 'timer-2', status: TimerStatus.completed);
 
       await _pumpTimerPage(
@@ -3525,7 +3525,7 @@ void main() {
               find.byType(RadioGroup<VisibilityLevel>),
             )
             .groupValue,
-        VisibilityLevel.public,
+        VisibilityLevel.friends,
       );
     });
   });

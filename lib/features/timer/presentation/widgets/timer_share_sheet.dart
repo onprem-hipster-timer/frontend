@@ -29,41 +29,17 @@ class TimerShareButton extends StatelessWidget {
   }
 }
 
-/// 공유 범위 선택지
+/// 공유 범위 선택지. 타이머의 실시간 변경은 주인의 친구에게만 가므로 이 셋만 고른다
 const _options = [
   (level: VisibilityLevel.private, label: '비공개', description: '나만 봄'),
   (level: VisibilityLevel.friends, label: '친구 공개', description: '모든 친구'),
   (level: VisibilityLevel.selected, label: '선택한 친구', description: '고른 친구만'),
-  (
-    level: VisibilityLevel.allowedEmails,
-    label: '이메일·도메인 지정',
-    description: '인증된 이메일이 맞는 사용자만',
-  ),
-  (level: VisibilityLevel.public, label: '전체 공개', description: '로그인한 모든 사용자'),
 ];
-
-/// '@' 앞뒤가 있고 '@' 뒤 도메인에 점이 있는 이메일
-final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
-/// 점으로 이은 소문자 라벨(a-z·0-9·하이픈, 하이픈으로 시작·끝나지 않음)로 된 호스트 이름 (예: example.com)
-final _domainPattern = RegExp(
-  r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$',
-);
-
-/// 칸의 값을 앞뒤 공백을 지우고 소문자로 바꾼 것
-///
-/// 서버는 사용자 이메일·도메인과 그대로 비교하고, 로그인 이메일은 소문자다.
-String _normalized(TextEditingController field) =>
-    field.text.trim().toLowerCase();
-
-/// [entries]를 소문자로 바꾸고 겹치는 항목을 뺀 것. 순서는 처음 나온 대로
-List<String> _lowercased(List<String> entries) =>
-    {for (final entry in entries) entry.toLowerCase()}.toList();
 
 /// 내 타이머 [timer]의 공유 범위를 고르는 바텀 시트를 연다
 ///
 /// 지금 설정을 읽어 고른 상태로 보여 준다. 저장하면 비공개는 설정을 지우고(DELETE),
-/// 그 외는 그 범위가 쓰는 목록만 보낸다(PUT). 이메일·도메인 칸에 적고 더하지 않은 값도 더해 보낸다.
+/// 그 외는 그 범위가 쓰는 목록만 보낸다(PUT).
 /// 저장하면 시트를 닫고 그 타이머를 다시 읽어
 /// 대시보드와 타이머 목록에 반영한다. 저장에 실패하면 알리고 고른 값을 둔 채 머문다.
 ///
@@ -91,9 +67,6 @@ class _TimerShareSheet extends ConsumerStatefulWidget {
 }
 
 class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
-  final _email = TextEditingController();
-  final _domain = TextEditingController();
-
   /// 지금 설정을 읽는 중
   bool _loading = true;
 
@@ -106,22 +79,11 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
 
   /// 선택한 친구의 사용자 ID
   final _friendIds = <String>{};
-  final _emails = <String>[];
-  final _domains = <String>[];
-  String? _emailError;
-  String? _domainError;
 
   @override
   void initState() {
     super.initState();
     _load();
-  }
-
-  @override
-  void dispose() {
-    _email.dispose();
-    _domain.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -134,8 +96,6 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
         _loading = false;
         _level = visibility?.level ?? VisibilityLevel.private;
         _friendIds.addAll(visibility?.allowedUserIds ?? const []);
-        _emails.addAll(visibility?.allowedEmails ?? const []);
-        _domains.addAll(visibility?.allowedDomains ?? const []);
       });
     } catch (error) {
       if (!mounted) return;
@@ -162,16 +122,9 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
       if (_friendIds.contains(friend.userId)) friend.userId,
   ];
 
-  /// 선택한 친구는 친구를, 이메일·도메인은 항목을 하나 이상 골라야 저장한다
-  ///
-  /// 칸에 적고 더하지 않은 값도 형식에 맞으면 항목으로 본다.
+  /// 선택한 친구는 친구를 하나 이상 골라야 저장한다
   bool _canSave(List<FriendRead>? friends) => switch (_level) {
     VisibilityLevel.selected => _selectedFriendIds(friends).isNotEmpty,
-    VisibilityLevel.allowedEmails =>
-      _emails.isNotEmpty ||
-          _domains.isNotEmpty ||
-          _emailPattern.hasMatch(_normalized(_email)) ||
-          _domainPattern.hasMatch(_normalized(_domain)),
     VisibilityLevel.$unknown => false,
     _ => true,
   };
@@ -183,23 +136,12 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
       level: _level,
       allowedUserIds: _selectedFriendIds(friends),
     ),
-    VisibilityLevel.allowedEmails => VisibilityUpdate(
-      level: _level,
-      allowedEmails: _lowercased(_emails),
-      allowedDomains: _lowercased(_domains),
-    ),
     _ => VisibilityUpdate(level: _level),
   };
 
   Future<void> _save(List<FriendRead>? friends) async {
     // 다시 그리기 전에 연달아 누른 저장은 보내지 않는다
     if (_saving) return;
-    // 칸에 적고 더하지 않은 값도 더해 보낸다. 형식이 맞지 않으면 칸에 알리고 머문다
-    if (_level == VisibilityLevel.allowedEmails) {
-      _addEmail();
-      _addDomain();
-      if (_emailError != null || _domainError != null) return;
-    }
     final update = _update(friends);
     final timerId = widget.timer.id;
     // 저장하는 사이 시트가 닫혀도 결과를 알리고 반영한다
@@ -225,38 +167,6 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     messenger.showSnackBar(const SnackBar(content: Text('공유 설정을 저장했습니다')));
     await _reloadTimer(container, timerId);
   }
-
-  /// [field]의 값을 소문자로 바꿔 [pattern]에 맞으면 [entries]에 더하고 비운다. 이미 있으면(대소문자 무시) 더하지 않는다
-  ///
-  /// 맞지 않으면 [invalid]를 돌려준다.
-  String? _add(
-    TextEditingController field,
-    List<String> entries,
-    RegExp pattern,
-    String invalid,
-  ) {
-    final value = _normalized(field);
-    if (value.isEmpty) return null;
-    if (!pattern.hasMatch(value)) return invalid;
-    if (!entries.any((entry) => entry.toLowerCase() == value)) {
-      entries.add(value);
-    }
-    field.clear();
-    return null;
-  }
-
-  void _addEmail() => setState(
-    () => _emailError = _add(_email, _emails, _emailPattern, '이메일 형식이 아닙니다'),
-  );
-
-  void _addDomain() => setState(
-    () => _domainError = _add(
-      _domain,
-      _domains,
-      _domainPattern,
-      '도메인 형식이 아닙니다 (예: example.com)',
-    ),
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -320,7 +230,6 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
               ),
             ),
             if (friends != null) _friendList(friends),
-            if (_level == VisibilityLevel.allowedEmails) ..._emailFields(),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: !_saving && _canSave(friends?.value)
@@ -378,84 +287,6 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
                     ),
                 ],
               ),
-      ),
-    );
-  }
-
-  List<Widget> _emailFields() => [
-    const SizedBox(height: 8),
-    _entryField(
-      controller: _email,
-      label: '이메일',
-      hint: 'name@example.com',
-      error: _emailError,
-      tooltip: '이메일 추가',
-      keyboardType: TextInputType.emailAddress,
-      onAdd: _addEmail,
-      onEdit: () => _emailError = null,
-    ),
-    _entryChips(_emails),
-    const SizedBox(height: 16),
-    _entryField(
-      controller: _domain,
-      label: '도메인',
-      hint: 'example.com',
-      error: _domainError,
-      tooltip: '도메인 추가',
-      keyboardType: TextInputType.url,
-      onAdd: _addDomain,
-      onEdit: () => _domainError = null,
-    ),
-    _entryChips(_domains),
-  ];
-
-  /// 값을 적어 [onAdd]로 목록에 더하는 칸. 고치면 [onEdit]로 오류를 지우고 저장할 수 있는지 다시 본다
-  Widget _entryField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required String? error,
-    required String tooltip,
-    required TextInputType keyboardType,
-    required VoidCallback onAdd,
-    required VoidCallback onEdit,
-  }) {
-    return TextField(
-      controller: controller,
-      enabled: !_saving,
-      keyboardType: keyboardType,
-      autocorrect: false,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        errorText: error,
-        border: const OutlineInputBorder(),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.add),
-          tooltip: tooltip,
-          onPressed: _saving ? null : onAdd,
-        ),
-      ),
-      onChanged: (_) => setState(onEdit),
-      onSubmitted: (_) => onAdd(),
-    );
-  }
-
-  Widget _entryChips(List<String> entries) {
-    if (entries.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final entry in entries)
-            InputChip(
-              label: Text(entry),
-              isEnabled: !_saving,
-              onDeleted: () => setState(() => entries.remove(entry)),
-            ),
-        ],
       ),
     );
   }
