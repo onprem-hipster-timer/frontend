@@ -63,6 +63,7 @@ void main() {
     );
     expect(tester.getSize(surface).height, 40);
     expect(styleOf(tester).backgroundColor!.resolve({}), Colors.white);
+    expect(styleOf(tester).shape!.resolve({}), isA<StadiumBorder>());
   });
 
   testWidgets('공식 G 로고를 20×20으로, 왼쪽 12·로고 뒤 10 간격으로 그린다', (tester) async {

@@ -90,9 +90,7 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
               foregroundColor: colors.text,
               disabledForegroundColor: colors.text,
               side: BorderSide(color: colors.stroke),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
+              shape: const StadiumBorder(),
               textStyle: const TextStyle(
                 fontFamily: 'Google Sans',
                 fontWeight: FontWeight.w500,
