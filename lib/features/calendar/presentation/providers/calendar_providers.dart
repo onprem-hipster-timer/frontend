@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
@@ -19,8 +21,60 @@ part 'calendar_providers.g.dart';
 /// 뷰 타입, 선택된 날짜, 표시 설정 등을 관리합니다.
 @riverpod
 class CalendarSettings extends _$CalendarSettings {
+  static const _showHolidaysKey = 'calendar.showHolidays';
+  static const _highlightWeekendsKey = 'calendar.highlightWeekends';
+  static const _use24HourFormatKey = 'calendar.use24HourFormat';
+  static const _firstDayOfWeekKey = 'calendar.firstDayOfWeek';
+  static const _monthEventsPerDayKey = 'calendar.monthEventsPerDay';
+
+  /// 기기에 저장한 보기 설정을 읽어 시작한다
   @override
-  CalendarSettingsState build() => CalendarSettingsState.initial();
+  CalendarSettingsState build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    return CalendarSettingsState.initial().copyWith(
+      showHolidays: prefs.getBool(_showHolidaysKey) ?? true,
+      highlightWeekends: prefs.getBool(_highlightWeekendsKey) ?? true,
+      use24HourFormat: prefs.getBool(_use24HourFormatKey) ?? true,
+      firstDayOfWeek: prefs.getInt(_firstDayOfWeekKey) ?? DateTime.sunday,
+      monthEventsPerDay: prefs.getInt(_monthEventsPerDayKey),
+    );
+  }
+
+  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
+
+  void setShowHolidays(bool value) {
+    _prefs.setBool(_showHolidaysKey, value);
+    state = state.copyWith(showHolidays: value);
+  }
+
+  void setHighlightWeekends(bool value) {
+    _prefs.setBool(_highlightWeekendsKey, value);
+    state = state.copyWith(highlightWeekends: value);
+  }
+
+  void setUse24HourFormat(bool value) {
+    _prefs.setBool(_use24HourFormatKey, value);
+    state = state.copyWith(use24HourFormat: value);
+  }
+
+  /// 주 시작 요일을 바꾼다(1 = 월요일, 7 = 일요일). 보는 기간은 고른 날 기준으로 다시 잡는다
+  void setFirstDayOfWeek(int weekday) {
+    _prefs.setInt(_firstDayOfWeekKey, weekday);
+    state = state.copyWith(
+      firstDayOfWeek: weekday,
+      displayDate: periodStart(state.viewType, state.selectedDate, weekday),
+    );
+  }
+
+  /// 월 보기 칸에 보일 일정 수. null이면 칸 높이에 맞춘다
+  void setMonthEventsPerDay(int? count) {
+    if (count == null) {
+      _prefs.remove(_monthEventsPerDayKey);
+    } else {
+      _prefs.setInt(_monthEventsPerDayKey, count);
+    }
+    state = state.copyWith(monthEventsPerDay: count);
+  }
 
   /// 보기를 바꾼다. 고른 날이 든 기간을 보인다
   void setViewType(CalendarViewType viewType) {
@@ -67,16 +121,6 @@ class CalendarSettings extends _$CalendarSettings {
     state = state.copyWith(
       displayDate: shiftPeriod(state.viewType, state.displayDate, step),
     );
-  }
-
-  /// 24시간 형식 토글
-  void toggle24HourFormat() {
-    state = state.copyWith(use24HourFormat: !state.use24HourFormat);
-  }
-
-  /// 공휴일 표시 토글
-  void toggleShowHolidays() {
-    state = state.copyWith(showHolidays: !state.showHolidays);
   }
 }
 
@@ -193,6 +237,7 @@ Future<List<ScheduleRead>> filteredSchedules(Ref ref) async {
 @riverpod
 Future<List<HolidayItem>> currentHolidays(Ref ref) async {
   final settings = ref.watch(calendarSettingsProvider);
+  if (!settings.showHolidays) return const [];
   final displayDate = settings.displayDate;
 
   // 뷰 타입에 따라 필요한 연도 범위 결정

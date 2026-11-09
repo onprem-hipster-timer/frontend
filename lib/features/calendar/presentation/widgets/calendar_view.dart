@@ -3,6 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_appointment_builder.dart'
@@ -41,6 +42,9 @@ class CalendarViewWidget extends ConsumerStatefulWidget {
   @override
   ConsumerState<CalendarViewWidget> createState() => _CalendarViewWidgetState();
 }
+
+/// 월 보기 위쪽 요일 줄 높이(달력 기본값)
+const _monthViewHeaderHeight = 30.0;
 
 class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   late CalendarController _calendarController;
@@ -92,164 +96,183 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Stack(
-      children: [
-        SfCalendar(
-          controller: _calendarController,
-          dataSource: dataSource,
-          view: settings.viewType.toSfCalendarView(),
-          firstDayOfWeek: settings.firstDayOfWeek,
-          showNavigationArrow: false, // 커스텀 네비게이션 사용
-          showDatePickerButton: false,
-          showCurrentTimeIndicator: true,
-          allowViewNavigation: true,
-          allowDragAndDrop: true,
-          allowAppointmentResize: true,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 월 보기 칸 높이. 위쪽 요일 줄을 뺀 높이를 주 수로 나눈다
+        final cellHeight =
+            (constraints.maxHeight - _monthViewHeaderHeight) / monthWeeksInView;
+        final eventsPerDay =
+            settings.monthEventsPerDay ??
+            autoMonthEventsPerDay(
+              cellHeight: cellHeight,
+              textScale: MediaQuery.textScalerOf(context).scale(1),
+            );
+        return Stack(
+          children: [
+            SfCalendar(
+              controller: _calendarController,
+              dataSource: dataSource,
+              view: settings.viewType.toSfCalendarView(),
+              firstDayOfWeek: settings.firstDayOfWeek,
+              showNavigationArrow: false, // 커스텀 네비게이션 사용
+              showDatePickerButton: false,
+              showCurrentTimeIndicator: true,
+              allowViewNavigation: true,
+              allowDragAndDrop: true,
+              allowAppointmentResize: true,
 
-          // ============================================================
-          // 휴일 표시 설정
-          // ============================================================
-          monthCellBuilder: _buildMonthCell, // 월간 뷰 휴일 표시
-          specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
-          // ============================================================
-          // 콜백 설정
-          // ============================================================
-          onViewChanged: _onViewChanged,
-          onTap: _onCalendarTap,
-          onLongPress: _onCalendarLongPress,
-          onDragEnd: _onDragEnd,
-          onAppointmentResizeEnd: _onResizeEnd,
+              // ============================================================
+              // 휴일 표시 설정
+              // ============================================================
+              monthCellBuilder: _buildMonthCell, // 월간 뷰 휴일 표시
+              specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
+              // ============================================================
+              // 콜백 설정
+              // ============================================================
+              onViewChanged: _onViewChanged,
+              onTap: _onCalendarTap,
+              onLongPress: _onCalendarLongPress,
+              onDragEnd: _onDragEnd,
+              onAppointmentResizeEnd: _onResizeEnd,
 
-          // ============================================================
-          // 스타일 설정
-          // ============================================================
-          backgroundColor: colorScheme.surface,
-          cellBorderColor: colorScheme.outlineVariant.withValues(alpha: 0.3),
-          todayHighlightColor: colorScheme.primary,
-
-          // 기간 이름과 이동은 화면의 도구 줄이 맡는다
-          headerHeight: 0,
-
-          viewHeaderStyle: ViewHeaderStyle(
-            backgroundColor: colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.5,
-            ),
-            dayTextStyle: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.7),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            dateTextStyle: TextStyle(
-              color: colorScheme.onSurface,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          selectionDecoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.1),
-            border: Border.all(color: colorScheme.primary, width: 1.5),
-            borderRadius: AppRadius.smAll,
-          ),
-
-          // ============================================================
-          // 월간 뷰 설정
-          // ============================================================
-          monthViewSettings: MonthViewSettings(
-            showAgenda: false,
-            appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-            appointmentDisplayCount: 3,
-            monthCellStyle: MonthCellStyle(
-              textStyle: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-              trailingDatesTextStyle: TextStyle(
-                color: colorScheme.onSurface.withValues(alpha: 0.4),
-                fontSize: 14,
-              ),
-              leadingDatesTextStyle: TextStyle(
-                color: colorScheme.onSurface.withValues(alpha: 0.4),
-                fontSize: 14,
-              ),
+              // ============================================================
+              // 스타일 설정
+              // ============================================================
               backgroundColor: colorScheme.surface,
-              todayBackgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-            ),
-            showTrailingAndLeadingDates: true,
-          ),
-
-          // ============================================================
-          // 타임슬롯 설정 (Day/Week 뷰)
-          // ============================================================
-          timeSlotViewSettings: TimeSlotViewSettings(
-            startHour: 0,
-            endHour: 24,
-            timeIntervalHeight: 60,
-            timeFormat: settings.use24HourFormat ? 'HH:mm' : 'h:mm a',
-            timeTextStyle: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: 11,
-            ),
-            timeRulerSize: 60,
-            dayFormat: 'EEE',
-            dateFormat: 'd',
-          ),
-
-          // ============================================================
-          // 스케줄 뷰 설정 (Agenda)
-          // ============================================================
-          scheduleViewSettings: ScheduleViewSettings(
-            appointmentTextStyle: TextStyle(
-              color: colorScheme.onPrimary,
-              fontSize: 13,
-            ),
-            dayHeaderSettings: DayHeaderSettings(
-              dayFormat: 'EEEE',
-              width: 70,
-              dayTextStyle: TextStyle(
-                color: colorScheme.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-              dateTextStyle: TextStyle(
-                color: colorScheme.primary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            weekHeaderSettings: WeekHeaderSettings(
-              startDateFormat: 'MMM d',
-              endDateFormat: 'MMM d, yyyy',
-              textAlign: TextAlign.center,
-              backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+              cellBorderColor: colorScheme.outlineVariant.withValues(
                 alpha: 0.3,
               ),
-            ),
-            monthHeaderSettings: MonthHeaderSettings(
-              monthFormat: 'MMMM yyyy',
-              height: 50,
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              textAlign: TextAlign.center,
-              monthTextStyle: TextStyle(
-                color: colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              todayHighlightColor: colorScheme.primary,
+
+              // 기간 이름과 이동은 화면의 도구 줄이 맡는다
+              headerHeight: 0,
+
+              viewHeaderStyle: ViewHeaderStyle(
+                backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.5,
+                ),
+                dayTextStyle: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                dateTextStyle: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ),
 
-          // ============================================================
-          // 일정 빌더
-          // ============================================================
-          appointmentBuilder: _appointmentBuilder,
-        ),
+              selectionDecoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.1),
+                border: Border.all(color: colorScheme.primary, width: 1.5),
+                borderRadius: AppRadius.smAll,
+              ),
 
-        // 로딩 오버레이
-        if (isLoading)
-          Positioned.fill(
-            child: Container(
-              color: colorScheme.surface.withValues(alpha: 0.5),
-              child: const AppLoading(),
+              // ============================================================
+              // 월간 뷰 설정
+              // ============================================================
+              monthViewSettings: MonthViewSettings(
+                showAgenda: false,
+                appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
+                appointmentDisplayCount: eventsPerDay,
+                monthCellStyle: MonthCellStyle(
+                  textStyle: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 14,
+                  ),
+                  trailingDatesTextStyle: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    fontSize: 14,
+                  ),
+                  leadingDatesTextStyle: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    fontSize: 14,
+                  ),
+                  backgroundColor: colorScheme.surface,
+                  todayBackgroundColor: colorScheme.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                ),
+                showTrailingAndLeadingDates: true,
+              ),
+
+              // ============================================================
+              // 타임슬롯 설정 (Day/Week 뷰)
+              // ============================================================
+              timeSlotViewSettings: TimeSlotViewSettings(
+                startHour: 0,
+                endHour: 24,
+                timeIntervalHeight: 60,
+                timeFormat: settings.use24HourFormat ? 'HH:mm' : 'h:mm a',
+                timeTextStyle: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+                timeRulerSize: 60,
+                dayFormat: 'EEE',
+                dateFormat: 'd',
+              ),
+
+              // ============================================================
+              // 스케줄 뷰 설정 (Agenda)
+              // ============================================================
+              scheduleViewSettings: ScheduleViewSettings(
+                appointmentTextStyle: TextStyle(
+                  color: colorScheme.onPrimary,
+                  fontSize: 13,
+                ),
+                dayHeaderSettings: DayHeaderSettings(
+                  dayFormat: 'EEEE',
+                  width: 70,
+                  dayTextStyle: TextStyle(
+                    color: colorScheme.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  dateTextStyle: TextStyle(
+                    color: colorScheme.primary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                weekHeaderSettings: WeekHeaderSettings(
+                  startDateFormat: 'MMM d',
+                  endDateFormat: 'MMM d, yyyy',
+                  textAlign: TextAlign.center,
+                  backgroundColor: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
+                ),
+                monthHeaderSettings: MonthHeaderSettings(
+                  monthFormat: 'MMMM yyyy',
+                  height: 50,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  textAlign: TextAlign.center,
+                  monthTextStyle: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              // ============================================================
+              // 일정 빌더
+              // ============================================================
+              appointmentBuilder: _appointmentBuilder,
             ),
-          ),
-      ],
+
+            // 로딩 오버레이
+            if (isLoading)
+              Positioned.fill(
+                child: Container(
+                  color: colorScheme.surface.withValues(alpha: 0.5),
+                  child: const AppLoading(),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
