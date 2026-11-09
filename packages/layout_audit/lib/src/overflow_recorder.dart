@@ -14,17 +14,18 @@ Future<List<LayoutFinding>> recordLayoutOverflows(
   bool forward = false,
 }) async {
   final findings = <LayoutFinding>[];
-  var layoutAborted = false;
+  final aborted = <RenderObject>[];
   final previous = FlutterError.onError;
   FlutterError.onError = (details) {
     final finding = _tryOverflowFinding(details);
     if (finding != null) {
       findings.add(finding);
-      layoutAborted = layoutAborted || _abortsLayout(details);
+      final source = _renderObjectOf(details);
+      if (source != null && _abortsLayout(details)) {
+        aborted.add(source);
+      }
     }
-    // 레이아웃을 중단시킨 단언 뒤에는 크기 없는 상자 때문에 같은 원인의 오류가 이어진다.
-    final consequence =
-        finding == null && layoutAborted && _isLayoutConsequence(details);
+    final consequence = finding == null && _isConsequence(aborted, details);
     if ((finding == null && !consequence) || forward) {
       previous?.call(details);
     }
@@ -40,12 +41,44 @@ Future<List<LayoutFinding>> recordLayoutOverflows(
 bool _abortsLayout(FlutterErrorDetails details) =>
     details.exceptionAsString().contains('consumes the entire tile width');
 
-bool _isLayoutConsequence(FlutterErrorDetails details) {
-  const libraries = {'rendering library', 'scheduler library', 'semantics'};
-  final text = details.exceptionAsString();
-  return libraries.contains(details.library) ||
-      text.contains('was not laid out') ||
-      text.contains('hasSize');
+/// 레이아웃을 중단시킨 단언 뒤에는 크기 없는 상자 때문에 같은 원인의 오류가 이어진다.
+///
+/// 망가진 상자가 트리에 남아 있는 동안 그 조상·자손을 처리하다 난 오류, 또는 처리 대상을
+/// 알 수 없지만 시맨틱스 갱신이 망가진 트리를 돌다 난 오류만 후속으로 본다.
+bool _isConsequence(List<RenderObject> aborted, FlutterErrorDetails details) {
+  final broken = aborted.where((object) => object.attached);
+  if (broken.isEmpty) {
+    return false;
+  }
+  final source = _renderObjectOf(details);
+  if (source == null) {
+    return details.stack.toString().contains('Semantics');
+  }
+  return broken.any(
+    (object) => _isAncestorOf(source, object) || _isAncestorOf(object, source),
+  );
+}
+
+bool _isAncestorOf(RenderObject ancestor, RenderObject node) {
+  for (RenderObject? current = node;
+      current != null;
+      current = current.parent) {
+    if (identical(current, ancestor)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+RenderObject? _renderObjectOf(FlutterErrorDetails details) {
+  for (final node
+      in details.informationCollector?.call() ?? const <DiagnosticsNode>[]) {
+    final value = node.value;
+    if (value is RenderObject) {
+      return value;
+    }
+  }
+  return null;
 }
 
 const _sides = {
