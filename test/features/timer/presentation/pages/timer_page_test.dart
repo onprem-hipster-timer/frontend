@@ -521,6 +521,64 @@ void main() {
         findsOneWidget,
       );
     });
+    testWidgets('타이머 목록의 완료 항목은 allocated_duration을 넘은 저장 경과 시간을 그대로 보여 준다', (
+      tester,
+    ) async {
+      final completed = makeTimer(
+        id: 'timer-2',
+        status: TimerStatus.completed,
+        allocatedDuration: 1500,
+        elapsedTime: 1633,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: null,
+        history: [completed],
+        controller: _FakeTimerController(),
+      );
+
+      expect(
+        find.descendant(
+          of: _historyItem('timer-2'),
+          matching: find.text('00:27:13'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('타이머 목록의 일시정지 항목은 저장값이 allocated_duration을 넘어도 남은 시간 0이다', (
+      tester,
+    ) async {
+      final paused = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 1500,
+        elapsedTime: 1633,
+      );
+
+      await _pumpTimerPage(
+        tester,
+        timer: paused,
+        history: [paused],
+        controller: _FakeTimerController(),
+      );
+
+      expect(
+        find.descendant(
+          of: _historyItem('timer-1'),
+          matching: find.text('00:00:00'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _historyItem('timer-1'),
+          matching: find.byTooltip('5분 연장'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   group('시간 종료', () {

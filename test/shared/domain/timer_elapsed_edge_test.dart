@@ -111,19 +111,81 @@ void main() {
   group('allocated_duration 경계', () {
     final startedAt = DateTime.utc(2026, 11, 6, 10, 0, 0);
 
-    test(
-      'PAUSED 저장값이 allocated_duration을 넘어도 표시 경과 시간은 allocated_duration이다',
-      () {
+    test('PAUSED 저장값이 allocated_duration을 넘으면 저장값 그대로다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.paused,
+        allocatedDuration: 60,
+        elapsedTime: 90,
+      );
+
+      expect(displayElapsed(timer, startedAt), const Duration(seconds: 90));
+    });
+
+    for (final status in [TimerStatus.completed, TimerStatus.cancelled]) {
+      test('${status.name} 저장값이 allocated_duration을 넘으면 저장값 그대로다', () {
         final timer = makeTimer(
           id: 't1',
-          status: TimerStatus.paused,
-          allocatedDuration: 60,
-          elapsedTime: 90,
+          status: status,
+          startedAt: startedAt,
+          allocatedDuration: 1500,
+          elapsedTime: 1633,
         );
 
-        expect(displayElapsed(timer, startedAt), const Duration(seconds: 60));
-      },
-    );
+        expect(
+          displayElapsed(timer, startedAt.add(const Duration(hours: 1))),
+          const Duration(seconds: 1633),
+        );
+      });
+    }
+
+    test('RUNNING은 저장값과 실행 구간의 합을 allocated_duration에서 자른다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 60,
+        elapsedTime: 50,
+      );
+
+      expect(
+        displayElapsed(timer, startedAt.add(const Duration(seconds: 30))),
+        const Duration(seconds: 60),
+      );
+    });
+
+    test('RUNNING은 started_at이 없어도 저장값을 allocated_duration에서 자른다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        allocatedDuration: 60,
+        elapsedTime: 90,
+      );
+
+      expect(displayElapsed(timer, startedAt), const Duration(seconds: 60));
+    });
+
+    test('PAUSED 저장값이 allocated_duration을 넘으면 시간이 끝났다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.paused,
+        allocatedDuration: 60,
+        elapsedTime: 90,
+      );
+
+      expect(isTimeUp(timer, startedAt), isTrue);
+    });
+
+    test('COMPLETED는 저장값이 allocated_duration을 넘어도 시간 종료가 아니다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.completed,
+        allocatedDuration: 1500,
+        elapsedTime: 1633,
+      );
+
+      expect(isTimeUp(timer, startedAt), isFalse);
+    });
 
     test('RUNNING은 1초 남으면 false, 정확히 다 쓰면 true', () {
       final timer = makeTimer(
