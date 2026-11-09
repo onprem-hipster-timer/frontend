@@ -48,19 +48,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// [label] 칸에 적힌 수
-  String countOf(WidgetTester tester, String label) {
-    final column = find.ancestor(
-      of: find.text(label),
-      matching: find.byType(Column),
-    );
-    return tester
-        .widgetList<Text>(
-          find.descendant(of: column.first, matching: find.byType(Text)),
-        )
-        .first
-        .data!;
-  }
+  /// [label] 칸이 읽히는 수
+  String countOf(WidgetTester tester, String label) =>
+      tester.getSemantics(find.text(label)).label.split('\n').first;
 
   testWidgets('완료 비율과 상태별 수를 보인다 (취소는 전체에만 센다)', (tester) async {
     await pumpSection(tester);

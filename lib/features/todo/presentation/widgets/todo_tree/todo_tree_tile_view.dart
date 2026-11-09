@@ -46,6 +46,7 @@ class TodoTreeTileView extends StatelessWidget {
     final description = todo.description;
     final trailing = this.trailing;
     return Semantics(
+      container: true,
       selected: selected,
       child: InkWell(
         onTap: onTap,

@@ -137,7 +137,10 @@ class TagManagementPage extends ConsumerWidget {
                     onPressed: () =>
                         _showCreateTagSheet(context, ref, tagGroup),
                     icon: const Icon(Icons.add, size: 16),
-                    label: const Text('태그 추가'),
+                    label: Text(
+                      '태그 추가',
+                      semanticsLabel: '${tagGroup.groupName} 그룹에 태그 추가',
+                    ),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -152,7 +155,10 @@ class TagManagementPage extends ConsumerWidget {
                   OutlinedButton.icon(
                     onPressed: () => _showEditGroupSheet(context, tagGroup),
                     icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('그룹 수정'),
+                    label: Text(
+                      '그룹 수정',
+                      semanticsLabel: '${tagGroup.groupName} 그룹 수정',
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -168,7 +174,10 @@ class TagManagementPage extends ConsumerWidget {
                     onPressed: () =>
                         _showDeleteGroupDialog(context, ref, tagGroup),
                     icon: const Icon(Icons.delete_outline, size: 16),
-                    label: const Text('그룹 삭제'),
+                    label: Text(
+                      '그룹 삭제',
+                      semanticsLabel: '${tagGroup.groupName} 그룹 삭제',
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                       side: BorderSide(color: theme.colorScheme.error),
@@ -234,7 +243,7 @@ class TagManagementPage extends ConsumerWidget {
               onPressed: () =>
                   _showEditTagSheet(context, ref, tag, parentGroup),
               icon: const Icon(Icons.edit, size: 16),
-              label: const Text('수정'),
+              label: Text('수정', semanticsLabel: '${tag.name} 태그 수정'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -251,7 +260,7 @@ class TagManagementPage extends ConsumerWidget {
             OutlinedButton.icon(
               onPressed: () => _showDeleteTagDialog(context, ref, tag),
               icon: const Icon(Icons.delete_outline, size: 16),
-              label: const Text('삭제'),
+              label: Text('삭제', semanticsLabel: '${tag.name} 태그 삭제'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
                 side: BorderSide(color: theme.colorScheme.error),

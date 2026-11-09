@@ -61,38 +61,34 @@ class ActivityStatsSection extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '전체',
-                          '${stats.totalCount}',
-                          theme.colorScheme.primary,
+                        child: _StatusCount(
+                          label: '전체',
+                          count: '${stats.totalCount}',
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '미지정',
-                          '${stats.unscheduledCount}',
-                          theme.colorScheme.secondary,
+                        child: _StatusCount(
+                          label: '미지정',
+                          count: '${stats.unscheduledCount}',
+                          color: theme.colorScheme.secondary,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '예정',
-                          '${stats.scheduledCount}',
-                          theme.colorScheme.tertiary,
+                        child: _StatusCount(
+                          label: '예정',
+                          count: '${stats.scheduledCount}',
+                          color: theme.colorScheme.tertiary,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '완료',
-                          '${stats.doneCount}',
-                          theme.colorScheme.tertiaryContainer,
+                        child: _StatusCount(
+                          label: '완료',
+                          count: '${stats.doneCount}',
+                          color: theme.colorScheme.tertiaryContainer,
                         ),
                       ),
                     ],
@@ -184,39 +180,49 @@ class ActivityStatsSection extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildStatusCard(
-    BuildContext context,
-    String label,
-    String count,
-    Color color,
-  ) {
+/// 상태 하나의 수. 수와 이름을 한 번에 읽힌다
+class _StatusCount extends StatelessWidget {
+  const _StatusCount({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  final String label;
+  final String count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: AppRadius.lgAll,
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            count,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+    return MergeSemantics(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: AppRadius.lgAll,
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              count,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

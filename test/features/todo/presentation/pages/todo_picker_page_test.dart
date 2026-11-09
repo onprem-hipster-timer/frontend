@@ -60,11 +60,9 @@ void main() {
     ),
   );
 
-  Finder row(String title) =>
-      find.ancestor(of: find.text(title), matching: find.byType(InkWell)).first;
-
-  Finder checkbox(String title) =>
-      find.descendant(of: row(title), matching: find.byType(Checkbox));
+  Finder checkbox(String title) => find.byWidgetPredicate(
+    (widget) => widget is Checkbox && widget.semanticLabel == '$title 고르기',
+  );
 
   testWidgets('고를 수 있는 할 일을 그룹 순서대로 트리로 보이고, 목록에 없는 그룹은 기타로 묶는다', (
     tester,

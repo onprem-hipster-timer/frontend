@@ -40,18 +40,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder groupCard(String name) =>
-      find.ancestor(of: find.text(name), matching: find.byType(ExpansionTile));
-
-  Finder inGroup(String name, Finder finder) =>
-      find.descendant(of: groupCard(name), matching: finder);
-
-  Finder tagTile(String name) =>
-      find.ancestor(of: find.text(name), matching: find.byType(ListTile));
-
-  Finder inTag(String name, Finder finder) =>
-      find.descendant(of: tagTile(name), matching: finder);
-
   testWidgets('태그가 많은 그룹부터, 설명이 없으면 태그 수를 보이고 하위 태그를 펼쳐 둔다', (tester) async {
     await pumpPage(tester);
 
@@ -97,7 +85,7 @@ void main() {
 
   testWidgets('그룹의 태그 추가는 그 그룹에 태그를 만든다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, inGroup('업무', find.text('태그 추가')));
+    await tapVisible(tester, find.bySemanticsLabel('업무 그룹에 태그 추가'));
     expect(find.text('새 태그 만들기'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextFormField, '태그 이름'), '회의');
@@ -108,7 +96,7 @@ void main() {
 
   testWidgets('그룹 수정은 그 그룹 값으로 채운 시트를 연다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, inGroup('학습', find.text('그룹 수정')));
+    await tapVisible(tester, find.bySemanticsLabel('학습 그룹 수정'));
 
     expect(find.widgetWithText(TextFormField, '학습'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, '공부 기록'), findsOneWidget);
@@ -116,7 +104,7 @@ void main() {
 
   testWidgets('태그의 수정 버튼과 태그 줄 누르기 모두 태그 수정 시트를 연다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, inTag('공부', find.text('수정')));
+    await tapVisible(tester, find.bySemanticsLabel('공부 태그 수정'));
     expect(find.text('태그 수정'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, '공부'), findsOneWidget);
     await tapVisible(tester, find.text('취소'));
@@ -128,7 +116,7 @@ void main() {
   group('그룹 삭제', () {
     testWidgets('확인하면 지우고 알린 뒤 목록에서 뺀다', (tester) async {
       await pumpPage(tester);
-      await tapVisible(tester, inGroup('업무', find.text('그룹 삭제')));
+      await tapVisible(tester, find.bySemanticsLabel('업무 그룹 삭제'));
       expect(find.textContaining('업무 그룹을 삭제하시겠습니까?'), findsOneWidget);
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
@@ -139,7 +127,7 @@ void main() {
 
     testWidgets('취소하면 지우지 않는다', (tester) async {
       await pumpPage(tester);
-      await tapVisible(tester, inGroup('업무', find.text('그룹 삭제')));
+      await tapVisible(tester, find.bySemanticsLabel('업무 그룹 삭제'));
       await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
 
       expect(tags.deletedGroups, isEmpty);
@@ -149,7 +137,7 @@ void main() {
     testWidgets('실패하면 오류를 알린다', (tester) async {
       tags.writeError = Exception('서버 오류');
       await pumpPage(tester);
-      await tapVisible(tester, inGroup('업무', find.text('그룹 삭제')));
+      await tapVisible(tester, find.bySemanticsLabel('업무 그룹 삭제'));
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
       expect(find.textContaining('그룹 삭제에 실패했습니다'), findsOneWidget);
@@ -159,19 +147,19 @@ void main() {
   group('태그 삭제', () {
     testWidgets('확인하면 지우고 알린 뒤 목록에서 뺀다', (tester) async {
       await pumpPage(tester);
-      await tapVisible(tester, inTag('공부', find.text('삭제')));
+      await tapVisible(tester, find.bySemanticsLabel('공부 태그 삭제'));
       expect(find.textContaining('공부 태그를 삭제하시겠습니까?'), findsOneWidget);
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
       expect(tags.deletedTags, ['tag-study']);
       expect(find.text('공부 태그가 삭제되었습니다'), findsOneWidget);
-      expect(tagTile('공부'), findsNothing);
+      expect(find.bySemanticsLabel('공부 태그 삭제'), findsNothing);
     });
 
     testWidgets('실패하면 오류를 알린다', (tester) async {
       tags.writeError = Exception('서버 오류');
       await pumpPage(tester);
-      await tapVisible(tester, inTag('공부', find.text('삭제')));
+      await tapVisible(tester, find.bySemanticsLabel('공부 태그 삭제'));
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
       expect(find.textContaining('태그 삭제에 실패했습니다'), findsOneWidget);

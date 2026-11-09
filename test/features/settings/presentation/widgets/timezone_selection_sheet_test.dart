@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui' show Tristate;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -45,9 +47,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder tile(String id) =>
-      find.ancestor(of: find.text(id), matching: find.byType(ListTile));
-
   testWidgets('지금 타임존에 표시를 하고, 검색어로 목록을 거른다', (tester) async {
     await open(tester);
 
@@ -58,11 +57,8 @@ void main() {
     expect(find.text('Asia/Seoul'), findsOneWidget);
     expect(find.text('Asia/Tokyo'), findsNothing);
     expect(
-      find.descendant(
-        of: tile('Asia/Seoul'),
-        matching: find.byIcon(Icons.check),
-      ),
-      findsOneWidget,
+      tester.getSemantics(find.text('Asia/Seoul')).flagsCollection.isSelected,
+      Tristate.isTrue,
     );
   });
 
@@ -73,7 +69,7 @@ void main() {
     await tapVisible(tester, find.byIcon(Icons.clear));
 
     expect(find.textContaining('/'), findsWidgets);
-    expect(find.byType(ListTile).evaluate().length, greaterThan(1));
+    expect(find.textContaining('/').evaluate().length, greaterThan(1));
   });
 
   testWidgets('고르면 저장하고 닫는다', (tester) async {

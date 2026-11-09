@@ -18,7 +18,6 @@ max_widget_class_lines lib/features/auth/presentation/pages/signup_page.dart _Si
 max_widget_class_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState 456
 max_widget_class_lines lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState 675
 max_widget_class_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState 568
-max_widget_class_lines lib/features/mypage/presentation/widgets/activity_stats_section.dart ActivityStatsSection 246
 max_widget_class_lines lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage 481
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState 493
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState 391
@@ -62,7 +61,6 @@ no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_vie
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildDefaultMonthCell -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildMonthCell -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/schedule_list_sheet.dart ScheduleListSheet._buildScheduleTile -
-no_widget_helper_methods lib/features/mypage/presentation/widgets/activity_stats_section.dart ActivityStatsSection._buildStatusCard -
 no_widget_helper_methods lib/features/mypage/presentation/widgets/tag_stats_section.dart TagStatsSection._buildTagChip -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagGroupItem -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagItem -

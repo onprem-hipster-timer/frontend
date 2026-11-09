@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -91,8 +94,9 @@ void main() {
       find.descendant(of: tileOf(title), matching: finder).first;
 
   /// [title] 줄만의 영역(하위 타일 제외)
-  Finder rowOf(String title) =>
-      find.ancestor(of: find.text(title), matching: find.byType(InkWell)).first;
+  Finder rowOf(String title) => find
+      .ancestor(of: find.text(title), matching: find.byType(TodoTreeTileView))
+      .first;
 
   Future<void> expand(WidgetTester tester, String title) =>
       tapVisible(tester, inTile(title, find.byIcon(Icons.chevron_right)));
@@ -140,17 +144,12 @@ void main() {
       await tapVisible(tester, find.text('회의 준비'));
       await tapVisible(tester, find.widgetWithText(OutlinedButton, '취소'));
 
-      Color? highlight(String title) {
-        final box = tester.widget<Container>(
-          find
-              .descendant(of: rowOf(title), matching: find.byType(Container))
-              .first,
-        );
-        return (box.decoration as BoxDecoration?)?.color;
-      }
+      bool selected(String title) =>
+          tester.getSemantics(rowOf(title)).flagsCollection.isSelected ==
+          Tristate.isTrue;
 
-      expect(highlight('회의 준비'), isNotNull);
-      expect(highlight('보고서'), isNull);
+      expect(selected('회의 준비'), isTrue);
+      expect(selected('보고서'), isFalse);
     });
   });
 

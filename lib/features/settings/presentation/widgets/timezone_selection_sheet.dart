@@ -123,6 +123,7 @@ class _TimezoneSelectionSheetState
                 final isSelected = timezone == currentTimezone;
 
                 return ListTile(
+                  selected: isSelected,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 4,
