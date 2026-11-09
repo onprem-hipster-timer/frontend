@@ -10,11 +10,16 @@ TimerRead _timer(
   TimerStatus status, {
   required int updatedMinute,
   int startedMinute = 0,
-}) => makeTimer(
-  id: id,
-  status: status,
-  startedAt: DateTime.utc(2026, 11, 6, 10, startedMinute),
-).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 10, updatedMinute));
+  int history = 0,
+}) =>
+    makeTimer(
+      id: id,
+      status: status,
+      startedAt: DateTime.utc(2026, 11, 6, 10, startedMinute),
+    ).copyWith(
+      updatedAt: DateTime.utc(2026, 11, 6, 10, updatedMinute),
+      pauseHistory: [for (var i = 0; i < history; i++) <String, dynamic>{}],
+    );
 
 /// 일정·Todo를 포함해 읽은 REST 응답
 TimerRead _read(String id, TimerStatus status, {required int updatedMinute}) =>
@@ -62,16 +67,75 @@ void main() {
       expect(ledger.active.single.status, TimerStatus.paused);
     });
 
-    test('같으면 반영한다', () {
+    test('같으면 pause_history가 더 긴 값을 반영한다', () {
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
-      final same = _timer(
-        't1',
-        TimerStatus.running,
-        updatedMinute: 1,
-      ).copyWith(title: '같은 시각의 응답');
-      ledger.apply(same);
+      ledger.apply(
+        _timer('t1', TimerStatus.paused, updatedMinute: 1, history: 1),
+      );
 
-      expect(ledger.active.single.title, '같은 시각의 응답');
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('같으면 pause_history가 더 짧은 값은 늦게 와도 버린다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.paused, updatedMinute: 1, history: 2),
+      );
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      );
+      ledger.applyPartial(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      );
+      ledger.resync([
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      ]);
+
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('pause_history 길이도 같으면 가진 값을 둔다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      );
+      ledger.applyPartial(
+        _timer(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+          history: 1,
+        ).copyWith(title: '같은 순서의 이벤트'),
+      );
+
+      expect(ledger.active.single.title, isNot('같은 순서의 이벤트'));
+    });
+
+    test('더 나중 updated_at이면 pause_history가 짧아도 반영한다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 3),
+      );
+      ledger.apply(_timer('t1', TimerStatus.paused, updatedMinute: 2));
+
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('순서가 같은 REST 응답은 타이머 자체 필드를 두고 관계 필드만 채운다', () {
+      ledger.applyPartial(
+        _event('t1', TimerStatus.paused, updatedMinute: 1, elapsedTime: 60),
+      );
+      ledger.apply(
+        _read(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+        ).copyWith(title: '같은 순서의 응답'),
+      );
+
+      final held = ledger['t1']!;
+      expect(held.status, TimerStatus.paused);
+      expect(held.title, isNot('같은 순서의 응답'));
+      expect(held.todo, makeTodo());
+      expect(held.schedule, makeSchedule());
+      expect(ledger.needsRead('t1'), isFalse);
     });
 
     test('끝난 타이머보다 이전 이벤트가 늦게 와도 되살리지 않는다', () {
@@ -250,7 +314,7 @@ void main() {
   });
 
   group('명령 응답 전 표시', () {
-    test('먼저 보인 값은 같은 updated_at의 응답이 덮는다', () {
+    test('먼저 보인 값은 같은 updated_at에 기록이 더 긴 응답이 덮는다', () {
       final held = _read('t1', TimerStatus.running, updatedMinute: 1);
       final shown = held.copyWith(status: TimerStatus.paused);
       ledger
@@ -258,7 +322,13 @@ void main() {
         ..showPending(shown);
       expect(ledger['t1'], same(shown));
 
-      ledger.apply(_read('t1', TimerStatus.paused, updatedMinute: 1));
+      ledger.apply(
+        _read(
+          't1',
+          TimerStatus.paused,
+          updatedMinute: 1,
+        ).copyWith(pauseHistory: [<String, dynamic>{}]),
+      );
 
       expect(ledger['t1'], isNot(same(shown)));
       expect(ledger['t1']!.status, TimerStatus.paused);

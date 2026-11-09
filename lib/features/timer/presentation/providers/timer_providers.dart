@@ -106,12 +106,10 @@ final timerViewsProvider =
       TimerViewsNotifier.new,
     );
 
-/// 목록의 [listed] 대신 보일 타이머. [views]의 값이 목록보다 이전 `updated_at`이면 목록 값
+/// 목록의 [listed] 대신 보일 타이머. 목록 값이 [views]의 값보다 나중([isLaterTimer])이면 목록 값
 TimerRead timerView(Map<String, TimerRead> views, TimerRead listed) {
   final view = views[listed.id];
-  return view != null && !view.updatedAt.isBefore(listed.updatedAt)
-      ? view
-      : listed;
+  return view != null && !isLaterTimer(listed, view) ? view : listed;
 }
 
 /// 내 활성(RUNNING·PAUSED) 타이머. 최근에 시작한 순

@@ -165,16 +165,29 @@ void main() {
       expect(displayElapsed(shown, _now), const Duration(seconds: 180));
     });
 
-    test('같은 updated_at이면 나중에 도착한 쪽을 반영한다 (규칙: 같거나 나중이면 반영)', () async {
+    test('같은 updated_at이면 pause_history가 더 긴 쪽을 반영한다', () async {
       final c = await boot([_timer('t1', TimerStatus.running, minute: 1)]);
+      List<Map<String, dynamic>> history(int length) => [
+        for (var i = 0; i < length; i++) <String, dynamic>{},
+      ];
+      final paused = _timer(
+        't1',
+        TimerStatus.paused,
+        minute: 2,
+        elapsed: 120,
+      ).copyWith(pauseHistory: history(2));
+      final resumed = _timer(
+        't1',
+        TimerStatus.running,
+        minute: 2,
+      ).copyWith(pauseHistory: history(3));
 
-      await emit(
-        _event(_timer('t1', TimerStatus.paused, minute: 2, elapsed: 120)),
-      );
-      await emit(
-        _event(_timer('t1', TimerStatus.running, minute: 2), action: 'resume'),
-      );
+      await emit(_event(paused));
+      await emit(_event(resumed, action: 'resume'));
+      expect(held(c, 't1').status, TimerStatus.running);
 
+      // 같은 두 값이 거꾸로 와도 나중 상태를 둔다
+      await emit(_event(paused));
       expect(held(c, 't1').status, TimerStatus.running);
     });
   });

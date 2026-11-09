@@ -1,10 +1,21 @@
 import 'package:momeet/shared/api/rest/export.dart';
 
+/// 같은 타이머의 [timer]가 [than]보다 나중 상태인지
+///
+/// `updated_at`이 나중이면 나중이다. `updated_at`은 초 단위라 같을 수 있는데, 같으면
+/// `pause_history`가 더 긴 쪽이 나중이다. 명령(시작·일시정지·재개·시간 종료·정지·취소)마다 기록이 하나씩 붙는다.
+bool isLaterTimer(TimerRead timer, TimerRead than) =>
+    timer.updatedAt.isAfter(than.updatedAt) ||
+    (timer.updatedAt.isAtSameMomentAs(than.updatedAt) &&
+        timer.pauseHistory.length > than.pauseHistory.length);
+
 /// 앱이 가진 내 타이머
 ///
 /// REST 응답과 실시간 이벤트를 같은 규칙으로 반영한다.
-/// - `updated_at`이 본 적 있는 값보다 이전이면 버리고, 같거나 나중이면 반영한다.
-///   다시 맞추기로 목록에서 뺀 타이머의 `updated_at`도 기억한다
+/// - `updated_at`이 본 적 있는 값보다 나중이면 반영하고 이전이면 버린다.
+///   `updated_at`은 초 단위라 같을 수 있다. 같으면 `pause_history`가 더 긴 값을 반영한다
+///   (명령마다 기록이 하나씩 붙는다). 기록 길이도 같으면 가진 값을 둔다.
+///   다시 맞추기로 목록에서 뺀 타이머의 순서도 기억한다
 /// - 삭제된 타이머 ID는 기록해 두고, 그 뒤에 오는 같은 ID는 버린다
 /// - 실시간 이벤트의 타이머에는 관계 필드(`tags`·`schedule`·`todo`·`is_shared`·`visibility_level`)가 없다.
 ///   이벤트는 타이머 자체 필드만 바꾸고, 관계 필드는 관계를 포함해 읽은 REST 응답으로 채운다
@@ -14,8 +25,8 @@ import 'package:momeet/shared/api/rest/export.dart';
 class TimerLedger {
   final _timers = <String, TimerRead>{};
 
-  /// 타이머별로 본 가장 나중 `updated_at`
-  final _updatedAt = <String, DateTime>{};
+  /// 타이머별로 본 가장 나중 상태 ([isLaterTimer])
+  final _seen = <String, TimerRead>{};
   final _deleted = <String>{};
 
   /// 관계 필드를 REST로 다시 읽어야 하는 타이머 ID
@@ -34,15 +45,31 @@ class TimerLedger {
       _timers.containsKey(timerId) && _needsRead.contains(timerId);
 
   /// 관계를 포함해 읽은 REST 응답 [timer]를 반영한다.
+  ///
+  /// 가진 값과 순서가 같으면 타이머 자체 필드는 두고 관계 필드만 채운다.
   void apply(TimerRead timer) {
-    if (!_accept(timer)) return;
+    if (!_accept(timer)) {
+      final held = _timers[timer.id];
+      if (held == null || isLaterTimer(_seen[timer.id]!, timer)) return;
+      _timers[timer.id] = held.copyWith(
+        tags: timer.tags,
+        isShared: timer.isShared,
+        visibilityLevel: timer.visibilityLevel,
+        scheduleId: timer.scheduleId,
+        schedule: timer.schedule,
+        todoId: timer.todoId,
+        todo: timer.todo,
+      );
+      _needsRead.remove(timer.id);
+      return;
+    }
     _timers[timer.id] = timer;
     _needsRead.remove(timer.id);
   }
 
   /// 명령 응답 전에 [timer]를 먼저 보인다.
   ///
-  /// `updated_at` 기록을 바꾸지 않으므로 같거나 나중 `updated_at`의 응답·이벤트가 덮는다.
+  /// 순서 기록을 바꾸지 않으므로 가진 값보다 나중인 응답·이벤트가 덮는다.
   /// 가진 적 없거나 지운 타이머면 무시한다.
   void showPending(TimerRead timer) {
     if (!_timers.containsKey(timer.id)) return;
@@ -92,7 +119,7 @@ class TimerLedger {
 
   /// 바뀐 [todo]를 그 Todo에 연결된 타이머에 반영한다.
   ///
-  /// 타이머가 바뀐 것이 아니라 `updated_at` 규칙을 거치지 않는다.
+  /// 타이머가 바뀐 것이 아니라 순서 규칙을 거치지 않는다.
   void updateTodo(TodoRead todo) {
     _timers.updateAll(
       (_, timer) =>
@@ -100,12 +127,12 @@ class TimerLedger {
     );
   }
 
-  /// 지운 타이머가 아니고 `updated_at`이 본 값보다 이전이 아니면 그 `updated_at`을 기억하고 true
+  /// 지운 타이머가 아니고 본 값보다 나중([isLaterTimer])이면 그 값을 기억하고 true
   bool _accept(TimerRead timer) {
     if (_deleted.contains(timer.id)) return false;
-    final seen = _updatedAt[timer.id];
-    if (seen != null && timer.updatedAt.isBefore(seen)) return false;
-    _updatedAt[timer.id] = timer.updatedAt;
+    final seen = _seen[timer.id];
+    if (seen != null && !isLaterTimer(timer, seen)) return false;
+    _seen[timer.id] = timer;
     return true;
   }
 

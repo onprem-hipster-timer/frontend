@@ -27,9 +27,17 @@ class FakeTimerRepository implements TimerRepository {
   /// 설정하면 명령과 공유 설정 저장이 이 Future가 끝날 때까지 응답하지 않는다
   Future<void>? gate;
 
-  /// 명령 응답. 기본은 `timer-1`이 명령에 맞는 상태가 된 것
-  TimerRead Function(String timerId, TimerStatus status) respond =
-      (timerId, status) => makeTimer(id: timerId, status: status);
+  /// 받은 명령 응답 수. 기본 응답의 `updated_at`을 응답마다 1초씩 늦춘다
+  var _responses = 0;
+
+  /// 명령 응답. 기본은 [timerId]가 명령에 맞는 상태가 된 것으로, 앞선 응답보다 나중 `updated_at`이다
+  late TimerRead Function(String timerId, TimerStatus status) respond =
+      (timerId, status) {
+        final timer = makeTimer(id: timerId, status: status);
+        return timer.copyWith(
+          updatedAt: timer.updatedAt.add(Duration(seconds: ++_responses)),
+        );
+      };
 
   /// 활성 타이머 목록 조회(listTimers) 응답
   Future<List<TimerRead>> Function() listActive = () async => [];
