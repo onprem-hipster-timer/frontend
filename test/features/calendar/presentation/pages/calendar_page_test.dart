@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
@@ -30,8 +32,11 @@ void main() {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
     container = ProviderContainer(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         schedulesApiProvider.overrideWithValue(FakeSchedulesClient()),
         calendarSettingsProvider.overrideWith(_FixedSettings.new),
         currentHolidaysProvider.overrideWith((ref) async => const []),
@@ -173,6 +178,29 @@ void main() {
 
     expect(settings().selectedDate, DateTime(2026, 11, 20));
     expect(find.text('2026년 11월'), findsOneWidget);
+  });
+
+  testWidgets('메뉴는 달력 보기 설정을 열고, 고른 값을 바로 반영한다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.byTooltip('보기 설정'));
+
+    expect(find.text('달력 보기'), findsOneWidget);
+    await tapVisible(tester, find.text('공휴일 표시'));
+    await tapVisible(tester, find.text('주말 강조'));
+    await tapVisible(tester, find.text('24시간제'));
+    await tapVisible(tester, find.text('월요일'));
+    await tapVisible(tester, find.widgetWithText(ChoiceChip, '2'));
+
+    final s = settings();
+    expect(s.showHolidays, isFalse);
+    expect(s.highlightWeekends, isFalse);
+    expect(s.use24HourFormat, isFalse);
+    expect(s.firstDayOfWeek, DateTime.monday);
+    expect(s.monthEventsPerDay, 2);
+    expect(find.text('오후 1:00'), findsOneWidget);
+
+    await tapVisible(tester, find.widgetWithText(ChoiceChip, '자동'));
+    expect(settings().monthEventsPerDay, isNull);
   });
 
   testWidgets('추가 버튼은 새 일정 시트를 연다', (tester) async {

@@ -6,6 +6,7 @@ import 'package:momeet/features/calendar/presentation/providers/calendar_provide
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_settings_drawer.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view_selector.dart';
 
 import '../widgets/schedule_form_sheet.dart';
@@ -20,6 +21,7 @@ class CalendarPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: _buildAppBar(context, ref),
+      drawer: const CalendarSettingsDrawer(),
       body: const CalendarViewWidget(
         // TODO: 라우팅 연결
         // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
@@ -38,12 +40,12 @@ class CalendarPage extends ConsumerWidget {
     return AppBar(
       title: const Text('달력'),
       centerTitle: false,
-      leading: IconButton(
-        icon: const Icon(Icons.menu),
-        onPressed: () {
-          // TODO: 드로어 열기 또는 네비게이션
-          Scaffold.of(context).openDrawer();
-        },
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu),
+          tooltip: '보기 설정',
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
       ),
       actions: [
         IconButton(
