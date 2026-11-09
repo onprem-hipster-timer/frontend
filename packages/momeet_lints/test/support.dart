@@ -10,11 +10,18 @@ ExpectedDiagnostic lintAt(
   String content,
   String snippet, {
   int occurrence = 0,
+  List<Pattern> messageContainsAll = const [],
+  String? name,
 }) {
   var offset = -1;
   for (var i = 0; i <= occurrence; i++) {
     offset = content.indexOf(snippet, offset + 1);
   }
   if (offset < 0) throw ArgumentError('snippet not found: $snippet');
-  return test.lint(offset, snippet.length);
+  return test.lint(
+    offset,
+    snippet.length,
+    messageContainsAll: messageContainsAll,
+    name: name,
+  );
 }

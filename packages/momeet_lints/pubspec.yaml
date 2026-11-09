@@ -1,5 +1,5 @@
 name: momeet_lints
-description: Custom lint rules for momeet authentication architecture enforcement.
+description: Analyzer rules for momeet architecture, auth flow, and widget structure.
 publish_to: none
 
 environment:
