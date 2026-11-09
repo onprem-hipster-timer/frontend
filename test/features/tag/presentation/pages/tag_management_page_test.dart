@@ -75,6 +75,16 @@ void main() {
     expect(find.text('새 그룹 만들기'), findsOneWidget);
   });
 
+  testWidgets('불러오지 못하면 오류를 보이고 다시 시도하면 목록을 그린다', (tester) async {
+    tags.readError = Exception('끊김');
+    await pumpPage(tester);
+
+    expect(find.text('태그를 불러올 수 없습니다'), findsOneWidget);
+    tags.readError = null;
+    await tapVisible(tester, find.text('다시 시도'));
+    expect(find.text('학습'), findsOneWidget);
+  });
+
   testWidgets('새 그룹 버튼은 그룹 생성 시트를 열고, 만든 그룹이 목록에 나타난다', (tester) async {
     await pumpPage(tester);
     await tapVisible(tester, find.text('새 그룹'));

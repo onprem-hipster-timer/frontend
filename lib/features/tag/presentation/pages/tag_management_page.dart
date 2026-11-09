@@ -307,7 +307,7 @@ class TagManagementPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () => ref.invalidate(tagTreeProvider),
+              onPressed: () => ref.invalidate(tagGroupsRawProvider),
               icon: const Icon(Icons.refresh),
               label: const Text('다시 시도'),
             ),

@@ -154,6 +154,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Todo
 - 누적 집중 시간의 타이머 목록 조회(`GET /v1/timers`)도 타이머 REST 요청으로 보내 `timezone=UTC`를 붙이고 응답의 `Date` 헤더로 서버 시각을 맞춘다
 
+#### Tag
+- 태그 관리 화면이 태그를 불러오지 못했을 때 '다시 시도'를 누르면 태그 그룹을 다시 받는다
+
 #### Auth
 - 기존 계정에 Google을 연결하는 로그인(`/login?flow=`)도 계정이 이메일 인증 전이면 서버가 다시 보낸 코드로 인증 화면을 연다. 인증 화면에는 연결할 계정 이메일을 넘긴다
 
