@@ -92,18 +92,17 @@ void main() {
     final now = DateTime.now();
     final viewingToday = now.year == 2026 && now.month == 11;
     expect(
-      find.byTooltip('오늘로 가기'),
+      find.bySemanticsLabel('오늘로 가기'),
       viewingToday ? findsNothing : findsOneWidget,
     );
 
     await tapVisible(tester, find.byTooltip('이전'));
-    expect(find.byTooltip('오늘로 가기'), findsOneWidget);
-    expect(find.text('${now.day}'), findsWidgets);
-    await tapVisible(tester, find.byTooltip('오늘로 가기'));
+    expect(find.bySemanticsLabel('오늘로 가기'), findsOneWidget);
+    await tapVisible(tester, find.bySemanticsLabel('오늘로 가기'));
 
     expect(find.text('${now.year}년 ${now.month}월'), findsOneWidget);
-    expect(find.byTooltip('오늘로 가기'), findsNothing);
-    expect(find.byTooltip('오늘'), findsOneWidget);
+    expect(find.bySemanticsLabel('오늘로 가기'), findsNothing);
+    expect(find.bySemanticsLabel('오늘'), findsOneWidget);
     expect(settings().selectedDate.day, now.day);
   });
 
@@ -131,7 +130,22 @@ void main() {
     await tapVisible(tester, find.text('일간'));
 
     expect(settings().viewType, CalendarViewType.day);
-    expect(find.text('2026년 11월 9일 (월)'), findsOneWidget);
+    expect(find.text('11월 9일 (월)'), findsOneWidget);
+  });
+
+  testWidgets('좁은 화면은 주·일 기간을 줄여 쓴다', (tester) async {
+    await pumpPage(tester, size: const Size(360, 800));
+    container.read(calendarSettingsProvider.notifier)
+      ..setSelectedDate(DateTime(2026, 11, 30))
+      ..setViewType(CalendarViewType.week);
+    await tester.pumpAndSettle();
+    expect(find.text('11.29 – 12.5'), findsOneWidget);
+
+    container
+        .read(calendarSettingsProvider.notifier)
+        .setViewType(CalendarViewType.day);
+    await tester.pumpAndSettle();
+    expect(find.text('11월 30일 (월)'), findsOneWidget);
   });
 
   testWidgets('주가 두 달에 걸치면 끝에도 달을 쓴다', (tester) async {
