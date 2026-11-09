@@ -148,8 +148,9 @@ class MyActiveTimers extends _$MyActiveTimers {
     return _ledger.active;
   }
 
-  /// 명령의 REST 응답을 반영한다.
-  void apply(TimerRead timer) => _change(() => _ledger.apply(timer));
+  /// REST 응답을 반영한다. [ownCommand]면 이 클라이언트가 보낸 명령의 응답이다 ([TimerLedger.apply])
+  void apply(TimerRead timer, {bool ownCommand = false}) =>
+      _change(() => _ledger.apply(timer, ownCommand: ownCommand));
 
   /// 가진 [timerId] 타이머. 없으면 null
   TimerRead? timer(String timerId) => _ledger[timerId];
@@ -405,7 +406,7 @@ class TimerController extends _$TimerController {
 
   void _apply(TimerRead timer) {
     if (ref.exists(myActiveTimersProvider)) {
-      ref.read(myActiveTimersProvider.notifier).apply(timer);
+      ref.read(myActiveTimersProvider.notifier).apply(timer, ownCommand: true);
     }
     ref.invalidate(timerHistoryProvider);
     // 연결된 타이머가 끝나면 서버가 그 Todo를 완료·취소로 바꾼다

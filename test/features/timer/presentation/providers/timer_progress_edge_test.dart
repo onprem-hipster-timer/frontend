@@ -454,4 +454,68 @@ void main() {
       ]);
     });
   });
+
+  group('같은 초의 내 명령 응답', () {
+    List<Map<String, dynamic>> history(int length) => [
+      for (var i = 0; i < length; i++) <String, dynamic>{},
+    ];
+
+    /// 2분에 재개된 t1. [allocated]·[title]만 다르게 같은 순서의 값을 만든다
+    TimerRead resumed({int allocated = 1500, String title = '작업'}) => _timer(
+      't1',
+      TimerStatus.running,
+      minute: 2,
+      startedAt: _at(2),
+      elapsed: 60,
+      allocated: allocated,
+    ).copyWith(pauseHistory: history(2), title: title);
+
+    /// 일시정지된 t1을 재개해 [resumed]를 가진 상태
+    Future<ProviderContainer> bootResumed() async {
+      final c = await boot([
+        _timer(
+          't1',
+          TimerStatus.paused,
+          minute: 1,
+          elapsed: 60,
+        ).copyWith(pauseHistory: history(1)),
+      ]);
+      repository.respond = (id, status) =>
+          repository.calls.last.startsWith('update:')
+          ? resumed(allocated: repository.updated!.allocatedDuration!)
+          : resumed();
+      await controller(c).resumeTimer(timerId: 't1');
+      expect(held(c, 't1').status, TimerStatus.running);
+      return c;
+    }
+
+    test('재개한 같은 초에 연장하면 늘린 시간을 보인다', () async {
+      final c = await bootResumed();
+
+      await controller(
+        c,
+      ).extendTimer(timerId: 't1', by: const Duration(minutes: 5));
+
+      expect(repository.calls, ['list', 'resume:t1', 'update:t1']);
+      expect(held(c, 't1').allocatedDuration, 1800);
+      expect(c.read(activeTimerProvider).value!.allocatedDuration, 1800);
+    });
+
+    test('같은 순서의 이벤트는 내용이 달라도 버린다', () async {
+      final c = await bootResumed();
+
+      await emit(_event(resumed(title: '이벤트 제목'), action: 'update'));
+
+      expect(held(c, 't1').title, isNot('이벤트 제목'));
+    });
+
+    test('같은 순서로 다시 맞춘 목록 값은 내용이 달라도 버린다', () async {
+      final c = await bootResumed();
+      repository.listActive = () async => [resumed(allocated: 3000)];
+
+      await emit(const TimerWsConnected());
+
+      expect(held(c, 't1').allocatedDuration, 1500);
+    });
+  });
 }
