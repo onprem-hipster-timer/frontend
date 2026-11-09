@@ -47,7 +47,7 @@ void main() {
     }
   }
 
-  Widget app(Widget home) => ProviderScope(
+  Widget app(Widget home, {ServerClock? clock}) => ProviderScope(
     overrides: [
       allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
       timerFriendActivityProvider.overrideWith(
@@ -56,7 +56,9 @@ void main() {
       timerRepositoryProvider.overrideWithValue(repository),
       timerWsClientProvider.overrideWithValue(null),
       currentUserProvider.overrideWithValue(null),
-      serverClockProvider.overrideWithValue(ServerClock(deviceNow: () => now)),
+      serverClockProvider.overrideWithValue(
+        clock ?? ServerClock(deviceNow: () => now),
+      ),
       timerHistoryProvider.overrideWith((ref) async => <TimerRead>[]),
     ],
     child: MaterialApp(home: home),
@@ -184,6 +186,30 @@ void main() {
     tab.value = 0;
     await tester.pump();
     expect(clockText(tester), '00:14:00');
+
+    await unmount(tester);
+  });
+
+  testWidgets('기기 시계가 앞서 있어도 서버 시각으로 세어 시간 종료로 보이지 않는다', (tester) async {
+    setSize(tester, const Size(1200, 900));
+    addTearDown(tester.view.reset);
+    // 기기 시계가 서버보다 30분 빠르다
+    final clock = ServerClock(
+      deviceNow: () => now.add(const Duration(minutes: 30)),
+    );
+    final sent = now.add(const Duration(minutes: 30));
+    clock.addSample(
+      serverDate: now.subtract(const Duration(milliseconds: 500)),
+      sentAt: sent,
+      receivedAt: sent,
+    );
+    await tester.pumpWidget(app(const TimerPage(), clock: clock));
+    await tester.pump();
+
+    expect(clockText(tester), '00:15:00');
+    expect(find.text('시간 종료'), findsNothing);
+    await tick(tester, 1);
+    expect(clockText(tester), '00:14:59');
 
     await unmount(tester);
   });
