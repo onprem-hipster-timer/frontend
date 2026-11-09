@@ -83,6 +83,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Todo
+- 할 일 고르기 화면(`showTodoPicker`): 그룹별 트리로 보이고 제목으로 찾으며, 한 줄을 눌러 하나를 고르거나 체크해 여럿을 고른다
+
 #### Timer
 - 타이머 화면의 작업 제목 옆에 연결된 Todo의 상태 아이콘. 일시정지 중에는 그 자리에서 상태를 바꾼다
   - `PATCH /v1/todos/{id}`만 보낸다. Todo가 완료·취소되면 서버가 타이머를 끝내고 `timer.updated`로 알린다
