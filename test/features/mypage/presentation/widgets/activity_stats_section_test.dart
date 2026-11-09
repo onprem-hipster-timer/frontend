@@ -100,4 +100,15 @@ void main() {
     expect(find.text('통계 데이터를 불러올 수 없습니다'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
+
+  testWidgets('불러오지 못한 뒤 다시 시도하면 통계를 그린다', (tester) async {
+    todos.readError = Exception('끊김');
+    await pumpSection(tester);
+    await exhaustRetries(tester);
+
+    todos.readError = null;
+    await tester.tap(find.text('다시 시도'));
+    await tester.pumpAndSettle();
+    expect(find.text('전체 진행률 (1개 완료 / 5개 전체)'), findsOneWidget);
+  });
 }
