@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -81,7 +81,10 @@ void main() {
   }
 
   Finder tileOf(String title) => find
-      .ancestor(of: find.text(title), matching: find.byType(TodoTreeTile))
+      .ancestor(
+        of: find.text(title),
+        matching: find.byType(EditableTodoTreeTile),
+      )
       .first;
 
   Finder inTile(String title, Finder finder) =>

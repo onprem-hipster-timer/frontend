@@ -11,7 +11,7 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -78,7 +78,7 @@ void main() {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: TodoTreeTile(
+                  child: EditableTodoTreeTile(
                     node: tree.nodeMap[rootId]!,
                     tree: tree,
                     initiallyExpanded: true,
@@ -117,7 +117,7 @@ void main() {
     );
     if (expanded.isNotEmpty) {
       ProviderScope.containerOf(
-        tester.element(find.byType(TodoTreeTile).first),
+        tester.element(find.byType(EditableTodoTreeTile).first),
       ).read(expandedTodoIdsProvider.notifier).addAll(expanded);
     }
     await tester.pump();
@@ -140,7 +140,7 @@ void main() {
   Finder chipText(String text) =>
       find.descendant(of: chip(), matching: find.text(text));
   Finder tileOf(String id) => find.byWidgetPredicate(
-    (widget) => widget is TodoTreeTile && widget.node.id == id,
+    (widget) => widget is EditableTodoTreeTile && widget.node.id == id,
   );
 
   /// 칩 안 [text]가 실제로 그려지는 색
@@ -353,7 +353,7 @@ void main() {
           await confirm(tester);
           router.go(AppRoute.calendar.path);
           await tester.pumpAndSettle();
-          expect(find.byType(TodoTreeTile), findsNothing);
+          expect(find.byType(EditableTodoTreeTile), findsNothing);
 
           gate.complete();
           await tester.pumpAndSettle();

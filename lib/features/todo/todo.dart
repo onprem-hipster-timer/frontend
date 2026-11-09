@@ -8,7 +8,8 @@ export 'presentation/pages/todo_group_detail_page.dart';
 export 'presentation/pages/tag_group_selector_page.dart';
 
 // Widgets
-export 'presentation/widgets/todo_tree_tile.dart';
+export 'presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
+export 'presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 export 'presentation/widgets/todo_form_sheet.dart';
 export 'presentation/widgets/todo_group_card.dart';
 

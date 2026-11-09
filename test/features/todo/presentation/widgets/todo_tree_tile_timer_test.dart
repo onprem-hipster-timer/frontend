@@ -9,7 +9,7 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -65,7 +65,10 @@ void main() {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: TodoTreeTile(node: tree.nodeMap[root.id]!, tree: tree),
+                  child: EditableTodoTreeTile(
+                    node: tree.nodeMap[root.id]!,
+                    tree: tree,
+                  ),
                 ),
               ],
             ),

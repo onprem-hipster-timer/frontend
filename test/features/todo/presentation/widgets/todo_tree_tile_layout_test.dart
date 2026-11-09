@@ -3,7 +3,7 @@ import 'package:layout_audit/layout_audit.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 
 import '../../../../helpers/layout_audit_app.dart';
 import '../../../../helpers/schedule_fixtures.dart';
@@ -13,7 +13,7 @@ void main() {
   testLayoutAudit(
     'todo_tree_tile',
     subject: '제목·설명·태그',
-    within: find.byType(TodoTreeTile),
+    within: find.byType(EditableTodoTreeTile),
     build: (text) {
       final tree = buildTodoTree([
         makeTodo(id: 'parent').copyWith(
@@ -45,10 +45,10 @@ void main() {
             ServerClock(deviceNow: () => DateTime.utc(2026, 11, 6, 10, 0, 30)),
           ),
         ],
-      )(TodoTreeTile(node: tree.nodeMap['parent']!, tree: tree));
+      )(EditableTodoTreeTile(node: tree.nodeMap['parent']!, tree: tree));
     },
     verify: (tester) {
-      expect(find.byType(TodoTreeTile), findsOneWidget);
+      expect(find.byType(EditableTodoTreeTile), findsOneWidget);
       expect(find.text('01:30:00'), findsOneWidget);
     },
   );

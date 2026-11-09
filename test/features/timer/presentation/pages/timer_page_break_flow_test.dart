@@ -13,7 +13,7 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -381,7 +381,7 @@ void main() {
         Widget todoScreen() => Scaffold(
           body: ListView(
             children: [
-              TodoTreeTile(
+              EditableTodoTreeTile(
                 node: tree.nodeMap[todo.id]!,
                 tree: tree,
                 initiallyExpanded: true,

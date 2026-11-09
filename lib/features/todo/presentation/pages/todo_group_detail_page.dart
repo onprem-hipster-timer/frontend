@@ -7,7 +7,8 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_root_drop_target.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
@@ -209,7 +210,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
           final node = tree.roots[treeIndex];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TodoTreeTile(
+            child: EditableTodoTreeTile(
               node: node,
               tree: tree,
               onTap: (todo) => _showTodoDetail(context, todo),
