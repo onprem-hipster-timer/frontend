@@ -259,6 +259,24 @@ void main() {
       );
     });
 
+    testWidgets('폼에서 종일로 만든 일정(00:00~23:59)은 종일로 연다', (tester) async {
+      final day = DateTime(now.year, now.month, 10);
+      await openEdit(
+        tester,
+        makeSchedule(
+          id: 'schedule-3',
+          title: '휴가',
+          startTime: day.toUtc(),
+          endTime: DateTime(now.year, now.month, 10, 23, 59).toUtc(),
+        ),
+      );
+
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isTrue,
+      );
+    });
+
     testWidgets('수정에 실패하면 시트를 두고 오류를 알린다', (tester) async {
       schedules.writeError = Exception('서버 오류');
       await openEdit(tester, existing());

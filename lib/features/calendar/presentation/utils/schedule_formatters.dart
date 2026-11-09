@@ -18,12 +18,16 @@ bool isSameDay(DateTime date1, DateTime date2) {
       date1.day == date2.day;
 }
 
+/// 종일 일정인지. 00:00에 시작해 하루 이상 이어지고, 끝이 그날의 마지막 분(23:59, 끝 포함)이거나
+/// 다음 날 00:00(끝 미포함)이면 종일이다. 일정 폼은 23:59로 저장한다.
 bool isAllDay(DateTime start, DateTime end) {
-  return start.hour == 0 &&
-      start.minute == 0 &&
-      end.hour == 0 &&
-      end.minute == 0 &&
-      end.difference(start).inHours >= 24;
+  if (start.hour != 0 || start.minute != 0) return false;
+  final endsAtLastMinute = end.hour == 23 && end.minute == 59;
+  final endsAtMidnight = end.hour == 0 && end.minute == 0;
+  if (endsAtLastMinute) {
+    return !end.isBefore(start.add(const Duration(hours: 23, minutes: 59)));
+  }
+  return endsAtMidnight && end.difference(start).inHours >= 24;
 }
 
 /// [compareDate]가 일정 기간 [startDate, endDate]에 포함되는지 검사합니다.

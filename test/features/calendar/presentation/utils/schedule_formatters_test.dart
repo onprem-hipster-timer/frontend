@@ -54,4 +54,28 @@ void main() {
       expect(isIncludeDay(start, end, DateTime(2026, 4, 9)), isFalse);
     });
   });
+
+  group('isAllDay', () {
+    final day = DateTime(2026, 11, 10);
+
+    test('00:00에 시작해 그날 23:59(초 포함)에 끝나면 종일이다', () {
+      expect(isAllDay(day, DateTime(2026, 11, 10, 23, 59)), isTrue);
+      expect(isAllDay(day, DateTime(2026, 11, 10, 23, 59, 59)), isTrue);
+    });
+
+    test('다음 날 00:00에 끝나도 종일이고, 여러 날도 종일이다', () {
+      expect(isAllDay(day, DateTime(2026, 11, 11)), isTrue);
+      expect(isAllDay(day, DateTime(2026, 11, 12, 23, 59)), isTrue);
+    });
+
+    test('00:00이 아닌 시작, 23:59가 아닌 끝, 하루보다 짧으면 종일이 아니다', () {
+      expect(
+        isAllDay(DateTime(2026, 11, 10, 9), DateTime(2026, 11, 10, 23, 59)),
+        isFalse,
+      );
+      expect(isAllDay(day, DateTime(2026, 11, 10, 18)), isFalse);
+      expect(isAllDay(day, day), isFalse);
+      expect(isAllDay(day, DateTime(2026, 11, 9, 23, 59)), isFalse);
+    });
+  });
 }
