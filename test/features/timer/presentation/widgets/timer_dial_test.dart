@@ -266,6 +266,47 @@ void main() {
         ]);
       });
 
+      testWidgets('분 아래 초가 남아 있어도 늘리기·줄이기는 1~60분의 정수 분으로 고른다', (tester) async {
+        final handle = tester.ensureSemantics();
+        final picked = await pumpPicker(
+          tester,
+          remaining: const Duration(minutes: 25, seconds: 30),
+        );
+
+        tester.semantics.increase(node);
+        await tester.pump();
+        tester.semantics.decrease(node);
+        await tester.pump();
+
+        expect(picked, hasLength(2));
+        for (final duration in picked) {
+          expect(duration.inSeconds % 60, 0, reason: '$duration');
+          expect(duration.inMinutes, inInclusiveRange(1, 60));
+        }
+        handle.dispose();
+      });
+
+      testWidgets('60분을 넘는 다이얼은 그 다이얼 끝까지 1분씩 늘린다', (tester) async {
+        final handle = tester.ensureSemantics();
+        final picked = await pumpPicker(tester, remaining: 90.minutes);
+
+        tester.semantics.increase(node);
+        await tester.pump();
+
+        expect(picked, [91.minutes]);
+        expect(dialNode(tester), isSemantics(value: '91분'));
+        handle.dispose();
+      });
+
+      testWidgets('초점이 없으면 방향키로 바꾸지 않는다', (tester) async {
+        final picked = await pumpPicker(tester);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pump();
+
+        expect(picked, isEmpty);
+      });
+
       testWidgets('고를 수 없는 다이얼은 슬라이더가 아니고 초점을 받지 않는다', (tester) async {
         final handle = tester.ensureSemantics();
         await pumpDial(tester);
