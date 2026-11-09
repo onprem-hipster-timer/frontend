@@ -140,6 +140,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+#### UI
+- 화면에 연결되지 않은 위젯을 지운다: `TodoTreeTileWithTimer`·`TimerControlButtons`·`TodoTreeWithTimerListView`, `TodoListPage`, `ScheduleCreateDialog`
+
 #### Timer WebSocket
 - WebSocket 명령(`timer.create`·`pause`·`resume`·`stop`·`sync`)과 `timer.sync_result`·`timer.friend_activity` 처리
 - 소켓 연결의 `timezone` 쿼리

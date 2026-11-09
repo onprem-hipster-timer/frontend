@@ -1451,7 +1451,7 @@ class TimerHistoryItem extends ConsumerWidget {
   const TimerHistoryItem({super.key, required this.timer});
 
   /// 타이머 액션을 실행하고, 실패 시(예: WS 미연결) SnackBar로 피드백한다.
-  ///
+  /// 대시보드(`_pauseTimer` 등)와 동일하게
   /// 대시보드(`_pauseTimer` 등)·`TimerControlButtons`와 동일하게
   /// 히스토리 리스트의 액션에서도 예외가 사용자에게 전달되도록 한다.
   Future<void> _runTimerAction(
