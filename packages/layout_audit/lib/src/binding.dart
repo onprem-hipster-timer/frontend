@@ -171,6 +171,7 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
       return LayoutReport(
         name: name,
         caseLabel: caseLabel,
+        viewSize: logical,
         findings: [
           ...overflows,
           ...auditRenderTree(

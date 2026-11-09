@@ -44,6 +44,7 @@ extension LayoutAuditTester on WidgetTester {
     final report = LayoutReport(
       name: name,
       caseLabel: label == null ? auditCase.toString() : '$auditCase · $label',
+      viewSize: auditCase.viewport.logicalSize,
       findings: [
         ...overflows,
         ...auditLayout(

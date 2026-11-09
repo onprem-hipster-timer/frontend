@@ -178,7 +178,9 @@ void main() {
     expect(report.name, 'mixed');
     expect(report.caseLabel, _case.toString());
     expect(lines.single, contains('mixed'));
+    expect(report.viewSize, TestViewports.iphoneSe1.logicalSize);
     expect(File('${dir.path}/mixed.md').existsSync(), isTrue);
+    expect(File('${dir.path}/mixed.html').existsSync(), isTrue);
     expect(tester.takeException(), isNull);
   });
 

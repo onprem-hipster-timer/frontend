@@ -52,12 +52,13 @@ for (final text in StressTexts.all) {
 ## 보고서 읽는 법
 
 ```
-레이아웃 점검: todo_tree_tile / phone-small 360x800 @3.0x, 글자 2.0배 — warning 2, notice 1, info 0 → build/layout_audit/todo_tree_tile.md
+레이아웃 점검: todo_tree_tile / phone-small 360x800 @3.0x, 글자 2.0배 — warning 2, notice 1, info 0 → build/layout_audit/todo_tree_tile.md (todo_tree_tile.html)
 [겹침] '수정'(lib/features/todo/presentation/widgets/todo_tree_tile.dart:315)이 '팀 주간 회의 자료 준비와 분기별…'(…:245)을 38% 가립니다 (가리는 위젯: …:300, Stack 안) | ∩=(194.0,14.0,212.0,36.0)
 ```
 
 - `lib/…:N`은 그 글자를 만든 위젯의 소스 줄이다. 가리는 위젯은 두 글자의 공통 조상 바로 아래에서 위쪽 글자를 품은 위젯이다.
 - 마크다운 보고서는 `build/layout_audit/<이름>.md`에 쌓인다(테스트 파일 단위로 하나).
+- HTML 보고서(`build/layout_audit/<이름>.html`)는 브라우저로 열어 심각도·종류로 거르고, 발견 위치를 화면 축소판에서 본다.
 - GitHub Actions에서는 해당 소스 줄에 어노테이션(스텝당 10개까지)을 달고, 잡 요약에 전체 표를 쓴다.
 
 | 종류 | 뜻 | 기본 심각도 |

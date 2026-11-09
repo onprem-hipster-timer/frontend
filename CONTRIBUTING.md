@@ -97,7 +97,7 @@ fvm flutter test --coverage
 
 #### Layout audit
 
-Every widget test is audited after it finishes: overlapping text, RenderFlex overflow, clipped or off-screen text and ellipsized text are reported, never failed. When something is found, the console prints one line per test and the full table goes to `build/layout_audit/<name>.md`. On GitHub Actions the same findings appear as annotations on the source line and in the job summary.
+Every widget test is audited after it finishes: overlapping text, RenderFlex overflow, clipped or off-screen text and ellipsized text are reported, never failed. When something is found, the console prints one line per test and the full table goes to `build/layout_audit/<name>.md` and to `<name>.html`, which you open in a browser. On GitHub Actions the same findings appear as annotations on the source line and in the job summary.
 
 ```bash
 # See what the audit found for one screen
