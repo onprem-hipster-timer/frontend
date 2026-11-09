@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/network/server_clock.dart';
@@ -56,6 +57,7 @@ void main() {
     ServerClock? clock,
     List<TimerRead> history = const [],
   }) => ProviderScope(
+    retry: appRetry,
     overrides: [
       allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
       timerFriendActivityProvider.overrideWith(

@@ -322,13 +322,8 @@ AsyncValue<TimerRead?> activeTimer(Ref ref) {
 Future<List<TimerRead>> timerHistory(Ref ref) async {
   final repository = ref.watch(timerRepositoryProvider);
 
-  try {
-    final timers = await repository.getTimerHistory();
-    return sortTimerHistory(timers);
-  } catch (error) {
-    debugPrint('타이머 히스토리 조회 실패: $error');
-    throw Exception('타이머 히스토리를 불러올 수 없습니다: $error');
-  }
+  final timers = await repository.getTimerHistory();
+  return sortTimerHistory(timers);
 }
 
 /// 친구의 타이머 이벤트가 이만큼 더 오지 않으면 [sharedTimersProvider]를 다시 읽는다

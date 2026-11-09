@@ -1,3 +1,4 @@
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
@@ -12,6 +13,7 @@ Widget Function(Widget child) wrapWithApp({
   List<Override> overrides = const [],
 }) {
   return (child) => ProviderScope(
+    retry: appRetry,
     overrides: overrides,
     child: MaterialApp(
       localizationsDelegates: const [

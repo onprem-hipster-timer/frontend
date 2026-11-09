@@ -1,5 +1,6 @@
 import 'dart:ui' show Tristate;
 
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -69,6 +70,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           todosApiProvider.overrideWithValue(todos),
           tagsApiProvider.overrideWithValue(

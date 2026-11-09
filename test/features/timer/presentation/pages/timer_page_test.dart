@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'dart:math' as math;
 
 import 'package:cupertino_ui/cupertino_ui.dart';
@@ -4080,10 +4081,6 @@ void main() {
 
       await pump(tester);
       await tester.tap(friendsTab());
-      // 자동 재시도가 끝날 때까지 기다린다
-      for (var i = 0; i < 12; i++) {
-        await tester.pump(const Duration(seconds: 7));
-      }
       await tester.pumpAndSettle();
 
       expect(find.text('공유받은 타이머를 불러올 수 없습니다'), findsOneWidget);
@@ -4984,6 +4981,7 @@ Future<void> _pumpInNavShell(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
+      retry: appRetry,
       overrides: overrides,
       child: MaterialApp.router(routerConfig: router),
     ),

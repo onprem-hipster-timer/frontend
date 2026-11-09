@@ -27,21 +27,15 @@ Future<List<TimerRead>> timers(
 }) async {
   final api = ref.watch(timersApiProvider);
 
-  try {
-    final response = await api.listTimersV1TimersGet(
-      status: status,
-      type: type,
-      startDate: startDate,
-      endDate: endDate,
-      includeTodo: true, // Todo 정보 포함
-      includeSchedule: true, // Schedule 정보 포함
-      options: timerRequest(),
-    );
-
-    return response;
-  } catch (error) {
-    throw Exception('타이머 조회 실패: $error');
-  }
+  return api.listTimersV1TimersGet(
+    status: status,
+    type: type,
+    startDate: startDate,
+    endDate: endDate,
+    includeTodo: true, // Todo 정보 포함
+    includeSchedule: true, // Schedule 정보 포함
+    options: timerRequest(),
+  );
 }
 
 /// 활성 타이머 (RUNNING, PAUSED 상태). 실시간 이벤트가 반영된 [timer_feature.myActiveTimersProvider]를 쓴다

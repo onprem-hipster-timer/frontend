@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +84,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           timerControllerProvider.overrideWith(() => controller),
           activeTimersProvider.overrideWith((ref) async => active),

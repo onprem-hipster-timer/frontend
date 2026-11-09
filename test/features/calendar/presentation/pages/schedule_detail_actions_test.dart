@@ -1,5 +1,6 @@
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,6 +84,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           schedulesApiProvider.overrideWithValue(schedules),
           tagsApiProvider.overrideWithValue(tags),

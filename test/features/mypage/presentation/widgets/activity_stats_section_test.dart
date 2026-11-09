@@ -1,4 +1,6 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/mypage/presentation/widgets/activity_stats_section.dart';
@@ -31,6 +33,7 @@ void main() {
   Future<void> pumpSection(WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [todosApiProvider.overrideWithValue(todos)],
         child: const MaterialApp(
           home: Scaffold(
@@ -39,12 +42,6 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
-  }
-
-  /// 실패한 조회의 자동 재시도가 끝날 때까지(1~2분) 흘린다
-  Future<void> exhaustRetries(WidgetTester tester) async {
-    await tester.pump(const Duration(minutes: 2));
     await tester.pumpAndSettle();
   }
 
@@ -82,11 +79,11 @@ void main() {
     );
   });
 
-  testWidgets('불러오지 못하면 오류를 보인다', (tester) async {
+  testWidgets('불러오지 못하면 다시 받지 않고 바로 오류를 보인다', (tester) async {
     todos.readError = Exception('끊김');
     await pumpSection(tester);
-    await exhaustRetries(tester);
 
+    expect(todos.readGroupIds, hasLength(1));
     expect(find.text('통계 데이터를 불러올 수 없습니다'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
@@ -94,11 +91,26 @@ void main() {
   testWidgets('불러오지 못한 뒤 다시 시도하면 통계를 그린다', (tester) async {
     todos.readError = Exception('끊김');
     await pumpSection(tester);
-    await exhaustRetries(tester);
 
     todos.readError = null;
     await tester.tap(find.text('다시 시도'));
     await tester.pumpAndSettle();
     expect(find.text('전체 진행률 (1개 완료 / 5개 전체)'), findsOneWidget);
+  });
+
+  testWidgets('네트워크가 잠깐 끊겼다 돌아오면 오류 없이 통계를 그린다', (tester) async {
+    todos
+      ..readError = DioException(
+        requestOptions: RequestOptions(path: '/v1/todos'),
+        type: DioExceptionType.connectionError,
+      )
+      ..readFailures = 2;
+    await pumpSection(tester);
+    await tester.pump(appRetryWindow);
+    await tester.pumpAndSettle();
+
+    expect(find.text('통계 데이터를 불러올 수 없습니다'), findsNothing);
+    expect(find.text('전체 진행률 (1개 완료 / 5개 전체)'), findsOneWidget);
+    expect(todos.readGroupIds, hasLength(3));
   });
 }

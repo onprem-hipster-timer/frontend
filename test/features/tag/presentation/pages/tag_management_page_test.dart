@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/tag/presentation/pages/tag_management_page.dart';
@@ -33,6 +34,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [tagsApiProvider.overrideWithValue(tags)],
         child: const MaterialApp(home: TagManagementPage()),
       ),

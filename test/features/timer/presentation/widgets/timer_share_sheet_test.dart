@@ -365,7 +365,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(RadioListTile<VisibilityLevel>, '선택한 친구'),
       );
-      // 다시 읽는 동안은 진행 표시, 자동 재시도가 끝나면 오류를 보인다
+      // 다시 읽는 동안은 진행 표시
       await tester.pump();
       expect(
         find.descendant(

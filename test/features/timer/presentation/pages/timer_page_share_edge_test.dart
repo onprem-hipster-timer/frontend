@@ -560,14 +560,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    /// 자동 재시도가 끝날 때까지 기다린다
-    Future<void> waitRetries(WidgetTester tester) async {
-      for (var i = 0; i < 12; i++) {
-        await tester.pump(const Duration(seconds: 7));
-      }
-      await tester.pumpAndSettle();
-    }
-
     TimerWsTimerEvent event(TimerRead timer) => TimerWsTimerEvent(
       id: 'msg-${timer.id}',
       type: 'timer.updated',
@@ -605,7 +597,7 @@ void main() {
       await openFriendsTab(tester);
       expect(sharedItem('shared-1'), findsOneWidget);
 
-      await waitRetries(tester);
+      await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
       expect(inItem('shared-1', find.text('다른 사용자')), findsOneWidget);
@@ -624,7 +616,7 @@ void main() {
 
         await pump(tester, friendActivity: activity.stream);
         await tester.tap(friendsTab());
-        await waitRetries(tester);
+        await tester.pumpAndSettle();
         expect(find.text('공유받은 타이머를 불러올 수 없습니다'), findsOneWidget);
 
         failing = false;
@@ -752,7 +744,7 @@ void main() {
         historyError: Exception('네트워크 오류'),
         friends: () async => friendsList,
       );
-      await waitRetries(tester);
+      await tester.pumpAndSettle();
       expect(find.text('히스토리를 불러올 수 없습니다'), findsOneWidget);
 
       await openFriendsTab(tester);
@@ -910,7 +902,7 @@ void main() {
         await pump(tester);
         if (size.width < 600) await openHistorySheet(tester);
         await tester.tap(friendsTab());
-        await waitRetries(tester);
+        await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
         expect(find.text('공유받은 타이머를 불러올 수 없습니다'), findsOneWidget);

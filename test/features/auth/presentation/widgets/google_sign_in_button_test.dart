@@ -1,6 +1,7 @@
 // Google 브랜딩 가이드라인의 버튼 규격을 지키는지 확인한다
 // https://developers.google.com/identity/branding-guidelines
 
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ void main() {
   Future<void> pumpButton(WidgetTester tester, Brightness brightness) async {
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           googleSignInAvailableProvider.overrideWith((ref) async => true),
         ],
@@ -43,6 +45,7 @@ void main() {
   testWidgets('앱 테마의 버튼 색을 덮어쓰지 않는다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           googleSignInAvailableProvider.overrideWith((ref) async => true),
         ],

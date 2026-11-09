@@ -1,3 +1,4 @@
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart'
@@ -22,6 +23,7 @@ Future<void> pumpSheetHost(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
+      retry: appRetry,
       overrides: overrides,
       child: MaterialApp(
         localizationsDelegates: const [

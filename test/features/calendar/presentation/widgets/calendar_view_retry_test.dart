@@ -1,5 +1,6 @@
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,7 @@ void main() {
     ])..readError = Exception('끊김');
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           schedulesApiProvider.overrideWithValue(schedules),
           calendarSettingsProvider.overrideWith(_FixedSettings.new),
@@ -46,8 +48,6 @@ void main() {
         ),
       ),
     );
-    // 실패한 조회의 자동 재시도가 끝날 때까지 흘린다
-    await tester.pump(const Duration(minutes: 2));
     await tester.pumpAndSettle();
     expect(find.text('일정을 불러올 수 없습니다'), findsOneWidget);
 

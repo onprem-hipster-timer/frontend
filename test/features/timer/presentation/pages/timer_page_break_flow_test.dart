@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -119,6 +120,7 @@ void main() {
     repository = serve(timers);
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: overrides(),
         child: const MaterialApp(home: TimerPage()),
       ),
@@ -417,6 +419,7 @@ void main() {
         addTearDown(router.dispose);
         await tester.pumpWidget(
           ProviderScope(
+            retry: appRetry,
             overrides: [
               ...overrides(todos: [todo]),
               todoTimerAggregationsProvider.overrideWith((ref) async => {}),

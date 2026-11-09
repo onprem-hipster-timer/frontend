@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Network
+- 불러오기가 실패하면 연결 실패·시간 초과·502·503·504일 때만 0.5·1·1.5초 뒤 세 번(합 3초) 다시 받고, 그 밖의 실패는 바로 오류와 '다시 시도'를 보인다. 이전에는 모든 실패를 1~2분 동안 다시 받는 사이 불러오는 중만 보였다
+- 태그 그룹·타이머 목록·타이머 기록 조회가 실패를 감싸지 않고 그대로 넘긴다
+
 #### Timer
 - 타이머 시작·일시정지·재개·정지를 REST(`POST /v1/timers`, `PATCH /v1/timers/{id}/pause`·`resume`, `POST /v1/timers/{id}/stop`)로 보낸다
 - 타이머 REST 요청에 `timezone=UTC`를 붙인다

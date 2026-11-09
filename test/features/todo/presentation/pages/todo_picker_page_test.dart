@@ -135,8 +135,6 @@ void main() {
   testWidgets('할 일을 불러오지 못하면 오류와 다시 시도를 보인다', (tester) async {
     todos.readError = Exception('끊김');
     await open(tester);
-    await tester.pump(const Duration(minutes: 2));
-    await tester.pumpAndSettle();
 
     expect(find.text('할 일을 불러오지 못했습니다'), findsOneWidget);
     todos.readError = null;

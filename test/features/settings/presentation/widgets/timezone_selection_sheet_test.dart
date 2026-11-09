@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'dart:ui' show Tristate;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +40,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp.router(routerConfig: router),
       ),

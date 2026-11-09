@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart'
@@ -27,6 +28,7 @@ class CalendarRenderHarness extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
+      retry: appRetry,
       overrides: [
         calendarSettingsProvider.overrideWith(
           () => _FixedCalendarSettings(settings),

@@ -185,6 +185,9 @@ class FakeTodosClient extends Fake implements TodosClient {
   /// 설정하면 목록 조회가 이 오류로 실패한다.
   Object? readError;
 
+  /// 주면 [readError]로 이만큼만 실패하고 그 뒤로는 성공한다. 없으면 계속 실패한다.
+  int? readFailures;
+
   /// 설정하면 쓰기 요청이 이 오류로 실패한다.
   Object? writeError;
 
@@ -201,7 +204,11 @@ class FakeTodosClient extends Fake implements TodosClient {
     RequestOptions? options,
   }) async {
     readGroupIds.add(groupIds);
-    if (readError != null) throw readError!;
+    final failures = readFailures;
+    if (readError != null && (failures == null || failures > 0)) {
+      if (failures != null) readFailures = failures - 1;
+      throw readError!;
+    }
     return [
       for (final todo in todos)
         if (groupIds == null || groupIds.contains(todo.tagGroupId)) todo,
