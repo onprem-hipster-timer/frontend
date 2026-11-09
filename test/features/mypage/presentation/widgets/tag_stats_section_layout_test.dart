@@ -7,36 +7,28 @@ import 'package:momeet/features/mypage/presentation/widgets/tag_stats_section.da
 import '../../../../helpers/layout_audit_app.dart';
 
 void main() {
-  for (final text in StressTexts.all) {
-    testWidgets(
-      '${text.label} 태그 이름에서 겹침·넘침·잘림을 보고한다',
-      variant: LayoutAuditVariants.all,
-      (tester) async {
-        final auditCase = LayoutAuditVariants.all.currentValue!;
-        final stats = _statsWith(text.value);
-
-        await tester.pumpAndAuditLayout(
-          name: 'tag_stats_section',
-          auditCase: auditCase,
-          label: text.label,
-          wrap: wrapWithApp(
-            overrides: [
-              tagUsageStatisticsProvider.overrideWith((ref) async => stats),
-            ],
-          ),
-          within: find.byType(TagStatsSection),
+  testLayoutAudit(
+    'tag_stats_section',
+    subject: '태그 이름',
+    within: find.byType(TagStatsSection),
+    build: (text) =>
+        wrapWithApp(
+          overrides: [
+            tagUsageStatisticsProvider.overrideWith(
+              (ref) async => _statsWith(text.value),
+            ),
+          ],
+        )(
           // 마이페이지와 같은 패딩의 ListView 안에 둔다.
-          child: ListView(
+          ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             children: const [TagStatsSection()],
           ),
-        );
-
-        expect(find.byType(TagStatsSection), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
-  }
+        ),
+    verify: (tester) {
+      expect(find.byType(TagStatsSection), findsOneWidget);
+    },
+  );
 }
 
 TagUsageStatistics _statsWith(String stressName) {

@@ -11,46 +11,36 @@ import '../../../../helpers/layout_audit_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
 void main() {
-  for (final text in StressTexts.all) {
-    testWidgets(
-      '${text.label} 제목에서 겹침·넘침·잘림을 보고한다',
-      variant: LayoutAuditVariants.all,
-      (tester) async {
-        final auditCase = LayoutAuditVariants.all.currentValue!;
-        // 일시정지 상태가 상태 배지와 재개·완료 버튼을 함께 그려 가장 넓다.
-        final timer = makeTimer(
-          id: 'timer-1',
-          status: TimerStatus.paused,
-          startedAt: DateTime.utc(2026, 11, 6, 9),
-          elapsedTime: 1200,
-        ).copyWith(title: text.value);
-
-        await tester.pumpAndAuditLayout(
-          name: 'timer_history_item',
-          label: text.label,
-          auditCase: auditCase,
-          wrap: wrapWithApp(
-            overrides: [
-              activeTimerProvider.overrideWithValue(const AsyncData(null)),
-              timerTickerProvider.overrideWith(
-                (ref) => Stream.value(Duration.zero),
-              ),
-              serverClockProvider.overrideWithValue(
-                ServerClock(deviceNow: () => DateTime.utc(2026, 11, 6, 10)),
-              ),
-            ],
+  // 좁은 화면의 ListTile 폭 단언 뒤에는 파인더 평가가 던지므로 verify를 두지 않는다.
+  testLayoutAudit(
+    'timer_history_item',
+    subject: '제목',
+    within: find.byType(TimerHistoryItem),
+    build: (text) {
+      // 일시정지 상태가 상태 배지와 재개·완료 버튼을 함께 그려 가장 넓다.
+      final timer = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        startedAt: DateTime.utc(2026, 11, 6, 9),
+        elapsedTime: 1200,
+      ).copyWith(title: text.value);
+      return wrapWithApp(
+        overrides: [
+          activeTimerProvider.overrideWithValue(const AsyncData(null)),
+          timerTickerProvider.overrideWith(
+            (ref) => Stream.value(Duration.zero),
           ),
-          within: find.byType(TimerHistoryItem),
-          // TimerHistoryList와 같은 바깥 여백으로 둔다.
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [TimerHistoryItem(timer: timer)],
+          serverClockProvider.overrideWithValue(
+            ServerClock(deviceNow: () => DateTime.utc(2026, 11, 6, 10)),
           ),
-        );
-
-        // 좁은 화면의 ListTile 폭 단언 뒤에는 파인더 평가가 던지므로 예외 없음만 확인한다.
-        expect(tester.takeException(), isNull);
-      },
-    );
-  }
+        ],
+      )(
+        // TimerHistoryList와 같은 바깥 여백으로 둔다.
+        ListView(
+          padding: const EdgeInsets.all(16),
+          children: [TimerHistoryItem(timer: timer)],
+        ),
+      );
+    },
+  );
 }

@@ -15,40 +15,26 @@ void main() {
 
   // 월간 뷰는 일정이 든 셀이 낮아지면 달력 위젯 안에서 단언이 나 아직 넣지 않는다.
   const viewTypes = [CalendarViewType.week, CalendarViewType.day];
-  const texts = [StressTexts.koreanLong, StressTexts.latinUnbroken];
-
   for (final viewType in viewTypes) {
-    for (final text in texts) {
-      testWidgets(
-        '${viewType.name} 뷰의 ${text.label} 일정에서 겹침·넘침·잘림을 보고한다',
-        variant: LayoutAuditVariants.all,
-        (tester) async {
-          final auditCase = LayoutAuditVariants.all.currentValue!;
-
-          await tester.pumpAndAuditLayout(
-            name: 'calendar_appointment',
-            auditCase: auditCase,
-            label: '${viewType.name} 뷰 · ${text.label}',
-            // 하네스가 자체 MaterialApp을 가지므로 다시 감싸지 않는다.
-            wrap: (child) => child,
-            within: find.byType(CalendarViewWidget),
-            child: CalendarRenderHarness(
-              settings: CalendarSettingsState(
-                viewType: viewType,
-                selectedDate: _displayDate,
-                displayDate: _displayDate,
-                firstDayOfWeek: DateTime.sunday,
-              ),
-              schedules: _schedulesTitled(text.value),
-              holidays: const [],
-            ),
-          );
-
-          expect(find.byType(CalendarViewWidget), findsOneWidget);
-          expect(tester.takeException(), isNull);
-        },
-      );
-    }
+    testLayoutAudit(
+      'calendar_appointment',
+      subject: '${viewType.name} 뷰 일정',
+      texts: const [StressTexts.koreanLong, StressTexts.latinUnbroken],
+      within: find.byType(CalendarViewWidget),
+      build: (text) => CalendarRenderHarness(
+        settings: CalendarSettingsState(
+          viewType: viewType,
+          selectedDate: _displayDate,
+          displayDate: _displayDate,
+          firstDayOfWeek: DateTime.sunday,
+        ),
+        schedules: _schedulesTitled(text.value),
+        holidays: const [],
+      ),
+      verify: (tester) {
+        expect(find.byType(CalendarViewWidget), findsOneWidget);
+      },
+    );
   }
 }
 

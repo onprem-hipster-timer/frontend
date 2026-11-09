@@ -31,19 +31,16 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 ### 2. 명시 모드 — 위험한 위젯을 화면 크기 × 글자 배율 × 긴 텍스트로
 
 ```dart
-for (final text in StressTexts.all) {
-  testWidgets('${text.label} 제목에서 겹침·넘침·잘림을 보고한다',
-      variant: LayoutAuditVariants.all, (tester) async {
-    await tester.pumpAndAuditLayout(
-      name: 'todo_tree_tile',
-      auditCase: LayoutAuditVariants.all.currentValue!,
-      wrap: wrapWithApp(),               // 앱의 테마·로케일로 감싸는 함수
-      within: find.byType(TodoTreeTile),
-      child: TodoTreeTile(/* text.value를 제목으로 */),
-    );
-  });
-}
+testLayoutAudit(
+  'todo_tree_tile',                      // 보고서 파일 이름
+  subject: '제목',                        // 테스트 이름·보고서 라벨에 쓰인다
+  within: find.byType(TodoTreeTile),
+  build: (text) => wrapWithApp()(TodoTreeTile(/* text.value를 제목으로 */)),
+  verify: (tester) => expect(find.byType(TodoTreeTile), findsOneWidget),
+);
 ```
+
+스트레스 텍스트마다 `testWidgets`를 하나씩 등록하고, 각각 `LayoutAuditVariants.all`의 조합 전부를 돈다. `build`는 앱 껍데기까지 포함한 위젯을 돌려준다. 명시 모드로 점검한 테스트는 자동 모드가 다시 보고하지 않는다. 한 화면만 직접 다루려면 `tester.pumpAndAuditLayout(...)`을 쓴다.
 
 - `LayoutAuditVariants.phones`(폰 7종 × 배율 1.0·1.3·2.0 = 21), `large`(폴더블·태블릿·데스크톱 9종 × 1.0·1.3 = 18), `all`(39)
 - `StressTexts`: 한국어 긴 문장, 띄어쓰기 없는 영문, 이모지, 숫자
