@@ -651,7 +651,7 @@ class CurrentTaskDisplay extends StatelessWidget {
 /// 새 타이머 시작만 응답을 기다리고([starting]), 그동안 시작 버튼 안에 진행 표시를 둔다.
 /// 집중 시간이 끝나면([timeUp]) 일시정지·재개 대신 연장([onExtend]) 버튼을 둔다.
 /// 활성 타이머 없이 휴식을 골랐으면([breakSelected]) 시작 버튼이 휴식을 바로 시작하고([onStartBreak]),
-/// 시간이 남은 일시정지 타이머에는 휴식 버튼을 더 둔다. 휴식을 시작할 수 없으면 [onStartBreak]이 null이고 휴식 버튼이 없다.
+/// 시간이 남은 일시정지 타이머와 시간이 끝난 타이머에는 휴식 버튼을 더 둔다. 휴식을 시작할 수 없으면 [onStartBreak]이 null이고 휴식 버튼이 없다.
 class TimerControlButton extends StatelessWidget {
   final TimerRead? activeTimer;
   final bool starting;
@@ -729,6 +729,15 @@ class TimerControlButton extends StatelessWidget {
             backgroundColor: theme.colorScheme.primary,
             child: Icon(Icons.add, color: theme.colorScheme.onPrimary),
           ),
+          if (onStartBreak != null) ...[
+            const SizedBox(width: 40),
+            FloatingActionButton.small(
+              onPressed: onStartBreak,
+              tooltip: '휴식',
+              backgroundColor: theme.colorScheme.tertiary,
+              child: Icon(Icons.coffee, color: theme.colorScheme.onTertiary),
+            ),
+          ],
         ],
       );
     } else if (activeTimer!.status == TimerStatus.running) {

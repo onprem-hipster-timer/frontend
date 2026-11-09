@@ -1600,11 +1600,12 @@ void main() {
       expect(controller.resumed, isFalse);
     });
 
-    for (final (name, timer, control) in [
+    for (final (name, timer, control, rest) in [
       (
         '실행 중인',
         makeTimer(id: 'timer-1', status: TimerStatus.running),
         Icons.pause,
+        findsNothing,
       ),
       (
         '시간이 끝난',
@@ -1615,9 +1616,10 @@ void main() {
           elapsedTime: 25 * 60,
         ),
         Icons.add,
+        findsOneWidget,
       ),
     ]) {
-      testWidgets('일시정지 타이머가 $name 타이머가 되면 휴식 버튼이 사라지고 작업·휴식 선택도 없다', (
+      testWidgets('일시정지 타이머가 $name 타이머가 되면 그 버튼을 보이고 작업·휴식 선택은 없다', (
         tester,
       ) async {
         final controller = await pump(tester, timer: paused);
@@ -1626,10 +1628,97 @@ void main() {
         await pump(tester, timer: timer, controller: controller);
 
         expect(_dashboardFabByIcon(control), findsOneWidget);
-        expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
+        expect(_dashboardFabByIcon(Icons.coffee), rest);
         expect(_modeSwitch(), findsNothing);
       });
     }
+
+    group('시간이 끝난 타이머에서', () {
+      final expired = makeTimer(
+        id: 'timer-1',
+        status: TimerStatus.paused,
+        allocatedDuration: 25 * 60,
+        elapsedTime: 25 * 60,
+      ).copyWith(title: '보고서');
+
+      testWidgets('완료·5분 연장 옆에 휴식 버튼을 두고 누르면 타이머를 그대로 둔 채 휴식을 센다', (
+        tester,
+      ) async {
+        final controller = await pump(tester, timer: expired);
+
+        final rest = _dashboardFabByIcon(Icons.coffee);
+        expect(
+          find.descendant(of: rest, matching: find.byTooltip('휴식')),
+          findsOneWidget,
+        );
+        await tester.tap(rest);
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('휴식')), findsOneWidget);
+        expect(inDashboard(find.text('시간 종료')), findsNothing);
+        expect(_clockText(tester), '00:05:00');
+        expect(_dashboardFabByIcon(Icons.add), findsNothing);
+        expect(controller.extendedBy, isNull);
+        expect(controller.stopCalled, isFalse);
+        expect(controller.resumed, isFalse);
+      });
+
+      testWidgets('휴식을 끝내면 시간이 끝난 타이머를 완료·5분 연장과 함께 다시 보여 준다', (tester) async {
+        final controller = await pump(tester, timer: expired);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        await tester.tap(_dashboardFabByIcon(Icons.stop));
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('보고서')), findsOneWidget);
+        expect(inDashboard(find.text('시간 종료')), findsOneWidget);
+        expect(_clockText(tester), '00:00:00');
+        expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.add), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.coffee), findsOneWidget);
+        expect(controller.stopCalled, isFalse);
+      });
+
+      testWidgets('시간이 남은 채 실행 중인 다른 타이머가 있으면 휴식 버튼이 없다', (tester) async {
+        final running = makeTimer(
+          id: 'timer-2',
+          status: TimerStatus.running,
+          startedAt: DateTime.now().toUtc(),
+          allocatedDuration: 25 * 60,
+        );
+        await _pumpTimerPage(
+          tester,
+          timer: expired,
+          controller: _FakeTimerController(),
+          active: [expired, running],
+        );
+
+        expect(inDashboard(find.text('시간 종료')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.add), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.coffee), findsNothing);
+      });
+
+      testWidgets('휴식이 0이 되어 확인하면 시간이 끝난 타이머로 돌아간다', (tester) async {
+        final controller = await pump(tester, timer: expired);
+        await tester.tap(_dashboardFabByIcon(Icons.coffee));
+        await tester.pumpAndSettle();
+
+        breakNow = breakNow.add(const Duration(minutes: 5));
+        await tester.pump(const Duration(seconds: 1));
+        expect(inDashboard(find.text('휴식 종료')), findsOneWidget);
+
+        await tester.tap(_dashboardFabByIcon(Icons.check));
+        await tester.pumpAndSettle();
+
+        expect(inDashboard(find.text('휴식 종료')), findsNothing);
+        expect(inDashboard(find.text('시간 종료')), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.add), findsOneWidget);
+        expect(_dashboardFabByIcon(Icons.check), findsOneWidget);
+        // 휴식의 확인은 타이머 완료가 아니다
+        expect(controller.stopCalled, isFalse);
+      });
+    });
 
     testWidgets('휴식 중에 타이머가 실행되면 휴식이 끝나고 그 타이머를 보여 준다', (tester) async {
       final controller = await pump(tester, timer: paused);
@@ -2773,7 +2862,7 @@ void main() {
           ('대기', null, [Icons.play_arrow]),
           ('실행 중', running, [Icons.check, Icons.pause]),
           ('일시정지', paused, [Icons.check, Icons.play_arrow, Icons.coffee]),
-          ('시간 종료', timeUp, [Icons.check, Icons.add]),
+          ('시간 종료', timeUp, [Icons.check, Icons.add, Icons.coffee]),
         ]) {
           testWidgets('$label $state: 다이얼을 왼쪽에 크게 두고 제목·시계·버튼을 오른쪽에 둔다', (
             tester,
@@ -3623,6 +3712,7 @@ Future<void> _pumpTimerPage(
   List<TodoRead> todos = const [],
   Stream<TimerWsTimerEvent> friendActivity = const Stream.empty(),
   List<Override> overrides = const [],
+  List<TimerRead>? active,
 }) async {
   await tester.pumpWidget(
     pumpApp(
@@ -3634,6 +3724,7 @@ Future<void> _pumpTimerPage(
           controller: controller,
           todos: todos,
           friendActivity: friendActivity,
+          active: active,
         ),
         ...overrides,
       ],
@@ -3682,12 +3773,14 @@ Future<void> _pumpInNavShell(
   await tester.pumpAndSettle();
 }
 
+/// [active]를 주면 내 활성 타이머 목록은 [timer] 하나 대신 그 목록이다
 List<Override> _timerOverrides({
   required TimerRead? timer,
   required List<TimerRead> history,
   required _FakeTimerController controller,
   List<TodoRead> todos = const [],
   Stream<TimerWsTimerEvent> friendActivity = const Stream.empty(),
+  List<TimerRead>? active,
 }) {
   return [
     // 새 작업 시작에서 고를 할 일
@@ -3709,7 +3802,7 @@ List<Override> _timerOverrides({
     // 휴식은 로그인한 사용자와 내 활성 타이머 목록을 본다. 목록은 덮어쓴 활성 타이머 하나로 맞춘다
     currentUserProvider.overrideWithValue(null),
     myActiveTimersProvider.overrideWithBuild(
-      (ref, _) => [?ref.watch(activeTimerProvider).value],
+      (ref, _) => active ?? [?ref.watch(activeTimerProvider).value],
     ),
   ];
 }
