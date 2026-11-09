@@ -1,5 +1,7 @@
 import 'package:flutter/rendering.dart';
 
+import 'rect_math.dart';
+
 /// 화면에 실제로 그려지는 텍스트·이미지 render object 하나와 그 전역 기하.
 class ContentLeaf {
   const ContentLeaf({
@@ -35,11 +37,14 @@ class ContentLeaf {
   /// 이미지는 빈 문자열.
   final String text;
 
-  Rect get bounds => visibleBoxes.reduce((a, b) => a.expandToInclude(b));
+  Rect get bounds => unionRect(visibleBoxes);
 
-  double get visibleArea =>
-      visibleBoxes.fold(0, (sum, rect) => sum + rect.width * rect.height);
+  double get visibleArea => totalArea(visibleBoxes);
 }
+
+/// [object]의 지역 좌표 사각형을 화면 전역 좌표로 바꾼다.
+Rect globalRect(RenderObject object, Rect local) =>
+    MatrixUtils.transformRect(object.getTransformTo(null), local);
 
 List<ContentLeaf> collectContentLeaves(
   Iterable<RenderObject> roots,
@@ -80,10 +85,7 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
     }
     final localClip = parent.describeApproximatePaintClip(child);
     if (localClip != null) {
-      final clip = MatrixUtils.transformRect(
-        parent.getTransformTo(null),
-        localClip,
-      );
+      final clip = globalRect(parent, localClip);
       clipRect = clipRect?.intersect(clip) ?? clip;
       // SingleChildScrollView의 뷰포트는 RenderViewportBase가 아니라 인터페이스로 가른다.
       if (parent is! RenderAbstractViewport) {
@@ -95,11 +97,7 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
     parent = parent.parent;
   }
 
-  final transform = box.getTransformTo(null);
-  final rawBoxes = [
-    for (final rect in _localBoxes(box))
-      MatrixUtils.transformRect(transform, rect),
-  ];
+  final rawBoxes = [for (final rect in _localBoxes(box)) globalRect(box, rect)];
   final visibleBoxes = <Rect>[];
   for (final raw in rawBoxes) {
     var visible = raw.intersect(viewRect);

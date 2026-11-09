@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'finding.dart';
 import 'leaf_geometry.dart';
-import 'rect_math.dart' as rect_math;
+import 'rect_math.dart';
 import 'source_location.dart';
 
 class LayoutAuditOptions {
@@ -176,7 +176,7 @@ class _Audit {
       if (leaf.box is! RenderParagraph) {
         continue;
       }
-      final shift = _shift(_union(before), _union(leaf.rawBoxes));
+      final shift = _shift(unionRect(before), unionRect(leaf.rawBoxes));
       if (shift <= 0.5) {
         continue;
       }
@@ -234,7 +234,7 @@ class _Audit {
         for (final boxB in b.visibleBoxes) boxA.intersect(boxB),
     ].where(
         (i) => i.width > options.minOverlap && i.height > options.minOverlap);
-    final focus = rect_math.largestRect(intersections);
+    final focus = largestRect(intersections);
     if (focus == null) {
       return null;
     }
@@ -290,16 +290,16 @@ class _Audit {
     var total = 0.0;
     var covered = 0.0;
     for (final box in smaller.visibleBoxes) {
-      final area = box.width * box.height;
+      final area = rectArea(box);
       total += area;
       try {
-        covered += area * rect_math.coveredFraction(box, larger.visibleBoxes);
+        covered += area * coveredFraction(box, larger.visibleBoxes);
       } on StateError {
         covered += math.min(
           area,
           larger.visibleBoxes.fold(
             0.0,
-            (sum, other) => sum + rect_math.overlapArea(box, other),
+            (sum, other) => sum + overlapArea(box, other),
           ),
         );
       }
@@ -341,101 +341,61 @@ class _Audit {
       return const [];
     }
     final found = <_Raw>[];
-    LayoutFinding make(
-            LayoutFindingKind kind, LayoutSeverity severity, String message) =>
-        LayoutFinding(
-          kind: kind,
-          severity: severity,
-          message: message,
-          rects: [_union(leaf.rawBoxes)],
-          locations: [sourceLocationOf(box)],
-          texts: [leaf.text],
-        );
-
-    final ellipsized = box.overflow == TextOverflow.ellipsis ||
-        box.overflow == TextOverflow.fade;
-    if (!ellipsized) {
-      final limits = [
-        if (leaf.contentClipRect != null) leaf.contentClipRect!,
-        // visible이면 제 상자 밖도 그려지므로 잘린 것이 아니다.
-        if (box.overflow != TextOverflow.visible)
-          MatrixUtils.transformRect(
-            box.getTransformTo(null),
-            Offset.zero & box.size,
-          ),
-      ];
-      var overshoot = 0.0;
-      for (final limit in limits) {
-        for (final raw in leaf.rawBoxes) {
-          overshoot = math.max(overshoot, _overshoot(raw, limit).$2);
-        }
-      }
-      if (overshoot > options.edgeTolerance) {
-        found.add(
-          _Raw(
-            make(
-              LayoutFindingKind.clipped,
-              LayoutSeverity.warning,
-              '[잘라냄] ${_describe(leaf)} 글자가 상자 밖으로 ${_px(overshoot)}px 잘려 나갑니다',
-            ),
-            [box],
-          ),
-        );
-      }
-    }
-
-    if (!leaf.hasClipAncestor) {
-      var side = '';
-      var overshoot = 0.0;
-      for (final raw in leaf.rawBoxes) {
-        final (rawSide, amount) = _overshoot(raw, viewRect);
-        if (amount > overshoot) {
-          side = rawSide;
-          overshoot = amount;
-        }
-      }
-      if (overshoot > options.edgeTolerance) {
-        found.add(
-          _Raw(
-            make(
-              LayoutFindingKind.offscreen,
-              LayoutSeverity.warning,
-              '[이탈] ${_describe(leaf)} 화면 $side 밖으로 ${_px(overshoot)}px 나갑니다',
-            ),
-            [box],
-          ),
-        );
-      }
-    }
-
-    if (ellipsized && box.didExceedMaxLines) {
+    void add(LayoutFindingKind kind, LayoutSeverity severity, String message) {
       found.add(
         _Raw(
-          make(
-            LayoutFindingKind.truncation,
-            LayoutSeverity.notice,
-            '[말줄임] ${_describe(leaf)} 텍스트가 말줄임 처리됐습니다 (maxLines ${box.maxLines})',
+          LayoutFinding(
+            kind: kind,
+            severity: severity,
+            message: message,
+            rects: [unionRect(leaf.rawBoxes)],
+            locations: [sourceLocationOf(box)],
+            texts: [leaf.text],
           ),
           [box],
         ),
       );
     }
+
+    final ellipsized = box.overflow == TextOverflow.ellipsis ||
+        box.overflow == TextOverflow.fade;
+    if (!ellipsized) {
+      final (_, clipped) = maxOvershoot(leaf.rawBoxes, [
+        if (leaf.contentClipRect != null) leaf.contentClipRect!,
+        // visible이면 제 상자 밖도 그려지므로 잘린 것이 아니다.
+        if (box.overflow != TextOverflow.visible)
+          globalRect(box, Offset.zero & box.size),
+      ]);
+      if (clipped > options.edgeTolerance) {
+        add(
+          LayoutFindingKind.clipped,
+          LayoutSeverity.warning,
+          '[잘라냄] ${_describe(leaf)} 글자가 상자 밖으로 ${_px(clipped)}px 잘려 나갑니다',
+        );
+      }
+    }
+
+    if (!leaf.hasClipAncestor) {
+      final (side, outside) = maxOvershoot(leaf.rawBoxes, [viewRect]);
+      if (outside > options.edgeTolerance) {
+        add(
+          LayoutFindingKind.offscreen,
+          LayoutSeverity.warning,
+          '[이탈] ${_describe(leaf)} 화면 $side 밖으로 ${_px(outside)}px 나갑니다',
+        );
+      }
+    }
+
+    if (ellipsized && box.didExceedMaxLines) {
+      add(
+        LayoutFindingKind.truncation,
+        LayoutSeverity.notice,
+        '[말줄임] ${_describe(leaf)} 텍스트가 말줄임 처리됐습니다 (maxLines ${box.maxLines})',
+      );
+    }
     return found;
   }
 }
-
-/// (방향, 양): [rect]가 [limit] 밖으로 가장 많이 나간 쪽.
-(String, double) _overshoot(Rect rect, Rect limit) {
-  final sides = [
-    ('왼쪽', limit.left - rect.left),
-    ('위쪽', limit.top - rect.top),
-    ('오른쪽', rect.right - limit.right),
-    ('아래쪽', rect.bottom - limit.bottom),
-  ];
-  return sides.reduce((a, b) => b.$2 > a.$2 ? b : a);
-}
-
-Rect _union(List<Rect> rects) => rects.reduce((a, b) => a.expandToInclude(b));
 
 double _shift(Rect a, Rect b) => [
       (a.left - b.left).abs(),

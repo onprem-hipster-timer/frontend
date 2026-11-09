@@ -33,27 +33,51 @@ List<Rect> _splitRect(Rect rect, Rect cut) {
   ];
 }
 
-double _area(Rect rect) =>
+/// 뒤집힌(폭·높이가 음수인) 사각형은 0.
+double rectArea(Rect rect) =>
     math.max(0.0, rect.width) * math.max(0.0, rect.height);
 
-double overlapArea(Rect a, Rect b) => _area(a.intersect(b));
+double totalArea(Iterable<Rect> rects) =>
+    rects.fold(0, (sum, rect) => sum + rectArea(rect));
+
+Rect unionRect(Iterable<Rect> rects) =>
+    rects.reduce((a, b) => a.expandToInclude(b));
+
+/// [rects]가 [limits] 중 하나의 밖으로 가장 많이 나간 (방향, 양). 나간 것이 없으면 양은 0 이하.
+(String, double) maxOvershoot(Iterable<Rect> rects, Iterable<Rect> limits) {
+  var result = ('', 0.0);
+  for (final limit in limits) {
+    for (final rect in rects) {
+      for (final side in [
+        ('왼쪽', limit.left - rect.left),
+        ('위쪽', limit.top - rect.top),
+        ('오른쪽', rect.right - limit.right),
+        ('아래쪽', rect.bottom - limit.bottom),
+      ]) {
+        if (side.$2 > result.$2) {
+          result = side;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+double overlapArea(Rect a, Rect b) => rectArea(a.intersect(b));
 
 /// [target] 면적 중 [covers]가 덮는 비율(0~1).
 double coveredFraction(Rect target, Iterable<Rect> covers) {
   if (target.isEmpty) {
     return 0;
   }
-  final remaining = splitRects(
-    target,
-    covers,
-  ).fold<double>(0, (sum, rect) => sum + _area(rect));
-  return (1 - remaining / _area(target)).clamp(0.0, 1.0);
+  final remaining = totalArea(splitRects(target, covers));
+  return (1 - remaining / rectArea(target)).clamp(0.0, 1.0);
 }
 
 Rect? largestRect(Iterable<Rect> rects) {
   Rect? largest;
   for (final rect in rects) {
-    if (largest == null || _area(rect) > _area(largest)) {
+    if (largest == null || rectArea(rect) > rectArea(largest)) {
       largest = rect;
     }
   }
