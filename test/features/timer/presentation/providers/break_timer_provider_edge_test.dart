@@ -295,6 +295,31 @@ void main() {
       expect(container.read(breakTimerProvider), isNotNull);
     });
 
+    test('시간이 끝난 타이머와 일시정지 타이머만 있으면 휴식을 두고, 일시정지 타이머가 재개되면 끝낸다', () async {
+      final timeUp = runningA.copyWith(startedAt: DateTime.utc(2026, 11, 9, 9));
+      final container = await bootWith([timeUp, pausedB]);
+
+      breakTimer(container).start(const Duration(minutes: 5));
+      expect(container.read(breakTimerProvider), isNotNull);
+
+      // 시간이 끝난 타이머를 다시 받아도 휴식은 그대로다
+      container
+          .read(myActiveTimersProvider.notifier)
+          .apply(timeUp.copyWith(updatedAt: serverNow));
+      expect(container.read(breakTimerProvider), isNotNull);
+
+      container
+          .read(myActiveTimersProvider.notifier)
+          .apply(
+            pausedB.copyWith(
+              status: TimerStatus.running,
+              startedAt: serverNow,
+              updatedAt: serverNow,
+            ),
+          );
+      expect(container.read(breakTimerProvider), isNull);
+    });
+
     test('blocksBreak은 시간이 남은 실행 중 타이머가 하나라도 있을 때만 참이다', () {
       final timeUp = runningA.copyWith(startedAt: DateTime.utc(2026, 11, 9, 9));
 
