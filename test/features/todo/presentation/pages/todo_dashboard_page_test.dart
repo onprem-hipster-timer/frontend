@@ -88,4 +88,14 @@ void main() {
     expect(find.byType(TodoGroupCard), findsNWidgets(3));
     expect(find.text('운동'), findsOneWidget);
   });
+
+  testWidgets('불러오지 못하면 오류를 보이고 다시 시도하면 카드를 그린다', (tester) async {
+    tags.readError = Exception('끊김');
+    await pumpPage(tester);
+
+    expect(find.text('그룹을 불러오지 못했습니다'), findsOneWidget);
+    tags.readError = null;
+    await tapVisible(tester, find.text('다시 시도'));
+    expect(find.byType(TodoGroupCard), findsNWidgets(2));
+  });
 }

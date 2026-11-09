@@ -38,7 +38,7 @@ class TodoDashboardPage extends ConsumerWidget {
           context,
           theme,
           error,
-          onRetry: () => ref.invalidate(tagGroupsProvider),
+          onRetry: () => ref.invalidate(tagGroupsRawProvider),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
