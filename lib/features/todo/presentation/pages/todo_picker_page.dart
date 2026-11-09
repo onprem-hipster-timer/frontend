@@ -126,29 +126,22 @@ class _TodoPickerPageState extends ConsumerState<TodoPickerPage> {
 typedef _Section = ({String title, List<TodoTreeNode> rows});
 
 /// 그룹 순서대로 묶고, [query]가 있으면 제목이 맞는 할 일과 그 상위만 남긴다.
-/// 그룹 목록에 없는 할 일은 끝에 '기타'로 묶는다.
+/// 그룹 목록에 없는 그룹의 할 일은 끝에 '기타' 하나로 묶는다.
 List<_Section> _sections(
   List<TodoRead> todos,
   List<TagGroupRead> groups,
   String query,
 ) {
-  final names = {for (final group in groups) group.id: group.name};
-  final order = [
-    ...groups.map((group) => group.id),
-    ...{
-      for (final todo in todos)
-        if (!names.containsKey(todo.tagGroupId)) todo.tagGroupId,
-    },
-  ];
+  final known = {for (final group in groups) group.id};
+  _Section section(String title, bool Function(TodoRead) inGroup) => (
+    title: title,
+    rows: _rows(buildTodoTree(todos.where(inGroup).toList()), query),
+  );
   return [
-    for (final groupId in order)
-      if (_rows(
-            buildTodoTree(todos.where((t) => t.tagGroupId == groupId).toList()),
-            query,
-          )
-          case final rows when rows.isNotEmpty)
-        (title: names[groupId] ?? '기타', rows: rows),
-  ];
+    for (final group in groups)
+      section(group.name, (todo) => todo.tagGroupId == group.id),
+    section('기타', (todo) => !known.contains(todo.tagGroupId)),
+  ].where((section) => section.rows.isNotEmpty).toList();
 }
 
 /// 트리를 위에서부터 차례로 펼친 줄. [query]가 있으면 맞는 줄과 그 상위만
@@ -204,6 +197,7 @@ class _PickerList extends StatelessWidget {
               depth: node.depth,
               leading: Checkbox(
                 value: isChecked(node.todo),
+                semanticLabel: '${node.todo.title} 고르기',
                 onChanged: (_) => onToggle(node.todo),
               ),
               selected: isChecked(node.todo),

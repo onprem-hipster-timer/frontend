@@ -17,6 +17,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import '../../../../helpers/start_timer_sheet_driver.dart';
 
 /// 할 일 타일의 타이머 시작·남은 시간 경계. 기본 동작은 todo_tree_tile_timer_test.dart
 void main() {
@@ -161,15 +162,13 @@ void main() {
   }
 
   Future<void> choose(WidgetTester tester, String label) async {
-    await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+    await tester.tap(StartSheet.todoField);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, label));
-    await tester.pumpAndSettle();
+    await tester.tapPickerItem(label);
   }
 
   Future<void> confirm(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, '시작'));
-    await tester.pumpAndSettle();
+    await tester.startFromSheet();
   }
 
   group('남은 시간 경계', () {
@@ -307,8 +306,7 @@ void main() {
 
       await openDialog(tester);
       await choose(tester, '회의 준비');
-      await tester.tap(find.widgetWithText(ChoiceChip, '45분'));
-      await tester.pump();
+      await tester.choosePreset(45);
       await confirm(tester);
 
       expect(controller.starts, [
@@ -507,15 +505,12 @@ void main() {
       todo(id: 'todo-3', title: '코드 리뷰'),
     ];
 
-    Finder checkbox(String label) => find.descendant(
-      of: find.widgetWithText(ListTile, label),
-      matching: find.byType(Checkbox),
-    );
+    Finder checkbox(String label) => StartSheet.checkbox(label);
 
     /// 타일의 할 일을 체크한 채 연 목록에서 [labels]를 더 체크하고 시작한다
     Future<void> startWithMore(WidgetTester tester, List<String> labels) async {
       await openDialog(tester);
-      await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+      await tester.tap(StartSheet.todoField);
       await tester.pumpAndSettle();
       expect(tester.widget<Checkbox>(checkbox('보고서 쓰기')).value, isTrue);
       for (final label in labels) {
@@ -635,17 +630,15 @@ void main() {
         await openDialog(tester);
         expect(tester.takeException(), isNull);
 
-        await tester.ensureVisible(
-          find.widgetWithText(InputDecorator, '할 일 연결 (선택)'),
-        );
+        await tester.ensureVisible(StartSheet.todoField);
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+        await tester.tap(StartSheet.todoField);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         await tester.tapAt(const Offset(4, 4));
         await tester.pumpAndSettle();
 
-        await tester.ensureVisible(find.widgetWithText(FilledButton, '시작'));
+        await tester.ensureVisible(StartSheet.startButton);
         await tester.pumpAndSettle();
         await confirm(tester);
 

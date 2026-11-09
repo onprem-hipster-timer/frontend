@@ -45,55 +45,58 @@ class TodoTreeTileView extends StatelessWidget {
     final theme = Theme.of(context);
     final description = todo.description;
     final trailing = this.trailing;
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: selected
-              ? theme.colorScheme.primaryContainer.withAlpha(77)
-              : null,
-          borderRadius: AppRadius.smAll,
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: depth * kIndentWidth,
-            right: 8,
-            top: 8,
-            bottom: 8,
+    return Semantics(
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: selected
+                ? theme.colorScheme.primaryContainer.withAlpha(77)
+                : null,
+            borderRadius: AppRadius.smAll,
           ),
-          child: Row(
-            children: [
-              leading ?? const SizedBox(width: 24),
-              status ??
-                  Icon(todo.status.icon, color: todo.status.color(context)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TodoTitle(todo: todo),
-                    if (description != null && description.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          description,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: depth * kIndentWidth,
+              right: 8,
+              top: 8,
+              bottom: 8,
+            ),
+            child: Row(
+              children: [
+                leading ?? const SizedBox(width: 24),
+                status ??
+                    Icon(todo.status.icon, color: todo.status.color(context)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TodoTitle(todo: todo),
+                      if (description != null && description.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            description,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    if (meta.isNotEmpty)
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: meta,
-                      ),
-                  ],
+                      if (meta.isNotEmpty)
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: meta,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              if (trailing != null) ...[const SizedBox(width: 8), trailing],
-            ],
+                if (trailing != null) ...[const SizedBox(width: 8), trailing],
+              ],
+            ),
           ),
         ),
       ),

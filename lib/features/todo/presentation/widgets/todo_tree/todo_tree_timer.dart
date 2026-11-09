@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart'
     show defaultFocusDuration, timerControllerProvider;
-import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
+import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/router.dart';
@@ -133,9 +133,9 @@ class TodoTimerChip extends ConsumerWidget {
 
 /// [todo]를 연결해 새 타이머를 시작하는 버튼. Todo에 활성 타이머가 있으면 표시하지 않는다
 ///
-/// 새 작업 시작 다이얼로그를 [todo]를 고른 채 열고, 시작해도 할 일 화면에 머문다.
+/// 새 작업 시작 시트를 [todo]를 고른 채 열고, 시작해도 할 일 화면에 머문다.
 /// 시작하면 떠 있던 알림을 닫고 '타이머 보기'(타이머 화면으로 이동)가 있는 알림을 띄운다.
-/// 실패하면 알린다. 다이얼로그에서 할 일을 여럿 고르면 할 일마다 시작하고, 시작하지 못한 할 일만 알린다.
+/// 실패하면 알린다. 시트에서 할 일을 여럿 고르면 할 일마다 시작하고, 시작하지 못한 할 일만 알린다.
 /// 새 타이머를 시작하는 동안에는 누를 수 없다.
 ///
 /// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
@@ -145,7 +145,7 @@ class TodoTimerStartButton extends ConsumerWidget {
   const TodoTimerStartButton({super.key, required this.todo});
 
   Future<void> _start(BuildContext context, WidgetRef ref) async {
-    final input = await showStartTimerDialog(
+    final input = await showStartTimerSheet(
       context,
       initialDuration: defaultFocusDuration,
       initialTodo: todo,

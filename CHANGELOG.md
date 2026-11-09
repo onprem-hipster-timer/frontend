@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
 #### UI
+- 새 작업 시작을 다이얼로그에서 하단 시트(`AppFormSheet`)로 바꾼다. 칸은 '작업 제목', '할 일', '집중 시간'(칩 + '직접 입력' 또는 '정한 시간')이고, 할 일은 할 일 고르기 화면에서 고른다
 - 할 일 트리 한 줄을 표시만 하는 `TodoTreeTileView`와 고칠 수 있는 `EditableTodoTreeTile`(끌어 옮기기·선택·펼침·상태·수정·삭제·타이머)로 나눈다
 - 모서리 반지름은 `AppRadius` 토큰으로, 상태·공휴일·토요일·경고·차트 색은 `ColorScheme` 역할과 `AppColors`로 그린다. 어두운 테마에서도 같은 역할 색을 쓴다
 - 카드 모서리·높이를 테마로 맞춘다(마이페이지 카드도 모서리 12). 할 일 대시보드와 그룹 고르기는 같은 `TodoGroupCard`를, 화면 위 안내는 `AppHintCard`를 쓴다

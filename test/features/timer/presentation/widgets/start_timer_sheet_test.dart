@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
+import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/pump_app.dart';
+import '../../../../helpers/start_timer_sheet_driver.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
 void main() {
@@ -41,7 +42,7 @@ void main() {
             body: Center(
               child: TextButton(
                 onPressed: () async {
-                  result = await showStartTimerDialog(
+                  result = await showStartTimerSheet(
                     context,
                     initialDuration: initialDuration,
                     initialTodo: initialTodo,
@@ -60,47 +61,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder todoField() => find.widgetWithText(InputDecorator, '할 일 연결 (선택)');
-  Finder titleField() => find.widgetWithText(TextField, '작업명');
-  Finder searchField() => find.widgetWithIcon(TextField, Icons.search);
-  Finder pickerItem(String label) => find.widgetWithText(ListTile, label);
-
-  String titleText(WidgetTester tester) =>
-      tester.widget<TextField>(titleField()).controller!.text;
-
-  /// 할 일 칸에 [text]가 보이는지
-  Finder fieldShows(String text) =>
-      find.descendant(of: todoField(), matching: find.text(text));
-
-  bool fieldEnabled(WidgetTester tester) =>
-      tester.widget<InputDecorator>(todoField()).decoration.enabled;
-
-  Future<void> openPicker(WidgetTester tester) async {
-    await tester.tap(todoField());
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> choose(WidgetTester tester, String label) async {
-    await openPicker(tester);
-    await tester.tap(pickerItem(label));
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> start(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, '시작'));
-    await tester.pumpAndSettle();
-  }
-
   testWidgets('할 일을 고르면 비어 있는 작업명을 그 제목으로 채운다', (tester) async {
     await open(tester);
-    expect(titleText(tester), isEmpty);
-    expect(fieldShows('연결 안 함'), findsOneWidget);
+    expect(tester.startSheetTitle(), isEmpty);
+    expect(StartSheet.todoShows('연결 안 함'), findsOneWidget);
 
-    await choose(tester, '보고서 쓰기');
+    await tester.chooseTodo('보고서 쓰기');
 
-    expect(searchField(), findsNothing);
-    expect(titleText(tester), '보고서 쓰기');
-    expect(fieldShows('보고서 쓰기'), findsOneWidget);
+    expect(StartSheet.searchField, findsNothing);
+    expect(tester.startSheetTitle(), '보고서 쓰기');
+    expect(StartSheet.todoShows('보고서 쓰기'), findsOneWidget);
   });
 
   testWidgets('할 일 제목으로 채운 작업명은 다른 할 일을 고르면 바뀌고, 고친 작업명은 그대로 둔다', (
@@ -108,23 +78,23 @@ void main() {
   ) async {
     await open(tester);
 
-    await choose(tester, '보고서 쓰기');
-    await choose(tester, '회의 준비');
-    expect(titleText(tester), '회의 준비');
+    await tester.chooseTodo('보고서 쓰기');
+    await tester.chooseTodo('회의 준비');
+    expect(tester.startSheetTitle(), '회의 준비');
 
-    await tester.enterText(titleField(), '회의 준비 자료');
-    await choose(tester, '보고서 쓰기');
-    expect(titleText(tester), '회의 준비 자료');
+    await tester.enterText(StartSheet.titleField, '회의 준비 자료');
+    await tester.chooseTodo('보고서 쓰기');
+    expect(tester.startSheetTitle(), '회의 준비 자료');
   });
 
   testWidgets('직접 입력한 작업명은 할 일을 골라도 그대로 두고 그 작업명으로 시작한다', (tester) async {
     await open(tester);
-    await tester.enterText(titleField(), '집중');
+    await tester.enterText(StartSheet.titleField, '집중');
 
-    await choose(tester, '보고서 쓰기');
-    expect(titleText(tester), '집중');
+    await tester.chooseTodo('보고서 쓰기');
+    expect(tester.startSheetTitle(), '집중');
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.title, '집중');
     expect(result?.todos, [report]);
@@ -133,11 +103,11 @@ void main() {
   testWidgets("'연결 안 함'을 고르면 연결을 풀고 작업명은 그대로 둔다", (tester) async {
     await open(tester, initialTodo: report);
 
-    await choose(tester, '연결 안 함');
-    expect(fieldShows('연결 안 함'), findsOneWidget);
-    expect(titleText(tester), '보고서 쓰기');
+    await tester.chooseTodo('연결 안 함');
+    expect(StartSheet.todoShows('연결 안 함'), findsOneWidget);
+    expect(tester.startSheetTitle(), '보고서 쓰기');
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.todos, isEmpty);
     expect(result?.title, '보고서 쓰기');
@@ -155,30 +125,29 @@ void main() {
       ],
     );
 
-    await openPicker(tester);
+    await tester.openTodoPicker();
 
-    expect(pickerItem('연결 안 함'), findsOneWidget);
-    expect(pickerItem('보고서 쓰기'), findsOneWidget);
-    expect(pickerItem('예정된 일'), findsOneWidget);
-    expect(pickerItem('끝낸 일'), findsNothing);
-    expect(pickerItem('취소한 일'), findsNothing);
-    expect(pickerItem('공유받은 일'), findsNothing);
+    expect(StartSheet.pickerItem('연결 안 함'), findsOneWidget);
+    expect(StartSheet.pickerItem('보고서 쓰기'), findsOneWidget);
+    expect(StartSheet.pickerItem('예정된 일'), findsOneWidget);
+    expect(StartSheet.pickerItem('끝낸 일'), findsNothing);
+    expect(StartSheet.pickerItem('취소한 일'), findsNothing);
+    expect(StartSheet.pickerItem('공유받은 일'), findsNothing);
   });
 
   testWidgets('제목으로 찾아 고른다', (tester) async {
     await open(tester);
-    await openPicker(tester);
+    await tester.openTodoPicker();
 
-    await tester.enterText(searchField(), '회의');
+    await tester.enterText(StartSheet.searchField, '회의');
     await tester.pump();
 
-    expect(pickerItem('회의 준비'), findsOneWidget);
-    expect(pickerItem('보고서 쓰기'), findsNothing);
-    expect(pickerItem('연결 안 함'), findsOneWidget);
+    expect(StartSheet.pickerItem('회의 준비'), findsOneWidget);
+    expect(StartSheet.pickerItem('보고서 쓰기'), findsNothing);
+    expect(StartSheet.pickerItem('연결 안 함'), findsOneWidget);
 
-    await tester.tap(pickerItem('회의 준비'));
-    await tester.pumpAndSettle();
-    await start(tester);
+    await tester.tapPickerItem('회의 준비');
+    await tester.startFromSheet();
 
     expect(result?.todos, [meeting]);
     expect(result?.title, '회의 준비');
@@ -186,17 +155,17 @@ void main() {
 
   testWidgets('목록을 고르지 않고 닫으면 연결한 할 일을 그대로 둔다', (tester) async {
     await open(tester, initialTodo: report);
-    await openPicker(tester);
+    await tester.openTodoPicker();
 
-    await tester.enterText(searchField(), '회의');
+    await tester.enterText(StartSheet.searchField, '회의');
     await tester.pump();
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
 
-    expect(searchField(), findsNothing);
-    expect(fieldShows('보고서 쓰기'), findsOneWidget);
+    expect(StartSheet.searchField, findsNothing);
+    expect(StartSheet.todoShows('보고서 쓰기'), findsOneWidget);
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.todos, [report]);
   });
@@ -204,10 +173,10 @@ void main() {
   testWidgets('시작하면 고른 할 일과 집중 시간을 돌려준다', (tester) async {
     await open(tester, initialDuration: const Duration(minutes: 45));
 
-    await choose(tester, '회의 준비');
-    await tester.tap(find.widgetWithText(ChoiceChip, '15분'));
+    await tester.chooseTodo('회의 준비');
+    await tester.choosePreset(15);
     await tester.pump();
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(closed, isTrue);
     expect(result?.todos, [meeting]);
@@ -217,10 +186,10 @@ void main() {
 
   testWidgets('작업명을 비우면 고른 할 일의 제목으로 시작한다', (tester) async {
     await open(tester);
-    await choose(tester, '보고서 쓰기');
+    await tester.chooseTodo('보고서 쓰기');
 
-    await tester.enterText(titleField(), '  ');
-    await start(tester);
+    await tester.enterText(StartSheet.titleField, '  ');
+    await tester.startFromSheet();
 
     expect(result?.title, '보고서 쓰기');
     expect(result?.todos, [report]);
@@ -229,7 +198,7 @@ void main() {
   testWidgets('작업명도 할 일도 없으면 새 작업으로 시작한다', (tester) async {
     await open(tester);
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.title, '새 작업');
     expect(result?.todos, isEmpty);
@@ -238,10 +207,9 @@ void main() {
 
   testWidgets('취소하면 null을 돌려준다', (tester) async {
     await open(tester);
-    await choose(tester, '보고서 쓰기');
+    await tester.chooseTodo('보고서 쓰기');
 
-    await tester.tap(find.widgetWithText(TextButton, '취소'));
-    await tester.pumpAndSettle();
+    await tester.cancelStartSheet();
 
     expect(closed, isTrue);
     expect(result, isNull);
@@ -250,10 +218,10 @@ void main() {
   testWidgets('처음 연결할 할 일을 고른 채 열고 작업명을 그 제목으로 채운다', (tester) async {
     await open(tester, initialTodo: meeting);
 
-    expect(titleText(tester), '회의 준비');
-    expect(fieldShows('회의 준비'), findsOneWidget);
+    expect(tester.startSheetTitle(), '회의 준비');
+    expect(StartSheet.todoShows('회의 준비'), findsOneWidget);
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.todos, [meeting]);
     expect(result?.title, '회의 준비');
@@ -263,12 +231,12 @@ void main() {
     final loading = Completer<List<TodoRead>>();
     await open(tester, todos: () => loading.future);
 
-    expect(fieldEnabled(tester), isFalse);
-    await tester.tap(todoField());
+    expect(tester.startSheetTodoEnabled(), isFalse);
+    await tester.tap(StartSheet.todoField);
     await tester.pumpAndSettle();
-    expect(searchField(), findsNothing);
+    expect(StartSheet.searchField, findsNothing);
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.todos, isEmpty);
     expect(result?.title, '새 작업');
@@ -278,16 +246,16 @@ void main() {
     final loading = Completer<List<TodoRead>>();
     await open(tester, todos: () => loading.future, initialTodo: report);
 
-    expect(fieldEnabled(tester), isFalse);
-    expect(fieldShows('보고서 쓰기'), findsOneWidget);
+    expect(tester.startSheetTodoEnabled(), isFalse);
+    expect(StartSheet.todoShows('보고서 쓰기'), findsOneWidget);
 
     loading.complete([report, meeting]);
     await tester.pumpAndSettle();
 
-    expect(fieldEnabled(tester), isTrue);
-    expect(fieldShows('보고서 쓰기'), findsOneWidget);
+    expect(tester.startSheetTodoEnabled(), isTrue);
+    expect(StartSheet.todoShows('보고서 쓰기'), findsOneWidget);
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.todos, [report]);
   });
@@ -295,10 +263,10 @@ void main() {
   testWidgets('할 일을 읽지 못하면 칸을 막고 알리며, 연결 없이 시작할 수 있다', (tester) async {
     await open(tester, todos: () async => throw StateError('읽기 실패'));
 
-    expect(fieldEnabled(tester), isFalse);
+    expect(tester.startSheetTodoEnabled(), isFalse);
     expect(find.text('할 일을 불러오지 못했습니다'), findsOneWidget);
 
-    await start(tester);
+    await tester.startFromSheet();
 
     expect(result?.todos, isEmpty);
     expect(result?.title, '새 작업');
@@ -319,16 +287,18 @@ void main() {
         for (var i = 0; i < 20; i++) todo('todo-$i-more', '할 일 $i'),
       ],
     );
-    await openPicker(tester);
+    await tester.openTodoPicker();
     expect(tester.takeException(), isNull);
-    expect(tester.getRect(pickerItem(long)).right, lessThanOrEqualTo(360));
+    expect(
+      tester.getRect(StartSheet.pickerItem(long)).right,
+      lessThanOrEqualTo(360),
+    );
 
-    await tester.tap(pickerItem(long));
-    await tester.pumpAndSettle();
+    await tester.tapPickerItem(long);
 
     expect(tester.takeException(), isNull);
-    expect(titleText(tester), long);
-    expect(fieldShows(long), findsOneWidget);
+    expect(tester.startSheetTitle(), long);
+    expect(StartSheet.todoShows(long), findsOneWidget);
   });
 
   for (final (size, keyboard) in const [
@@ -351,12 +321,12 @@ void main() {
       );
       expect(tester.takeException(), isNull);
 
-      await tester.ensureVisible(todoField());
+      await tester.ensureVisible(StartSheet.todoField);
       await tester.pumpAndSettle();
-      await openPicker(tester);
+      await tester.openTodoPicker();
 
       expect(tester.takeException(), isNull);
-      expect(searchField(), findsOneWidget);
+      expect(StartSheet.searchField, findsOneWidget);
     });
   }
 
@@ -370,68 +340,46 @@ void main() {
           initialTodo: initialTodo,
         );
 
-    Finder checkbox(String label) =>
-        find.descendant(of: pickerItem(label), matching: find.byType(Checkbox));
-    bool? checked(WidgetTester tester, String label) =>
-        tester.widget<Checkbox>(checkbox(label)).value;
-    Finder confirmPicks() => find.ancestor(
-      of: find.textContaining(RegExp(r'^\d+개 선택 완료$')),
-      matching: find.byType(FilledButton),
-    );
-    bool titleEnabled(WidgetTester tester) =>
-        tester.widget<TextField>(titleField()).enabled ?? true;
-
-    /// 할 일 목록에서 [labels]를 차례대로 체크하고 선택 완료를 누른다
-    Future<void> checkAll(WidgetTester tester, List<String> labels) async {
-      await openPicker(tester);
-      for (final label in labels) {
-        await tester.tap(checkbox(label));
-        await tester.pump();
-      }
-      await tester.tap(confirmPicks());
-      await tester.pumpAndSettle();
-    }
-
     testWidgets('할 일마다 체크 상자가 있고 둘 이상 체크해야 선택 완료가 나온다', (tester) async {
       await openWithThree(tester);
-      await openPicker(tester);
+      await tester.openTodoPicker();
 
-      expect(checkbox('보고서 쓰기'), findsOneWidget);
-      expect(checkbox('회의 준비'), findsOneWidget);
-      expect(checkbox('연결 안 함'), findsNothing);
-      expect(confirmPicks(), findsNothing);
+      expect(StartSheet.checkbox('보고서 쓰기'), findsOneWidget);
+      expect(StartSheet.checkbox('회의 준비'), findsOneWidget);
+      expect(StartSheet.checkbox('연결 안 함'), findsNothing);
+      expect(StartSheet.confirmPicks, findsNothing);
 
-      await tester.tap(checkbox('보고서 쓰기'));
+      await tester.tap(StartSheet.checkbox('보고서 쓰기'));
       await tester.pump();
-      expect(checked(tester, '보고서 쓰기'), isTrue);
-      expect(confirmPicks(), findsNothing);
+      expect(tester.isTodoChecked('보고서 쓰기'), isTrue);
+      expect(StartSheet.confirmPicks, findsNothing);
       // 체크만 하고는 닫지 않는다
-      expect(searchField(), findsOneWidget);
+      expect(StartSheet.searchField, findsOneWidget);
 
-      await tester.tap(checkbox('회의 준비'));
+      await tester.tap(StartSheet.checkbox('회의 준비'));
       await tester.pump();
-      expect(find.widgetWithText(FilledButton, '2개 선택 완료'), findsOneWidget);
+      expect(StartSheet.confirmPicks, findsOneWidget);
 
-      await tester.tap(checkbox('보고서 쓰기'));
+      await tester.tap(StartSheet.checkbox('보고서 쓰기'));
       await tester.pump();
-      expect(checked(tester, '보고서 쓰기'), isFalse);
-      expect(confirmPicks(), findsNothing);
+      expect(tester.isTodoChecked('보고서 쓰기'), isFalse);
+      expect(StartSheet.confirmPicks, findsNothing);
     });
 
     testWidgets('둘 이상 고르면 작업명 칸을 막고 안내하며 체크한 차례대로 돌려준다', (tester) async {
       await openWithThree(tester);
-      await tester.enterText(titleField(), '직접 쓴 작업명');
+      await tester.enterText(StartSheet.titleField, '직접 쓴 작업명');
 
-      await checkAll(tester, ['회의 준비', '보고서 쓰기']);
+      await tester.checkTodos(['회의 준비', '보고서 쓰기']);
 
-      expect(searchField(), findsNothing);
-      expect(fieldShows('회의 준비 외 1개'), findsOneWidget);
-      expect(titleEnabled(tester), isFalse);
+      expect(StartSheet.searchField, findsNothing);
+      expect(StartSheet.todoShows('회의 준비 외 1개'), findsOneWidget);
+      expect(tester.startSheetTitleEnabled(), isFalse);
       expect(find.text('할 일마다 그 제목으로 타이머를 하나씩 시작합니다'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(ChoiceChip, '45분'));
+      await tester.choosePreset(45);
       await tester.pump();
-      await start(tester);
+      await tester.startFromSheet();
 
       expect(closed, isTrue);
       expect(result?.todos, [meeting, report]);
@@ -441,10 +389,10 @@ void main() {
     testWidgets('셋을 고르면 첫 할 일 외 2개로 보인다', (tester) async {
       await openWithThree(tester);
 
-      await checkAll(tester, ['코드 리뷰', '보고서 쓰기', '회의 준비']);
+      await tester.checkTodos(['코드 리뷰', '보고서 쓰기', '회의 준비']);
 
-      expect(fieldShows('코드 리뷰 외 2개'), findsOneWidget);
-      await start(tester);
+      expect(StartSheet.todoShows('코드 리뷰 외 2개'), findsOneWidget);
+      await tester.startFromSheet();
       expect(result?.todos, [review, report, meeting]);
     });
 
@@ -452,82 +400,79 @@ void main() {
       tester,
     ) async {
       await openWithThree(tester);
-      await checkAll(tester, ['보고서 쓰기', '회의 준비']);
+      await tester.checkTodos(['보고서 쓰기', '회의 준비']);
 
-      await openPicker(tester);
-      expect(checked(tester, '보고서 쓰기'), isTrue);
-      expect(checked(tester, '회의 준비'), isTrue);
-      expect(checked(tester, '코드 리뷰'), isFalse);
-      await tester.tap(
-        find.descendant(of: pickerItem('코드 리뷰'), matching: find.text('코드 리뷰')),
-      );
-      await tester.pumpAndSettle();
+      await tester.openTodoPicker();
+      expect(tester.isTodoChecked('보고서 쓰기'), isTrue);
+      expect(tester.isTodoChecked('회의 준비'), isTrue);
+      expect(tester.isTodoChecked('코드 리뷰'), isFalse);
+      await tester.tapPickerItem('코드 리뷰');
 
-      expect(fieldShows('코드 리뷰'), findsOneWidget);
-      expect(titleEnabled(tester), isTrue);
-      expect(titleText(tester), '코드 리뷰');
-      await start(tester);
+      expect(StartSheet.todoShows('코드 리뷰'), findsOneWidget);
+      expect(tester.startSheetTitleEnabled(), isTrue);
+      expect(tester.startSheetTitle(), '코드 리뷰');
+      await tester.startFromSheet();
       expect(result?.todos, [review]);
       expect(result?.title, '코드 리뷰');
     });
 
     testWidgets("'연결 안 함'을 누르면 고른 할 일을 모두 풀고 작업명 칸이 풀린다", (tester) async {
       await openWithThree(tester);
-      await checkAll(tester, ['보고서 쓰기', '회의 준비']);
+      await tester.checkTodos(['보고서 쓰기', '회의 준비']);
 
-      await choose(tester, '연결 안 함');
+      await tester.chooseTodo('연결 안 함');
 
-      expect(fieldShows('연결 안 함'), findsOneWidget);
-      expect(titleEnabled(tester), isTrue);
-      await start(tester);
+      expect(StartSheet.todoShows('연결 안 함'), findsOneWidget);
+      expect(tester.startSheetTitleEnabled(), isTrue);
+      await tester.startFromSheet();
       expect(result?.todos, isEmpty);
       expect(result?.title, '새 작업');
     });
 
     testWidgets('체크한 채 목록을 그냥 닫으면 앞서 고른 할 일을 그대로 둔다', (tester) async {
       await openWithThree(tester, initialTodo: report);
-      await openPicker(tester);
-      await tester.tap(checkbox('회의 준비'));
+      await tester.openTodoPicker();
+      await tester.tap(StartSheet.checkbox('회의 준비'));
       await tester.pump();
 
       await tester.tapAt(const Offset(4, 4));
       await tester.pumpAndSettle();
 
-      expect(searchField(), findsNothing);
-      expect(fieldShows('보고서 쓰기'), findsOneWidget);
-      expect(titleEnabled(tester), isTrue);
-      await start(tester);
+      expect(StartSheet.searchField, findsNothing);
+      expect(StartSheet.todoShows('보고서 쓰기'), findsOneWidget);
+      expect(tester.startSheetTitleEnabled(), isTrue);
+      await tester.startFromSheet();
       expect(result?.todos, [report]);
     });
 
     testWidgets('처음 연결할 할 일을 체크한 채 열고 다른 할 일을 더 체크하면 둘 다 돌려준다', (tester) async {
       await openWithThree(tester, initialTodo: report);
-      await openPicker(tester);
+      await tester.openTodoPicker();
 
-      expect(checked(tester, '보고서 쓰기'), isTrue);
-      await tester.tap(checkbox('코드 리뷰'));
+      expect(tester.isTodoChecked('보고서 쓰기'), isTrue);
+      await tester.tap(StartSheet.checkbox('코드 리뷰'));
       await tester.pump();
-      await tester.tap(confirmPicks());
+      await tester.tap(StartSheet.confirmPicks);
       await tester.pumpAndSettle();
-      await start(tester);
+      await tester.startFromSheet();
 
       expect(result?.todos, [report, review]);
     });
 
     testWidgets('찾아서 걸러도 앞서 체크한 할 일은 남는다', (tester) async {
       await openWithThree(tester);
-      await openPicker(tester);
-      await tester.tap(checkbox('보고서 쓰기'));
+      await tester.openTodoPicker();
+      await tester.tap(StartSheet.checkbox('보고서 쓰기'));
       await tester.pump();
 
-      await tester.enterText(searchField(), '회의');
+      await tester.enterText(StartSheet.searchField, '회의');
       await tester.pumpAndSettle();
-      expect(pickerItem('보고서 쓰기'), findsNothing);
-      await tester.tap(checkbox('회의 준비'));
+      expect(StartSheet.pickerItem('보고서 쓰기'), findsNothing);
+      await tester.tap(StartSheet.checkbox('회의 준비'));
       await tester.pump();
-      await tester.tap(confirmPicks());
+      await tester.tap(StartSheet.confirmPicks);
       await tester.pumpAndSettle();
-      await start(tester);
+      await tester.startFromSheet();
 
       expect(result?.todos, [report, meeting]);
     });

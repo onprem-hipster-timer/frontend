@@ -14,6 +14,7 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/timer_fixtures.dart';
+import '../../../../helpers/start_timer_sheet_driver.dart';
 
 void main() {
   late DateTime now;
@@ -125,8 +126,7 @@ void main() {
   }
 
   Future<void> confirm(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, '시작'));
-    await tester.pumpAndSettle();
+    await tester.startFromSheet();
   }
 
   group('타이머 시작 버튼', () {
@@ -166,22 +166,17 @@ void main() {
       expect(find.text('새 작업 시작'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.widgetWithText(InputDecorator, '할 일 연결 (선택)'),
+          of: StartSheet.todoField,
           matching: find.text('보고서 쓰기'),
         ),
         findsOneWidget,
       );
       expect(
-        tester
-            .widget<TextField>(find.widgetWithText(TextField, '작업명'))
-            .controller
-            ?.text,
+        tester.widget<TextField>(StartSheet.titleField).controller?.text,
         '보고서 쓰기',
       );
       expect(
-        tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '25분'))
-            .selected,
+        tester.widget<ChoiceChip>(StartSheet.presetChip(25)).selected,
         isTrue,
       );
       await unmount(tester);
@@ -234,8 +229,7 @@ void main() {
       await pumpTile(tester, todo());
 
       await openDialog(tester);
-      await tester.tap(find.widgetWithText(TextButton, '취소'));
-      await tester.pumpAndSettle();
+      await tester.cancelStartSheet();
 
       expect(controller.starts, isEmpty);
       expect(location(), AppRoute.todo.path);
@@ -248,8 +242,7 @@ void main() {
       await pumpTile(tester, todo());
 
       await openDialog(tester);
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(
         tester

@@ -9,7 +9,7 @@ import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/duration_picker_sheet.dart';
-import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
+import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
@@ -311,7 +311,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 label: const Text('새 타이머'),
                 onPressed: controllerState.isLoading
                     ? null
-                    : () => _showStartTimerDialog(context, ref),
+                    : () => _showStartTimerSheet(context, ref),
               )
             : null;
 
@@ -418,7 +418,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
               starting: controllerState.isLoading,
               timeUp: timeUp,
               breakSelected: _breakSelected,
-              onStart: () => _showStartTimerDialog(context, ref),
+              onStart: () => _showStartTimerSheet(context, ref),
               onStartBreak: breakBlocked
                   ? null
                   : () => ref
@@ -509,9 +509,9 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     });
   }
 
-  /// 새 작업 시작 다이얼로그를 열고 고른 값으로 타이머를 시작한다
-  void _showStartTimerDialog(BuildContext context, WidgetRef ref) async {
-    final input = await showStartTimerDialog(
+  /// 새 작업 시작 시트를 열고 고른 값으로 타이머를 시작한다
+  void _showStartTimerSheet(BuildContext context, WidgetRef ref) async {
+    final input = await showStartTimerSheet(
       context,
       initialDuration: _pendingDuration,
     );
@@ -584,7 +584,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           actionLabel: '새 타이머 시작',
           onAction: () {
             if (!context.mounted) return;
-            _showStartTimerDialog(context, ref);
+            _showStartTimerSheet(context, ref);
           },
         );
       }
