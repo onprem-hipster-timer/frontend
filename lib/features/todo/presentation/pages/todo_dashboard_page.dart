@@ -6,7 +6,7 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_group_card.dart';
 
 /// Todo 대시보드 페이지
 ///
@@ -68,42 +68,10 @@ class TodoDashboardPage extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.dashboard_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '그룹 관리',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '그룹을 선택해서 할 일들을 관리하세요.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.7,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            child: const AppHintCard(
+              title: '그룹 관리',
+              message: '그룹을 선택해서 할 일들을 관리하세요.',
+              icon: Icons.dashboard_rounded,
             ),
           ),
         ),
@@ -140,115 +108,5 @@ class TodoDashboardPage extends ConsumerWidget {
   /// 새 그룹 생성 다이얼로그
   void _showCreateGroupDialog(BuildContext context) {
     showTagGroupFormSheet(context);
-  }
-}
-
-/// Todo 그룹 카드 위젯
-class TodoGroupCard extends StatelessWidget {
-  final TagGroupRead group;
-  final VoidCallback onTap;
-
-  const TodoGroupCard({super.key, required this.group, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final groupColor = HexColor.fromHex(group.color);
-
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: groupColor.withValues(alpha: 0.3),
-              width: 2,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 헤더 (아이콘 + 상태)
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: groupColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.folder_rounded,
-                        color: groupColor,
-                        size: 24,
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // 그룹 이름
-                Text(
-                  group.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const Spacer(),
-
-                // 설명 (있는 경우)
-                if (group.description != null &&
-                    group.description!.isNotEmpty) ...[
-                  Text(
-                    group.description!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                // 하단 정보 (TODO: 실제 할 일 개수 표시)
-                const Row(
-                  children: [
-                    Spacer(),
-                    // TODO: 실제 할 일 개수 표시
-                    // Text(
-                    //   'N개',
-                    //   style: theme.textTheme.labelSmall?.copyWith(
-                    //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    //   ),
-                    // ),
-                    // Text(
-                    //   'N개',
-                    //   style: theme.textTheme.labelSmall?.copyWith(
-                    //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    //   ),
-                    // ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

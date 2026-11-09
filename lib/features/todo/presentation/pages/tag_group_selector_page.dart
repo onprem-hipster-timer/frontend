@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
-import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_group_card.dart';
 
 /// 태그 그룹 선택 페이지
 ///
@@ -62,31 +62,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 설명 텍스트
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '새로 만들 투두들이 속할 그룹을 선택해주세요.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const AppHintCard(message: '새로 만들 투두들이 속할 그룹을 선택해주세요.'),
 
           const SizedBox(height: 24),
 
@@ -101,11 +77,12 @@ class TagGroupSelectorPage extends ConsumerWidget {
               ),
               itemCount: tagGroups.length + 1,
               itemBuilder: (context, index) {
-                if (index == tagGroups.length) {
-                  return _buildAddGroupCard(context, theme);
-                }
+                if (index == tagGroups.length) return const _NewGroupCard();
                 final tagGroup = tagGroups[index];
-                return _buildTagGroupCard(context, theme, tagGroup);
+                return TodoGroupCard(
+                  group: tagGroup,
+                  onTap: () => Navigator.of(context).pop(tagGroup),
+                );
               },
             ),
           ),
@@ -113,102 +90,18 @@ class TagGroupSelectorPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  /// 태그 그룹 카드
-  Widget _buildTagGroupCard(
-    BuildContext context,
-    ThemeData theme,
-    TagGroupRead tagGroup,
-  ) {
-    final groupColor = HexColor.fromHex(tagGroup.color);
+/// 그룹 목록 끝의 '새 그룹 만들기' 카드
+class _NewGroupCard extends StatelessWidget {
+  const _NewGroupCard();
 
-    return Card(
-      elevation: 2,
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card.outlined(
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // 선택된 그룹을 반환하고 페이지 닫기
-          Navigator.of(context).pop(tagGroup);
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: groupColor.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 그룹 색상 아이콘
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: groupColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.folder_rounded,
-                    color: groupColor,
-                    size: 24,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // 그룹 이름
-                Text(
-                  tagGroup.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 4),
-
-                // 그룹 설명 (있는 경우)
-                if (tagGroup.description != null &&
-                    tagGroup.description!.isNotEmpty) ...[
-                  Text(
-                    tagGroup.description!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-
-                const Spacer(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 새 그룹 추가 카드
-  Widget _buildAddGroupCard(BuildContext context, ThemeData theme) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.lgAll,
         onTap: () => showTagGroupFormSheet(context),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

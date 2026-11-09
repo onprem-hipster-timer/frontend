@@ -12,3 +12,4 @@ export 'components/app_confirm_dialog.dart';
 export 'components/app_choice_dialog.dart';
 export 'components/app_states.dart';
 export 'components/app_snack_bar.dart';
+export 'components/app_hint_card.dart';

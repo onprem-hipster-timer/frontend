@@ -29,6 +29,7 @@ abstract final class AppTheme {
         clipBehavior: Clip.antiAlias,
       ),
       cardTheme: const CardThemeData(
+        elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
       ),
       snackBarTheme: const SnackBarThemeData(

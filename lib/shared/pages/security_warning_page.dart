@@ -170,8 +170,7 @@ class _ContactTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: 0,
+    return Card.filled(
       color: colorScheme.surfaceContainerHighest,
       child: ListTile(
         leading: Icon(icon, color: colorScheme.primary),

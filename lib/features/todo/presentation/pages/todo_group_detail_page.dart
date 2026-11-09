@@ -185,31 +185,8 @@ class TodoGroupDetailPage extends ConsumerWidget {
             // 상단 여백 및 안내
             return Padding(
               padding: const EdgeInsets.all(16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '이 그룹의 할 일들입니다. 드래그로 순서를 바꿀 수 있습니다.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              child: const AppHintCard(
+                message: '이 그룹의 할 일들입니다. 드래그로 순서를 바꿀 수 있습니다.',
               ),
             );
           }

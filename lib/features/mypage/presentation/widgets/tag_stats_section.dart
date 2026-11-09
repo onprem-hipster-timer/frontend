@@ -23,10 +23,6 @@ class TagStatsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
