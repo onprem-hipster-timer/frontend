@@ -157,6 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 누적 집중 시간의 타이머 목록 조회(`GET /v1/timers`)도 타이머 REST 요청으로 보내 `timezone=UTC`를 붙이고 응답의 `Date` 헤더로 서버 시각을 맞춘다
 
 #### Calendar
+- 달력이 일정을 불러오지 못했을 때 '다시 시도'를 누르면 일정을 다시 받는다
 - 일정 만들기·수정 시트가 디버그 빌드에서 종일 스위치 때문에 오류로 그려지지 않던 문제를 고친다. 시트 배경을 시트 자체에 칠한다
 
 #### MyPage

@@ -471,9 +471,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () {
-              ref.invalidate(scheduleOnlyDataSourceProvider);
-            },
+            onPressed: () => ref.invalidate(currentSchedulesProvider),
             icon: const Icon(Icons.refresh),
             label: const Text('다시 시도'),
           ),
