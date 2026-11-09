@@ -2753,6 +2753,42 @@ void main() {
         });
       }
 
+      for (final (size, textScale) in const [
+        (Size(667, 375), 1.0),
+        (Size(844, 390), 2.0),
+        (Size(1024, 600), 1.0),
+        (Size(1280, 720), 1.0),
+      ]) {
+        final label =
+            '${size.width.toInt()}x${size.height.toInt()} 글자 $textScale배';
+        testWidgets('$label 일시정지: 넘치지 않고 다이얼이 보이며 버튼을 눌 수 있다', (tester) async {
+          await pumpInShell(
+            tester,
+            size: size,
+            textScale: textScale,
+            timer: paused,
+          );
+
+          expect(tester.takeException(), isNull);
+          // 목록 칸을 옆에 두는 667 폭은 다이얼이 작은 다이얼(80) 크기보다는 크다
+          expect(
+            tester.getRect(dialFace()).shortestSide,
+            greaterThanOrEqualTo(80),
+          );
+          for (final icon in [Icons.check, Icons.play_arrow, Icons.coffee]) {
+            final fab = _dashboardFabByIcon(icon);
+            await tester.ensureVisible(fab);
+            await tester.pumpAndSettle();
+            expect(
+              tester.getRect(fab).bottom,
+              lessThanOrEqualTo(size.height - 100),
+              reason: '$icon',
+            );
+            expect(fab.hitTestable(), findsOneWidget, reason: '$icon');
+          }
+        });
+      }
+
       testWidgets('세로 휴대폰 화면은 다이얼 아래에 제목·시계·버튼을 둔다', (tester) async {
         await pumpInShell(
           tester,
