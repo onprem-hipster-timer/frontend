@@ -607,6 +607,99 @@ void main() {
         expect(canSave(tester), isFalse);
       });
 
+      testWidgets('이메일은 맞고 도메인이 틀리면 저장하지 않고, 고쳐 저장하면 이메일을 한 번만 보낸다', (
+        tester,
+      ) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await type(tester, emailField(), 'lee@example.com');
+        await type(tester, domainField(), 'example');
+
+        await save(tester);
+        expect(saves(), isEmpty);
+        expect(sheet(), findsOneWidget);
+        expect(find.text('도메인 형식이 아닙니다 (예: example.com)'), findsOneWidget);
+
+        await type(tester, domainField(), 'example.org');
+        await save(tester);
+
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(
+            level: VisibilityLevel.allowedEmails,
+            allowedEmails: ['lee@example.com'],
+            allowedDomains: ['example.org'],
+          ),
+        );
+        expect(sheet(), findsNothing);
+      });
+
+      testWidgets('더한 항목과 대소문자·앞뒤 공백만 다른 값은 겹쳐 보내지 않는다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
+        await addEntry(tester, domainField(), 'example.org', '도메인 추가');
+        await type(tester, emailField(), ' KIM@example.com ');
+        await type(tester, domainField(), '  Example.Org  ');
+
+        await save(tester);
+
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(
+            level: VisibilityLevel.allowedEmails,
+            allowedEmails: ['kim@example.com'],
+            allowedDomains: ['example.org'],
+          ),
+        );
+      });
+
+      testWidgets('저장이 실패한 뒤 다시 저장해도 칸에 적었던 값을 겹쳐 보내지 않는다', (tester) async {
+        repository.error = Exception('서버 오류');
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await type(tester, emailField(), 'lee@example.com');
+
+        await save(tester);
+        expect(sheet(), findsOneWidget);
+
+        repository.error = null;
+        await save(tester);
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+
+        expect(saves(), ['setVisibility:timer-1', 'setVisibility:timer-1']);
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(
+            level: VisibilityLevel.allowedEmails,
+            allowedEmails: ['lee@example.com'],
+            allowedDomains: [],
+          ),
+        );
+        expect(sheet(), findsNothing);
+      });
+
+      testWidgets('공백만 적힌 칸은 무시하고 더한 항목만 보낸다', (tester) async {
+        await open(tester);
+        await choose(tester, '이메일·도메인 지정');
+        await addEntry(tester, emailField(), 'kim@example.com', '이메일 추가');
+        await type(tester, domainField(), '   ');
+
+        expect(canSave(tester), isTrue);
+        await save(tester);
+
+        expect(
+          repository.visibilityUpdate,
+          const VisibilityUpdate(
+            level: VisibilityLevel.allowedEmails,
+            allowedEmails: ['kim@example.com'],
+            allowedDomains: [],
+          ),
+        );
+        expect(sheet(), findsNothing);
+      });
+
       testWidgets('다른 범위로 저장하면 칸에 적은 값은 보내지 않는다', (tester) async {
         await open(tester);
         await choose(tester, '이메일·도메인 지정');
