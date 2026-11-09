@@ -119,11 +119,13 @@ TimerRead timerView(Map<String, TimerRead> views, TimerRead listed) {
 /// REST 조회, 내 실시간 이벤트(`from_user`가 나), 명령 응답을 [TimerLedger] 규칙으로 반영한다.
 /// 이벤트로 관계 필드(일정·Todo 등)가 비면 그 타이머를 REST로 다시 읽어 채운다.
 /// 소켓이 (재)연결될 때마다 REST로 다시 맞추고, 맞추는 동안 들어온 반영은 맞춘 뒤에 한다.
+/// 로그인한 사용자가 바뀌면 가진 타이머를 버리고 새 사용자의 목록으로 다시 맞춘다.
 ///
 /// 테스트: test/features/timer/presentation/providers/my_active_timers_test.dart
 @riverpod
 class MyActiveTimers extends _$MyActiveTimers {
-  final _ledger = TimerLedger();
+  var _ledger = TimerLedger();
+  String? _userId;
 
   /// REST로 다시 맞추는 중에 들어온 반영. 맞추는 중이 아니면 null
   List<void Function()>? _deferred;
@@ -133,6 +135,11 @@ class MyActiveTimers extends _$MyActiveTimers {
   @override
   Future<List<TimerRead>> build() async {
     final myId = ref.watch(currentUserProvider.select((user) => user?.id));
+    if (myId != _userId) {
+      _userId = myId;
+      _ledger = TimerLedger();
+      _deferred?.clear();
+    }
     final client = ref.watch(timerWsClientProvider);
     final subscription = client?.messageStream.listen(
       (event) => _onEvent(event, myId),
@@ -253,6 +260,7 @@ class MyActiveTimers extends _$MyActiveTimers {
     _deferred = [];
     do {
       _resyncAgain = false;
+      final ledger = _ledger;
       try {
         final active = await ref
             .read(timerRepositoryProvider)
@@ -260,7 +268,8 @@ class MyActiveTimers extends _$MyActiveTimers {
               status: [TimerStatus.running.json!, TimerStatus.paused.json!],
             );
         if (!ref.mounted) return;
-        _ledger.resync(active);
+        // 받는 사이 사용자가 바뀌었으면 이전 사용자의 목록이다
+        if (identical(ledger, _ledger)) _ledger.resync(active);
       } catch (error) {
         debugPrint('활성 타이머 조회 실패: $error');
       }

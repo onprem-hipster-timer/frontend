@@ -344,4 +344,31 @@ void main() {
       expect(displayElapsed(shown, _now), const Duration(seconds: 310));
     });
   });
+
+  test('사용자가 바뀌면 새 사용자의 첫 조회가 실패해도 이전 사용자의 타이머를 보이지 않는다', () async {
+    final c = await boot([_timer('a-1', TimerStatus.running, minute: 1)]);
+    expect(held(c, 'a-1').status, TimerStatus.running);
+
+    repository.listActive = () async => throw Exception('network');
+    c.read(_signedIn.notifier).set(_user('other'));
+    await pumpEventQueue();
+
+    expect(await c.read(myActiveTimersProvider.future), isEmpty);
+    expect(c.read(activeTimerProvider).value, isNull);
+  });
+
+  test('다시 맞추는 중에 사용자가 바뀌면 이전 사용자의 늦은 목록을 반영하지 않는다', () async {
+    final c = await boot(const []);
+    final list = Completer<List<TimerRead>>();
+    repository.listActive = () => list.future;
+    await emit(const TimerWsConnected());
+
+    repository.listActive = () async => throw Exception('network');
+    c.read(_signedIn.notifier).set(_user('other'));
+    await pumpEventQueue();
+    list.complete([_timer('a-1', TimerStatus.running, minute: 1)]);
+    await pumpEventQueue();
+
+    expect(await c.read(myActiveTimersProvider.future), isEmpty);
+  });
 }
