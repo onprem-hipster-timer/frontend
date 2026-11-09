@@ -49,7 +49,7 @@ class CalendarPage extends ConsumerWidget {
         const _TodayButton(),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: CalendarViewSelector(isCompact: true),
+          child: CalendarViewSelector(),
         ),
         IconButton(
           icon: const Icon(Icons.filter_list),

@@ -23,8 +23,11 @@ void main() {
 
   late ProviderContainer container;
 
-  Future<void> pumpPage(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1000, 1400);
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    Size size = const Size(1000, 1400),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     container = ProviderContainer(
@@ -116,6 +119,19 @@ void main() {
     await tapVisible(tester, find.byTooltip('주간'));
     expect(settings().viewType, CalendarViewType.week);
     expect(find.text('11월 8일 – 14일'), findsOneWidget);
+  });
+
+  testWidgets('좁은 화면은 보기를 메뉴로 고르고, 앱바가 넘치지 않는다', (tester) async {
+    await pumpPage(tester, size: const Size(360, 800));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('달력'), findsOneWidget);
+    expect(find.byType(SegmentedButton<CalendarViewType>), findsNothing);
+    await tapVisible(tester, find.byTooltip('보기 바꾸기'));
+    await tapVisible(tester, find.text('일간'));
+
+    expect(settings().viewType, CalendarViewType.day);
+    expect(find.text('2026년 11월 9일 (월)'), findsOneWidget);
   });
 
   testWidgets('주가 두 달에 걸치면 끝에도 달을 쓴다', (tester) async {
