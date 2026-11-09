@@ -51,11 +51,13 @@ class TimerLedger {
 
   /// [showPending]한 [pending]이 아직 그대로면 [previous]로 되돌린다.
   ///
-  /// 그 사이 응답·이벤트가 덮었으면 그 값을 둔다.
+  /// 그 사이 응답·이벤트가 덮었으면 그 값을 둔다. 그 사이 [updateTodo]로 바뀐 todo는 둔다.
   void revertPending(TimerRead pending, TimerRead previous) {
-    if (identical(_timers[pending.id], pending)) {
-      _timers[pending.id] = previous;
-    }
+    final shown = _timers[pending.id];
+    if (shown == null || shown.copyWith(todo: pending.todo) != pending) return;
+    _timers[pending.id] = shown.todo == pending.todo
+        ? previous
+        : previous.copyWith(todo: shown.todo);
   }
 
   /// 실시간 이벤트의 [timer]를 반영한다.

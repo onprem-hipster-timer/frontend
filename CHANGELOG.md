@@ -118,6 +118,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Timer
+- 일시정지·재개가 실패하면 응답을 기다리는 사이 연결된 할 일이 바뀌었어도 이전 상태로 되돌린다. 바뀐 할 일은 둔다
+
 #### Timer WebSocket
 - 소켓이 다시 연결되면 연결 오류 배너를 지운다
 - 관계 필드를 채우는 `GET /v1/timers/{id}`가 실패하면 2·4·8초 뒤 다시 받는다. 그 사이 다른 REST 응답으로 채워졌거나 지워진 타이머는 다시 받지 않는다

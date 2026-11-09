@@ -212,6 +212,33 @@ void main() {
       expect(shown.startedAt, _at(3));
       expect(displayElapsed(shown, _now), const Duration(seconds: 180));
     });
+
+    test('응답을 기다리는 사이 연결된 할 일만 바뀌어도 실패하면 일시정지로 돌아가고 바뀐 할 일은 둔다', () async {
+      final todo = makeTodo(id: 'todo-1');
+      final c = await boot([
+        _timer(
+          't1',
+          TimerStatus.paused,
+          minute: 1,
+          elapsed: 60,
+        ).copyWith(todoId: todo.id, todo: todo),
+      ]);
+      final gate = Completer<void>();
+      repository.gate = gate.future;
+      repository.error = Exception('409');
+
+      final resume = controller(c).resumeTimer(timerId: 't1');
+      await pumpEventQueue();
+      final renamed = todo.copyWith(title: '바뀐 할 일');
+      c.read(myActiveTimersProvider.notifier).updateTodo(renamed);
+      gate.complete();
+      await expectLater(resume, throwsA(isA<Exception>()));
+
+      final shown = held(c, 't1');
+      expect(shown.status, TimerStatus.paused);
+      expect(displayElapsed(shown, _now), const Duration(seconds: 60));
+      expect(shown.todo, renamed);
+    });
   });
 
   test('연장해 다시 실행한 뒤 늦게 온 시간 종료 이벤트는 버린다', () async {
