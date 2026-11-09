@@ -3263,8 +3263,7 @@ void main() {
         expect(tester.takeException(), isNull);
         final dial = tester.getRect(dialFace());
         final clock = tester.getRect(find.byType(DigitalClock));
-        // 셸은 아래 100을 내비 바 자리로 비워 둔다
-        final pageBottom = size.height - 100;
+        final pageBottom = _shellPageBottom(size);
 
         expect(dial.shortestSide, greaterThanOrEqualTo(120));
         expect(dial.right, lessThanOrEqualTo(clock.left));
@@ -3357,7 +3356,7 @@ void main() {
             await tester.pumpAndSettle();
             expect(
               tester.getRect(fab).bottom,
-              lessThanOrEqualTo(size.height - 100),
+              lessThanOrEqualTo(_shellPageBottom(size)),
               reason: '$icon',
             );
             expect(fab.hitTestable(), findsOneWidget, reason: '$icon');
@@ -3411,9 +3410,10 @@ void main() {
               friendsProvider.overrideWith((ref) async => const <FriendRead>[]),
             ],
           );
-          // 셸은 아래 100을 내비 바 자리로 비워 둔다. 좁은 화면의 목록은
-          // 내비 바까지 덮는 시트로 열린다
-          final pageBottom = size.width < 600 ? size.height : size.height - 100;
+          // 좁은 화면의 목록은 내비 바까지 덮는 시트로 열린다
+          final pageBottom = size.width < 600
+              ? size.height
+              : _shellPageBottom(size);
 
           /// [text]가 넘침 없이 굴려서라도 셸 위 화면 안에 보인다
           Future<void> expectShown(String text) async {
@@ -4955,6 +4955,11 @@ Future<void> _pumpTimerPage(
 }
 
 /// 앱처럼 하단 내비 바 셸([ScaffoldWithNavBar]) 안에 타이머 화면을 [size] 화면, 글자 [textScale]배로 그린다
+/// 내비 셸 안 화면의 아래 끝. 높은 화면은 아래 100을 하단 바 자리로 비우고,
+/// 낮은 화면(높이 500 미만)은 내비를 왼쪽에 두어 아래를 비우지 않는다
+double _shellPageBottom(Size size) =>
+    size.height < 500 ? size.height : size.height - 100;
+
 Future<void> _pumpInNavShell(
   WidgetTester tester, {
   required Size size,

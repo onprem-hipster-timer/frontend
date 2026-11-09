@@ -2,142 +2,144 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 
-/// 떠있는(Floating) 하단 네비게이션 바가 있는 스캐폴드
+/// 화면 높이가 이보다 낮으면(가로 휴대폰 등) 하단 바 대신 왼쪽 세로 내비를 쓴다
+const _railBelowHeight = 500.0;
+
+/// 탭 다섯 개의 아이콘과 이름
+const _tabs = [
+  (Icons.calendar_month_rounded, '캘린더'),
+  (Icons.check_circle_outline_rounded, '할 일'),
+  (Icons.timer_rounded, '타이머'),
+  (Icons.label_outline_rounded, '태그'),
+  (Icons.person_outline_rounded, '마이페이지'),
+];
+
+/// 탭 화면을 감싸는 스캐폴드. go_router의 StatefulShellRoute와 함께 쓴다.
 ///
-/// Stack을 사용하여 컨텐츠 위에 알약(Pill) 모양의 둥근 네비게이션 바를 띄웁니다.
-/// go_router의 StatefulShellRoute와 함께 사용하도록 설계되었습니다.
+/// 보통은 콘텐츠 위에 떠 있는 알약 모양 하단 바를, 낮은 화면에서는 왼쪽 세로 내비를 둔다.
 class ScaffoldWithNavBar extends StatelessWidget {
-  /// 네비게이션 쉘 (페이지 컨텐츠)
   final StatefulNavigationShell navigationShell;
 
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context) {
+    final current = navigationShell.currentIndex;
+    if (MediaQuery.sizeOf(context).height < _railBelowHeight) {
+      return Scaffold(
+        body: Row(
+          children: [
+            _SideNav(current: current, onSelect: _onTap),
+            const VerticalDivider(width: 1),
+            Expanded(child: navigationShell),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       body: Stack(
         children: [
-          // ============================================================
-          // Body Layer - 페이지 컨텐츠
-          // ============================================================
+          // 하단 바가 콘텐츠를 가리지 않게 그 높이만큼 비운다
           Positioned.fill(
-            child: Container(
-              // 하단 네비게이션 바가 컨텐츠를 가리지 않도록 패딩 적용
+            child: Padding(
               padding: const EdgeInsets.only(bottom: 100),
               child: navigationShell,
             ),
           ),
-
-          // ============================================================
-          // Navigation Layer - 떠있는 네비게이션 바
-          // ============================================================
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: _buildFloatingNavBar(context),
+            child: _FloatingNavBar(current: current, onSelect: _onTap),
           ),
         ],
       ),
     );
   }
 
-  /// 떠있는 알약 모양 네비게이션 바 위젯
-  Widget _buildFloatingNavBar(BuildContext context) {
-    final theme = Theme.of(context);
+  void _onTap(int index) {
+    navigationShell.goBranch(
+      index,
+      // 같은 탭을 다시 누르면 그 탭의 첫 화면으로 간다
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+}
 
+/// 낮은 화면의 왼쪽 세로 내비
+class _SideNav extends StatelessWidget {
+  const _SideNav({required this.current, required this.onSelect});
+
+  final int current;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      right: false,
+      child: SingleChildScrollView(
+        child: IntrinsicHeight(
+          child: NavigationRail(
+            selectedIndex: current,
+            onDestinationSelected: onSelect,
+            labelType: NavigationRailLabelType.all,
+            groupAlignment: 0,
+            destinations: [
+              for (final (icon, label) in _tabs)
+                NavigationRailDestination(icon: Icon(icon), label: Text(label)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 콘텐츠 위에 떠 있는 알약 모양 하단 바
+class _FloatingNavBar extends StatelessWidget {
+  const _FloatingNavBar({required this.current, required this.onSelect});
+
+  final int current;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      // 화면 양쪽과 하단에서 여백을 두어 "떠있는" 효과 연출
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       decoration: BoxDecoration(
-        // 테마에 맞는 표면 색상 사용
         color: theme.colorScheme.surfaceContainer,
-        // 완벽한 알약(Pill) 모양을 위한 둥근 모서리
         borderRadius: AppRadius.pillAll,
-        // 입체감을 주는 그림자 효과
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.shadow.withValues(alpha: 0.12),
             blurRadius: 15,
             offset: const Offset(0, 5),
-            spreadRadius: 0,
           ),
         ],
       ),
       child: ClipRRect(
-        // 컨테이너와 동일한 둥근 모서리로 자식 위젯 클리핑
         borderRadius: AppRadius.pillAll,
         child: BottomNavigationBar(
-          // ============================================================
-          // 기본 BottomNavigationBar 설정
-          // ============================================================
-          currentIndex: navigationShell.currentIndex,
-          onTap: _onTap,
-          type: BottomNavigationBarType.fixed, // 5개 아이템 고정 배치
-          elevation: 0, // 컨테이너의 그림자를 사용하므로 기본 elevation 제거
-          backgroundColor: Colors.transparent, // 투명하게 설정 (컨테이너 색상 사용)
-          // ============================================================
-          // 레이블 숨김 설정 (아이콘만 표시)
-          // ============================================================
+          currentIndex: current,
+          onTap: onSelect,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
           showSelectedLabels: false,
           showUnselectedLabels: false,
-
-          // ============================================================
-          // 아이콘 색상 설정
-          // ============================================================
           selectedItemColor: theme.primaryColor,
           unselectedItemColor: theme.colorScheme.onSurfaceVariant,
-
-          // ============================================================
-          // 5개 탭 아이템 정의
-          // ============================================================
-          items: const [
-            // 1. 캘린더 탭
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month_rounded, size: 28),
-              label: 'Calendar',
-              tooltip: '캘린더',
-            ),
-
-            // 2. 할 일 탭
-            BottomNavigationBarItem(
-              icon: Icon(Icons.check_circle_outline_rounded, size: 28),
-              label: 'Todo',
-              tooltip: '할 일',
-            ),
-
-            // 3. 타이머 탭
-            BottomNavigationBarItem(
-              icon: Icon(Icons.timer_rounded, size: 28),
-              label: 'Timer',
-              tooltip: '타이머',
-            ),
-
-            // 4. 태그 탭
-            BottomNavigationBarItem(
-              icon: Icon(Icons.label_outline_rounded, size: 28),
-              label: 'Tags',
-              tooltip: '태그',
-            ),
-
-            // 5. 마이페이지 탭
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded, size: 28),
-              label: 'MyPage',
-              tooltip: '마이페이지',
-            ),
+          items: [
+            for (final (icon, label) in _tabs)
+              BottomNavigationBarItem(
+                icon: Icon(icon, size: 28),
+                label: label,
+                tooltip: label,
+              ),
           ],
         ),
       ),
-    );
-  }
-
-  /// 탭 선택 시 호출되는 콜백
-  void _onTap(int index) {
-    navigationShell.goBranch(
-      index,
-      // 같은 탭을 다시 탭하면 해당 브랜치의 루트로 이동
-      initialLocation: index == navigationShell.currentIndex,
     );
   }
 }
