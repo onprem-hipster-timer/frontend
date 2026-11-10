@@ -7,15 +7,14 @@ import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/duration_picker_sheet.dart';
-import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/timer/presentation/utils/timer_actions.dart';
 import 'package:momeet/features/timer/presentation/widgets/current_task_display.dart';
 import 'package:momeet/features/timer/presentation/widgets/digital_clock.dart';
-import 'package:momeet/features/timer/presentation/widgets/timer_control_button.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_gallery.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_controls.dart';
 
 /// 이 폭보다 좁으면 다이얼만 두고 타이머 목록은 바텀 시트로 연다
 const timerWideLayoutMinWidth = 600.0;
@@ -183,7 +182,11 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
                 label: const Text('새 타이머'),
                 onPressed: controllerState.isLoading
                     ? null
-                    : () => _showStartTimerSheet(context, ref),
+                    : () => startTimerFromSheet(
+                        context,
+                        ref,
+                        initialDuration: _pendingDuration,
+                      ),
               )
             : null;
 
@@ -274,33 +277,16 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
             ),
             gap,
           ],
-          if (breakSession != null)
-            FloatingActionButton(
-              onPressed: () => ref.read(breakTimerProvider.notifier).end(),
-              tooltip: breakOver ? '확인' : '휴식 끝내기',
-              backgroundColor: theme.colorScheme.tertiary,
-              child: Icon(
-                breakOver ? Icons.check : Icons.stop,
-                color: theme.colorScheme.onTertiary,
-              ),
-            )
-          else
-            TimerControlButton(
-              activeTimer: activeTimer,
-              starting: controllerState.isLoading,
-              timeUp: timeUp,
-              breakSelected: _breakSelected,
-              onStart: () => _showStartTimerSheet(context, ref),
-              onStartBreak: breakBlocked
-                  ? null
-                  : () => ref
-                        .read(breakTimerProvider.notifier)
-                        .start(_pendingBreakDuration),
-              onStop: () => _stopTimer(context, ref),
-              onPause: () => _pauseTimer(context, ref, activeTimer!.id),
-              onResume: () => _resumeTimer(context, ref, activeTimer!.id),
-              onExtend: () => _extendTimer(context, ref, activeTimer!.id),
-            ),
+          TimerDashboardControls(
+            onBreak: breakSession != null,
+            breakOver: breakOver,
+            activeTimer: activeTimer,
+            timeUp: timeUp,
+            breakSelected: _breakSelected,
+            breakBlocked: breakBlocked,
+            pendingDuration: _pendingDuration,
+            pendingBreakDuration: _pendingBreakDuration,
+          ),
         ];
 
         // 낮고 넓은 칸(가로 휴대폰)은 다이얼 오른쪽에 나머지를 두고, 나머지가 칸보다 길면 굴린다
@@ -355,96 +341,6 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     });
   }
 
-  /// 새 작업 시작 시트를 열고 고른 값으로 타이머를 시작한다
-  void _showStartTimerSheet(BuildContext context, WidgetRef ref) async {
-    final input = await showStartTimerSheet(
-      context,
-      initialDuration: _pendingDuration,
-    );
-    if (input == null || !context.mounted) return;
-    final controller = ref.read(timerControllerProvider.notifier);
-    if (input.todos.length >= 2) {
-      final failed = await controller.startTimers(
-        todos: input.todos,
-        duration: input.duration,
-      );
-      if (!context.mounted) return;
-      if (failed.isEmpty) {
-        showAppSnackBar(context, '타이머를 시작했습니다');
-      } else {
-        showAppSnackBar(
-          context,
-          startFailureMessage(failed),
-          kind: AppNoticeKind.error,
-        );
-      }
-      return;
-    }
-    try {
-      await controller.startTimer(
-        relatedTodoId: input.todos.firstOrNull?.id,
-        title: input.title,
-        allocatedDurationSeconds: input.duration.inSeconds,
-      );
-      if (context.mounted) {
-        showAppSnackBar(context, '타이머를 시작했습니다');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        showAppSnackBar(context, '타이머 시작 실패: $e', kind: AppNoticeKind.error);
-      }
-    }
-  }
-
-  /// 타이머 완료 (정지)
-  void _stopTimer(BuildContext context, WidgetRef ref) async {
-    final activeTimer = ref
-        .read(activeTimerProvider)
-        .when(
-          data: (timer) => timer,
-          loading: () => null,
-          error: (_, _) => null,
-        );
-
-    if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
-      ref.invalidate(myActiveTimersProvider);
-      if (context.mounted) {
-        showAppSnackBar(context, '진행 중인 작업이 없습니다.');
-      }
-      return;
-    }
-
-    final confirmed = await confirmStopTimer(context);
-    if (!context.mounted || !confirmed) return;
-
-    try {
-      // 확인 시점에 캡처한 타이머 id로 정지 — 다이얼로그가 열린 사이
-      // 활성 타이머가 바뀌어도 사용자가 확인한 타이머만 정지한다.
-      await ref
-          .read(timerControllerProvider.notifier)
-          .stopTimer(timerId: activeTimer.id);
-      if (context.mounted) {
-        showAppSnackBar(
-          context,
-          '작업을 완료했습니다',
-          actionLabel: '새 타이머 시작',
-          onAction: () {
-            if (!context.mounted) return;
-            _showStartTimerSheet(context, ref);
-          },
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        showAppSnackBar(
-          context,
-          '완료 실패: ${error.toString()}',
-          kind: AppNoticeKind.error,
-        );
-      }
-    }
-  }
-
   /// 넓은 화면이나 웹·데스크톱이면 갤러리에 이전·다음 버튼을 둔다
   static bool _showGalleryArrows(BuildContext context) =>
       kIsWeb ||
@@ -455,52 +351,6 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         TargetPlatform.windows => true,
         _ => false,
       };
-
-  /// 보이는 타이머를 [timerId]로 묶어 둔다. 명령으로 기본 타이머가 바뀌어도 대시보드가 다른 타이머로 넘어가지 않는다
-  void _keepFocus(String timerId) =>
-      ref.read(focusedTimerIdProvider.notifier).focus(timerId);
-
-  /// 타이머 일시정지
-  void _pauseTimer(BuildContext context, WidgetRef ref, String timerId) async {
-    _keepFocus(timerId);
-    try {
-      await ref
-          .read(timerControllerProvider.notifier)
-          .pauseTimer(timerId: timerId);
-    } catch (error) {
-      if (context.mounted) {
-        showAppSnackBar(context, '일시정지 실패: ${error.toString()}');
-      }
-    }
-  }
-
-  /// 타이머 재개
-  void _resumeTimer(BuildContext context, WidgetRef ref, String timerId) async {
-    _keepFocus(timerId);
-    try {
-      await ref
-          .read(timerControllerProvider.notifier)
-          .resumeTimer(timerId: timerId);
-    } catch (error) {
-      if (context.mounted) {
-        showAppSnackBar(context, '재개 실패: ${error.toString()}');
-      }
-    }
-  }
-
-  /// 타이머 5분 연장
-  void _extendTimer(BuildContext context, WidgetRef ref, String timerId) async {
-    _keepFocus(timerId);
-    try {
-      await ref
-          .read(timerControllerProvider.notifier)
-          .extendTimer(timerId: timerId, by: timerExtendStep);
-    } catch (error) {
-      if (context.mounted) {
-        showAppSnackBar(context, '연장 실패: ${error.toString()}');
-      }
-    }
-  }
 }
 
 /// 낮고 넓은 칸의 대시보드. 다이얼을 왼쪽에, [addTimer]와 [children]을 오른쪽에 두고 오른쪽이 길면 굴린다
