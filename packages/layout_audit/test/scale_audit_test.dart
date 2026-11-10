@@ -176,9 +176,11 @@ void main() {
       final found = await compareScales(
         tester,
         'vanish-adapted',
-        () => _ByScale(
-          normal: const Text('월요일', style: squareStyle),
-          large: const Text('월', style: squareStyle),
+        () => Builder(
+          builder: (context) => Text(
+            MediaQuery.textScalerOf(context).scale(1) > 1.5 ? '월' : '월요일',
+            style: squareStyle,
+          ),
         ),
       );
 
