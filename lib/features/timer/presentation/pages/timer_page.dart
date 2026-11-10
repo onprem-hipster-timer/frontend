@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
+    show ShellMenuButton, ShellScope;
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -45,6 +47,9 @@ class _TimerPageState extends ConsumerState<TimerPage> {
 
         return Scaffold(
           appBar: AppBar(
+            leading: ShellScope.compactOf(context)
+                ? const ShellMenuButton()
+                : null,
             title: const Text('타이머'),
             elevation: 0,
             backgroundColor: Theme.of(context).colorScheme.surface,

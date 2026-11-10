@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
+    show ShellMenuButton, ShellScope;
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +23,7 @@ class TodoDashboardPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: ShellScope.compactOf(context) ? const ShellMenuButton() : null,
         title: const Text('할 일 관리'),
         elevation: 0,
         centerTitle: true,

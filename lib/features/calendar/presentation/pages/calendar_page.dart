@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart' show ShellScope;
+import 'package:momeet/shared/widgets/shell_tab_list.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +28,7 @@ class CalendarPage extends StatelessWidget {
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
-            tooltip: '보기 설정',
+            tooltip: ShellScope.compactOf(context) ? '화면 이동과 보기 설정' : '보기 설정',
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -42,7 +44,15 @@ class CalendarPage extends StatelessWidget {
           child: _CalendarToolbar(),
         ),
       ),
-      drawer: const CalendarSettingsDrawer(),
+      drawer: CalendarSettingsDrawer(
+        header: switch (ShellScope.maybeOf(context)) {
+          final scope? when scope.compact => ShellTabList(
+            current: scope.current,
+            onSelect: scope.onSelect,
+          ),
+          _ => null,
+        },
+      ),
       body: const CalendarViewWidget(
         // TODO: 라우팅 연결
         // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),

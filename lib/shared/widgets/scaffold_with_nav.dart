@@ -1,22 +1,22 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:momeet/shared/widgets/shell_scope.dart';
+import 'package:momeet/shared/widgets/shell_tab_list.dart';
+
+export 'package:momeet/shared/widgets/shell_menu_button.dart';
+export 'package:momeet/shared/widgets/shell_scope.dart';
 
 /// 화면 높이가 이보다 낮으면(가로 휴대폰 등) 하단 바 대신 왼쪽 세로 내비를 쓴다
 const _railBelowHeight = 500.0;
 
-/// 탭 다섯 개의 아이콘과 이름
-const _tabs = [
-  (Icons.calendar_month_rounded, '캘린더'),
-  (Icons.check_circle_outline_rounded, '할 일'),
-  (Icons.timer_rounded, '타이머'),
-  (Icons.label_outline_rounded, '태그'),
-  (Icons.person_outline_rounded, '마이페이지'),
-];
+/// 긴 변과 짧은 변이 모두 이보다 작으면(접는 폰 덮개 화면 등) 내비를 숨기고 ☰로 탭을 옮긴다
+const _compactBelowSide = 480.0;
 
 /// 탭 화면을 감싸는 스캐폴드. go_router의 StatefulShellRoute와 함께 쓴다.
 ///
 /// 보통은 콘텐츠 위에 떠 있는 알약 모양 하단 바를, 낮은 화면에서는 왼쪽 세로 내비를 둔다.
+/// 아주 작은 화면은 내비 없이 화면 전체를 쓰고, 각 탭 화면의 ☰([ShellMenuButton])로 탭 목록을 연다.
 class ScaffoldWithNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -25,13 +25,42 @@ class ScaffoldWithNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = navigationShell.currentIndex;
-    if (MediaQuery.sizeOf(context).height < _railBelowHeight) {
+    final size = MediaQuery.sizeOf(context);
+    if (size.longestSide < _compactBelowSide) {
+      return Scaffold(
+        drawer: Drawer(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: ShellTabList(current: current, onSelect: _onTap),
+            ),
+          ),
+        ),
+        body: Builder(
+          builder: (context) => ShellScope(
+            compact: true,
+            current: current,
+            onSelect: _onTap,
+            openTabs: () => Scaffold.of(context).openDrawer(),
+            child: navigationShell,
+          ),
+        ),
+      );
+    }
+    if (size.height < _railBelowHeight) {
       return Scaffold(
         body: Row(
           children: [
             _SideNav(current: current, onSelect: _onTap),
             const VerticalDivider(width: 1),
-            Expanded(child: navigationShell),
+            Expanded(
+              child: ShellScope(
+                compact: false,
+                current: current,
+                onSelect: _onTap,
+                openTabs: () {},
+                child: navigationShell,
+              ),
+            ),
           ],
         ),
       );
@@ -43,7 +72,13 @@ class ScaffoldWithNavBar extends StatelessWidget {
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 100),
-              child: navigationShell,
+              child: ShellScope(
+                compact: false,
+                current: current,
+                onSelect: _onTap,
+                openTabs: () {},
+                child: navigationShell,
+              ),
             ),
           ),
           Positioned(
@@ -85,7 +120,7 @@ class _SideNav extends StatelessWidget {
             labelType: NavigationRailLabelType.all,
             groupAlignment: 0,
             destinations: [
-              for (final (icon, label) in _tabs)
+              for (final (icon, label) in shellTabs)
                 NavigationRailDestination(icon: Icon(icon), label: Text(label)),
             ],
           ),
@@ -131,7 +166,7 @@ class _FloatingNavBar extends StatelessWidget {
           selectedItemColor: theme.primaryColor,
           unselectedItemColor: theme.colorScheme.onSurfaceVariant,
           items: [
-            for (final (icon, label) in _tabs)
+            for (final (icon, label) in shellTabs)
               BottomNavigationBarItem(
                 icon: Icon(icon, size: 28),
                 label: label,

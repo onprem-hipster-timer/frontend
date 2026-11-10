@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
+    show ShellMenuButton, ShellScope;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
@@ -21,6 +23,7 @@ class TagManagementPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: ShellScope.compactOf(context) ? const ShellMenuButton() : null,
         title: const Text('태그 관리'),
         elevation: 0,
         centerTitle: true,

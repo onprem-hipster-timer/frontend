@@ -24,7 +24,14 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
               routes: [
                 GoRoute(
                   path: '/$i',
-                  builder: (context, state) => Text('${_tabs[i]} 화면'),
+                  builder: (context, state) => Scaffold(
+                    appBar: AppBar(
+                      leading: ShellScope.compactOf(context)
+                          ? const ShellMenuButton()
+                          : null,
+                    ),
+                    body: Text('${_tabs[i]} 화면'),
+                  ),
                 ),
               ],
             ),
@@ -81,5 +88,28 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(NavigationRail), findsOneWidget);
+  });
+
+  testWidgets('아주 작은 화면은 내비 없이 ☰로 탭 목록을 열어 탭을 옮긴다', (tester) async {
+    await _pumpShell(tester, const Size(360, 374));
+
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+    final content = tester.getRect(find.text('캘린더 화면'));
+    expect(content.left, lessThan(16));
+
+    await tester.tap(find.byTooltip('화면 이동'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('타이머'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('타이머 화면'), findsOneWidget);
+    expect(find.byType(Drawer), findsNothing);
+  });
+
+  testWidgets('작지 않은 화면의 탭 화면에는 ☰가 없다', (tester) async {
+    await _pumpShell(tester, const Size(360, 800));
+
+    expect(find.byTooltip('화면 이동'), findsNothing);
   });
 }
