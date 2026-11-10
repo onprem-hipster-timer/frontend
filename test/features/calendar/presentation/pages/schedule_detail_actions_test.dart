@@ -131,7 +131,7 @@ void main() {
       await pumpDetail(tester, schedule());
       await tapVisible(tester, find.text('TODO로 변환'));
 
-      expect(find.text('어떤 그룹에 만들까요?'), findsOneWidget);
+      expect(find.text('그룹 고르기'), findsOneWidget);
       await tapVisible(tester, find.text('학습'));
       expect(schedules.convertedToTodo, [('schedule-1', 'group-study')]);
     });

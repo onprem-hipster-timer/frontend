@@ -20,7 +20,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('어떤 그룹에 만들까요?'),
+        title: const Text('그룹 고르기'),
         elevation: 0,
         centerTitle: true,
         backgroundColor: theme.colorScheme.surface,
