@@ -14,13 +14,34 @@ import '../widgets/schedule_form_sheet.dart';
 /// 캘린더 메인 페이지
 ///
 /// 캘린더 뷰와 네비게이션 컨트롤을 포함합니다.
-class CalendarPage extends ConsumerWidget {
+class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, ref),
+      appBar: AppBar(
+        title: const Text('달력'),
+        centerTitle: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: '보기 설정',
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: '필터',
+            onPressed: () => _showFilterSheet(context),
+          ),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(56),
+          child: _CalendarToolbar(),
+        ),
+      ),
       drawer: const CalendarSettingsDrawer(),
       body: const CalendarViewWidget(
         // TODO: 라우팅 연결
@@ -36,33 +57,8 @@ class CalendarPage extends ConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    return AppBar(
-      title: const Text('달력'),
-      centerTitle: false,
-      leading: Builder(
-        builder: (context) => IconButton(
-          icon: const Icon(Icons.menu),
-          tooltip: '보기 설정',
-          onPressed: () => Scaffold.of(context).openDrawer(),
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          tooltip: '필터',
-          onPressed: () => _showFilterSheet(context, ref),
-        ),
-      ],
-      bottom: const PreferredSize(
-        preferredSize: Size.fromHeight(56),
-        child: _CalendarToolbar(),
-      ),
-    );
-  }
-
   /// 필터 시트 표시
-  void _showFilterSheet(BuildContext context, WidgetRef ref) {
+  void _showFilterSheet(BuildContext context) {
     showAppScrollableSheet<void>(
       context,
       initialSize: 0.5,
