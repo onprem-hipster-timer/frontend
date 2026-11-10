@@ -217,6 +217,8 @@ class _CalendarToolbar extends ConsumerWidget {
                 settings,
                 compact: MediaQuery.sizeOf(context).width < 600,
               ),
+              // 윗줄로 내려도 다 들어가지 않는 아주 좁은 화면은 줄을 바꾼다
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(
                 context,

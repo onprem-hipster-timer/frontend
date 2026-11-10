@@ -179,6 +179,22 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('가장 좁은 화면에서 윗줄로도 다 들어가지 않는 기간은 자르지 않고 줄을 바꾼다', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpPage(tester, size: const Size(320, 568));
+    container
+        .read(calendarSettingsProvider.notifier)
+        .setViewType(CalendarViewType.day);
+    await tester.pumpAndSettle();
+
+    final period = tester.renderObject<RenderParagraph>(
+      find.text('11월 9일 (월)'),
+    );
+    expect(period.didExceedMaxLines, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('넓은 화면은 보는 기간과 이동 버튼을 한 줄에 둔다', (tester) async {
     await pumpPage(tester);
 
