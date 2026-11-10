@@ -31,23 +31,9 @@ class TagStatsSection extends ConsumerWidget {
                 final topTags = tagStats.getTopTags(8);
 
                 if (topTags.isEmpty) {
-                  return Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.label_off_outlined,
-                          size: 48,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '아직 태그를 사용하지 않았습니다',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  return const AppEmptyState(
+                    icon: Icons.label_off_outlined,
+                    title: '아직 태그를 사용하지 않았습니다',
                   );
                 }
 

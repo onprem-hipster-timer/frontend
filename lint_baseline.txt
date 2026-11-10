@@ -32,7 +32,6 @@ max_build_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.d
 max_build_lines lib/features/mypage/presentation/widgets/activity_stats_section.dart ActivityStatsSection.build 205
 max_build_lines lib/features/mypage/presentation/widgets/profile_section.dart ProfileSection.build 130
 max_build_lines lib/features/mypage/presentation/widgets/settings_section.dart SettingsSection.build 90
-max_build_lines lib/features/mypage/presentation/widgets/tag_stats_section.dart TagStatsSection.build 110
 max_build_lines lib/features/settings/presentation/widgets/timezone_selection_sheet.dart _TimezoneSelectionSheetState.build 138
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart TimerControlButton.build 110
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart TimerHistoryItem.build 158
