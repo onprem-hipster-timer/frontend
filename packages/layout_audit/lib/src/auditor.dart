@@ -224,8 +224,8 @@ class _Audit {
   }
 
   LayoutFinding? _overlap(ContentLeaf a, ContentLeaf b) {
-    // 떠 있는 버튼(FAB)이 스크롤 내용 위에 뜨는 것은 설계다. 목록 끝 여백으로 가린 줄을 꺼낸다.
-    if (_insideFloatingButton(a.box) || _insideFloatingButton(b.box)) {
+    // 떠 있는 버튼(FAB)·서랍이 뒤 내용 위에 뜨는 것은 설계다. 목록 끝 여백으로 가린 줄을 꺼낸다.
+    if (_insideFloatingLayer(a.box) || _insideFloatingLayer(b.box)) {
       return null;
     }
     final intersections = <Rect>[
@@ -444,16 +444,20 @@ bool _paintsChildrenInOrder(RenderObject object) =>
 
 final Expando<bool> _floatingCache = Expando<bool>('layout_audit floating');
 
-/// [box]를 만든 위젯 사슬에 FloatingActionButton이 있는지.
+/// 뒤 내용 위에 떠서 덮는 것이 설계인 위젯
+const _floatingLayers = {'FloatingActionButton', 'Drawer', 'NavigationDrawer'};
+
+/// [box]를 만든 위젯 사슬에 [_floatingLayers] 중 하나가 있는지.
 ///
 /// material 패키지가 여럿일 수 있어(Flutter·material_ui) 타입 이름으로 본다.
-bool _insideFloatingButton(RenderObject box) => _floatingCache[box] ??= () {
+bool _insideFloatingLayer(RenderObject box) => _floatingCache[box] ??= () {
       final creator = box.debugCreator;
       if (creator is! DebugCreator) return false;
-      var found = creator.element.widget.runtimeType.toString() ==
-          'FloatingActionButton';
+      var found = _floatingLayers.contains(
+        creator.element.widget.runtimeType.toString(),
+      );
       creator.element.visitAncestorElements((element) {
-        if (element.widget.runtimeType.toString() == 'FloatingActionButton') {
+        if (_floatingLayers.contains(element.widget.runtimeType.toString())) {
           found = true;
         }
         return !found;

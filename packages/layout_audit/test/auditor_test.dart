@@ -357,6 +357,32 @@ void main() {
     expect(findings, isEmpty);
   });
 
+  testWidgets('열린 서랍이 뒤 화면 글자를 덮는 것은 겹침으로 보지 않는다', (tester) async {
+    final scaffold = GlobalKey<ScaffoldState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          key: scaffold,
+          drawer: const Drawer(child: Text('서랍 안의 긴 설정 항목 이름')),
+          body: ListView(
+            children: [
+              for (var i = 0; i < 20; i++)
+                Text('본문 $i ' * 20, maxLines: 1, softWrap: false),
+            ],
+          ),
+        ),
+      ),
+    );
+    scaffold.currentState!.openDrawer();
+    await tester.pumpAndSettle();
+
+    final findings = auditLayout(
+      tester,
+    ).where((f) => f.kind == LayoutFindingKind.overlap);
+
+    expect(findings, isEmpty);
+  });
+
   testWidgets('within 밖의 겹침은 보고하지 않는다', (tester) async {
     const inside = Key('inside');
     await pumpInApp(
