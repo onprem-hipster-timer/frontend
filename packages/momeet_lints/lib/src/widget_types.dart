@@ -21,3 +21,8 @@ bool isWidgetOrStateClass(InterfaceElement? element) =>
 /// 위젯 클래스(State 제외)인지.
 bool isWidgetClass(InterfaceElement? element) =>
     element != null && _isOrExtends(element, 'Widget');
+
+/// 화면을 만드는 위젯인지. InheritedWidget(`of`로 찾아 읽는 값)은 빼고 본다.
+bool isBuiltWidgetType(DartType? type) =>
+    isWidgetType(type) &&
+    !(type is InterfaceType && _isOrExtends(type.element, 'InheritedWidget'));

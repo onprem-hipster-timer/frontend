@@ -129,4 +129,14 @@ class Foo {
       lintAt(this, content, '_new'),
     ]);
   }
+
+  Future<void> test_inheritedWidgetLookup_ok() async {
+    await assertNoDiagnostics('''
+import 'package:flutter/widgets.dart';
+
+abstract class Scope extends InheritedWidget {
+  static Scope? maybeOf(BuildContext context) => null;
+}
+''');
+  }
 }

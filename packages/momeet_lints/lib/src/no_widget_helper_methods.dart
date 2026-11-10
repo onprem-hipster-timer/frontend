@@ -41,7 +41,7 @@ class _Collector extends RecursiveAstVisitor<void> {
         node.body is! EmptyFunctionBody &&
         !_hasOverride(node.metadata) &&
         element != null &&
-        isWidgetType(element.returnType)) {
+        isBuiltWidgetType(element.returnType)) {
       final owner = element.enclosingElement?.name ?? '?';
       findings.add(Finding('$owner.${node.name.lexeme}', node.name));
     }
@@ -51,7 +51,7 @@ class _Collector extends RecursiveAstVisitor<void> {
   void visitFunctionDeclaration(FunctionDeclaration node) {
     if (node.parent is! CompilationUnit) return;
     final element = node.declaredFragment?.element;
-    if (element != null && isWidgetType(element.returnType)) {
+    if (element != null && isBuiltWidgetType(element.returnType)) {
       findings.add(Finding(node.name.lexeme, node.name));
     }
   }
