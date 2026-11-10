@@ -478,8 +478,18 @@ Iterable<LayoutFinding> _vanished(
     return true;
   }
 
+  // 같은 글자가 아직 보이면 사본 하나가 접힌 것(+N 등)이라 정보는 남아 있다.
+  final shown = {
+    for (final t in scaled.texts)
+      if (t.visible) t.text,
+  };
   for (final (i, was) in base.texts.indexed) {
-    if (!was.visible || was.moving || after.contains(was.key)) continue;
+    if (!was.visible ||
+        was.moving ||
+        after.contains(was.key) ||
+        shown.contains(was.text)) {
+      continue;
+    }
     if (consume(addedTexts, was.text) ||
         consume(addedSpots, '${was.location}')) {
       continue;

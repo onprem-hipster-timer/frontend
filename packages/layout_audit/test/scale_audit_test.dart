@@ -63,6 +63,23 @@ class _ByScale extends StatelessWidget {
       MediaQuery.textScalerOf(context).scale(1) > 1.5 ? large : normal;
 }
 
+/// 같은 줄에서 '팀 회의'를 둘 그리다가 글자가 커지면 하나만 그리고 나머지를 '+1'로 접는다.
+class _Copies extends StatelessWidget {
+  const _Copies();
+
+  @override
+  Widget build(BuildContext context) {
+    final folded = MediaQuery.textScalerOf(context).scale(1) > 1.5;
+    return Column(
+      children: [
+        for (var i = 0; i < (folded ? 1 : 2); i++)
+          const Text('팀 회의', style: squareStyle),
+        if (folded) const Text('+1', style: squareStyle),
+      ],
+    );
+  }
+}
+
 /// 글자 배율에 비례해 높아지는 빈칸 아래에 '저장' 버튼을 둔다.
 class _PushedButton extends StatelessWidget {
   const _PushedButton();
@@ -195,6 +212,16 @@ void main() {
           normal: Text('팀 회의', style: squareStyle),
           large: Row(children: [Text('팀 회의', style: squareStyle)]),
         ),
+      );
+
+      expect(ofKind(found, LayoutFindingKind.scaleVanished), isEmpty);
+    });
+
+    testWidgets('같은 글자가 아직 보이면 사본 하나가 접힌 것은 사라진 것이 아니다', (tester) async {
+      final found = await compareScales(
+        tester,
+        'vanish-copy',
+        () => const _Copies(),
       );
 
       expect(ofKind(found, LayoutFindingKind.scaleVanished), isEmpty);
