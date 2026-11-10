@@ -3374,6 +3374,31 @@ void main() {
         });
       }
 
+      testWidgets('아주 작은 화면은 내비 없이 시계를 다이얼 가운데에 두고 새 타이머를 제목 옆 아이콘으로 둔다', (
+        tester,
+      ) async {
+        await pumpInShell(
+          tester,
+          size: const Size(360, 374),
+          textScale: 1,
+          timer: running,
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(NavigationRail), findsNothing);
+        final dial = tester.getRect(dialFace());
+        final clock = tester.getRect(find.byType(DigitalClock));
+        expect(dial.contains(clock.center), isTrue);
+        expect(clock.width, lessThan(dial.width));
+        expect(find.byTooltip('새 타이머'), findsOneWidget);
+        expect(find.widgetWithText(ActionChip, '새 타이머'), findsNothing);
+        for (final icon in [Icons.check, Icons.pause]) {
+          final fab = _dashboardFabByIcon(icon);
+          expect(tester.getRect(fab).top, greaterThan(dial.bottom));
+          expect(fab.hitTestable(), findsOneWidget, reason: '$icon');
+        }
+      });
+
       testWidgets('세로 휴대폰 화면은 다이얼 아래에 제목·시계·버튼을 둔다', (tester) async {
         await pumpInShell(
           tester,

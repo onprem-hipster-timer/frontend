@@ -15,6 +15,7 @@ import 'package:momeet/features/timer/presentation/widgets/timer_gallery.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_controls.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_layout.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_model.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart' show ShellScope;
 
 /// 이 폭보다 좁으면 다이얼만 두고 타이머 목록은 바텀 시트로 연다
 const timerWideLayoutMinWidth = 600.0;
@@ -83,6 +84,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         );
         final gap = SizedBox(height: short ? 8 : 16);
         final caption = model.caption;
+        final focus = ShellScope.compactOf(context);
 
         return TimerDashboardLayout(
           constraints: constraints,
@@ -91,13 +93,13 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
               : dial,
           addTimer: model.onBreak || model.myTimers.isEmpty
               ? null
-              : _AddTimerChip(initialDuration: _pendingDuration),
+              : _AddTimerChip(initialDuration: _pendingDuration, icon: focus),
           header: _DashboardHeader(onBreak: model.onBreak, timer: activeTimer),
+          focus: focus,
+          clock: model.idle
+              ? _EditableClock(clock: clock, onTap: _pickPendingDuration)
+              : clock,
           controls: [
-            if (model.idle)
-              _EditableClock(clock: clock, onTap: _pickPendingDuration)
-            else
-              clock,
             if (caption != null) _Caption(caption, alert: model.timeUp),
             gap,
             if (model.idle) ...[
@@ -240,22 +242,33 @@ class _MainDial extends StatelessWidget {
 
 /// 다른 타이머가 도는 중에도 새 작업을 시작하는 칩
 class _AddTimerChip extends ConsumerWidget {
-  const _AddTimerChip({required this.initialDuration});
+  const _AddTimerChip({required this.initialDuration, this.icon = false});
 
   final Duration initialDuration;
 
+  /// 글자 없이 아이콘 버튼으로 둔다(집중 보기)
+  final bool icon;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final onPressed = ref.watch(timerControllerProvider).isLoading
+        ? null
+        : () => startTimerFromSheet(
+            context,
+            ref,
+            initialDuration: initialDuration,
+          );
+    if (icon) {
+      return IconButton(
+        icon: const Icon(Icons.add_circle_outline),
+        tooltip: '새 타이머',
+        onPressed: onPressed,
+      );
+    }
     return ActionChip(
       avatar: const Icon(Icons.add),
       label: const Text('새 타이머'),
-      onPressed: ref.watch(timerControllerProvider).isLoading
-          ? null
-          : () => startTimerFromSheet(
-              context,
-              ref,
-              initialDuration: initialDuration,
-            ),
+      onPressed: onPressed,
     );
   }
 }

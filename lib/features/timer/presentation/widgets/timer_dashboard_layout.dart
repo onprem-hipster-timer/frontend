@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 다이얼 옆에 둘 때 작업 제목·시계·버튼 칸의 가장 좁은 폭. 일시정지 타이머의 버튼 세 개(216)가 들어간다
 const _sideControlsMinWidth = 232.0;
@@ -12,6 +13,7 @@ const _sideDialMinSide = 80.0;
 ///
 /// 보통은 위에서부터 [addTimer], [header], [dial](남는 높이를 모두 씀), [controls]를 둔다.
 /// 높이 400 미만인데 다이얼을 옆에 둘 수 없으면 다이얼을 칸 높이의 절반으로 두고 넘치는 만큼 굴린다.
+/// 아주 작은 화면의 집중 보기([focus])는 시계를 다이얼 가운데에 겹친다.
 /// 높이 400 미만이고 폭이 높이 이상이며 옆에 두어도 다이얼이 [_sideDialMinSide] 이상인 칸(가로 휴대폰)은
 /// 다이얼을 왼쪽에 두고 나머지를 오른쪽에 두며, 오른쪽이 칸보다 길면 굴린다.
 class TimerDashboardLayout extends StatelessWidget {
@@ -21,7 +23,9 @@ class TimerDashboardLayout extends StatelessWidget {
     required this.dial,
     required this.addTimer,
     required this.header,
+    required this.clock,
     required this.controls,
+    this.focus = false,
   });
 
   final BoxConstraints constraints;
@@ -29,8 +33,14 @@ class TimerDashboardLayout extends StatelessWidget {
   final Widget? addTimer;
   final Widget header;
 
-  /// 시계부터 조작 버튼까지. 칸이 낮으면 사이 간격이 좁다
+  /// 남은 시간 시계
+  final Widget clock;
+
+  /// 시계 아래 상태 문구부터 조작 버튼까지
   final List<Widget> controls;
+
+  /// 아주 작은 화면의 집중 보기. 시계를 다이얼 가운데에 겹치고 [addTimer]를 제목 옆에 둔다
+  final bool focus;
 
   /// 칸이 낮은지. 낮으면 간격과 시계를 줄인다
   static bool isShort(BoxConstraints constraints) =>
@@ -41,6 +51,17 @@ class TimerDashboardLayout extends StatelessWidget {
     final short = isShort(constraints);
     final gap = SizedBox(height: short ? 8 : 16);
     final addTimer = this.addTimer;
+    if (focus) {
+      return _Focus(
+        dial: dial,
+        clock: clock,
+        addTimer: addTimer,
+        header: header,
+        gap: gap,
+        controls: controls,
+      );
+    }
+    final below = [clock, ...controls];
     final sideDialWidth =
         constraints.maxWidth - 24 * 2 - 16 - _sideControlsMinWidth;
     if (short &&
@@ -49,7 +70,7 @@ class TimerDashboardLayout extends StatelessWidget {
       return _SideBySide(
         dial: dial,
         addTimer: addTimer,
-        children: [header, gap, ...controls],
+        children: [header, gap, ...below],
       );
     }
     if (short) {
@@ -66,7 +87,7 @@ class TimerDashboardLayout extends StatelessWidget {
             gap,
             SizedBox(height: constraints.maxHeight / 2, child: dial),
             gap,
-            ...controls,
+            ...below,
           ],
         ),
       );
@@ -82,6 +103,74 @@ class TimerDashboardLayout extends StatelessWidget {
           header,
           gap,
           Expanded(child: dial),
+          gap,
+          ...below,
+        ],
+      ),
+    );
+  }
+}
+
+/// 아주 작은 화면의 집중 보기. 제목 줄 옆에 [addTimer], 다이얼 가운데에 [clock], 아래에 [controls]
+class _Focus extends StatelessWidget {
+  const _Focus({
+    required this.dial,
+    required this.clock,
+    required this.addTimer,
+    required this.header,
+    required this.gap,
+    required this.controls,
+  });
+
+  final Widget dial;
+  final Widget clock;
+  final Widget? addTimer;
+  final Widget header;
+  final Widget gap;
+  final List<Widget> controls;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: header),
+              ?addTimer,
+            ],
+          ),
+          gap,
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => Stack(
+                alignment: Alignment.center,
+                children: [
+                  dial,
+                  // 다이얼 지름의 60% 안에서 눈금 숫자를 피하고, 바탕 판으로 가운데 점·부채꼴을 가린다
+                  SizedBox(
+                    width: constraints.biggest.shortestSide * 0.6,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.9),
+                        borderRadius: AppRadius.pillAll,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: FittedBox(fit: BoxFit.scaleDown, child: clock),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           gap,
           ...controls,
         ],
