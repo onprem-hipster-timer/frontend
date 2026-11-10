@@ -11,6 +11,8 @@ void main() {
     'tag_stats_section',
     subject: '태그 이름',
     within: find.byType(TagStatsSection),
+    // 홀수 칸의 '태그N'도 사용자가 정한 태그 이름이라 큰 배율에서 말줄임될 수 있다.
+    scale: const ScaleAuditOptions(userTexts: ['태그']),
     build: (text) =>
         wrapWithApp(
           overrides: [
