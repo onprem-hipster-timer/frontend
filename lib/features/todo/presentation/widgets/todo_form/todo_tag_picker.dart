@@ -4,6 +4,7 @@ import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_group_row.dart';
 
 /// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 그룹별로 태그 칩을 늘어놓는다.
@@ -13,7 +14,6 @@ class TodoTagPicker extends ConsumerWidget {
     required this.lockedGroupId,
     required this.selectedTagIds,
     required this.onToggle,
-    required this.onCreateTag,
     this.onFirstGroup,
   });
 
@@ -21,9 +21,6 @@ class TodoTagPicker extends ConsumerWidget {
   final String? lockedGroupId;
   final Set<String> selectedTagIds;
   final void Function(String tagId, bool selected) onToggle;
-
-  /// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다
-  final void Function({String? groupId}) onCreateTag;
 
   /// 태그 그룹을 불러온 뒤 첫 그룹 id로 한 번 불린다(새 할 일의 기본 그룹)
   final ValueChanged<String>? onFirstGroup;
@@ -73,7 +70,7 @@ class TodoTagPicker extends ConsumerWidget {
                     title: '아직 태그가 없습니다',
                     message: '새 태그를 만들어 할 일을 분류해보세요',
                     actionLabel: '첫 태그 만들기',
-                    onAction: () => onCreateTag(),
+                    onAction: () => _createTag(context, ref),
                   ),
                 for (final group in tagGroups)
                   if (group.tags.isNotEmpty)
@@ -81,7 +78,8 @@ class TodoTagPicker extends ConsumerWidget {
                       group: group,
                       selectedTagIds: selectedTagIds,
                       onToggle: onToggle,
-                      onAdd: () => onCreateTag(groupId: group.group.id),
+                      onAdd: () =>
+                          _createTag(context, ref, groupId: group.group.id),
                     ),
               ],
             );
@@ -97,12 +95,33 @@ class TodoTagPicker extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TagHeader(onCreate: () => onCreateTag()),
+        _TagHeader(onCreate: () => _createTag(context, ref)),
         const SizedBox(height: 8),
         content,
       ],
     );
   }
+}
+
+/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다. 태그 그룹이 없으면 먼저 만들라고 알린다
+Future<void> _createTag(
+  BuildContext context,
+  WidgetRef ref, {
+  String? groupId,
+}) async {
+  final groups = ref
+      .read(tag_providers.tagTreeProvider)
+      .when(data: (g) => g, loading: () => const [], error: (_, _) => const []);
+  if (groups.isEmpty) {
+    showAppSnackBar(context, '먼저 태그 그룹을 생성해주세요. 태그 관리 페이지에서 그룹을 만들 수 있습니다.');
+    return;
+  }
+  await showTagFormSheet(
+    context,
+    defaultGroupId: groupId ?? groups.first.group.id,
+  );
+  // 새로 만든 태그를 목록에 반영한다
+  if (context.mounted) ref.invalidate(tag_providers.tagTreeProvider);
 }
 
 /// '태그' 제목과 새 태그 버튼
