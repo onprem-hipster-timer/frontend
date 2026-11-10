@@ -111,11 +111,16 @@ class _TagChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            name,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: color,
+          // 긴 이름은 칩이 줄 폭을 넘지 않게 한 줄로 줄인다
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
           const SizedBox(width: 8),

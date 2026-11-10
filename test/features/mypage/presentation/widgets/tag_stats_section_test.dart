@@ -39,4 +39,18 @@ void main() {
     expect(find.byType(AppEmptyState), findsOneWidget);
     expect(find.text('아직 태그를 사용하지 않았습니다'), findsOneWidget);
   });
+
+  testWidgets('긴 태그 이름은 한 줄로 줄여 칩이 화면 폭을 넘지 않는다', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final longName = '다음 주 월요일 오전 회의 전까지 분기 보고서 초안 정리하기' * 3;
+    await _pump(tester, {
+      'tag-0': TagUsageItem(tagId: 'tag-0', tagName: longName, count: 3),
+    });
+
+    expect(tester.takeException(), isNull);
+    final chip = tester.getRect(find.text(longName));
+    expect(chip.right, lessThanOrEqualTo(360));
+  });
 }
