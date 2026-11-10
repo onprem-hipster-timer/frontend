@@ -261,6 +261,11 @@ class _ConsentItem extends ConsumerWidget {
           ? null
           : TextButton(
               onPressed: () => ref.read(openLinkProvider)(link),
+              // 항목 글자가 쓸 폭을 남기도록 기본 최소 폭(64) 대신 터치 영역(48)만 둔다
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
               child: const Text('보기'),
             ),
     );
