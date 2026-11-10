@@ -4299,6 +4299,53 @@
           }
         }
       }
+    },
+    "/v1/users/me/consent": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Put My Consent",
+        "description": "\ub9cc 14\uc138 \uc774\uc0c1 \ud655\uc778, \uc774\uc6a9\uc57d\uad00, \uac1c\uc778\uc815\ubcf4\ucc98\ub9ac\ubc29\uce68 \ub3d9\uc758 \uae30\ub85d.\n\n`version`\uc740 \uc751\ub2f5 \uc804\uc5d0 \ubc1b\uc740 \ud604\uc7ac \uc57d\uad00 \uc2dc\ud589\uc77c\uc774\uc5b4\uc57c \ud55c\ub2e4(\ub2e4\ub974\uba74 409).",
+        "operationId": "put_my_consent_v1_users_me_consent_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4914,12 +4961,22 @@
           "friend_code": {
             "type": "string",
             "title": "Friend Code"
+          },
+          "consent_version": {
+            "type": "string",
+            "title": "Consent Version"
+          },
+          "consent_required": {
+            "type": "boolean",
+            "title": "Consent Required"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "friend_code"
+          "friend_code",
+          "consent_version",
+          "consent_required"
         ],
         "title": "MyProfileRead",
         "description": "\ubcf8\uc778 \ud504\ub85c\ud544 (GET /v1/users/me) \u2014 \uce5c\uad6c\ucf54\ub4dc \uacf5\uc720\uc6a9"
@@ -6772,6 +6829,38 @@
         ],
         "title": "VisibilityUpdate",
         "description": "\uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc5c5\ub370\uc774\ud2b8 DTO"
+      },
+      "ConsentCreate": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "age_over_14": {
+            "type": "boolean",
+            "const": true,
+            "title": "Age Over 14"
+          },
+          "terms": {
+            "type": "boolean",
+            "const": true,
+            "title": "Terms"
+          },
+          "privacy": {
+            "type": "boolean",
+            "const": true,
+            "title": "Privacy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "age_over_14",
+          "terms",
+          "privacy"
+        ],
+        "title": "ConsentCreate",
+        "description": "\uc57d\uad00 \ub3d9\uc758 (PUT /v1/users/me/consent) \u2014 \uc138 \ud56d\ubaa9 \ubaa8\ub450 true\uc5ec\uc57c \ud55c\ub2e4"
       }
     },
     "securitySchemes": {
