@@ -29,3 +29,26 @@ Widget Function(Widget child) wrapWithApp({
     ),
   );
 }
+
+/// 첫 프레임 뒤에 [open]을 한 번 불러 시트·다이얼로그를 띄운 화면. `show…` 함수로만 여는 시트를 점검할 때 쓴다.
+class OpenOnStart extends StatefulWidget {
+  const OpenOnStart({super.key, required this.open});
+
+  final void Function(BuildContext context) open;
+
+  @override
+  State<OpenOnStart> createState() => _OpenOnStartState();
+}
+
+class _OpenOnStartState extends State<OpenOnStart> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.open(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
+}
