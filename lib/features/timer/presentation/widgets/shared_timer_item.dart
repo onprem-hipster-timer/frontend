@@ -46,6 +46,8 @@ class SharedTimerItem extends ConsumerWidget {
         title: Text(
           timer.title ?? timer.todo?.title ?? '알 수 없는 작업',
           style: const TextStyle(fontWeight: FontWeight.w500),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         // 이름이 한 줄에 안 들어가면 상태 아래 줄로 내린다
         subtitle: Wrap(
