@@ -8,13 +8,11 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
 
-  <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="모두의 생산성 앱 모모밋">
   <meta property="og:description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
   <meta property="og:image" content="/preview.webp">
 
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta property="twitter:domain" content="momeet.date">
   <meta property="twitter:url" content="https://momeet.date">
@@ -22,7 +20,6 @@
   <meta name="twitter:description" content="To-Do부터 일정까지 나만의 생산성 플랫폼">
   <meta name="twitter:image" content="/preview.webp">
 
-  <!-- iOS -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="모모밋">
@@ -33,8 +30,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="/landing/style.css">
 
-  <!-- Shadow DOM 내 @font-face 미등록 우회: FontManifest.json에서 자동 주입 -->
-  <!-- https://bugs.chromium.org/p/chromium/issues/detail?id=336876 -->
   <script>
     fetch('assets/FontManifest.json')
       .then(function(r) { return r.json(); })
@@ -48,7 +43,6 @@
       });
   </script>
 
-  <!-- Pretendard -->
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 </head>
@@ -60,7 +54,6 @@
     </div>
   </noscript>
 
-  <!-- ===== 1. Landing Page (/landing) ===== -->
   <div id="landing">
     <nav class="landing-nav">
       <a href="/#/landing" class="nav-logo">mo.momeet</a>
@@ -145,23 +138,18 @@
     </div>
   </div>
 
-  <!-- ===== Flutter render target ===== -->
   <div id="flutter-host" style="position:fixed;inset:0;z-index:50;"></div>
 
-  <!-- ===== 2. Loading Screen (non-landing routes) ===== -->
   <div id="loading" style="z-index:60;position:relative;">
     <div class="loading-screen">
       <div class="loading-logo">mo.momeet</div>
 
       <div class="loading-anim">
         <svg viewBox="0 0 72 72" width="72" height="72" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <!-- 프레임 링 -->
           <circle cx="36" cy="36" r="34" stroke="#f0f0f0" stroke-width="1.2"/>
-          <!-- 회전 accent 아크 -->
           <circle class="anim-arc" cx="36" cy="36" r="34" stroke="#2563eb" stroke-width="1.8"
                   stroke-dasharray="18 196" opacity="0.5"/>
 
-          <!-- 캘린더 (phase 1 · blue) -->
           <g class="anim-phase anim-phase-1">
             <rect x="24" y="25" width="24" height="22" rx="3" stroke="#2563eb" stroke-width="1.8"/>
             <line x1="31" y1="23" x2="31" y2="28" stroke="#2563eb" stroke-width="1.8"/>
@@ -169,13 +157,11 @@
             <line x1="24" y1="33" x2="48" y2="33" stroke="#2563eb" stroke-width="1.8"/>
           </g>
 
-          <!-- 투두 (phase 2 · green) -->
           <g class="anim-phase anim-phase-2">
             <rect x="24" y="24" width="24" height="24" rx="3" stroke="#16a34a" stroke-width="1.8"/>
             <path d="M31 36 L34.5 39.5 L42 31" stroke="#16a34a" stroke-width="2.5"/>
           </g>
 
-          <!-- 타이머 (phase 3 · orange) -->
           <g class="anim-phase anim-phase-3">
             <circle cx="36" cy="38" r="12" stroke="#ea580c" stroke-width="1.8"/>
             <polyline points="36,32 36,38 40,41" stroke="#ea580c" stroke-width="1.8"/>
@@ -195,8 +181,6 @@
     </div>
   </div>
 
-  <!-- Kratos가 보내는 화면 주소(메일 링크의 /verification?flow=… 등)는 경로형이고 앱은 해시 라우팅이다.
-       아래 스크립트가 해시를 읽기 전에 /#/verification?flow=… 꼴로 옮긴다. -->
   <script>
     (function() {
       var kratosUiPaths = ['/login', '/signup', '/verification', '/forgot-password', '/mypage', '/auth-error'];
@@ -206,21 +190,14 @@
     })();
   </script>
 
-  <!-- Shared state: route detection + session check (single source of truth) -->
   <script>
     (function() {
-      // AuthNotifier가 SharedPreferences(localStorage, flutter. 접두사)에 두는 Kratos 세션 토큰
       function hasSession() {
         return localStorage.getItem('flutter.momeet.session_token') !== null;
       }
-      // 명시적 /landing 은 항상 랜딩으로 표시한다.
-      //   Flutter 라우터가 미인증을 확정하고 /landing 으로 보낸 신호이므로,
-      //   끝난 세션의 토큰이 localStorage 에 남아 있어도(= hasSession() true)
-      //   랜딩을 보여줘야 한다. 그렇지 않으면 토글이 동작하지 않아 빈 화면에 도달한다. (#64)
       function isExplicitLandingHash(hash) {
         return hash === '#/landing' || hash === '#/landing/';
       }
-      // 루트(''·#/)는 Flutter 부팅 전 첫 페인트 최적화 — 세션 키가 없을 때만 랜딩.
       function isRootHash(hash) {
         return hash === '' || hash === '#/';
       }
@@ -236,10 +213,8 @@
     })();
   </script>
 
-  <!-- Route-based section toggle + scroll animations -->
   <script src="/landing/script.js"></script>
 
-  <!-- Flutter engine loader + build config (template tokens replaced at build time) -->
   <script>
     {{flutter_js}}
     {{flutter_build_config}}
