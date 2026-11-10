@@ -126,19 +126,14 @@ class _TimesLine extends StatelessWidget {
         ? '--:--'
         : formatTime(timer.startedAt!);
     final end = timer.endedAt == null ? '--:--' : formatTime(timer.endedAt!);
-    return Row(
+    // 한 줄에 다 들어가지 않으면 시각을 상태 아래 줄로 내리고, 그래도 넘치면 시각도 줄을 바꾼다
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (style != null) ...[
-          Flexible(child: TimerStatusChip(style)),
-          const SizedBox(width: 8),
-        ],
-        Flexible(
-          child: Text(
-            '$start - $end',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        if (style != null) TimerStatusChip(style),
+        Text('$start - $end'),
       ],
     );
   }
