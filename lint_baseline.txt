@@ -64,7 +64,6 @@ no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sh
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildNameField -
 no_widget_helper_methods lib/features/todo/presentation/pages/tag_group_selector_page.dart TagGroupSelectorPage._buildTagGroupGrid -
-no_widget_helper_methods lib/features/todo/presentation/pages/todo_dashboard_page.dart TodoDashboardPage._buildGroupGrid -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildAppBar -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildTodoList -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -

@@ -17,7 +17,6 @@ class TodoDashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final tagGroupsAsync = ref.watch(tagGroupsProvider);
 
     return Scaffold(
@@ -38,7 +37,7 @@ class TodoDashboardPage extends ConsumerWidget {
             );
           }
 
-          return _buildGroupGrid(context, theme, tagGroups);
+          return _GroupGrid(todoGroups: tagGroups);
         },
         loading: () => const AppLoading(),
         error: (error, stack) => AppErrorState(
@@ -56,12 +55,20 @@ class TodoDashboardPage extends ConsumerWidget {
     );
   }
 
-  /// 그룹 그리드 뷰
-  Widget _buildGroupGrid(
-    BuildContext context,
-    ThemeData theme,
-    List<TagGroupRead> todoGroups,
-  ) {
+  /// 새 그룹 생성 다이얼로그
+  void _showCreateGroupDialog(BuildContext context) {
+    showTagGroupFormSheet(context);
+  }
+}
+
+/// 그룹 안내와 그룹 카드 격자
+class _GroupGrid extends StatelessWidget {
+  const _GroupGrid({required this.todoGroups});
+
+  final List<TagGroupRead> todoGroups;
+
+  @override
+  Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
         // 헤더 정보
@@ -103,10 +110,5 @@ class TodoDashboardPage extends ConsumerWidget {
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
-  }
-
-  /// 새 그룹 생성 다이얼로그
-  void _showCreateGroupDialog(BuildContext context) {
-    showTagGroupFormSheet(context);
   }
 }
