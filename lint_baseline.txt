@@ -3,7 +3,7 @@
 # 크기 규칙은 적힌 줄 수까지 허용하고, 그 밖의 규칙은 적힌 대상만 허용한다.
 # 고치면 그 줄을 지운다. 새 항목은 더하지 않는다.
 max_file_lines lib/core/providers/auth_provider.dart - 482
-max_file_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart - 488
+max_file_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart - 486
 max_file_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart - 690
 max_file_lines lib/features/timer/presentation/pages/timer_page.dart - 1747
 max_file_lines lib/features/timer/presentation/providers/timer_providers.dart - 682
@@ -12,7 +12,6 @@ max_file_lines lib/router.dart - 502
 max_widget_class_lines lib/features/auth/presentation/pages/forgot_password_page.dart _ForgotPasswordPageState 203
 max_widget_class_lines lib/features/auth/presentation/pages/login_page.dart _LoginPageState 271
 max_widget_class_lines lib/features/auth/presentation/pages/signup_page.dart _SignupPageState 209
-max_widget_class_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState 456
 max_widget_class_lines lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState 305
 max_widget_class_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState 568
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState 458
@@ -32,13 +31,6 @@ max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDash
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerGalleryState.build 86
 max_build_lines lib/features/timer/presentation/widgets/timer_dial.dart _TimerDialState.build 86
 max_build_lines lib/shared/pages/security_warning_page.dart SecurityWarningPage.build 107
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildActionButtons -
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildBody -
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildScheduleHeader -
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildScheduleInfo -
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildTagChip -
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildTagsSection -
-no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildTodoConversionRow -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTagGroup -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTags -
