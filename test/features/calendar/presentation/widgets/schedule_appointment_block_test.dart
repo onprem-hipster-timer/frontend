@@ -45,6 +45,43 @@ void main() {
     expect(find.textContaining('안건'), findsNothing);
   });
 
+  testWidgets('월 칸에 다 들어가지 않은 일정은 숨긴 수를 +N으로 보이고 그중 하나를 일정처럼 그리지 않는다', (
+    tester,
+  ) async {
+    final hidden = [
+      for (final title in ['고객 미팅', '보고서 마감'])
+        Appointment(
+          startTime: DateTime(2026, 11, 9, 9),
+          endTime: DateTime(2026, 11, 9, 10),
+          subject: title,
+          color: const Color(0xFFB3D4FF),
+        ),
+    ];
+    const bounds = Rect.fromLTWH(0, 0, 60, 18);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox.fromSize(
+            size: bounds.size,
+            child: ScheduleAppointmentBlock(
+              details: CalendarAppointmentDetails(
+                DateTime(2026, 11, 9),
+                hidden,
+                bounds,
+                isMoreAppointmentRegion: true,
+              ),
+              viewType: CalendarViewType.month,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('+2'), findsOneWidget);
+    expect(find.bySemanticsLabel('일정 2개 더'), findsOneWidget);
+    expect(find.text('고객 미팅'), findsNothing);
+  });
+
   testWidgets('좁은 월 칸은 글자가 커도 제목이 두 글자는 남는 만큼만 키운다', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);

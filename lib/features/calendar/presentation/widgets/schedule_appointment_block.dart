@@ -9,6 +9,7 @@ import 'package:momeet/features/calendar/presentation/widgets/marquee_text.dart'
 /// SfCalendar의 appointmentBuilder가 그리는 일정 블록. 보기 종류에 맞는 모양을 고른다.
 ///
 /// 마우스를 올린 블록은 다 들어가지 않는 제목을 흘려 보인다([MarqueeText]).
+/// 칸에 다 들어가지 않아 숨긴 일정들의 자리는 숨긴 수를 +N으로 보인다.
 class ScheduleAppointmentBlock extends StatefulWidget {
   const ScheduleAppointmentBlock({
     super.key,
@@ -29,6 +30,9 @@ class _ScheduleAppointmentBlockState extends State<ScheduleAppointmentBlock> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.details.isMoreAppointmentRegion) {
+      return _MoreBlock(count: widget.details.appointments.length);
+    }
     final appointment = widget.details.appointments.first as Appointment;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -48,6 +52,32 @@ class _ScheduleAppointmentBlockState extends State<ScheduleAppointmentBlock> {
           active: _hovered,
         ),
       },
+    );
+  }
+}
+
+/// 칸에 다 들어가지 않아 숨긴 일정 [count]개를 +N으로 보인다. 누르면 그날 일정 목록이 열린다
+class _MoreBlock extends StatelessWidget {
+  const _MoreBlock({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        '+$count',
+        semanticsLabel: '일정 $count개 더',
+        maxLines: 1,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
