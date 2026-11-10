@@ -17,7 +17,6 @@ max_widget_class_lines lib/features/calendar/presentation/pages/schedule_detail_
 max_widget_class_lines lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState 675
 max_widget_class_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState 568
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState 493
-max_widget_class_lines lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState 391
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState 458
 max_widget_class_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState 1064
 max_build_lines lib/features/auth/presentation/pages/forgot_password_page.dart _ForgotPasswordPageState.build 127
@@ -54,9 +53,6 @@ no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.da
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildFormSheet -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildGroupSelector -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildNameField -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildColorPicker -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildDescriptionField -
-no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildNameField -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTagGroup -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTags -

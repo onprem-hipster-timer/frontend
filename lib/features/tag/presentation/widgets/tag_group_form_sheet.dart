@@ -6,6 +6,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_color_picker.dart';
 
 /// 태그 그룹 생성/수정 폼 시트
 class TagGroupFormSheet extends ConsumerStatefulWidget {
@@ -49,7 +50,6 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isEditMode = widget.tagGroup != null;
     final isLoading = isEditMode
         ? ref.watch(updateTagGroupMutation).isPending
@@ -64,110 +64,53 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         busy: isLoading,
       ),
       children: [
-        _buildNameField(),
-        _buildDescriptionField(),
-        _buildColorPicker(theme),
-      ],
-    );
-  }
-
-  /// 그룹 이름 입력 필드
-  Widget _buildNameField() {
-    return TextFormField(
-      controller: _nameController,
-      autofocus: true,
-      decoration: InputDecoration(
-        labelText: '그룹 이름',
-        hintText: '태그 그룹 이름을 입력하세요',
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(12),
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: _selectedColor,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return '그룹 이름을 입력해주세요';
-        }
-        if (value.trim().length > 50) {
-          return '그룹 이름은 50자 이하로 입력해주세요';
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.next,
-    );
-  }
-
-  /// 설명 입력 필드
-  Widget _buildDescriptionField() {
-    return TextFormField(
-      controller: _descriptionController,
-      decoration: const InputDecoration(
-        labelText: '설명 (선택사항)',
-        hintText: '그룹에 대한 간단한 설명을 입력하세요',
-        prefixIcon: Icon(Icons.notes),
-        alignLabelWithHint: true,
-      ),
-      maxLines: 3,
-      validator: (value) {
-        if (value != null && value.length > 200) {
-          return '설명은 200자 이하로 입력해주세요';
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.done,
-    );
-  }
-
-  /// 색상 선택기
-  Widget _buildColorPicker(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppSectionHeader('색상 선택'),
-
-        const SizedBox(height: 12),
-
-        // 색상 팔레트 그리드
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: TagColorPalette.colors.map((color) {
-            final isSelected = color.toARGB32() == _selectedColor.toARGB32();
-
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedColor = color;
-                });
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outline.withValues(alpha: 0.2),
-                    width: isSelected ? 3 : 1,
-                  ),
-                ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check,
-                        color: theme.colorScheme.primary,
-                        size: 20,
-                      )
-                    : null,
+        TextFormField(
+          controller: _nameController,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: '그룹 이름',
+            hintText: '태그 그룹 이름을 입력하세요',
+            prefixIcon: Container(
+              margin: const EdgeInsets.all(12),
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: _selectedColor,
+                shape: BoxShape.circle,
               ),
-            );
-          }).toList(),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '그룹 이름을 입력해주세요';
+            }
+            if (value.trim().length > 50) {
+              return '그룹 이름은 50자 이하로 입력해주세요';
+            }
+            return null;
+          },
+          textInputAction: TextInputAction.next,
+        ),
+        TextFormField(
+          controller: _descriptionController,
+          decoration: const InputDecoration(
+            labelText: '설명 (선택사항)',
+            hintText: '그룹에 대한 간단한 설명을 입력하세요',
+            prefixIcon: Icon(Icons.notes),
+            alignLabelWithHint: true,
+          ),
+          maxLines: 3,
+          validator: (value) {
+            if (value != null && value.length > 200) {
+              return '설명은 200자 이하로 입력해주세요';
+            }
+            return null;
+          },
+          textInputAction: TextInputAction.done,
+        ),
+        TagColorPicker(
+          selected: _selectedColor,
+          onChanged: (color) => setState(() => _selectedColor = color),
         ),
       ],
     );
