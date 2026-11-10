@@ -18,6 +18,10 @@ const _kindNames = {
   LayoutFindingKind.offscreen: '이탈',
   LayoutFindingKind.truncation: '말줄임',
   LayoutFindingKind.moving: '이동',
+  LayoutFindingKind.scaleTruncation: '배율 말줄임',
+  LayoutFindingKind.scaleVanished: '배율 사라짐',
+  LayoutFindingKind.scaleUnreachable: '배율 밀려남',
+  LayoutFindingKind.scaleInversion: '위계 역전',
 };
 
 /// GitHub 실행 화면이 어노테이션으로 덮이지 않도록 보고서당 상한.

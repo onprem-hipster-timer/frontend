@@ -67,6 +67,21 @@ testLayoutAudit(
 | 말줄임 | `maxLines`·`ellipsis`로 줄어듦 (의도된 처리) | notice |
 | 이동 | 두 프레임 사이에 움직임 (마퀴로 추정) | notice |
 
+## 배율 비교
+
+명시 모드는 같은 화면 크기에서 글자 1.0배로 점검한 장면을 기억해 두고, 더 큰 배율의 장면과 비교해 `<이름>_scale` 보고서를 따로 낸다. 기존 점검과 발견 종류·보고서·엄격 스위치가 모두 따로다.
+
+| 종류 | 뜻 | 기본 심각도 |
+|---|---|---|
+| 배율 말줄임 | 1.0배에서 다 보이던 글자가 큰 배율에서 말줄임되거나 잘림. 넣은 스트레스 텍스트를 품은 문단(사용자 글자)은 빼고 본다 | warning |
+| 배율 사라짐 | 1.0배에서 보이던 글자가 큰 배율에서 없어짐. 같은 글자를 다른 위젯이 그리거나 같은 자리에서 글자만 바뀐 것, 스크롤 목록 끝이 만들어지지 않은 것은 빼고 본다 | warning |
+| 배율 밀려남 | 1.0배에서 화면 안에 있던 버튼(시맨틱스의 누르기 동작)이 큰 배율에서 화면 밖으로 밀려남 | 스크롤로 닿으면 notice, 아니면 warning |
+| 위계 역전 | 높이가 화면의 1/3 이하인 한 묶음(카드·행) 안에서 1.0배에 더 크던 글자가 큰 배율에서 더 작아짐(1.1배 이상 차이) | warning |
+
+- 1.0배 조합이 먼저 돌아야 비교한다. `LayoutAuditVariants`의 조합은 화면마다 1.0배가 먼저다.
+- 끄기·조정: `testLayoutAudit(..., scale: ScaleAuditOptions(enabled: false))`, `userTexts`·`groupHeightFraction`·`inversionRatio`·`ignore`
+- 엄격: `--dart-define=LAYOUT_AUDIT_SCALE_STRICT=true`는 배율 비교 warning에서만 실패시킨다. `LAYOUT_AUDIT_STRICT`와 따로 켠다.
+
 ## 엄격 모드
 
 `fvm flutter test --dart-define=LAYOUT_AUDIT_STRICT=true` — warning이 있는 보고서는 테스트를 실패시킨다. notice·info는 실패시키지 않는다. 자동 모드는 항상 경고 전용이다.

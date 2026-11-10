@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'auditor.dart';
 import 'report.dart';
+import 'scale_audit.dart';
 import 'stress_texts.dart';
 import 'tester_extension.dart';
 import 'variants.dart';
@@ -14,6 +15,7 @@ import 'variants.dart';
 /// 테스트 이름은 `'<텍스트 이름> <subject>에서 겹침·넘침·잘림을 보고한다'`, 보고서 라벨은
 /// `'<subject> · <텍스트 이름>'`이다. [build]는 MaterialApp 같은 앱 껍데기까지 포함한 위젯을 돌려준다.
 /// [verify]는 점검 뒤 예외가 없을 때 불리며 화면별 단언을 둔다.
+/// [scale]의 배율 비교는 넣은 스트레스 텍스트를 사용자 글자로 보고 말줄임을 따지지 않는다.
 void testLayoutAudit(
   String name, {
   required String subject,
@@ -23,6 +25,7 @@ void testLayoutAudit(
   ValueVariant<LayoutAuditCase>? variant,
   FutureOr<void> Function(WidgetTester tester)? verify,
   LayoutAuditOptions options = const LayoutAuditOptions(),
+  ScaleAuditOptions scale = const ScaleAuditOptions(),
   LayoutReportSink sink = const LayoutReportSink(),
 }) {
   final cases = variant ?? LayoutAuditVariants.all;
@@ -37,6 +40,7 @@ void testLayoutAudit(
         wrap: (child) => child,
         within: within,
         options: options,
+        scale: scale.withUserTexts([text.value]),
         sink: sink,
         child: build(text),
       );
