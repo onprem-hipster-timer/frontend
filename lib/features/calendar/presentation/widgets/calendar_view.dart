@@ -6,8 +6,7 @@ import 'package:momeet/features/calendar/presentation/providers/calendar_provide
 import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
-import 'package:momeet/features/calendar/presentation/widgets/calendar_appointment_builder.dart'
-    as custom_builder;
+import 'package:momeet/features/calendar/presentation/widgets/schedule_appointment_block.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
@@ -259,7 +258,11 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               // ============================================================
               // 일정 빌더
               // ============================================================
-              appointmentBuilder: _appointmentBuilder,
+              appointmentBuilder: (context, details) =>
+                  ScheduleAppointmentBlock(
+                    details: details,
+                    viewType: ref.read(calendarSettingsProvider).viewType,
+                  ),
             ),
 
             // 로딩 오버레이
@@ -274,35 +277,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
         );
       },
     );
-  }
-
-  /// 일정 커스텀 빌더
-  Widget _appointmentBuilder(
-    BuildContext context,
-    CalendarAppointmentDetails details,
-  ) {
-    final settings = ref.read(calendarSettingsProvider);
-
-    switch (settings.viewType) {
-      case CalendarViewType.month:
-        return custom_builder.ScheduleAppointmentBuilder.buildMonthAppointment(
-          context,
-          details,
-        );
-      case CalendarViewType.day:
-      case CalendarViewType.week:
-        return custom_builder
-            .ScheduleAppointmentBuilder.buildTimeSlotAppointment(
-          context,
-          details,
-        );
-      case CalendarViewType.agenda:
-      case CalendarViewType.year:
-        return custom_builder.ScheduleAppointmentBuilder.buildAgendaAppointment(
-          context,
-          details,
-        );
-    }
   }
 
   /// 뷰 변경 콜백
