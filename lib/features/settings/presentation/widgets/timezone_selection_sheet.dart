@@ -54,34 +54,12 @@ class _TimezoneSelectionSheetState
   Widget build(BuildContext context) {
     final currentTimezone =
         ref.watch(timezoneProvider).value ?? defaultTimezone;
-    final theme = Theme.of(context);
 
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.7,
       child: Column(
         children: [
-          // 헤더
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-            child: Row(
-              children: [
-                Text(
-                  '타임존 선택',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: Icon(
-                    Icons.close,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const _SheetHeader(),
 
           // 검색 필드
           Padding(
@@ -119,47 +97,14 @@ class _TimezoneSelectionSheetState
               itemCount: _filteredTimezones.length,
               itemBuilder: (context, index) {
                 final timezone = _filteredTimezones[index];
-                final displayName = getTimezoneDisplayName(timezone);
-                final isSelected = timezone == currentTimezone;
-
-                return ListTile(
-                  selected: isSelected,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 4,
-                  ),
-                  title: Text(
-                    displayName,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  subtitle: Text(
-                    timezone,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  trailing: isSelected
-                      ? Icon(
-                          Icons.check,
-                          color: theme.colorScheme.primary,
-                          size: 24,
-                        )
-                      : null,
+                return _TimezoneTile(
+                  timezone: timezone,
+                  selected: timezone == currentTimezone,
                   onTap: () async {
                     await ref
                         .read(timezoneProvider.notifier)
                         .updateTimezone(timezone);
-
-                    if (context.mounted) {
-                      context.pop();
-                    }
+                    if (context.mounted) context.pop();
                   },
                 );
               },
@@ -170,6 +115,76 @@ class _TimezoneSelectionSheetState
           SizedBox(height: MediaQuery.of(context).padding.bottom),
         ],
       ),
+    );
+  }
+}
+
+/// 시트 제목과 닫기 버튼
+class _SheetHeader extends StatelessWidget {
+  const _SheetHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+      child: Row(
+        children: [
+          Text(
+            '타임존 선택',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () => context.pop(),
+            icon: Icon(Icons.close, color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 타임존 한 줄. 고른 것은 강조하고 체크를 둔다
+class _TimezoneTile extends StatelessWidget {
+  const _TimezoneTile({
+    required this.timezone,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String timezone;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final displayName = getTimezoneDisplayName(timezone);
+    return ListTile(
+      selected: selected,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      title: Text(
+        displayName,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          color: selected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface,
+        ),
+      ),
+      subtitle: Text(
+        timezone,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: selected
+          ? Icon(Icons.check, color: theme.colorScheme.primary, size: 24)
+          : null,
+      onTap: onTap,
     );
   }
 }
