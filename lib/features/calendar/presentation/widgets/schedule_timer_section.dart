@@ -96,40 +96,51 @@ class _TimerRow extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(left: 32, bottom: 8),
+      // 좁으면 시간과 상태를 제목 다음 줄로 꺾는다
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(getTimerStatusIcon(timer.status), size: 16, color: statusColor),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              timer.title ?? '제목 없음',
-              style: theme.textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            formatDuration(
-              displayElapsed(timer, ref.watch(serverClockProvider).now()),
-            ),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: AppRadius.mdAll,
-            ),
-            child: Text(
-              statusText,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: statusColor,
-                fontSize: 10,
-              ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  timer.title ?? '제목 없음',
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  formatDuration(
+                    displayElapsed(timer, ref.watch(serverClockProvider).now()),
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: AppRadius.mdAll,
+                  ),
+                  child: Text(
+                    statusText,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: statusColor,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
