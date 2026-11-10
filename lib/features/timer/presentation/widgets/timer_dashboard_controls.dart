@@ -39,6 +39,8 @@ class TimerDashboardControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    // 휴식 중에도 구독해 둔다. 놓으면 컨트롤러가 정리되어 진행 중이던 명령 상태를 잃는다
+    final starting = ref.watch(timerControllerProvider).isLoading;
     if (onBreak) {
       return FloatingActionButton(
         onPressed: () => ref.read(breakTimerProvider.notifier).end(),
@@ -54,7 +56,7 @@ class TimerDashboardControls extends ConsumerWidget {
     final id = activeTimer?.id;
     return TimerControlButton(
       activeTimer: activeTimer,
-      starting: ref.watch(timerControllerProvider).isLoading,
+      starting: starting,
       timeUp: timeUp,
       breakSelected: breakSelected,
       onStart: () =>
