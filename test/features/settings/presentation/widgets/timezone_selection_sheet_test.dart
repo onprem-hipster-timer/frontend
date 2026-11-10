@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 
 import '../../../../helpers/sheet_host.dart';
+import '../../../../helpers/large_text.dart';
 
 void main() {
   setUpAll(tzdata.initializeTimeZones);
@@ -48,6 +49,13 @@ void main() {
     await tester.tap(find.text('열기'));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('좁은 화면에 글자가 커도 검색 칸 안내를 자르지 않는다', (tester) async {
+    await open(tester);
+    await useLargeTextOnSmallPhone(tester);
+
+    expectWholeText(tester, find.text('도시 또는 타임존 검색'));
+  });
 
   testWidgets('지금 타임존에 표시를 하고, 검색어로 목록을 거른다', (tester) async {
     await open(tester);

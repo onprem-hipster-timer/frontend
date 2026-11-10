@@ -39,8 +39,10 @@ class AuthTextField extends StatelessWidget {
       onFieldSubmitted: onSubmitted,
       autofocus: autofocus,
       decoration: InputDecoration(
-        labelText: label,
+        // 좁은 화면의 큰 글자에서는 칸 이름·안내를 자르지 않고 두 줄까지 보인다
+        label: Text(label, maxLines: 2),
         hintText: hint,
+        hintMaxLines: 2,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
         suffixIcon: suffixIcon,
         filled: true,

@@ -6,6 +6,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 
 import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/sheet_host.dart';
+import '../../../../helpers/large_text.dart';
 
 void main() {
   late FakeTodosClient todos;
@@ -63,6 +64,13 @@ void main() {
   Finder checkbox(String title) => find.byWidgetPredicate(
     (widget) => widget is Checkbox && widget.semanticLabel == '$title 고르기',
   );
+
+  testWidgets('좁은 화면에 글자가 커도 검색 칸 안내를 자르지 않는다', (tester) async {
+    await open(tester);
+    await useLargeTextOnSmallPhone(tester);
+
+    expectWholeText(tester, find.text('제목으로 찾기'));
+  });
 
   testWidgets('고를 수 있는 할 일을 그룹 순서대로 트리로 보이고, 목록에 없는 그룹은 기타로 묶는다', (
     tester,

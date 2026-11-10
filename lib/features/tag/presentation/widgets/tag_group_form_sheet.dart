@@ -94,7 +94,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         TextFormField(
           controller: _descriptionController,
           decoration: const InputDecoration(
-            labelText: '설명 (선택사항)',
+            label: Text('설명 (선택사항)', maxLines: 2),
             hintText: '그룹에 대한 간단한 설명을 입력하세요',
             prefixIcon: Icon(Icons.notes),
             alignLabelWithHint: true,

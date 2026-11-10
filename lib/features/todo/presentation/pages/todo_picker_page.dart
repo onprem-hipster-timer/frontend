@@ -78,6 +78,7 @@ class _TodoPickerPageState extends ConsumerState<TodoPickerPage> {
               controller: _query,
               decoration: const InputDecoration(
                 hintText: '제목으로 찾기',
+                hintMaxLines: 2,
                 prefixIcon: Icon(Icons.search),
               ),
               onChanged: (_) => setState(() {}),

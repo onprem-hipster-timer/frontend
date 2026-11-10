@@ -69,6 +69,7 @@ class _TimezoneSelectionSheetState
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: '도시 또는 타임존 검색',
+                hintMaxLines: 2,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(

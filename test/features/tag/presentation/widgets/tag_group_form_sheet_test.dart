@@ -6,6 +6,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 
 import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/sheet_host.dart';
+import '../../../../helpers/large_text.dart';
 
 void main() {
   late FakeTagsClient tags;
@@ -38,6 +39,13 @@ void main() {
   );
 
   group('새 그룹', () {
+    testWidgets('좁은 화면에 글자가 커도 설명 칸 이름을 자르지 않는다', (tester) async {
+      await open(tester);
+      await useLargeTextOnSmallPhone(tester);
+
+      expectWholeText(tester, find.text('설명 (선택사항)'));
+    });
+
     testWidgets('이름이 비거나 50자, 설명이 200자를 넘으면 오류를 보이고 보내지 않는다', (tester) async {
       await open(tester);
       expect(find.text('새 그룹 만들기'), findsOneWidget);

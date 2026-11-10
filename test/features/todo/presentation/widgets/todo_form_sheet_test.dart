@@ -7,6 +7,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/schedule_fixtures.dart';
 import '../../../../helpers/sheet_host.dart';
+import '../../../../helpers/large_text.dart';
 
 void main() {
   late FakeTodosClient todos;
@@ -46,6 +47,13 @@ void main() {
   Finder field(String label) => find.widgetWithText(TextFormField, label);
 
   group('새 할 일', () {
+    testWidgets('좁은 화면에 글자가 커도 설명 칸 이름을 자르지 않는다', (tester) async {
+      await open(tester);
+      await useLargeTextOnSmallPhone(tester);
+
+      expectWholeText(tester, find.text('설명 (선택사항)'));
+    });
+
     testWidgets('제목이 비면 오류를 보이고 보내지 않는다', (tester) async {
       await open(tester);
 
