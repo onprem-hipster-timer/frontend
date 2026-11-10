@@ -28,8 +28,11 @@ void main() {
     ]);
   });
 
-  Future<void> pumpPage(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(800, 1600);
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    Size size = const Size(800, 1600),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -166,5 +169,21 @@ void main() {
 
       expect(find.textContaining('태그 삭제에 실패했습니다'), findsOneWidget);
     });
+  });
+
+  testWidgets('넓은 줄은 태그 수정·삭제를 이름 오른쪽에, 좁은 줄은 이름 아래에 둔다', (tester) async {
+    await pumpPage(tester);
+    var name = tester.getRect(find.text('공부'));
+    var edit = tester.getRect(find.bySemanticsLabel('공부 태그 수정'));
+    expect(edit.top, lessThan(name.bottom));
+
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpPage(tester, size: const Size(320, 1600));
+
+    expect(tester.takeException(), isNull);
+    name = tester.getRect(find.text('공부'));
+    edit = tester.getRect(find.bySemanticsLabel('공부 태그 수정'));
+    expect(edit.top, greaterThanOrEqualTo(name.bottom));
   });
 }

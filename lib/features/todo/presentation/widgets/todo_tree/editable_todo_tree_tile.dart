@@ -227,51 +227,27 @@ class _TileActions extends ConsumerWidget {
 
   /// [width] 폭의 줄에 버튼을 옆에 두면 제목 칸이 글자 배율을 반영한 최소 폭(140)보다 좁아지는지
   ///
-  /// 버튼 폭은 고정 부분(타이머 버튼 40, 버튼 안쪽 여백·아이콘·간격 44씩, 사이 8)과
-  /// 글자 배율을 반영한 '수정'·'삭제' 글자 폭으로 잰다. 왼쪽 펼침·상태 칸과 여백은 64다.
+  /// 타이머 버튼은 40, 왼쪽 펼침·상태 칸과 여백은 64, 제목과 버튼 사이는 8이다.
   static bool crowds(BuildContext context, TodoRead todo, double width) {
-    final scaler = MediaQuery.textScalerOf(context);
-    final painter = TextPainter(
-      text: const TextSpan(text: '수정', style: TextStyle(fontSize: 12)),
-      textScaler: scaler,
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final label = painter.width;
-    painter.dispose();
-    final buttons = (canLinkTimer(todo) ? 40 : 0) + 2 * (44 + label) + 8 + 8;
-    return width - 64 - buttons < scaler.scale(140);
+    final buttons =
+        (canLinkTimer(todo) ? 40 : 0) +
+        AppEditDeleteButtons.widthOf(context) +
+        8;
+    return width - 64 - buttons < MediaQuery.textScalerOf(context).scale(140);
   }
-
-  static final _compact = OutlinedButton.styleFrom(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    minimumSize: const Size(0, 32),
-    textStyle: const TextStyle(fontSize: 12),
-  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todo = node.todo;
-    final error = Theme.of(context).colorScheme.error;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (canLinkTimer(todo)) TodoTimerStartButton(todo: todo),
-        OutlinedButton.icon(
-          onPressed: () => TodoActions.showEditTodoDialog(context, todo),
-          icon: const Icon(Icons.edit, size: 16),
-          label: const Text('수정'),
-          style: _compact,
-        ),
-        const SizedBox(width: 8),
-        OutlinedButton.icon(
-          onPressed: () =>
+        AppEditDeleteButtons(
+          onEdit: () => TodoActions.showEditTodoDialog(context, todo),
+          onDelete: () =>
               TodoActions.showDeleteTodoDialog(context, ref, todo, node),
-          icon: const Icon(Icons.delete_outline, size: 16),
-          label: const Text('삭제'),
-          style: _compact.copyWith(
-            foregroundColor: WidgetStatePropertyAll(error),
-            side: WidgetStatePropertyAll(BorderSide(color: error)),
-          ),
         ),
       ],
     );

@@ -248,77 +248,60 @@ class _TagTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
+    final description = tag.description;
+    final actions = AppEditDeleteButtons(
+      itemName: '${tag.name} 태그',
+      onEdit: () => showTagFormSheet(context, tag: tag),
+      onDelete: () => _deleteTag(context, ref),
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-        // 좌측: 태그 색상의 원(Dot)
-        leading: Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: HexColor.fromHex(tag.color),
-            shape: BoxShape.circle,
-          ),
-        ),
-
-        // 중앙: 태그 이름
-        title: Text(tag.name, style: theme.textTheme.bodyLarge),
-
-        subtitle: tag.description?.isNotEmpty == true
-            ? Text(tag.description!)
-            : null,
-
-        // 우측: 액션 버튼들
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 태그 수정 버튼
-            OutlinedButton.icon(
-              onPressed: () => showTagFormSheet(context, tag: tag),
-              icon: const Icon(Icons.edit, size: 16),
-              label: Text('수정', semanticsLabel: '${tag.name} 태그 수정'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                minimumSize: const Size(0, 32),
-                textStyle: const TextStyle(fontSize: 12),
+      // 버튼을 옆에 두면 이름 칸이 너무 좁아지는 폭이면 버튼을 이름 아래로 내린다
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = _crowds(context, constraints.maxWidth);
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            leading: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: HexColor.fromHex(tag.color),
+                shape: BoxShape.circle,
               ),
             ),
-
-            const SizedBox(width: 8),
-
-            // 태그 삭제 버튼
-            OutlinedButton.icon(
-              onPressed: () => _deleteTag(context, ref),
-              icon: const Icon(Icons.delete_outline, size: 16),
-              label: Text('삭제', semanticsLabel: '${tag.name} 태그 삭제'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
-                side: BorderSide(color: theme.colorScheme.error),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                minimumSize: const Size(0, 32),
-                textStyle: const TextStyle(fontSize: 12),
-              ),
+            title: Text(tag.name, style: theme.textTheme.bodyLarge),
+            subtitle: narrow || (description?.isNotEmpty ?? false)
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (description?.isNotEmpty ?? false) Text(description!),
+                      if (narrow)
+                        Align(alignment: Alignment.centerRight, child: actions),
+                    ],
+                  )
+                : null,
+            trailing: narrow ? null : actions,
+            onTap: () => showTagFormSheet(context, tag: tag),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+            tileColor: theme.colorScheme.surface,
+            hoverColor: theme.colorScheme.primaryContainer.withValues(
+              alpha: 0.1,
             ),
-          ],
-        ),
-
-        // Interaction: 탭하면 수정 폼
-        onTap: () => showTagFormSheet(context, tag: tag),
-
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
-        tileColor: theme.colorScheme.surface,
-        hoverColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+          );
+        },
       ),
     );
   }
+
+  /// [width] 폭의 줄에 버튼을 옆에 두면 이름 칸이 글자 배율을 반영한 최소 폭(140)보다 좁아지는지.
+  /// 줄 안쪽 여백 32, 색 점과 사이 32, 이름과 버튼 사이 16을 뺀다
+  static bool _crowds(BuildContext context, double width) =>
+      width - 32 - 32 - 16 - AppEditDeleteButtons.widthOf(context) <
+      MediaQuery.textScalerOf(context).scale(140);
 
   Future<void> _deleteTag(BuildContext context, WidgetRef ref) async {
     final confirmed = await showAppConfirmDialog(

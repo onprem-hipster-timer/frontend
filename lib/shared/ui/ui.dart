@@ -11,6 +11,7 @@ export 'form/app_form_action_bar.dart';
 export 'form/app_picker_field.dart';
 export 'form/app_pickers.dart';
 export 'components/app_confirm_dialog.dart';
+export 'components/app_edit_delete_buttons.dart';
 export 'components/app_choice_dialog.dart';
 export 'components/app_empty_state.dart';
 export 'components/app_error_state.dart';
