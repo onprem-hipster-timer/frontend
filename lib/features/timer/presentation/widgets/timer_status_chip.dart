@@ -2,11 +2,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
+/// 타이머 상태 표시에 쓰는 아이콘, 배경·글자색, 이름
+typedef TimerStatusStyle = ({IconData icon, Color bg, Color fg, String label});
+
 /// 타이머 상태별 아이콘, 색, 이름
-({IconData icon, Color bg, Color fg, String label}) timerStatusStyle(
-  BuildContext context,
-  TimerStatus status,
-) {
+TimerStatusStyle timerStatusStyle(BuildContext context, TimerStatus status) {
   final cs = Theme.of(context).colorScheme;
   switch (status) {
     case TimerStatus.running:
@@ -44,7 +44,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 class TimerStatusChip extends StatelessWidget {
   const TimerStatusChip(this.style, {super.key});
 
-  final ({IconData icon, Color bg, Color fg, String label}) style;
+  final TimerStatusStyle style;
 
   @override
   Widget build(BuildContext context) {
