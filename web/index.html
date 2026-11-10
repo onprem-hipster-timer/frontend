@@ -30,12 +30,45 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="/landing/style.css">
 
-  <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "zblwwssbeu");
+  <script>
+    (function() {
+      var KEY = 'momeet.analytics_consent';
+      var loaded = false;
+
+      function read() {
+        try {
+          var v = localStorage.getItem(KEY);
+          return v === 'granted' || v === 'denied' ? v : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function load() {
+        if (loaded) return;
+        loaded = true;
+        (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "zblwwssbeu");
+        window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
+      }
+
+      function set(value) {
+        if (value !== 'granted' && value !== 'denied') return;
+        try { localStorage.setItem(KEY, value); } catch (e) {}
+        if (value === 'granted') {
+          load();
+        } else if (loaded) {
+          window.clarity('consent', false);
+        }
+        document.dispatchEvent(new CustomEvent('analytics-consent', { detail: value }));
+      }
+
+      window.__momeetAnalytics = { get: read, set: set };
+      if (read() === 'granted') load();
+    })();
   </script>
 
   <script>
@@ -222,6 +255,37 @@
   </script>
 
   <script src="/landing/script.js"></script>
+
+  <div id="consent-banner" class="consent-banner" role="dialog" aria-labelledby="consent-banner-title" hidden>
+    <p id="consent-banner-title" class="consent-banner-title">사용성 분석 쿠키</p>
+    <p class="consent-banner-text">
+      허용하면 화면을 개선하기 위해 방문·클릭·스크롤과 화면 재현 정보가
+      Microsoft Clarity(미국)로 전송되어 최대 30일 보관됩니다.
+      입력한 내용은 가려지며, 거부해도 이용에 제한이 없습니다.
+      <a href="/privacy" target="_blank" rel="noopener">개인정보처리방침</a>
+    </p>
+    <div class="consent-banner-actions">
+      <button type="button" class="consent-banner-btn" data-consent="denied">거부</button>
+      <button type="button" class="consent-banner-btn primary" data-consent="granted">허용</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var banner = document.getElementById('consent-banner');
+      var analytics = window.__momeetAnalytics;
+      if (analytics.get() !== null) return;
+      banner.hidden = false;
+      banner.addEventListener('click', function(e) {
+        var value = e.target.getAttribute && e.target.getAttribute('data-consent');
+        if (!value) return;
+        analytics.set(value);
+      });
+      document.addEventListener('analytics-consent', function() {
+        banner.hidden = true;
+      });
+    })();
+  </script>
 
   <script>
     {{flutter_js}}
