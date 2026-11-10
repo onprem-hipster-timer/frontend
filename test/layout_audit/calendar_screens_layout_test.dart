@@ -85,6 +85,9 @@ void main() {
     testLayoutAudit(
       'calendar_page_${viewType.name}',
       subject: '${viewType.name} 보기 일정·공휴일',
+      // 칸에 다 들어가지 않는 일정 제목은 +N으로 접히는 것이 설계다.
+      // 접혀도 빠진 일정이 없는지는 verify의 expectNoHiddenSchedule이 센다.
+      scale: ScaleAuditOptions(ignore: _isFoldedSchedule),
       build: (text) => wrapWithApp(
         overrides: calendarOverrides(text.value, viewType),
       )(const CalendarPage()),
@@ -181,3 +184,12 @@ void expectNoHiddenSchedule(WidgetTester tester) {
   }
   expect(counted, greaterThanOrEqualTo(5), reason: '막대와 +N으로 셀 수 없는 일정이 있다');
 }
+
+bool _isFoldedSchedule(LayoutFinding finding) =>
+    finding.kind == LayoutFindingKind.scaleVanished &&
+    finding.locations.any(
+      (location) =>
+          location != null &&
+          (location.file.endsWith('schedule_appointment_block.dart') ||
+              location.file.endsWith('marquee_text.dart')),
+    );
