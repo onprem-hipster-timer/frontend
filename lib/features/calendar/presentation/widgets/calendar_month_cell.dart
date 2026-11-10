@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
+import 'package:momeet/features/calendar/presentation/widgets/marquee_text.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
     as fmt;
 import 'package:momeet/shared/ui/ui.dart';
@@ -68,17 +69,20 @@ class CalendarMonthCell extends ConsumerWidget {
             ),
             if (holiday != null) ...[
               const SizedBox(width: 4),
+              // 칸에 다 들어가지 않는 이름은 두 번 흘려 보인 뒤 말줄임으로 둔다
               Expanded(
-                child: Text(
-                  holiday.dateName,
-                  style: TextStyle(
-                    color: AppColors.of(context).holiday,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: MarqueeText(
+                    holiday.dateName,
+                    active: true,
+                    loops: 2,
+                    style: TextStyle(
+                      color: AppColors.of(context).holiday,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
                 ),
               ),
             ],

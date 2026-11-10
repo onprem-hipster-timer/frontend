@@ -15,6 +15,7 @@ Future<void> _pumpText(
   required bool active,
   double width = 80,
   bool reduceMotion = false,
+  int? loops,
 }) {
   return tester.pumpWidget(
     MaterialApp(
@@ -23,7 +24,12 @@ Future<void> _pumpText(
         child: Center(
           child: SizedBox(
             width: width,
-            child: MarqueeText(text, style: _style, active: active),
+            child: MarqueeText(
+              text,
+              style: _style,
+              active: active,
+              loops: loops,
+            ),
           ),
         ),
       ),
@@ -61,6 +67,20 @@ void main() {
     expect(_shift(tester), isNull);
 
     await _pumpText(tester, text: _long, active: true, reduceMotion: true);
+    expect(_shift(tester), isNull);
+    expect(
+      tester.widget<Text>(find.text(_long)).overflow,
+      TextOverflow.ellipsis,
+    );
+  });
+
+  testWidgets('정한 횟수만큼 흐른 뒤 멈추고 말줄임으로 돌아간다', (tester) async {
+    await _pumpText(tester, text: _long, active: true, loops: 2);
+    await tester.pump();
+    expect(_shift(tester), isNotNull);
+
+    await tester.pumpAndSettle();
+
     expect(_shift(tester), isNull);
     expect(
       tester.widget<Text>(find.text(_long)).overflow,
