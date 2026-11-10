@@ -7,6 +7,7 @@ import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_view_style.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_appointment_block.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
@@ -64,54 +65,36 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(calendarSettingsProvider);
-    final dataSourceAsync = ref.watch(scheduleOnlyDataSourceProvider);
 
-    // 컨트롤러와 Provider 상태 동기화
-    _calendarController.view = settings.viewType.toSfCalendarView();
-    _calendarController.selectedDate = settings.selectedDate;
-    _calendarController.displayDate = settings.displayDate;
+    _syncController(settings);
 
-    return dataSourceAsync.when(
-      data: (dataSource) => _buildCalendar(context, settings, dataSource),
-      loading: () => _buildCalendar(
-        context,
-        settings,
-        _EmptyDataSource(),
-        isLoading: true,
-      ),
-      error: (error, stack) => AppErrorState(
+    // 불러오는 동안에는 빈 달력 위에 로딩 표시를 겹친다
+    final (loaded, error) = ref
+        .watch(scheduleOnlyDataSourceProvider)
+        .when(
+          data: (dataSource) => (dataSource, null),
+          loading: () => (null, null),
+          error: (error, _) => (null, error),
+        );
+    if (error != null) {
+      return AppErrorState(
         title: '일정을 불러올 수 없습니다',
         error: error,
         onRetry: () => ref.invalidate(currentSchedulesProvider),
-      ),
-    );
-  }
-
-  Widget _buildCalendar(
-    BuildContext context,
-    CalendarSettingsState settings,
-    ScheduleCalendarDataSource dataSource, {
-    bool isLoading = false,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+      );
+    }
+    final colorScheme = Theme.of(context).colorScheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 월 보기 칸 높이. 위쪽 요일 줄을 뺀 높이를 주 수로 나눈다
-        final cellHeight =
-            (constraints.maxHeight - _monthViewHeaderHeight) / monthWeeksInView;
         final eventsPerDay =
             settings.monthEventsPerDay ??
-            autoMonthEventsPerDay(
-              cellHeight: cellHeight,
-              textScale: MediaQuery.textScalerOf(context).scale(1),
-            );
+            _autoEventsPerDay(context, constraints);
         return Stack(
           children: [
             SfCalendar(
               controller: _calendarController,
-              dataSource: dataSource,
+              dataSource: loaded ?? _EmptyDataSource(),
               view: settings.viewType.toSfCalendarView(),
               firstDayOfWeek: settings.firstDayOfWeek,
               showNavigationArrow: false, // 커스텀 네비게이션 사용
@@ -120,146 +103,32 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               allowViewNavigation: true,
               allowDragAndDrop: true,
               allowAppointmentResize: true,
-
-              // ============================================================
-              // 휴일 표시 설정
-              // ============================================================
               monthCellBuilder: (context, details) =>
                   CalendarMonthCell(details: details),
               specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
-              // ============================================================
-              // 콜백 설정
-              // ============================================================
               onViewChanged: _onViewChanged,
               onTap: _onCalendarTap,
               onLongPress: _onCalendarLongPress,
               onDragEnd: _onDragEnd,
               onAppointmentResizeEnd: _onResizeEnd,
-
-              // ============================================================
-              // 스타일 설정
-              // ============================================================
               backgroundColor: colorScheme.surface,
               cellBorderColor: colorScheme.outlineVariant.withValues(
                 alpha: 0.3,
               ),
               todayHighlightColor: colorScheme.primary,
-
               // 기간 이름과 이동은 화면의 도구 줄이 맡는다
               headerHeight: 0,
-
-              viewHeaderStyle: ViewHeaderStyle(
-                backgroundColor: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
-                ),
-                dayTextStyle: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                dateTextStyle: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+              viewHeaderStyle: calendarViewHeaderStyle(colorScheme),
+              selectionDecoration: calendarSelectionDecoration(colorScheme),
+              monthViewSettings: calendarMonthViewSettings(
+                colorScheme,
+                eventsPerDay,
               ),
-
-              selectionDecoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                border: Border.all(color: colorScheme.primary, width: 1.5),
-                borderRadius: AppRadius.smAll,
+              timeSlotViewSettings: calendarTimeSlotViewSettings(
+                colorScheme,
+                use24HourFormat: settings.use24HourFormat,
               ),
-
-              // ============================================================
-              // 월간 뷰 설정
-              // ============================================================
-              monthViewSettings: MonthViewSettings(
-                showAgenda: false,
-                appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-                appointmentDisplayCount: eventsPerDay,
-                monthCellStyle: MonthCellStyle(
-                  textStyle: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                  ),
-                  trailingDatesTextStyle: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.4),
-                    fontSize: 14,
-                  ),
-                  leadingDatesTextStyle: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.4),
-                    fontSize: 14,
-                  ),
-                  backgroundColor: colorScheme.surface,
-                  todayBackgroundColor: colorScheme.primary.withValues(
-                    alpha: 0.1,
-                  ),
-                ),
-                showTrailingAndLeadingDates: true,
-              ),
-
-              // ============================================================
-              // 타임슬롯 설정 (Day/Week 뷰)
-              // ============================================================
-              timeSlotViewSettings: TimeSlotViewSettings(
-                startHour: 0,
-                endHour: 24,
-                timeIntervalHeight: 60,
-                timeFormat: settings.use24HourFormat ? 'HH:mm' : 'h:mm a',
-                timeTextStyle: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 11,
-                ),
-                timeRulerSize: 60,
-                dayFormat: 'EEE',
-                dateFormat: 'd',
-              ),
-
-              // ============================================================
-              // 스케줄 뷰 설정 (Agenda)
-              // ============================================================
-              scheduleViewSettings: ScheduleViewSettings(
-                appointmentTextStyle: TextStyle(
-                  color: colorScheme.onPrimary,
-                  fontSize: 13,
-                ),
-                dayHeaderSettings: DayHeaderSettings(
-                  dayFormat: 'EEEE',
-                  width: 70,
-                  dayTextStyle: TextStyle(
-                    color: colorScheme.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  dateTextStyle: TextStyle(
-                    color: colorScheme.primary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                weekHeaderSettings: WeekHeaderSettings(
-                  startDateFormat: 'MMM d',
-                  endDateFormat: 'MMM d, yyyy',
-                  textAlign: TextAlign.center,
-                  backgroundColor: colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.3),
-                ),
-                monthHeaderSettings: MonthHeaderSettings(
-                  monthFormat: 'MMMM yyyy',
-                  height: 50,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  textAlign: TextAlign.center,
-                  monthTextStyle: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              // ============================================================
-              // 일정 빌더
-              // ============================================================
+              scheduleViewSettings: calendarScheduleViewSettings(colorScheme),
               appointmentBuilder: (context, details) =>
                   ScheduleAppointmentBlock(
                     details: details,
@@ -267,19 +136,28 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                   ),
             ),
 
-            // 로딩 오버레이
-            if (isLoading)
-              Positioned.fill(
-                child: Container(
-                  color: colorScheme.surface.withValues(alpha: 0.5),
-                  child: const AppLoading(),
-                ),
-              ),
+            if (loaded == null) const Positioned.fill(child: _LoadingVeil()),
           ],
         );
       },
     );
   }
+
+  /// 컨트롤러를 설정 상태(보기·고른 날·보는 날)에 맞춘다
+  void _syncController(CalendarSettingsState settings) {
+    _calendarController
+      ..view = settings.viewType.toSfCalendarView()
+      ..selectedDate = settings.selectedDate
+      ..displayDate = settings.displayDate;
+  }
+
+  /// 월 보기 칸 높이에 맞는 일정 수. 위쪽 요일 줄을 뺀 높이를 주 수로 나눠 칸 높이를 구한다
+  int _autoEventsPerDay(BuildContext context, BoxConstraints constraints) =>
+      autoMonthEventsPerDay(
+        cellHeight:
+            (constraints.maxHeight - _monthViewHeaderHeight) / monthWeeksInView,
+        textScale: MediaQuery.textScalerOf(context).scale(1),
+      );
 
   /// 뷰 변경 콜백
   void _onViewChanged(ViewChangedDetails details) {
@@ -471,6 +349,19 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       },
       loading: () => [],
       error: (error, stack) => [],
+    );
+  }
+}
+
+/// 일정을 불러오는 동안 달력 위에 겹치는 흐린 막과 로딩 표시
+class _LoadingVeil extends StatelessWidget {
+  const _LoadingVeil();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+      child: const AppLoading(),
     );
   }
 }
