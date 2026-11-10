@@ -89,7 +89,7 @@ class CalendarMonthCell extends ConsumerWidget {
   }
 }
 
-/// 날짜 숫자. 오늘이면 강조 색 동그라미 안에 둔다.
+/// 날짜 숫자. 오늘이면 강조 색 동그라미(글자가 크면 알약 모양) 안에 둔다.
 class _DayNumber extends StatelessWidget {
   const _DayNumber({
     required this.day,
@@ -107,9 +107,15 @@ class _DayNumber extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return isToday
-        ? CircleAvatar(
-            radius: 12,
-            backgroundColor: colorScheme.primary,
+        // 지름 24에서 시작해 글자가 커지면 함께 커진다
+        ? Container(
+            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.center,
+            decoration: ShapeDecoration(
+              color: colorScheme.primary,
+              shape: const StadiumBorder(),
+            ),
             child: Text(
               '$day',
               style: TextStyle(
