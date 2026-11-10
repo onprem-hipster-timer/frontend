@@ -3,6 +3,5 @@
 # 크기 규칙은 적힌 줄 수까지 허용하고, 그 밖의 규칙은 적힌 대상만 허용한다.
 # 고치면 그 줄을 지운다. 새 항목은 더하지 않는다.
 max_file_lines lib/core/providers/auth_provider.dart - 482
-max_file_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart - 486
 max_file_lines lib/features/timer/presentation/providers/timer_providers.dart - 682
 max_file_lines lib/router.dart - 502
