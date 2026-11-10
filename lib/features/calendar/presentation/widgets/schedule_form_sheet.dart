@@ -1,12 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
     as fmt;
+import 'package:momeet/features/calendar/presentation/widgets/schedule_time_range_fields.dart';
 
 /// 일정 생성/수정을 위한 Modal Bottom Sheet 위젯
 ///
@@ -39,17 +39,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
 
-  // 날짜/시간 상태
-  late DateTime _startTime;
-  late DateTime _endTime;
-  bool _isAllDay = false;
-
-  // 날짜 포맷터
-  final DateFormat _dateTimeFormat = DateFormat('M월 d일 (E) HH:mm', 'ko');
-  final DateFormat _dateFormat = DateFormat('M월 d일 (E)', 'ko');
-
-  String _format(DateTime time) =>
-      (_isAllDay ? _dateFormat : _dateTimeFormat).format(time);
+  late ScheduleTimeRange _range;
 
   @override
   void initState() {
@@ -66,12 +56,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       _titleController.text = schedule.title;
       _descriptionController.text = schedule.description ?? '';
 
-      // 시간 설정
-      _startTime = schedule.startTime.toLocal();
-      _endTime = schedule.endTime.toLocal();
-
-      // 종일 여부 판단
-      _isAllDay = fmt.isAllDay(_startTime, _endTime);
+      final start = schedule.startTime.toLocal();
+      final end = schedule.endTime.toLocal();
+      _range = (start: start, end: end, allDay: fmt.isAllDay(start, end));
     } else {
       // 새 일정 생성 모드
       final now = DateTime.now();
@@ -83,9 +70,12 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
         (now.minute ~/ 15) * 15, // 15분 단위로 반올림
       );
 
-      _startTime = widget.initialStartTime ?? roundedNow;
-      _endTime =
-          widget.initialEndTime ?? _startTime.add(const Duration(hours: 1));
+      final start = widget.initialStartTime ?? roundedNow;
+      _range = (
+        start: start,
+        end: widget.initialEndTime ?? start.add(const Duration(hours: 1)),
+        allDay: false,
+      );
     }
   }
 
@@ -98,7 +88,6 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isLoading = widget.existingSchedule != null
         ? ref.watch(updateScheduleMutation).isPending
         : ref.watch(createScheduleMutation).isPending;
@@ -128,50 +117,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           },
           textInputAction: TextInputAction.next,
         ),
-        SwitchListTile(
-          title: const Text('종일'),
-          subtitle: Text(
-            _isAllDay ? '하루 종일 일정으로 설정됩니다' : '시간을 지정할 수 있습니다',
-            style: theme.textTheme.bodySmall,
-          ),
-          value: _isAllDay,
-          onChanged: (value) {
-            setState(() {
-              _isAllDay = value;
-              if (_isAllDay) {
-                // 종일로 설정하면 시간을 00:00과 23:59로 조정
-                final startDate = DateTime(
-                  _startTime.year,
-                  _startTime.month,
-                  _startTime.day,
-                );
-                _startTime = startDate;
-                _endTime = DateTime(
-                  _endTime.year,
-                  _endTime.month,
-                  _endTime.day,
-                  23,
-                  59,
-                );
-              }
-            });
-          },
-          contentPadding: EdgeInsets.zero,
-        ),
-        AppPickerField(
-          label: '시작',
-          icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
-          value: _format(_startTime),
-          onTap: () => _selectDateTime(context, isStartTime: true),
-        ),
-        AppPickerField(
-          label: '종료',
-          icon: _isAllDay ? Icons.calendar_today : Icons.schedule,
-          value: _format(_endTime),
-          onTap: () => _selectDateTime(context, isStartTime: false),
-          errorText: !_isAllDay && _endTime.isBefore(_startTime)
-              ? '종료 시간은 시작 시간보다 늦어야 합니다'
-              : null,
+        ScheduleTimeRangeFields(
+          value: _range,
+          onChanged: (range) => setState(() => _range = range),
         ),
         TextFormField(
           controller: _descriptionController,
@@ -188,105 +136,6 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     );
   }
 
-  /// 날짜/시간 선택 다이얼로그 표시
-  Future<void> _selectDateTime(
-    BuildContext context, {
-    required bool isStartTime,
-  }) async {
-    final currentTime = isStartTime ? _startTime : _endTime;
-
-    // 날짜 선택
-    final selectedDate = await showDatePicker(
-      context: context,
-      initialDate: currentTime,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      locale: const Locale('ko'),
-    );
-
-    if (selectedDate == null || !mounted) return;
-
-    DateTime newDateTime = selectedDate;
-
-    // 종일이 아닌 경우 시간도 선택
-    if (!_isAllDay) {
-      final selectedTime = await showTimePicker(
-        // ignore: use_build_context_synchronously
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(currentTime),
-        builder: (context, child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-            child: child!,
-          );
-        },
-      );
-
-      if (selectedTime == null || !mounted) return;
-
-      newDateTime = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        selectedTime.hour,
-        selectedTime.minute,
-      );
-    } else {
-      // 종일인 경우 시작은 00:00, 종료는 23:59
-      if (isStartTime) {
-        newDateTime = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-        );
-      } else {
-        newDateTime = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-          23,
-          59,
-        );
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        if (isStartTime) {
-          _startTime = newDateTime;
-          // 시작 시간이 종료 시간보다 늦으면 종료 시간을 조정
-          if (_startTime.isAfter(_endTime)) {
-            if (_isAllDay) {
-              _endTime = DateTime(
-                _startTime.year,
-                _startTime.month,
-                _startTime.day,
-                23,
-                59,
-              );
-            } else {
-              _endTime = _startTime.add(const Duration(hours: 1));
-            }
-          }
-        } else {
-          _endTime = newDateTime;
-          // 종료 시간이 시작 시간보다 빠르면 시작 시간을 조정
-          if (_endTime.isBefore(_startTime)) {
-            if (_isAllDay) {
-              _startTime = DateTime(
-                _endTime.year,
-                _endTime.month,
-                _endTime.day,
-              );
-            } else {
-              _startTime = _endTime.subtract(const Duration(hours: 1));
-            }
-          }
-        }
-      });
-    }
-  }
-
   /// 폼 제출 처리
   Future<void> _handleSubmit() async {
     // 폼 유효성 검사
@@ -295,7 +144,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
     }
 
     // 시간 유효성 검사 (종일이 아닌 경우)
-    if (!_isAllDay && _endTime.isBefore(_startTime)) {
+    if (!_range.allDay && _range.end.isBefore(_range.start)) {
       _showErrorSnackBar('종료 시간은 시작 시간보다 늦어야 합니다');
       return;
     }
@@ -310,8 +159,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
         final description = _descriptionController.text.trim();
         final scheduleUpdate = ScheduleUpdate(
           title: _titleController.text.trim(),
-          startTime: _startTime.toUtc(),
-          endTime: _endTime.toUtc(),
+          startTime: _range.start.toUtc(),
+          endTime: _range.end.toUtc(),
           description: description.isEmpty ? null : description,
         );
 
@@ -339,8 +188,8 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
         // 생성 모드
         final scheduleCreate = ScheduleCreate(
           title: _titleController.text.trim(),
-          startTime: _startTime.toUtc(),
-          endTime: _endTime.toUtc(),
+          startTime: _range.start.toUtc(),
+          endTime: _range.end.toUtc(),
           description: _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
