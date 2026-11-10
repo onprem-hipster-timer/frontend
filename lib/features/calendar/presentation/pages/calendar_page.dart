@@ -39,10 +39,6 @@ class CalendarPage extends StatelessWidget {
             onPressed: () => _showFilterSheet(context),
           ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(56),
-          child: _CalendarToolbar(),
-        ),
       ),
       drawer: CalendarSettingsDrawer(
         header: switch (ShellScope.maybeOf(context)) {
@@ -53,10 +49,18 @@ class CalendarPage extends StatelessWidget {
           _ => null,
         },
       ),
-      body: const CalendarViewWidget(
-        // TODO: 라우팅 연결
-        // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
-        // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
+      // 이동 줄은 글자가 커지면 두 줄이 되므로 높이가 고정된 앱바 아래가 아니라 본문 위에 둔다
+      body: const Column(
+        children: [
+          _CalendarToolbar(),
+          Expanded(
+            child: CalendarViewWidget(
+              // TODO: 라우팅 연결
+              // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
+              // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -196,45 +200,48 @@ class _CalendarToolbar extends ConsumerWidget {
     final notifier = ref.read(calendarSettingsProvider.notifier);
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 12, 8),
-      child: Row(
+      // 한 줄에 다 들어가지 않으면 보는 기간을 윗줄에 다 보이고 이동·보기 버튼을 아랫줄에 둔다
+      child: OverflowBar(
+        alignment: MainAxisAlignment.spaceBetween,
+        overflowAlignment: OverflowBarAlignment.start,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            tooltip: '이전',
-            visualDensity: VisualDensity.compact,
-            onPressed: notifier.goToPrevious,
-          ),
-          const _TodayButton(),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            tooltip: '다음',
-            visualDensity: VisualDensity.compact,
-            onPressed: notifier.goToNext,
-          ),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => _pickDate(context, ref),
-                iconAlignment: IconAlignment.end,
-                icon: const Icon(Icons.arrow_drop_down),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                label: Text(
-                  periodLabel(
-                    settings,
-                    compact: MediaQuery.sizeOf(context).width < 600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+          TextButton.icon(
+            onPressed: () => _pickDate(context, ref),
+            iconAlignment: IconAlignment.end,
+            icon: const Icon(Icons.arrow_drop_down),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            label: Text(
+              periodLabel(
+                settings,
+                compact: MediaQuery.sizeOf(context).width < 600,
               ),
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
-          const CalendarViewSelector(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                tooltip: '이전',
+                visualDensity: VisualDensity.compact,
+                onPressed: notifier.goToPrevious,
+              ),
+              const _TodayButton(),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                tooltip: '다음',
+                visualDensity: VisualDensity.compact,
+                onPressed: notifier.goToNext,
+              ),
+              const CalendarViewSelector(),
+            ],
+          ),
         ],
       ),
     );

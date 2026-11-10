@@ -2,6 +2,7 @@ import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -64,7 +65,7 @@ void main() {
 
   CalendarSettingsState settings() => container.read(calendarSettingsProvider);
 
-  testWidgets('화살표 사이에 보는 달을 보이고, 이전·다음은 달만 옮기고 고른 날은 둔다', (tester) async {
+  testWidgets('보는 달을 보이고, 이전·다음은 달만 옮기고 고른 날은 둔다', (tester) async {
     await pumpPage(tester);
 
     expect(find.text('달력'), findsOneWidget);
@@ -152,6 +153,39 @@ void main() {
         .setViewType(CalendarViewType.day);
     await tester.pumpAndSettle();
     expect(find.text('11월 30일 (월)'), findsOneWidget);
+  });
+
+  testWidgets('글자가 커서 한 줄에 다 들어가지 않으면 보는 기간을 윗줄에 다 보이고 이동 버튼은 아랫줄에 둔다', (
+    tester,
+  ) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpPage(tester, size: const Size(360, 800));
+
+    final period = find.text('2026년 11월');
+    expect(
+      tester.renderObject<RenderParagraph>(period).didExceedMaxLines,
+      isFalse,
+    );
+    expect(
+      tester.getRect(period).bottom,
+      lessThanOrEqualTo(tester.getRect(find.byTooltip('이전')).top),
+    );
+    // 두 줄이 된 이동 줄이 앱바 제목을 가리지 않는다
+    expect(
+      tester.getRect(find.text('달력')).bottom,
+      lessThanOrEqualTo(tester.getRect(period).top),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('넓은 화면은 보는 기간과 이동 버튼을 한 줄에 둔다', (tester) async {
+    await pumpPage(tester);
+
+    expect(
+      tester.getCenter(find.text('2026년 11월')).dy,
+      moreOrLessEquals(tester.getCenter(find.byTooltip('이전')).dy, epsilon: 4),
+    );
   });
 
   testWidgets('주가 두 달에 걸치면 끝에도 달을 쓴다', (tester) async {
