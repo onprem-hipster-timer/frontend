@@ -36,4 +36,16 @@ abstract class TimerRepository {
 
   /// 타이머 삭제
   Future<void> deleteTimer(String timerId);
+
+  /// 타이머 공유 설정. 설정이 없으면(비공개) null
+  Future<VisibilityRead?> getVisibility(String timerId);
+
+  /// 타이머 공유 설정을 바꾼다
+  Future<VisibilityRead> setVisibility(String timerId, VisibilityUpdate data);
+
+  /// 타이머 공유 설정을 지워 비공개로 되돌린다
+  Future<void> clearVisibility(String timerId);
+
+  /// 다른 사용자가 나에게 공유한 타이머를 일정·Todo를 포함해 조회
+  Future<List<TimerRead>> listSharedTimers();
 }

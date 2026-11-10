@@ -10,11 +10,16 @@ TimerRead _timer(
   TimerStatus status, {
   required int updatedMinute,
   int startedMinute = 0,
-}) => makeTimer(
-  id: id,
-  status: status,
-  startedAt: DateTime.utc(2026, 11, 6, 10, startedMinute),
-).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 10, updatedMinute));
+  int history = 0,
+}) =>
+    makeTimer(
+      id: id,
+      status: status,
+      startedAt: DateTime.utc(2026, 11, 6, 10, startedMinute),
+    ).copyWith(
+      updatedAt: DateTime.utc(2026, 11, 6, 10, updatedMinute),
+      pauseHistory: [for (var i = 0; i < history; i++) <String, dynamic>{}],
+    );
 
 /// 일정·Todo를 포함해 읽은 REST 응답
 TimerRead _read(String id, TimerStatus status, {required int updatedMinute}) =>
@@ -62,21 +67,198 @@ void main() {
       expect(ledger.active.single.status, TimerStatus.paused);
     });
 
-    test('같으면 반영한다', () {
+    test('같으면 pause_history가 더 긴 값을 반영한다', () {
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
-      final same = _timer(
-        't1',
-        TimerStatus.running,
-        updatedMinute: 1,
-      ).copyWith(title: '같은 시각의 응답');
-      ledger.apply(same);
+      ledger.apply(
+        _timer('t1', TimerStatus.paused, updatedMinute: 1, history: 1),
+      );
 
-      expect(ledger.active.single.title, '같은 시각의 응답');
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('같으면 pause_history가 더 짧은 값은 늦게 와도 버린다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.paused, updatedMinute: 1, history: 2),
+      );
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      );
+      ledger.applyPartial(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      );
+      ledger.resync([
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      ]);
+
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('pause_history 길이도 같으면 가진 값을 둔다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 1),
+      );
+      ledger.applyPartial(
+        _timer(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+          history: 1,
+        ).copyWith(title: '같은 순서의 이벤트'),
+      );
+
+      expect(ledger.active.single.title, isNot('같은 순서의 이벤트'));
+    });
+
+    test('더 나중 updated_at이면 pause_history가 짧아도 반영한다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 3),
+      );
+      ledger.apply(_timer('t1', TimerStatus.paused, updatedMinute: 2));
+
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('순서가 같은 REST 응답은 타이머 자체 필드를 두고 관계 필드만 채운다', () {
+      ledger.applyPartial(
+        _event('t1', TimerStatus.paused, updatedMinute: 1, elapsedTime: 60),
+      );
+      ledger.apply(
+        _read(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+        ).copyWith(title: '같은 순서의 응답'),
+      );
+
+      final held = ledger['t1']!;
+      expect(held.status, TimerStatus.paused);
+      expect(held.title, isNot('같은 순서의 응답'));
+      expect(held.todo, makeTodo());
+      expect(held.schedule, makeSchedule());
+      expect(ledger.needsRead('t1'), isFalse);
     });
 
     test('끝난 타이머보다 이전 이벤트가 늦게 와도 되살리지 않는다', () {
       ledger.apply(_timer('t1', TimerStatus.completed, updatedMinute: 3));
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 1));
+
+      expect(ledger.active, isEmpty);
+    });
+  });
+
+  group('내 명령 응답', () {
+    test('updated_at과 기록 길이가 같아도 바뀐 제목을 반영한다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+        ownCommand: true,
+      );
+      ledger.apply(
+        _timer(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+          history: 2,
+        ).copyWith(title: '바꾼 제목'),
+        ownCommand: true,
+      );
+
+      expect(ledger.active.single.title, '바꾼 제목');
+    });
+
+    test('같은 순서로 다시 읽은 REST 응답은 바뀐 제목을 반영하지 않는다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+        ownCommand: true,
+      );
+      ledger.apply(
+        _timer(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+          history: 2,
+        ).copyWith(title: '다시 읽은 제목'),
+      );
+
+      expect(ledger.active.single.title, isNot('다시 읽은 제목'));
+    });
+
+    test('같은 순서의 이벤트는 내 명령 응답 뒤에도 버린다', () {
+      ledger.apply(
+        _timer(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+          history: 2,
+        ).copyWith(title: '바꾼 제목'),
+        ownCommand: true,
+      );
+      ledger.applyPartial(
+        _timer(
+          't1',
+          TimerStatus.running,
+          updatedMinute: 1,
+          history: 2,
+        ).copyWith(title: '이벤트 제목'),
+      );
+
+      expect(ledger.active.single.title, '바꾼 제목');
+    });
+
+    test('이전 updated_at이나 더 짧은 기록이면 버린다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.paused, updatedMinute: 2, history: 2),
+      );
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 3),
+        ownCommand: true,
+      );
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 2, history: 1),
+        ownCommand: true,
+      );
+
+      expect(ledger.active.single.status, TimerStatus.paused);
+    });
+
+    test('같은 순서여도 끝난 타이머를 다시 활성으로 돌리지 않는다', () {
+      final finished = _timer(
+        't1',
+        TimerStatus.completed,
+        updatedMinute: 1,
+        history: 2,
+      );
+      ledger.apply(finished);
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+        ownCommand: true,
+      );
+
+      expect(ledger.active, isEmpty);
+      expect(ledger['t1'], finished);
+    });
+
+    test('다시 맞추기 목록에 없어 끝난 것으로 본 타이머를 되살리지 않는다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+      );
+      ledger.resync(const []);
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+        ownCommand: true,
+      );
+
+      expect(ledger.active, isEmpty);
+    });
+
+    test('지운 타이머를 되살리지 않는다', () {
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+      );
+      ledger.delete('t1');
+      ledger.apply(
+        _timer('t1', TimerStatus.running, updatedMinute: 1, history: 2),
+        ownCommand: true,
+      );
 
       expect(ledger.active, isEmpty);
     });
@@ -121,12 +303,12 @@ void main() {
       expect(ledger.active, isEmpty);
     });
 
-    test('목록에서 뺀 타이머라도 더 나중 이벤트는 다시 넣는다', () {
+    test('목록에서 뺀 타이머는 더 나중 이벤트여도 다시 넣지 않는다', () {
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 5));
       ledger.resync([]);
       ledger.apply(_timer('t1', TimerStatus.running, updatedMinute: 7));
 
-      expect(ledger.active.single.id, 't1');
+      expect(ledger.active, isEmpty);
     });
 
     test('목록의 타이머에도 updated_at 규칙을 쓴다', () {
@@ -246,6 +428,71 @@ void main() {
 
       expect(needsRead, isFalse);
       expect(ledger.active, isEmpty);
+    });
+  });
+
+  group('명령 응답 전 표시', () {
+    test('먼저 보인 값은 같은 updated_at에 기록이 더 긴 응답이 덮는다', () {
+      final held = _read('t1', TimerStatus.running, updatedMinute: 1);
+      final shown = held.copyWith(status: TimerStatus.paused);
+      ledger
+        ..apply(held)
+        ..showPending(shown);
+      expect(ledger['t1'], same(shown));
+
+      ledger.apply(
+        _read(
+          't1',
+          TimerStatus.paused,
+          updatedMinute: 1,
+        ).copyWith(pauseHistory: [<String, dynamic>{}]),
+      );
+
+      expect(ledger['t1'], isNot(same(shown)));
+      expect(ledger['t1']!.status, TimerStatus.paused);
+    });
+
+    test('먼저 보인 값은 updated_at 기록을 바꾸지 않아 이후 이벤트가 덮는다', () {
+      ledger
+        ..apply(_read('t1', TimerStatus.running, updatedMinute: 5))
+        ..showPending(
+          _read(
+            't1',
+            TimerStatus.paused,
+            updatedMinute: 5,
+          ).copyWith(updatedAt: DateTime.utc(2026, 11, 6, 11)),
+        )
+        ..applyPartial(_event('t1', TimerStatus.running, updatedMinute: 6));
+
+      expect(ledger['t1']!.status, TimerStatus.running);
+    });
+
+    test('가진 적 없거나 지운 타이머는 먼저 보이지 않는다', () {
+      ledger
+        ..showPending(_read('new', TimerStatus.paused, updatedMinute: 1))
+        ..apply(_read('gone', TimerStatus.running, updatedMinute: 1))
+        ..delete('gone')
+        ..showPending(_read('gone', TimerStatus.paused, updatedMinute: 1));
+
+      expect(ledger['new'], isNull);
+      expect(ledger['gone'], isNull);
+    });
+
+    test('되돌리기는 먼저 보인 값이 그대로일 때만 이전 값으로 돌린다', () {
+      final held = _read('t1', TimerStatus.running, updatedMinute: 1);
+      final shown = held.copyWith(status: TimerStatus.paused);
+      ledger
+        ..apply(held)
+        ..showPending(shown)
+        ..revertPending(shown, held);
+      expect(ledger['t1'], same(held));
+
+      ledger
+        ..showPending(shown)
+        ..applyPartial(_event('t1', TimerStatus.paused, updatedMinute: 2))
+        ..revertPending(shown, held);
+
+      expect(ledger['t1']!.updatedAt, DateTime.utc(2026, 11, 6, 10, 2));
     });
   });
 

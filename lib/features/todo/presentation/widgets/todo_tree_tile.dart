@@ -4,9 +4,14 @@
 // 드래그 앤 드롭으로 부모 변경을 지원합니다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart'
+    show defaultFocusDuration, timerControllerProvider;
+import 'package:momeet/features/timer/presentation/widgets/start_timer_dialog.dart';
+import 'package:momeet/router.dart';
 
 import '../providers/timer_providers.dart';
 import '../providers/todo_provider.dart';
@@ -204,6 +209,8 @@ class TodoTreeTile extends ConsumerWidget {
     required bool isSelected,
     required bool isDragging,
   }) {
+    final timerLinkable = canLinkTimer(todo);
+
     return InkWell(
       onTap: () {
         // 선택 처리
@@ -269,37 +276,46 @@ class TodoTreeTile extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    // 좁은 화면에서도 넘치지 않게 제목 아래에 두고 자리가 모자라면 줄을 바꾼다
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // 진행 중인 타이머의 남은 시간
+                        if (timerLinkable) _TodoTimerChip(todoId: todo.id),
+
+                        // 누적 집중 시간
+                        _TodoElapsedBadge(node: node),
+
+                        // 태그 표시
+                        if (todo.tags.isNotEmpty)
+                          _buildTagIndicators(context, todo),
+
+                        // 자식 개수 표시
+                        if (hasChildren)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, right: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${node.children.length}',
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-
-              // 누적 집중 시간
-              _TodoElapsedBadge(node: node),
-
-              // 태그 표시
-              if (todo.tags.isNotEmpty) _buildTagIndicators(context, todo),
-
-              // 자식 개수 표시
-              if (hasChildren)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${node.children.length}',
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                  ),
-                ),
 
               const SizedBox(width: 8),
 
@@ -307,6 +323,9 @@ class TodoTreeTile extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // 타이머 시작 버튼
+                  if (timerLinkable) _TodoTimerStartButton(todo: todo),
+
                   // 수정 버튼
                   OutlinedButton.icon(
                     onPressed: () =>
@@ -390,7 +409,7 @@ class TodoTreeTile extends ConsumerWidget {
     final displayCount = tags.length > 2 ? 2 : tags.length;
 
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.only(top: 4, right: 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -422,14 +441,16 @@ class TodoTreeTile extends ConsumerWidget {
 
           // 첫 번째 태그 이름 (공간이 있을 때)
           if (tags.isNotEmpty)
-            Text(
-              tags.first.name,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                fontSize: 11,
+            Flexible(
+              child: Text(
+                tags.first.name,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontSize: 11,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
 
           // 추가 태그 개수 표시
@@ -520,7 +541,7 @@ class _TodoElapsedBadge extends ConsumerWidget {
 
     final isActive = active != null;
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.only(top: 4, right: 8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
@@ -540,6 +561,143 @@ class _TodoElapsedBadge extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 남은 시간을 mm:ss로, 한 시간 이상이면 h:mm:ss로 쓴다
+String _formatRemaining(Duration remaining) {
+  final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+  final hours = remaining.inHours;
+  return hours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
+}
+
+/// Todo에 연결된 활성(RUNNING·PAUSED) 타이머의 남은 시간 칩. 누르면 타이머 화면으로 간다
+///
+/// [activeTimerStreamProvider]로 1초마다 갱신하고, 남은 시간이 0이면 에러 색이다. 활성 타이머가 없으면 표시하지 않는다.
+///
+/// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
+class _TodoTimerChip extends ConsumerWidget {
+  final String todoId;
+
+  const _TodoTimerChip({required this.todoId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final remaining = ref.watch(
+      activeTimerStreamProvider.select(
+        (states) => states.value?[todoId]?.remainingSeconds,
+      ),
+    );
+    if (remaining == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final color = remaining == 0
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, right: 8),
+      child: ActionChip(
+        avatar: Icon(Icons.timer_outlined, color: color),
+        label: Text(_formatRemaining(Duration(seconds: remaining))),
+        labelStyle: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontFamily: 'monospace',
+          fontWeight: FontWeight.bold,
+        ),
+        tooltip: '타이머로 이동',
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        onPressed: () => context.go(AppRoute.timer.path),
+      ),
+    );
+  }
+}
+
+/// [todo]를 연결해 새 타이머를 시작하는 버튼. Todo에 활성 타이머가 있으면 표시하지 않는다
+///
+/// 새 작업 시작 다이얼로그를 [todo]를 고른 채 열고, 시작해도 할 일 화면에 머문다.
+/// 시작하면 떠 있던 알림을 닫고 '타이머 보기'(타이머 화면으로 이동)가 있는 알림을 띄운다.
+/// 실패하면 알린다. 다이얼로그에서 할 일을 여럿 고르면 할 일마다 시작하고, 시작하지 못한 할 일만 알린다.
+/// 새 타이머를 시작하는 동안에는 누를 수 없다.
+///
+/// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
+class _TodoTimerStartButton extends ConsumerWidget {
+  final TodoRead todo;
+
+  const _TodoTimerStartButton({required this.todo});
+
+  Future<void> _start(BuildContext context, WidgetRef ref) async {
+    final input = await showStartTimerDialog(
+      context,
+      initialDuration: defaultFocusDuration,
+      initialTodo: todo,
+    );
+    if (input == null || !context.mounted) return;
+    final controller = ref.read(timerControllerProvider.notifier);
+    var failed = const <TodoRead>[];
+    Object? error;
+    if (input.todos.length >= 2) {
+      failed = await controller.startTimers(
+        todos: input.todos,
+        duration: input.duration,
+      );
+    } else {
+      try {
+        await controller.startTimer(
+          relatedTodoId: input.todos.firstOrNull?.id,
+          title: input.title,
+          allocatedDurationSeconds: input.duration.inSeconds,
+        );
+      } catch (e) {
+        error = e;
+      }
+    }
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    if (error != null || failed.isNotEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            error != null ? '타이머 시작 실패: $error' : startFailureMessage(failed),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+    // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
+    final router = GoRouter.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('타이머를 시작했습니다'),
+        action: SnackBarAction(
+          label: '타이머 보기',
+          onPressed: () => router.go(AppRoute.timer.path),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(
+      activeTimerStreamProvider.select(
+        (states) => states.value?.containsKey(todo.id) ?? false,
+      ),
+    );
+    // 시작 요청이 끝날 때까지 컨트롤러(autoDispose)를 붙잡아 둔다
+    final starting = ref.watch(
+      timerControllerProvider.select((state) => state.isLoading),
+    );
+    if (active) return const SizedBox.shrink();
+
+    return IconButton(
+      icon: const Icon(Icons.play_circle_outline),
+      tooltip: '타이머 시작',
+      visualDensity: VisualDensity.compact,
+      onPressed: starting ? null : () => _start(context, ref),
     );
   }
 }

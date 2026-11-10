@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+
+import '../../../../helpers/timer_fixtures.dart';
 
 // 참고: formatDuration·formatTime은 lib/core/utils/time_formatters.dart로 이동했으며
 // 해당 테스트는 test/core/utils/time_formatters_test.dart에 있습니다.
@@ -51,6 +54,45 @@ void main() {
       final b = DateTime.utc(2026, 2, 22, 20, 0).toLocal();
       // 동일 로컬 날짜인지 확인
       expect(isSameDay(a, b), a.day == b.day);
+    });
+  });
+
+  // ============================================================
+  // timerView
+  // ============================================================
+  group('timerView', () {
+    TimerRead timer(TimerStatus status, {int second = 0, int history = 0}) =>
+        makeTimer(id: 't1', status: status).copyWith(
+          updatedAt: DateTime.utc(2026, 11, 6, 10, 0, second),
+          pauseHistory: [for (var i = 0; i < history; i++) <String, dynamic>{}],
+        );
+
+    test('updated_at이 같으면 pause_history가 더 긴 목록 값을 보인다', () {
+      final view = timer(TimerStatus.paused, history: 1);
+      final listed = timer(TimerStatus.running, history: 2);
+
+      expect(timerView({'t1': view}, listed), same(listed));
+    });
+
+    test('updated_at이 같고 pause_history가 더 짧은 목록 값이면 보이던 값을 둔다', () {
+      final view = timer(TimerStatus.paused, history: 2);
+      final listed = timer(TimerStatus.running, history: 1);
+
+      expect(timerView({'t1': view}, listed), same(view));
+    });
+
+    test('끝난 목록 값은 updated_at이 더 이전이어도 끝나지 않은 값 대신 보인다', () {
+      final view = timer(TimerStatus.paused, second: 2, history: 3);
+      final listed = timer(TimerStatus.completed, second: 1);
+
+      expect(timerView({'t1': view}, listed), same(listed));
+    });
+
+    test('목록 값의 updated_at이 더 나중이면 목록 값을 보인다', () {
+      final view = timer(TimerStatus.paused, history: 3);
+      final listed = timer(TimerStatus.running, second: 1);
+
+      expect(timerView({'t1': view}, listed), same(listed));
     });
   });
 }
