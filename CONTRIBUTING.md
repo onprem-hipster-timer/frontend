@@ -167,8 +167,6 @@ Rules enforced:
 | `no_widget_helper_methods` | Use widget classes instead of methods, getters, or top-level functions that return a Widget (`build`, `@override`, abstract declarations, local functions, and builder callbacks are exempt) |
 | `shared_ui_import_boundary` | `lib/shared/ui/` does not import `features/`, Riverpod, or go_router |
 
-Existing violations are listed in `lint_baseline.txt`. Size rules allow up to the recorded line count, and a `*_baseline_stale` warning asks you to delete an entry once it is fixed. Do not add new entries.
-
 > To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
 
 ---

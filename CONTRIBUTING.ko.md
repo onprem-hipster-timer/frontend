@@ -167,8 +167,6 @@ cd packages/momeet_lints && fvm dart test
 | `no_widget_helper_methods` | Widget을 돌려주는 메서드·getter·최상위 함수 대신 위젯 클래스 사용(`build`, `@override`, 추상 선언, 지역 함수·builder 콜백 제외) |
 | `shared_ui_import_boundary` | `lib/shared/ui/`는 `features/`, Riverpod, go_router를 가져오지 않음 |
 
-기존 위반은 `lint_baseline.txt`에 있다. 크기 규칙은 적힌 줄 수까지만 허용하고, 고친 대상은 그 줄을 지우라는 경고(`*_baseline_stale`)가 뜬다. 새 항목은 더하지 않는다.
-
 > 한 줄만 예외로 둘 때는 `// ignore: momeet_lints/<규칙>`을 쓴다. 플러그인 코드를 바꾸면 IDE의 분석 서버를 재시작해야 반영된다.
 
 ---

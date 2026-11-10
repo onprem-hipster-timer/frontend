@@ -95,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Tooling
 - Material·Cupertino 위젯을 `material_ui`·`cupertino_ui` 패키지에서 가져온다
 - 아키텍처 린트(`packages/momeet_lints`)를 새 analyzer 플러그인(`analysis_server_plugin`)으로 옮긴다. `dart analyze`와 IDE에서 함께 돌고, CI 분석 단계는 `dart analyze --fatal-infos`가 맡는다. `dart run custom_lint` 단계는 없앤다
-- 위젯 크기·구조 린트: 위젯·State 클래스 200줄, `build` 80줄, `lib/` 파일 400줄 상한, Widget을 돌려주는 helper 금지, `lib/shared/ui/`의 기능·Riverpod·go_router import 금지. 기존 위반은 `lint_baseline.txt`에 두고 늘지 않게 막는다
+- 위젯 크기·구조 린트: 위젯·State 클래스 200줄, `build` 80줄, `lib/` 파일 400줄 상한, Widget을 돌려주는 helper 금지, `lib/shared/ui/`의 기능·Riverpod·go_router import 금지. 기존 코드도 모두 이 규칙을 지킨다
 
 ### Added
 
