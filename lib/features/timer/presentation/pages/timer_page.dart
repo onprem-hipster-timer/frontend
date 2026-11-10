@@ -26,7 +26,18 @@ class _TimerPageState extends ConsumerState<TimerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dashboard = TimerDashboard(key: _dashboardKey);
+    final focus = ShellScope.compactOf(context);
+    final dashboard = TimerDashboard(
+      key: _dashboardKey,
+      focusLeading: const ShellMenuButton(),
+      focusActions: [
+        IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: '타이머 목록',
+          onPressed: () => _showHistorySheet(context),
+        ),
+      ],
+    );
 
     final lastError = ref.watch(timerWsLastErrorProvider);
 
@@ -45,47 +56,50 @@ class _TimerPageState extends ConsumerState<TimerPage> {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= timerWideLayoutMinWidth;
 
+        // 집중 보기는 앱바 없이 대시보드의 작업명 줄이 ☰와 목록 버튼을 맡는다
         return Scaffold(
-          appBar: AppBar(
-            leading: ShellScope.compactOf(context)
-                ? const ShellMenuButton()
-                : null,
-            title: const Text('타이머'),
-            elevation: 0,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            actions: [
-              if (!wide)
-                IconButton(
-                  icon: const Icon(Icons.history),
-                  tooltip: '타이머 목록',
-                  onPressed: () => _showHistorySheet(context),
+          appBar: focus
+              ? null
+              : AppBar(
+                  title: const Text('타이머'),
+                  elevation: 0,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  actions: [
+                    if (!wide)
+                      IconButton(
+                        icon: const Icon(Icons.history),
+                        tooltip: '타이머 목록',
+                        onPressed: () => _showHistorySheet(context),
+                      ),
+                  ],
                 ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: ErrorBanner(
-                  message: lastError?.message,
-                  onDismiss: () => ref
-                      .read(timerWsLastErrorProvider.notifier)
-                      .setError(null),
+          body: SafeArea(
+            // 집중 보기는 앱바가 없어 상태 표시줄 아래부터 그린다
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: ErrorBanner(
+                    message: lastError?.message,
+                    onDismiss: () => ref
+                        .read(timerWsLastErrorProvider.notifier)
+                        .setError(null),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: wide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(flex: 3, child: dashboard),
-                          const VerticalDivider(width: 1),
-                          const Expanded(flex: 2, child: TimerHistoryList()),
-                        ],
-                      )
-                    : dashboard,
-              ),
-            ],
+                Expanded(
+                  child: wide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(flex: 3, child: dashboard),
+                            const VerticalDivider(width: 1),
+                            const Expanded(flex: 2, child: TimerHistoryList()),
+                          ],
+                        )
+                      : dashboard,
+                ),
+              ],
+            ),
           ),
         );
       },

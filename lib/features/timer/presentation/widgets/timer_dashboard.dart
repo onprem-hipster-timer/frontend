@@ -12,6 +12,7 @@ import 'package:momeet/features/timer/presentation/utils/timer_actions.dart';
 import 'package:momeet/features/timer/presentation/widgets/current_task_display.dart';
 import 'package:momeet/features/timer/presentation/widgets/digital_clock.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_gallery.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_actions.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_controls.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_layout.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_model.dart';
@@ -31,7 +32,17 @@ const timerWideLayoutMinWidth = 600.0;
 /// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌거나 시계를 눌러 '시간 정하기'에서 각각의 시간을 초 단위로 고릅니다.
 /// 휴식은 서버에 보내지 않고 바로 시작합니다.
 class TimerDashboard extends ConsumerStatefulWidget {
-  const TimerDashboard({super.key});
+  const TimerDashboard({
+    super.key,
+    this.focusLeading,
+    this.focusActions = const [],
+  });
+
+  /// 집중 보기에서 작업명 줄 왼쪽에 두는 것(화면 이동 ☰ 등). 집중 보기는 앱바 없이 이 줄이 맨 위다
+  final Widget? focusLeading;
+
+  /// 집중 보기에서 작업명 줄 오른쪽에 두는 버튼들
+  final List<Widget> focusActions;
 
   @override
   ConsumerState<TimerDashboard> createState() => _TimerDashboardState();
@@ -64,7 +75,9 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final short = TimerDashboardLayout.isShort(constraints);
+        final focus = ShellScope.compactOf(context);
         final dial = _MainDial(
+          labels: !focus,
           model: model,
           pending: pending,
           color: dialColor,
@@ -84,40 +97,44 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
         );
         final gap = SizedBox(height: short ? 8 : 16);
         final caption = model.caption;
-        final focus = ShellScope.compactOf(context);
-
         return TimerDashboardLayout(
           constraints: constraints,
           dial: model.galleryShown
-              ? _ActiveTimersGallery(model: model, focusedDial: dial)
+              ? _ActiveTimersGallery(
+                  model: model,
+                  focusedDial: dial,
+                  labels: !focus,
+                )
               : dial,
           addTimer: model.onBreak || model.myTimers.isEmpty
               ? null
               : _AddTimerChip(initialDuration: _pendingDuration, icon: focus),
           header: _DashboardHeader(onBreak: model.onBreak, timer: activeTimer),
           focus: focus,
+          focusLeading: widget.focusLeading,
+          focusActions: widget.focusActions,
           clock: model.idle
               ? _EditableClock(clock: clock, onTap: _pickPendingDuration)
               : clock,
           controls: [
-            if (caption != null) _Caption(caption, alert: model.timeUp),
-            gap,
-            if (model.idle) ...[
-              _ModeToggle(
+            TimerDashboardActions(
+              caption: caption,
+              alert: model.timeUp,
+              gap: gap,
+              focus: focus,
+              breakSelected: model.idle ? _breakSelected : null,
+              onBreakSelected: (value) =>
+                  setState(() => _breakSelected = value),
+              controls: TimerDashboardControls(
+                onBreak: model.onBreak,
+                breakOver: model.breakOver,
+                activeTimer: activeTimer,
+                timeUp: model.timeUp,
                 breakSelected: _breakSelected,
-                onChanged: (value) => setState(() => _breakSelected = value),
+                breakBlocked: model.breakBlocked,
+                pendingDuration: _pendingDuration,
+                pendingBreakDuration: _pendingBreakDuration,
               ),
-              gap,
-            ],
-            TimerDashboardControls(
-              onBreak: model.onBreak,
-              breakOver: model.breakOver,
-              activeTimer: activeTimer,
-              timeUp: model.timeUp,
-              breakSelected: _breakSelected,
-              breakBlocked: model.breakBlocked,
-              pendingDuration: _pendingDuration,
-              pendingBreakDuration: _pendingBreakDuration,
             ),
           ],
         );
@@ -149,10 +166,17 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
 
 /// 활성 타이머마다 한 쪽씩 다이얼을 둔 갤러리. 보이는 쪽([focusedDial])의 타이머를 고른다
 class _ActiveTimersGallery extends ConsumerWidget {
-  const _ActiveTimersGallery({required this.model, required this.focusedDial});
+  const _ActiveTimersGallery({
+    required this.model,
+    required this.focusedDial,
+    required this.labels,
+  });
 
   final TimerDashboardModel model;
   final Widget focusedDial;
+
+  /// 다른 쪽 다이얼에도 눈금 숫자를 그릴지
+  final bool labels;
 
   /// 넓은 화면이나 웹·데스크톱이면 갤러리에 이전·다음 버튼을 둔다
   static bool _showArrows(BuildContext context) =>
@@ -181,6 +205,7 @@ class _ActiveTimersGallery extends ConsumerWidget {
         return TimerDial(
           remaining: displayRemaining(timer, now),
           face: dialFaceFor(Duration(seconds: timer.allocatedDuration)),
+          labels: labels,
           color: TimerDashboardModel.timerColor(
             colorScheme,
             timer,
@@ -195,6 +220,7 @@ class _ActiveTimersGallery extends ConsumerWidget {
 /// 큰 다이얼. 휴식·활성 타이머는 남은 시간을 보이고, 대기 중이면 끌어서 [pending] 시간을 고른다
 class _MainDial extends StatelessWidget {
   const _MainDial({
+    required this.labels,
     required this.model,
     required this.pending,
     required this.color,
@@ -206,6 +232,9 @@ class _MainDial extends StatelessWidget {
   final TimerDashboardModel model;
   final Duration pending;
   final Color color;
+
+  /// 눈금 숫자를 그릴지
+  final bool labels;
 
   /// 대기 중 다이얼을 스크린 리더가 읽는 이름
   final String label;
@@ -221,12 +250,14 @@ class _MainDial extends StatelessWidget {
         remaining: model.breakRemaining,
         face: dialFaceFor(breakSession.total),
         color: color,
+        labels: labels,
       );
     }
     if (activeTimer == null) {
       return TimerDial(
         remaining: pending,
         color: color,
+        labels: labels,
         label: label,
         onPreview: onPreview,
         onChanged: onChanged,
@@ -236,6 +267,7 @@ class _MainDial extends StatelessWidget {
       remaining: model.remaining,
       face: dialFaceFor(Duration(seconds: activeTimer.allocatedDuration)),
       color: color,
+      labels: labels,
     );
   }
 }
@@ -334,56 +366,6 @@ class _EditableClock extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// 다이얼 아래 상태 문구. [alert]면 오류색
-class _Caption extends StatelessWidget {
-  const _Caption(this.text, {required this.alert});
-
-  final String text;
-  final bool alert;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      text,
-      style: theme.textTheme.labelMedium?.copyWith(
-        color: alert
-            ? theme.colorScheme.error
-            : theme.colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-/// 대기 중 작업·휴식 고르기
-class _ModeToggle extends StatelessWidget {
-  const _ModeToggle({required this.breakSelected, required this.onChanged});
-
-  final bool breakSelected;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SegmentedButton<bool>(
-      segments: const [
-        ButtonSegment(
-          value: false,
-          label: Text('작업'),
-          icon: Icon(Icons.timer_outlined),
-        ),
-        ButtonSegment(
-          value: true,
-          label: Text('휴식'),
-          icon: Icon(Icons.coffee_outlined),
-        ),
-      ],
-      selected: {breakSelected},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) => onChanged(selection.single),
     );
   }
 }

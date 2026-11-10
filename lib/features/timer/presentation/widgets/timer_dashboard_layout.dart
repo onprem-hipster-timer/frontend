@@ -26,6 +26,8 @@ class TimerDashboardLayout extends StatelessWidget {
     required this.clock,
     required this.controls,
     this.focus = false,
+    this.focusLeading,
+    this.focusActions = const [],
   });
 
   final BoxConstraints constraints;
@@ -42,6 +44,10 @@ class TimerDashboardLayout extends StatelessWidget {
   /// 아주 작은 화면의 집중 보기. 시계를 다이얼 가운데에 겹치고 [addTimer]를 제목 옆에 둔다
   final bool focus;
 
+  /// 집중 보기의 작업명 줄 왼쪽·오른쪽에 두는 것
+  final Widget? focusLeading;
+  final List<Widget> focusActions;
+
   /// 칸이 낮은지. 낮으면 간격과 시계를 줄인다
   static bool isShort(BoxConstraints constraints) =>
       constraints.maxHeight < 400;
@@ -53,6 +59,8 @@ class TimerDashboardLayout extends StatelessWidget {
     final addTimer = this.addTimer;
     if (focus) {
       return _Focus(
+        leading: focusLeading,
+        actions: focusActions,
         dial: dial,
         clock: clock,
         addTimer: addTimer,
@@ -114,6 +122,8 @@ class TimerDashboardLayout extends StatelessWidget {
 /// 아주 작은 화면의 집중 보기. 제목 줄 옆에 [addTimer], 다이얼 가운데에 [clock], 아래에 [controls]
 class _Focus extends StatelessWidget {
   const _Focus({
+    required this.leading,
+    required this.actions,
     required this.dial,
     required this.clock,
     required this.addTimer,
@@ -122,6 +132,8 @@ class _Focus extends StatelessWidget {
     required this.controls,
   });
 
+  final Widget? leading;
+  final List<Widget> actions;
   final Widget dial;
   final Widget clock;
   final Widget? addTimer;
@@ -131,15 +143,29 @@ class _Focus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(child: header),
-              ?addTimer,
-            ],
+          // 작업명은 남은 시간보다 덜 눈에 띄게 한 단계 작게, 큰 글자 설정에서도 1.3배까지만 키운다
+          MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.3,
+            child: Theme(
+              data: theme.copyWith(
+                textTheme: theme.textTheme.copyWith(
+                  titleLarge: theme.textTheme.titleMedium,
+                ),
+              ),
+              child: Row(
+                children: [
+                  ?leading,
+                  Expanded(child: header),
+                  ?addTimer,
+                  ...actions,
+                ],
+              ),
+            ),
           ),
           gap,
           Expanded(
@@ -148,9 +174,9 @@ class _Focus extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   dial,
-                  // 다이얼 지름의 60% 안에서 눈금 숫자를 피하고, 바탕 판으로 가운데 점·부채꼴을 가린다
+                  // 다이얼 안쪽(긴 눈금 안) 지름의 72%까지 쓰고, 바탕 판으로 가운데 점·부채꼴을 가린다
                   SizedBox(
-                    width: constraints.biggest.shortestSide * 0.6,
+                    width: constraints.biggest.shortestSide * 0.72,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: Theme.of(
@@ -163,7 +189,8 @@ class _Focus extends StatelessWidget {
                           horizontal: 8,
                           vertical: 4,
                         ),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: clock),
+                        // 남은 시간이 화면의 첫 정보가 되게 판 폭에 맞춰 키운다
+                        child: FittedBox(child: clock),
                       ),
                     ),
                   ),
