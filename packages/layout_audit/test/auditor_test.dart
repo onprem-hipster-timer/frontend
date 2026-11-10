@@ -258,6 +258,34 @@ void main() {
     expect(auditLayout(tester), isEmpty);
   });
 
+  testWidgets('스크롤 영역 바깥 조상의 잘라내기로 잘린 글자도 잘라냄으로 보지 않는다', (tester) async {
+    await pumpInApp(
+      tester,
+      Align(
+        alignment: Alignment.topLeft,
+        child: ClipRect(
+          child: SizedBox(
+            width: 200,
+            height: 50,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (var i = 0; i < 6; i++) squareText('LINE$i'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final clipped = auditLayout(
+      tester,
+    ).where((f) => f.kind == LayoutFindingKind.clipped);
+
+    expect(clipped, isEmpty);
+  });
+
   testWidgets('WidgetSpan 안의 Text는 바깥 Text와 겹침으로 보지 않는다', (tester) async {
     await pumpInApp(
       tester,

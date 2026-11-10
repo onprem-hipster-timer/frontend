@@ -80,6 +80,8 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
   Rect? contentClipRect;
   RenderObject child = box;
   var parent = box.parent;
+  // 스크롤 영역 안의 글자는 그 바깥(시트 등)의 잘라내기도 굴리면 보이는 경계다.
+  var insideScroll = false;
   while (parent != null) {
     if (!parent.paintsChild(child)) {
       return null;
@@ -92,9 +94,12 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
       final clip = globalRect(parent, localClip);
       clipRect = clipRect?.intersect(clip) ?? clip;
       // SingleChildScrollView의 뷰포트는 RenderViewportBase가 아니라 인터페이스로 가른다.
-      if (parent is! RenderAbstractViewport) {
+      if (parent is! RenderAbstractViewport && !insideScroll) {
         contentClipRect = contentClipRect?.intersect(clip) ?? clip;
       }
+    }
+    if (parent is RenderAbstractViewport) {
+      insideScroll = true;
     }
     ancestors.add(parent);
     child = parent;
