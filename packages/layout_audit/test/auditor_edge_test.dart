@@ -62,7 +62,8 @@ void main() {
     expect(f.any((e) => e.message.contains('점검 실패')), isFalse);
   });
 
-  testWidgets('다이얼로그가 뒤 화면 글자를 덮는 것은 겹침이 아니다', (tester) async {
+  testWidgets('정책의 덮는 층(다이얼로그)이 뒤 화면 글자를 덮는 것은 겹침이 아니고, 정책이 없으면 본다',
+      (tester) async {
     await pumpInApp(
       tester,
       Builder(
@@ -83,6 +84,13 @@ void main() {
     await tester.pumpAndSettle();
     final f = auditLayout(tester);
     expect(ofKind(f, LayoutFindingKind.overlap), isEmpty);
+    expect(
+      ofKind(
+        auditLayout(tester, policy: const LayoutAuditPolicy()),
+        LayoutFindingKind.overlap,
+      ),
+      isNotEmpty,
+    );
   });
 
   testWidgets('within이 여러 요소에 매치돼도 발견을 중복 보고하지 않는다', (tester) async {

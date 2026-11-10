@@ -332,7 +332,8 @@ void main() {
     expect(overlap.message, contains('겹칩니다 (순서 불명)'));
   });
 
-  testWidgets('떠 있는 버튼이 목록 글자를 덮는 것은 겹침으로 보지 않는다', (tester) async {
+  testWidgets('정책의 떠 있는 위젯(버튼)이 목록 글자를 덮는 것은 겹침으로 보지 않고, 정책이 없으면 본다',
+      (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -355,9 +356,16 @@ void main() {
         .toList();
 
     expect(findings, isEmpty);
+    expect(
+      ofKind(
+        auditLayout(tester, policy: const LayoutAuditPolicy()),
+        LayoutFindingKind.overlap,
+      ),
+      isNotEmpty,
+    );
   });
 
-  testWidgets('열린 서랍이 뒤 화면 글자를 덮는 것은 겹침으로 보지 않는다', (tester) async {
+  testWidgets('정책의 떠 있는 위젯(서랍)이 뒤 화면 글자를 덮는 것은 겹침으로 보지 않는다', (tester) async {
     final scaffold = GlobalKey<ScaffoldState>();
     await tester.pumpWidget(
       MaterialApp(
@@ -403,12 +411,12 @@ void main() {
     );
   });
 
-  testWidgets('ignore로 의도한 겹침을 뺄 수 있다', (tester) async {
+  testWidgets('정책의 ignore로 의도한 겹침을 뺄 수 있다', (tester) async {
     await pumpInApp(tester, const OverlappingPair());
 
     final findings = auditLayout(
       tester,
-      options: LayoutAuditOptions(ignore: (f) => f.texts.contains('BBBB')),
+      policy: LayoutAuditPolicy(ignore: (f) => f.texts.contains('BBBB')),
     );
 
     expect(findings, isEmpty);

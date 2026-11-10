@@ -8,12 +8,14 @@ import 'format.dart';
 import 'auditor.dart';
 import 'finding.dart';
 import 'overflow_recorder.dart';
+import 'policy.dart';
 import 'report.dart';
 
 class LayoutAuditConfig {
   const LayoutAuditConfig({
     this.enabled = true,
     this.options = const LayoutAuditOptions(),
+    this.policy = const LayoutAuditPolicy(),
     this.skipTests,
     this.sink = const LayoutReportSink(),
     this.environment,
@@ -23,6 +25,9 @@ class LayoutAuditConfig {
   final bool enabled;
   final LayoutAuditOptions options;
 
+  /// 설계상 허용하는 배치. 자동 모드와 명시 모드(`testLayoutAudit`·`pumpAndAuditLayout`)가 같이 쓴다.
+  final LayoutAuditPolicy policy;
+
   /// 설명이 맞는 테스트는 감사하지 않는다.
   final RegExp? skipTests;
   final LayoutReportSink sink;
@@ -31,6 +36,12 @@ class LayoutAuditConfig {
   /// `LAYOUT_AUDIT_TEXT_SCALE`(예 `2.0`), `LAYOUT_AUDIT_VIEWPORT`(예 `320x568`,
   /// `320x568@2.0`처럼 기기 픽셀 비율을 붙일 수 있다)를 읽는다.
   final Map<String, String>? environment;
+}
+
+/// 설치된 [LayoutAuditBinding]의 정책. 바인딩이 없으면 예외 없는 정책.
+LayoutAuditPolicy currentLayoutAuditPolicy() {
+  final binding = LayoutAuditBinding._instance;
+  return binding == null ? const LayoutAuditPolicy() : binding.config.policy;
 }
 
 /// 모든 `testWidgets`가 끝날 때 화면에 남은 트리를 감사해 보고한다. 테스트를 실패시키지 않는다.
@@ -185,6 +196,7 @@ class LayoutAuditBinding extends AutomatedTestWidgetsFlutterBinding {
             [renderView],
             viewRect: Offset.zero & logical,
             options: config.options,
+            policy: config.policy,
           ),
         ],
       );

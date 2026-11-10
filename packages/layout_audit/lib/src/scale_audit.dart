@@ -4,9 +4,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'audit_support.dart';
+import 'binding.dart';
 import 'finding.dart';
 import 'format.dart';
 import 'leaf_geometry.dart';
+import 'policy.dart';
 import 'rect_math.dart';
 import 'source_location.dart';
 
@@ -36,7 +38,6 @@ class ScaleAuditOptions {
     this.groupHeightFraction = 1 / 3,
     this.inversionRatio = 1.1,
     this.edgeTolerance = 2.0,
-    this.ignore,
   });
 
   final bool enabled;
@@ -57,9 +58,6 @@ class ScaleAuditOptions {
   /// 잘림으로 보기 전에 허용하는 여유(px).
   final double edgeTolerance;
 
-  /// true를 돌려준 발견은 버린다.
-  final bool Function(LayoutFinding)? ignore;
-
   ScaleAuditOptions withUserTexts(List<String> texts) => ScaleAuditOptions(
         enabled: enabled,
         baseScale: baseScale,
@@ -67,7 +65,6 @@ class ScaleAuditOptions {
         groupHeightFraction: groupHeightFraction,
         inversionRatio: inversionRatio,
         edgeTolerance: edgeTolerance,
-        ignore: ignore,
       );
 }
 
@@ -148,11 +145,16 @@ ScaleSnapshot captureScaleSnapshot(
   Finder? within,
   Map<RenderObject, List<Rect>>? previousFrame,
   ScaleAuditOptions options = const ScaleAuditOptions(),
+  LayoutAuditPolicy? policy,
 }) {
+  final rules = policy ?? currentLayoutAuditPolicy();
   final view = auditViewRect(tester);
+  final unscaled = rules.isUnscaledText;
   final leaves = [
     for (final leaf in collectContentLeaves(auditRoots(tester, within), view))
-      if (leaf.box is RenderParagraph && !_isIcon(leaf.text)) leaf,
+      if (leaf.box is RenderParagraph &&
+          (unscaled == null || !unscaled(leaf.text)))
+        leaf,
   ]..sort(_readingOrder);
   final texts = _keyed(
     leaves,
@@ -161,7 +163,7 @@ ScaleSnapshot captureScaleSnapshot(
   );
   return ScaleSnapshot(
     texts: texts,
-    targets: _targets(tester, view),
+    targets: _targets(tester, view, rules),
     groups: _groups(leaves, texts, view, options),
   );
 }
@@ -171,6 +173,7 @@ List<LayoutFinding> compareScaleSnapshots(
   ScaleSnapshot base,
   ScaleSnapshot scaled, {
   ScaleAuditOptions options = const ScaleAuditOptions(),
+  LayoutAuditPolicy policy = const LayoutAuditPolicy(),
 }) {
   final findings = [
     ..._truncations(base, scaled, options),
@@ -178,7 +181,7 @@ List<LayoutFinding> compareScaleSnapshots(
     ..._unreachable(base, scaled),
     ..._inversions(base, scaled, options),
   ];
-  final ignore = options.ignore;
+  final ignore = policy.ignore;
   return [
     for (final finding in findings)
       if (ignore == null || !ignore(finding)) finding,
@@ -194,8 +197,9 @@ List<LayoutFinding>? recordScaleCase(
   String baselineKey,
   double textScale,
   ScaleSnapshot snapshot,
-  ScaleAuditOptions options,
-) {
+  ScaleAuditOptions options, {
+  LayoutAuditPolicy policy = const LayoutAuditPolicy(),
+}) {
   if (textScale == options.baseScale) {
     _baselines[baselineKey] = snapshot;
     return null;
@@ -204,15 +208,13 @@ List<LayoutFinding>? recordScaleCase(
   if (base == null || textScale < options.baseScale) {
     return null;
   }
-  return compareScaleSnapshots(base, snapshot, options: options);
+  return compareScaleSnapshots(
+    base,
+    snapshot,
+    options: options,
+    policy: policy,
+  );
 }
-
-/// 아이콘 글꼴의 글리프(사용자 정의 영역)만으로 된 문단. 아이콘은 글자 배율을 따르지 않는다.
-bool _isIcon(String text) =>
-    text.isNotEmpty &&
-    text.runes.every(
-      (r) => (r >= 0xE000 && r <= 0xF8FF) || r >= 0xF0000,
-    );
 
 int _readingOrder(ContentLeaf a, ContentLeaf b) {
   final ra = unionRect(a.rawBoxes);
@@ -325,7 +327,12 @@ Set<(String, String)> _groups(
   return groups;
 }
 
-List<ScaleTarget> _targets(WidgetTester tester, Rect view) {
+List<ScaleTarget> _targets(
+  WidgetTester tester,
+  Rect view,
+  LayoutAuditPolicy policy,
+) {
+  final backdrop = policy.isBackdrop;
   final roots = [
     for (final renderView in tester.binding.renderViews)
       if (renderView.owner?.semanticsOwner?.rootSemanticsNode case final root?)
@@ -343,10 +350,9 @@ List<ScaleTarget> _targets(WidgetTester tester, Rect view) {
           data.hasAction(SemanticsAction.scrollDown) ||
           data.hasAction(SemanticsAction.scrollLeft) ||
           data.hasAction(SemanticsAction.scrollRight);
-      // 눌러서 닫는 영역(시트·다이얼로그 뒤 장벽)은 버튼이 아니다.
       if (!node.isMergedIntoParent &&
           data.hasAction(SemanticsAction.tap) &&
-          !data.hasAction(SemanticsAction.dismiss)) {
+          (backdrop == null || !backdrop(data))) {
         final rect = _semanticsRect(node);
         found.add((
           node,

@@ -91,6 +91,7 @@ extension LayoutAuditTester on WidgetTester {
         auditCase.textScale,
         scaleSnapshot,
         scale,
+        policy: currentLayoutAuditPolicy(),
       );
       if (scaleFindings != null) {
         emitLayoutReport(

@@ -25,7 +25,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
 
 - 끄기: `LAYOUT_AUDIT=off fvm flutter test`
 - 특정 테스트 제외: `LayoutAuditConfig(skipTests: RegExp('…'))`
-- 의도된 겹침 무시: `LayoutAuditConfig(options: LayoutAuditOptions(ignore: (f) => f.insideStack))`
+- 설계상 허용하는 배치: `LayoutAuditConfig(policy: LayoutAuditPolicy(...))` 한 곳에서 정한다(아래 '예외 정책')
 - 스위트 전체를 다른 화면·배율로: `LAYOUT_AUDIT_VIEWPORT=320x568@2 LAYOUT_AUDIT_TEXT_SCALE=2.0 fvm flutter test` (기존 단언이 깨질 수 있다)
 
 ### 2. 명시 모드 — 위험한 위젯을 화면 크기 × 글자 배율 × 긴 텍스트로
@@ -79,10 +79,21 @@ testLayoutAudit(
 | 위계 역전 | 높이가 화면의 1/3 이하인 한 묶음(카드·행) 안에서 1.0배에 더 크던 글자가 큰 배율에서 더 작아짐(1.1배 이상 차이) | warning |
 
 - 1.0배 조합이 먼저 돌아야 비교한다. `LayoutAuditVariants`의 조합은 화면마다 1.0배가 먼저다.
-- 끄기·조정: `testLayoutAudit(..., scale: ScaleAuditOptions(enabled: false))`, `userTexts`·`groupHeightFraction`·`inversionRatio`·`ignore`
+- 끄기·조정: `testLayoutAudit(..., scale: ScaleAuditOptions(enabled: false))`, `userTexts`·`groupHeightFraction`·`inversionRatio`
 - 엄격: `--dart-define=LAYOUT_AUDIT_SCALE_STRICT=true`는 배율 비교 warning에서만 실패시킨다. `LAYOUT_AUDIT_STRICT`와 따로 켠다.
 
-## 엄격 모드
+## 예외 정책
+
+점검 코드는 예외를 갖지 않는다. 정책이 비어 있으면 떠 있는 버튼·서랍·다이얼로그가 덮는 것도, 아이콘·시트 뒤 장벽도 그대로 보고한다. 허용할 배치는 `LayoutAuditConfig(policy:)` 한 곳에서 정하고, 자동 모드와 명시 모드가 같이 쓴다. 호출마다 예외를 넣는 통로는 없다.
+
+| 필드 | 뜻 |
+|---|---|
+| `floatingWidgets` | 뒤 내용 위에 떠서 덮는 것이 설계인 위젯 타입 이름. 그 안의 글자가 낀 겹침을 보지 않는다 |
+| `coveringLayers` | 두 글자의 공통 조상이 이 render 타입이면 위층이 덮는 설계로 보고 겹침을 보지 않는다 |
+| `isUnscaledText` | 글자 배율을 따르지 않는 문단. 배율 비교에서 뺀다 |
+| `isBackdrop` | 누르기 동작이 있어도 버튼이 아닌 영역. 배율 밀려남에서 뺀다 |
+| `ignore` | 발견 하나하나에 불러 true면 버린다 |
+
 
 `fvm flutter test --dart-define=LAYOUT_AUDIT_STRICT=true` — warning이 있는 보고서는 테스트를 실패시킨다. notice·info는 실패시키지 않는다. 자동 모드는 항상 경고 전용이다.
 
@@ -92,8 +103,6 @@ testLayoutAudit(
 - `TextField`(`RenderEditable`)는 검사하지 않는다. 힌트·라벨이 입력 상자 위에 겹치는 것이 설계이기 때문이다.
 - 자동 모드는 한 프레임만 보므로 마퀴는 말줄임·잘라냄으로 나올 수 있다.
 - 캔버스에 직접 그린 글자(`CustomPaint`, 일부 서드파티 달력)는 리프가 아니라 검사 대상이 아니다.
-- 다이얼로그·시트가 뒤 화면을 덮는 것은 겹침으로 보지 않는다.
-- 떠 있는 버튼(FloatingActionButton)과 서랍(Drawer)이 그 아래 내용을 덮는 것도 겹침으로 보지 않는다. 목록 끝에 버튼 높이만큼 여백을 두었는지는 따로 확인한다.
 - 위아래는 그리는 순서로 정한다. 공통 조상이 자식을 목록 순서대로 그리는 위젯(Stack, Row·Column, Wrap, Overlay)일 때만 알 수 있고, ListTile·Chip처럼 칸으로 자식을 두는 위젯이나 스크롤 뷰포트, Flow 안의 겹침은 "순서 불명"으로 보고한다.
 
 ## 패키지 테스트

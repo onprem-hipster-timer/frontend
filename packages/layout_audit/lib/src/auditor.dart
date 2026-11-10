@@ -7,21 +7,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'format.dart';
 import 'finding.dart';
 import 'audit_support.dart';
+import 'binding.dart';
 import 'leaf_geometry.dart';
+import 'policy.dart';
 import 'rect_math.dart';
 import 'source_location.dart';
 
 class LayoutAuditOptions {
   const LayoutAuditOptions({
-    this.ignore,
     this.minOverlap = 2.0,
     this.coveredWarningRatio = 0.25,
     this.maxLeaves = 2000,
     this.edgeTolerance = 2.0,
   });
-
-  /// true를 돌려준 발견은 버린다. 묶기 전에 발견 하나하나에 불린다.
-  final bool Function(LayoutFinding)? ignore;
 
   /// 교차 영역의 가로·세로가 모두 이 값(px)을 넘어야 겹침이다.
   final double minOverlap;
@@ -39,17 +37,20 @@ class LayoutAuditOptions {
 /// 현재 화면(또는 [within] 아래)의 겹침·잘라냄·이탈·말줄임을 찾는다.
 ///
 /// [previousFrame]은 [snapshotLeafBoxes]로 직전 프레임에 찍어 둔 값이다.
+/// [policy]가 없으면 설치된 [LayoutAuditBinding]의 정책을 쓴다.
 List<LayoutFinding> auditLayout(
   WidgetTester tester, {
   Finder? within,
   LayoutAuditOptions options = const LayoutAuditOptions(),
   Map<RenderObject, List<Rect>>? previousFrame,
+  LayoutAuditPolicy? policy,
 }) {
   return auditRenderTree(
     auditRoots(tester, within),
     viewRect: auditViewRect(tester),
     options: options,
     previousFrame: previousFrame,
+    policy: policy ?? currentLayoutAuditPolicy(),
   );
 }
 
@@ -82,9 +83,10 @@ List<LayoutFinding> auditRenderTree(
   required Rect viewRect,
   LayoutAuditOptions options = const LayoutAuditOptions(),
   Map<RenderObject, List<Rect>>? previousFrame,
+  LayoutAuditPolicy policy = const LayoutAuditPolicy(),
 }) {
   try {
-    return _Audit(viewRect, options, previousFrame).run(roots);
+    return _Audit(viewRect, options, previousFrame, policy).run(roots);
   } on Object catch (error) {
     return [LayoutFinding.auditFailed(error)];
   }
@@ -98,10 +100,11 @@ class _Raw {
 }
 
 class _Audit {
-  _Audit(this.viewRect, this.options, this.previousFrame);
+  _Audit(this.viewRect, this.options, this.previousFrame, this.policy);
 
   final Rect viewRect;
   final LayoutAuditOptions options;
+  final LayoutAuditPolicy policy;
   final Map<RenderObject, List<Rect>>? previousFrame;
 
   final Set<RenderBox> _moving = {};
@@ -134,7 +137,7 @@ class _Audit {
         else
           r.finding,
     ];
-    final ignore = options.ignore;
+    final ignore = policy.ignore;
     return _group([
       for (final finding in findings)
         if (ignore == null || !ignore(finding)) finding,
@@ -210,8 +213,7 @@ class _Audit {
   }
 
   LayoutFinding? _overlap(ContentLeaf a, ContentLeaf b) {
-    // 떠 있는 버튼(FAB)·서랍이 뒤 내용 위에 뜨는 것은 설계다. 목록 끝 여백으로 가린 줄을 꺼낸다.
-    if (_insideFloatingLayer(a.box) || _insideFloatingLayer(b.box)) {
+    if (_insideFloating(a.box) || _insideFloating(b.box)) {
       return null;
     }
     final intersections = <Rect>[
@@ -246,8 +248,8 @@ class _Audit {
     final ancestorsOfSecond = {second.box, ...second.ancestors};
     final lcaIndex = chainFirst.indexWhere(ancestorsOfSecond.contains);
     final lca = lcaIndex < 0 ? null : chainFirst[lcaIndex];
-    // Overlay 위 라우트(다이얼로그·시트)가 뒤 화면을 덮는 것은 설계다.
-    if (lca != null && lca.runtimeType.toString() == '_RenderTheater') {
+    if (lca != null &&
+        policy.coveringLayers.contains(lca.runtimeType.toString())) {
       return null;
     }
     final insideStack = lca is RenderStack;
@@ -421,25 +423,31 @@ bool _paintsChildrenInOrder(RenderObject object) =>
     object is! RenderViewportBase &&
     object is! RenderFlow;
 
-final Expando<bool> _floatingCache = Expando<bool>('layout_audit floating');
+/// 정책의 떠 있는 위젯마다, render 객체가 그 안에 있는지 기억해 둔다.
+final Expando<Map<Set<String>, bool>> _floatingCache =
+    Expando<Map<Set<String>, bool>>(
+  'layout_audit floating',
+);
 
-/// 뒤 내용 위에 떠서 덮는 것이 설계인 위젯
-const _floatingLayers = {'FloatingActionButton', 'Drawer', 'NavigationDrawer'};
-
-/// [box]를 만든 위젯 사슬에 [_floatingLayers] 중 하나가 있는지.
-///
-/// material 패키지가 여럿일 수 있어(Flutter·material_ui) 타입 이름으로 본다.
-bool _insideFloatingLayer(RenderObject box) => _floatingCache[box] ??= () {
+extension on _Audit {
+  /// [box]를 만든 위젯 사슬에 [LayoutAuditPolicy.floatingWidgets] 중 하나가 있는지.
+  ///
+  /// material 패키지가 여럿일 수 있어(Flutter·material_ui) 타입 이름으로 본다.
+  bool _insideFloating(RenderObject box) {
+    final names = policy.floatingWidgets;
+    if (names.isEmpty) return false;
+    final cache = _floatingCache[box] ??= Map.identity();
+    return cache[names] ??= () {
       final creator = box.debugCreator;
       if (creator is! DebugCreator) return false;
-      var found = _floatingLayers.contains(
-        creator.element.widget.runtimeType.toString(),
-      );
+      var found = names.contains(creator.element.widget.runtimeType.toString());
       creator.element.visitAncestorElements((element) {
-        if (_floatingLayers.contains(element.widget.runtimeType.toString())) {
+        if (names.contains(element.widget.runtimeType.toString())) {
           found = true;
         }
         return !found;
       });
       return found;
     }();
+  }
+}

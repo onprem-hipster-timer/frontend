@@ -324,7 +324,7 @@ void main() {
       );
     });
 
-    testWidgets('시트 뒤 배경(눌러서 닫는 장벽)은 버튼으로 보지 않는다', (tester) async {
+    testWidgets('정책의 버튼 아닌 영역(눌러서 닫는 장벽)은 버튼으로 보지 않는다', (tester) async {
       final found = await compareScales(
         tester,
         'pushed-barrier',
@@ -390,7 +390,7 @@ void main() {
       expect(ofKind(found, LayoutFindingKind.scaleInversion), isEmpty);
     });
 
-    testWidgets('배율을 따르지 않는 아이콘은 글자와 비교하지 않는다', (tester) async {
+    testWidgets('정책의 배율을 따르지 않는 글자(아이콘)는 글자와 비교하지 않는다', (tester) async {
       final found = await compareScales(
         tester,
         'inversion-icon',
@@ -432,6 +432,33 @@ void main() {
 
       expect(ofKind(found, LayoutFindingKind.scaleInversion), isEmpty);
     });
+  });
+
+  testWidgets('정책이 없으면 아이콘도 글자로 세고 장벽도 버튼으로 센다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              const Icon(IconData(0xe000)),
+              SizedBox(
+                height: 100,
+                child: ModalBarrier(semanticsLabel: '닫기', onDismiss: () {}),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final none =
+        captureScaleSnapshot(tester, policy: const LayoutAuditPolicy());
+    final ruled = captureScaleSnapshot(tester);
+
+    expect(none.texts.length, greaterThan(ruled.texts.length));
+    expect(none.targets.length, greaterThan(ruled.targets.length));
+    semantics.dispose();
   });
 
   group('기존 점검과 따로 동작한다', () {
