@@ -304,6 +304,31 @@ void main() {
     expect(overlap.message, contains('겹칩니다 (순서 불명)'));
   });
 
+  testWidgets('떠 있는 버튼이 목록 글자를 덮는 것은 겹침으로 보지 않는다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ListView(
+            children: [
+              for (var i = 0; i < 40; i++)
+                Text('항목 $i ' * 20, maxLines: 1, softWrap: false),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {},
+            label: const Text('새 항목 만들기'),
+          ),
+        ),
+      ),
+    );
+
+    final findings = auditLayout(tester)
+        .where((f) => f.kind == LayoutFindingKind.overlap)
+        .toList();
+
+    expect(findings, isEmpty);
+  });
+
   testWidgets('within 밖의 겹침은 보고하지 않는다', (tester) async {
     const inside = Key('inside');
     await pumpInApp(
