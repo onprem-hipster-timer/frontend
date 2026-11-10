@@ -82,10 +82,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 직접 고른 수도 칸에 들어가는 수까지만 쓴다
-        final fits = _autoEventsPerDay(context, constraints);
-        final chosen = settings.monthEventsPerDay;
-        final eventsPerDay = chosen == null || chosen > fits ? fits : chosen;
+        final eventsPerDay = _eventsPerDay(context, constraints, settings);
         return Stack(
           children: [
             SfCalendar(
@@ -146,6 +143,17 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       ..view = settings.viewType.toSfCalendarView()
       ..selectedDate = settings.selectedDate
       ..displayDate = settings.displayDate;
+  }
+
+  /// 월 보기 칸 하나에 보일 일정 수. 직접 고른 수도 칸에 들어가는 수까지만 쓴다
+  int _eventsPerDay(
+    BuildContext context,
+    BoxConstraints constraints,
+    CalendarSettingsState settings,
+  ) {
+    final fits = _autoEventsPerDay(context, constraints);
+    final chosen = settings.monthEventsPerDay;
+    return chosen == null || chosen > fits ? fits : chosen;
   }
 
   /// 월 보기 칸 높이에 맞는 일정 수. 위쪽 요일 줄을 뺀 높이를 주 수로 나눠 칸 높이를 구한다
