@@ -17,3 +17,7 @@ bool isWidgetType(DartType? type) =>
 bool isWidgetOrStateClass(InterfaceElement? element) =>
     element != null &&
     (_isOrExtends(element, 'Widget') || _isOrExtends(element, 'State'));
+
+/// 위젯 클래스(State 제외)인지.
+bool isWidgetClass(InterfaceElement? element) =>
+    element != null && _isOrExtends(element, 'Widget');

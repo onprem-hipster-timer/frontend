@@ -166,6 +166,13 @@ Rules enforced:
 | `max_file_lines` | Files in `lib/` are at most 400 lines |
 | `no_widget_helper_methods` | Use widget classes instead of methods, getters, or top-level functions that return a Widget (`build`, `@override`, abstract declarations, local functions, and builder callbacks are exempt) |
 | `shared_ui_import_boundary` | `lib/shared/ui/` does not import `features/`, Riverpod, or go_router |
+| `no_raw_flutter_overlays` | Outside `lib/shared/ui/`, do not call Flutter's `show…` functions or methods (sheets, dialogs, snack bars, date and time pickers) directly. Use a `showApp…` function, and add one to `lib/shared/ui/` if none exists |
+| `one_public_widget_per_file` | A file in `lib/` declares at most one public widget class |
+| `duplicate_widget_tree` | When the same widget tree shape (30+ nodes) appears twice in one file, extract one widget class |
+| `no_hardcoded_colors` | No Material named colors (`Colors.blue`, …) outside `lib/shared/ui/theme/` (transparent, white, black, and grey are allowed) |
+| `unused_consumer_ref` | A `ConsumerWidget` or `ConsumerState` that never uses `ref` should be a `StatelessWidget` or `State` |
+| `prefer_media_query_aspect` | Use aspect accessors such as `MediaQuery.sizeOf(context)` instead of `MediaQuery.of(context).size` |
+| `prefer_when_or_null` | A `when` whose `loading` and `error` only return `null` should be `whenOrNull(data: …)` |
 
 > To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
 

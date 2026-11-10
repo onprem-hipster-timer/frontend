@@ -166,6 +166,13 @@ cd packages/momeet_lints && fvm dart test
 | `max_file_lines` | `lib/` 파일은 400줄 이하 |
 | `no_widget_helper_methods` | Widget을 돌려주는 메서드·getter·최상위 함수 대신 위젯 클래스 사용(`build`, `@override`, 추상 선언, 지역 함수·builder 콜백 제외) |
 | `shared_ui_import_boundary` | `lib/shared/ui/`는 `features/`, Riverpod, go_router를 가져오지 않음 |
+| `no_raw_flutter_overlays` | `lib/shared/ui/` 밖에서 Flutter의 `show…` 함수·메서드(시트·다이얼로그·알림·날짜·시각 고르기) 직접 호출 금지. `showApp…`을 쓰고, 없으면 `lib/shared/ui/`에 만든다 |
+| `one_public_widget_per_file` | `lib/` 파일 하나에 공개 위젯 클래스는 하나 |
+| `duplicate_widget_tree` | 한 파일 안에 같은 모양의 위젯 트리(노드 30개 이상)가 두 번 이상 나오면 위젯 클래스 하나로 모은다 |
+| `no_hardcoded_colors` | `lib/shared/ui/theme/` 밖에서 Material 이름 색(`Colors.blue` 등) 금지(투명·흰·검정·회색 제외) |
+| `unused_consumer_ref` | `ref`를 쓰지 않는 `ConsumerWidget`·`ConsumerState`는 `StatelessWidget`·`State`로 |
+| `prefer_media_query_aspect` | `MediaQuery.of(context).size` 대신 `MediaQuery.sizeOf(context)` 같은 개별 접근자 |
+| `prefer_when_or_null` | `loading`·`error`가 `null`만 돌려주는 `when`은 `whenOrNull(data: …)` |
 
 > 한 줄만 예외로 둘 때는 `// ignore: momeet_lints/<규칙>`을 쓴다. 플러그인 코드를 바꾸면 IDE의 분석 서버를 재시작해야 반영된다.
 
