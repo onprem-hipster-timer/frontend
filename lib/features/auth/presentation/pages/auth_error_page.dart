@@ -16,7 +16,8 @@ class AuthErrorPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('인증 오류')),
       body: Center(
-        child: Padding(
+        // 낮은 화면·큰 글자에서는 굴린다
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
