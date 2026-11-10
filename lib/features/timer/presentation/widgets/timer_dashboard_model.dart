@@ -23,11 +23,7 @@ class TimerDashboardModel {
   factory TimerDashboardModel.watch(WidgetRef ref) {
     final activeTimer = ref
         .watch(activeTimerProvider)
-        .when(
-          data: (timer) => timer,
-          loading: () => null,
-          error: (_, _) => null,
-        );
+        .whenOrNull(data: (timer) => timer);
     final now = ref.watch(serverClockProvider).now();
     final computed = activeTimer == null
         ? Duration.zero

@@ -156,13 +156,15 @@ class _OverlayNoticeState extends State<_OverlayNotice>
     final theme = Theme.of(context);
     final (background, foreground) = _colors(context, widget.kind);
     final textColor = foreground ?? theme.colorScheme.onInverseSurface;
-    final media = MediaQuery.of(context);
     final actionLabel = widget.actionLabel;
     final onAction = widget.onAction;
     return Positioned(
       left: 16,
       right: 16,
-      bottom: 16 + media.viewInsets.bottom + media.padding.bottom,
+      bottom:
+          16 +
+          MediaQuery.viewInsetsOf(context).bottom +
+          MediaQuery.paddingOf(context).bottom,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) =>

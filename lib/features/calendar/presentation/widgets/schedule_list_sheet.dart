@@ -75,7 +75,7 @@ class ScheduleListSheet extends StatelessWidget {
         ),
 
         // 안전 영역
-        SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+        SizedBox(height: MediaQuery.paddingOf(context).bottom + 16),
       ],
     );
   }

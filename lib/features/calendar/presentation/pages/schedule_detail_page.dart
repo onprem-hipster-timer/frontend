@@ -204,6 +204,14 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   }
 }
 
+/// 상세 화면의 넓은 버튼 공통 모양
+final _actionButtonStyle = ButtonStyle(
+  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 12)),
+  shape: WidgetStatePropertyAll(
+    RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+  ),
+);
+
 /// 일정 제목 줄
 class _ScheduleTitle extends StatelessWidget {
   const _ScheduleTitle({required this.title});
@@ -256,10 +264,7 @@ class _TodoConversionButton extends StatelessWidget {
           onPressed: onOpenLinked,
           icon: const Icon(Icons.link),
           label: const Text('연결된 TODO 보기'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-          ),
+          style: _actionButtonStyle,
         ),
       );
     }
@@ -268,10 +273,7 @@ class _TodoConversionButton extends StatelessWidget {
       width: double.infinity,
       child: FilledButton.tonal(
         onPressed: onConvert,
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-        ),
+        style: _actionButtonStyle,
         child: converting
             ? const SizedBox(
                 width: 16,
@@ -312,10 +314,7 @@ class _EditDeleteButtons extends StatelessWidget {
             onPressed: onEdit,
             icon: const Icon(Icons.edit),
             label: const Text('수정'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-            ),
+            style: _actionButtonStyle,
           ),
         ),
         const SizedBox(width: 12),
@@ -330,11 +329,13 @@ class _EditDeleteButtons extends StatelessWidget {
                   )
                 : const Icon(Icons.delete),
             label: Text(deleting ? '삭제 중...' : '삭제'),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+            style: _actionButtonStyle.copyWith(
+              backgroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.error,
+              ),
+              foregroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.onError,
+              ),
             ),
           ),
         ),

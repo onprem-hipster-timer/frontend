@@ -101,11 +101,7 @@ class TimerDashboardControls extends ConsumerWidget {
   Future<void> _stop(BuildContext context, WidgetRef ref) async {
     final activeTimer = ref
         .read(activeTimerProvider)
-        .when(
-          data: (timer) => timer,
-          loading: () => null,
-          error: (_, _) => null,
-        );
+        .whenOrNull(data: (timer) => timer);
 
     if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
       ref.invalidate(myActiveTimersProvider);

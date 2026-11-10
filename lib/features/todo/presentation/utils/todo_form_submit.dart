@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_dialog.dart';
@@ -14,12 +15,7 @@ TodoStatus? todoStatusForRequest(TodoStatus selected) =>
 
 /// 마감일 고르기. 고르지 않고 닫으면 null
 Future<DateTime?> pickTodoDeadline(BuildContext context, DateTime? current) {
-  return showDatePicker(
-    context: context,
-    initialDate: current ?? DateTime.now(),
-    firstDate: DateTime.now().subtract(const Duration(days: 365)),
-    lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-  );
+  return showAppDatePicker(context, initial: current ?? DateTime.now());
 }
 
 /// 할 일 폼에서 고른 값. [description]이 비었으면 설명이 없다

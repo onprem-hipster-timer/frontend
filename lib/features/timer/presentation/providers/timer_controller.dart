@@ -204,9 +204,8 @@ class TimerController extends _$TimerController {
     await resumeTimer(timerId: id);
   }
 
-  TimerRead? _active() => ref
-      .read(activeTimerProvider)
-      .when(data: (timer) => timer, loading: () => null, error: (_, _) => null);
+  TimerRead? _active() =>
+      ref.read(activeTimerProvider).whenOrNull(data: (timer) => timer);
 
   /// 타이머 ID별 응답을 기다리는 명령. 응답·실패를 받으면 끝난다. 같은 타이머에 겹친 명령은 보내지 않는다
   final _inFlight = <String, Future<void>>{};

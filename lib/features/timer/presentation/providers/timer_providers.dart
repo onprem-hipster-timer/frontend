@@ -376,11 +376,7 @@ Stream<Duration> timerTicker(Ref ref) async* {
   final clock = ref.watch(serverClockProvider);
 
   await for (final _ in Stream.periodic(const Duration(seconds: 1))) {
-    final activeTimer = activeTimerAsync.when(
-      data: (timer) => timer,
-      loading: () => null,
-      error: (error, stack) => null,
-    );
+    final activeTimer = activeTimerAsync.whenOrNull(data: (timer) => timer);
 
     yield activeTimer == null
         ? Duration.zero

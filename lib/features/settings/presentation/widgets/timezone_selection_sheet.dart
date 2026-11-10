@@ -56,7 +56,7 @@ class _TimezoneSelectionSheetState
         ref.watch(timezoneProvider).value ?? defaultTimezone;
 
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.7,
+      height: MediaQuery.sizeOf(context).height * 0.7,
       child: Column(
         children: [
           const _SheetHeader(),
@@ -112,7 +112,7 @@ class _TimezoneSelectionSheetState
           ),
 
           // 하단 여백 (안전 영역)
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          SizedBox(height: MediaQuery.paddingOf(context).bottom),
         ],
       ),
     );

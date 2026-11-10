@@ -4,6 +4,7 @@ import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
     as fmt;
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// ScheduleRead를 Syncfusion Calendar의 Appointment로 매핑하는 DataSource
 ///
@@ -49,9 +50,10 @@ class ScheduleCalendarDataSource extends CalendarDataSource {
 
     // 상태에 따른 기본 색상
     return switch (schedule.state) {
-      ScheduleState.confirmed => Colors.blue,
-      ScheduleState.cancelled => Colors.grey,
-      ScheduleState.planned || ScheduleState.$unknown => Colors.teal,
+      ScheduleState.confirmed => ScheduleStateColors.confirmed,
+      ScheduleState.cancelled => ScheduleStateColors.cancelled,
+      ScheduleState.planned ||
+      ScheduleState.$unknown => ScheduleStateColors.planned,
     };
   }
 

@@ -87,26 +87,16 @@ class ScheduleTimeRangeFields extends StatelessWidget {
 
   Future<void> _pick(BuildContext context, {required bool isStart}) async {
     final current = isStart ? value.start : value.end;
-    final date = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      locale: const Locale('ko'),
-    );
+    final date = await showAppDatePicker(context, initial: current);
     if (date == null || !context.mounted) return;
 
     final DateTime picked;
     if (value.allDay) {
       picked = isStart ? _startOfDay(date) : _endOfDay(date);
     } else {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(current),
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        ),
+      final time = await showAppTimePicker(
+        context,
+        initial: TimeOfDay.fromDateTime(current),
       );
       if (time == null || !context.mounted) return;
       picked = DateTime(

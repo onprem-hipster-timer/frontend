@@ -169,12 +169,11 @@ class _CalendarToolbar extends ConsumerWidget {
 
   Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
     final settings = ref.read(calendarSettingsProvider);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: settings.selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      locale: const Locale('ko', 'KR'),
+    final picked = await showAppDatePicker(
+      context,
+      initial: settings.selectedDate,
+      first: DateTime(2000),
+      last: DateTime(2100),
     );
     if (picked != null) {
       ref.read(calendarSettingsProvider.notifier).goToDate(picked);
