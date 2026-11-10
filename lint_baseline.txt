@@ -63,7 +63,6 @@ no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.da
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildColorPicker -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildNameField -
-no_widget_helper_methods lib/features/timer/presentation/pages/timer_page.dart _TimerHistoryListState._buildHistoryList -
 no_widget_helper_methods lib/features/todo/presentation/pages/tag_group_selector_page.dart TagGroupSelectorPage._buildTagGroupGrid -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_dashboard_page.dart TodoDashboardPage._buildGroupGrid -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildAppBar -

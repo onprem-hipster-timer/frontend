@@ -1143,7 +1143,10 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
                             title: '타이머가 없습니다',
                             message: '새 작업을 시작해보세요',
                           )
-                        : _buildHistoryList(context, timers),
+                        : _TimerHistoryByDate(
+                            timers: timers,
+                            controller: widget.scrollController,
+                          ),
                     loading: () => const AppLoading(),
                     error: (error, stack) =>
                         AppErrorState(title: '히스토리를 불러올 수 없습니다', error: error),
@@ -1153,8 +1156,17 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
       ),
     );
   }
+}
 
-  Widget _buildHistoryList(BuildContext context, List<TimerRead> timers) {
+/// 날짜별로 묶은 타이머 기록 목록
+class _TimerHistoryByDate extends StatelessWidget {
+  const _TimerHistoryByDate({required this.timers, this.controller});
+
+  final List<TimerRead> timers;
+  final ScrollController? controller;
+
+  @override
+  Widget build(BuildContext context) {
     // 날짜별로 그룹화
     final groupedTimers = <String, List<TimerRead>>{};
     for (final timer in timers) {
@@ -1163,7 +1175,7 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
     }
 
     return ListView.builder(
-      controller: widget.scrollController,
+      controller: controller,
       itemCount: groupedTimers.length,
       itemBuilder: (context, index) {
         final date = groupedTimers.keys.elementAt(index);
