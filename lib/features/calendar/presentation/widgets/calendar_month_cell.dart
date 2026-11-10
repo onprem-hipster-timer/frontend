@@ -47,24 +47,28 @@ class CalendarMonthCell extends ConsumerWidget {
             ? colorScheme.primary.withValues(alpha: 0.1)
             : colorScheme.surface,
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 4,
-            top: 4,
-            child: _DayNumber(
-              day: date.day,
-              isToday: isToday,
-              color: dateStyle.color,
-              weight: dateStyle.weight,
+      // 날짜 숫자와 공휴일 이름을 한 줄에 둔다. 이름이 길면 줄여 숫자를 가리지 않는다
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 좁은 칸·큰 글자에서는 숫자를 칸 폭에 맞춰 줄인다
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.topLeft,
+                child: _DayNumber(
+                  day: date.day,
+                  isToday: isToday,
+                  color: dateStyle.color,
+                  weight: dateStyle.weight,
+                ),
+              ),
             ),
-          ),
-          if (holiday != null)
-            Positioned(
-              right: 4,
-              top: 4,
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 60),
+            if (holiday != null) ...[
+              const SizedBox(width: 4),
+              Expanded(
                 child: Text(
                   holiday.dateName,
                   style: TextStyle(
@@ -72,13 +76,14 @@ class CalendarMonthCell extends ConsumerWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
                 ),
               ),
-            ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }
