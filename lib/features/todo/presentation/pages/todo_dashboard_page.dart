@@ -87,12 +87,7 @@ class _GroupGrid extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
-            ),
+            gridDelegate: TodoGroupCard.gridDelegate(context),
             delegate: SliverChildBuilderDelegate((context, index) {
               final group = todoGroups[index];
               return TodoGroupCard(

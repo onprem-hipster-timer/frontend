@@ -105,12 +105,7 @@ class _TagGroupGrid extends StatelessWidget {
           // 그리드 뷰
           Expanded(
             child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.2,
-              ),
+              gridDelegate: TodoGroupCard.gridDelegate(context),
               itemCount: tagGroups.length + 1,
               itemBuilder: (context, index) {
                 if (index == tagGroups.length) return const _NewGroupCard();
