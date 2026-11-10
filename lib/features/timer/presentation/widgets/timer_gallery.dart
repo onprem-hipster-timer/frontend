@@ -120,7 +120,6 @@ class _TimerGalleryState extends State<TimerGallery> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final timers = widget.timers;
     final index = _focusedIndex;
 
@@ -166,30 +165,7 @@ class _TimerGalleryState extends State<TimerGallery> {
                     tooltip: '이전 타이머',
                     onPressed: index > 0 ? () => _go(index - 1) : null,
                   ),
-                Semantics(
-                  key: const ValueKey('timer-gallery-indicator'),
-                  container: true,
-                  label: '타이머 ${index + 1}/${timers.length}',
-                  child: ExcludeSemantics(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < timers.length; i++)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: i == index
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+                _PageDots(count: timers.length, current: index),
                 if (widget.arrows)
                   IconButton(
                     icon: const Icon(Icons.chevron_right),
@@ -200,6 +176,43 @@ class _TimerGalleryState extends State<TimerGallery> {
                   ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 지금 쪽을 강조한 쪽 표시 점. 스크린 리더에는 'n/전체'로 읽힌다
+class _PageDots extends StatelessWidget {
+  const _PageDots({required this.count, required this.current});
+
+  final int count;
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      key: const ValueKey('timer-gallery-indicator'),
+      container: true,
+      label: '타이머 ${current + 1}/$count',
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < count; i++)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == current
+                      ? colorScheme.primary
+                      : colorScheme.outlineVariant,
+                ),
+              ),
           ],
         ),
       ),
