@@ -43,18 +43,37 @@ void main() {
     expect(find.textContaining('안건'), findsNothing);
   });
 
-  testWidgets('일·주 보기는 블록이 높을수록 시간과 설명을 더 보인다', (tester) async {
+  testWidgets('일·주 보기는 들어가는 만큼만 시간과 설명 줄을 더 보인다', (tester) async {
     await _pump(tester, CalendarViewType.week, height: 45);
     expect(find.text('회의'), findsOneWidget);
     expect(find.textContaining(' - '), findsNothing);
 
-    await _pump(tester, CalendarViewType.week, height: 60);
+    await _pump(tester, CalendarViewType.week, height: 56);
     expect(find.textContaining(' - '), findsOneWidget);
     expect(find.text('안건 정리'), findsNothing);
 
     await _pump(tester, CalendarViewType.day, height: 80);
     expect(find.textContaining(' - '), findsOneWidget);
     expect(find.text('안건 정리'), findsOneWidget);
+  });
+
+  testWidgets('글자가 크면 같은 높이에서도 줄을 덜 보이고 넘치지 않는다', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(tester, CalendarViewType.day, height: 80);
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('회의'), findsOneWidget);
+    expect(find.text('안건 정리'), findsNothing);
+  });
+
+  testWidgets('제목 한 줄보다 낮은 블록도 넘침 오류 없이 제목을 둔다', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(tester, CalendarViewType.week, height: 12);
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('회의'), findsOneWidget);
   });
 
   testWidgets('설명이 비었으면 높은 블록에서도 설명 줄을 두지 않는다', (tester) async {
