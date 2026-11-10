@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'format.dart';
 import 'finding.dart';
+import 'audit_support.dart';
 import 'leaf_geometry.dart';
 import 'rect_math.dart';
 import 'source_location.dart';
@@ -45,8 +46,8 @@ List<LayoutFinding> auditLayout(
   Map<RenderObject, List<Rect>>? previousFrame,
 }) {
   return auditRenderTree(
-    _roots(tester, within),
-    viewRect: _viewRect(tester),
+    auditRoots(tester, within),
+    viewRect: auditViewRect(tester),
     options: options,
     previousFrame: previousFrame,
   );
@@ -60,8 +61,8 @@ Map<RenderObject, List<Rect>> snapshotLeafBoxes(
   try {
     return {
       for (final leaf in collectContentLeaves(
-        _roots(tester, within),
-        _viewRect(tester),
+        auditRoots(tester, within),
+        auditViewRect(tester),
       ))
         leaf.box: leaf.rawBoxes,
     };
@@ -70,21 +71,6 @@ Map<RenderObject, List<Rect>> snapshotLeafBoxes(
     return const {};
   }
 }
-
-Iterable<RenderObject> _roots(WidgetTester tester, Finder? within) {
-  if (within == null) {
-    return tester.binding.renderViews;
-  }
-  // 레이아웃이 중단된 트리에서는 파인더 평가가 던질 수 있다. 그때는 전체를 본다.
-  try {
-    return tester.renderObjectList(within).toList();
-  } on Object {
-    return tester.binding.renderViews;
-  }
-}
-
-Rect _viewRect(WidgetTester tester) =>
-    Offset.zero & (tester.view.physicalSize / tester.view.devicePixelRatio);
 
 /// [auditLayout]의 WidgetTester 없는 형태. 예외를 던지지 않고 info 발견으로 돌려준다.
 ///
@@ -182,7 +168,7 @@ class _Audit {
             kind: LayoutFindingKind.moving,
             severity: LayoutSeverity.notice,
             message:
-                '[이동] ${_describe(leaf)} 프레임 사이에 ${formatPx(shift)}px 이동했습니다',
+                '[이동] ${describeLeaf(leaf)} 프레임 사이에 ${formatPx(shift)}px 이동했습니다',
             rects: [unionRect(leaf.rawBoxes)],
             locations: [sourceLocationOf(leaf.box)],
             texts: [leaf.text],
@@ -273,8 +259,8 @@ class _Audit {
       if (insideStack) 'Stack 안',
     ].join(', ');
     final body = top != null
-        ? '${_describe(first)}이 ${_describe(second)}을 ${(fraction * 100).round()}% 가립니다'
-        : "${_describe(first)}와 ${_describe(second)}가 ${formatPx(focus.width)}x${formatPx(focus.height)} 겹칩니다 (순서 불명)";
+        ? '${describeLeaf(first)}이 ${describeLeaf(second)}을 ${(fraction * 100).round()}% 가립니다'
+        : "${describeLeaf(first)}와 ${describeLeaf(second)}가 ${formatPx(focus.width)}x${formatPx(focus.height)} 겹칩니다 (순서 불명)";
     return LayoutFinding(
       kind: LayoutFindingKind.overlap,
       severity: severity,
@@ -370,7 +356,7 @@ class _Audit {
         add(
           LayoutFindingKind.clipped,
           LayoutSeverity.warning,
-          '[잘라냄] ${_describe(leaf)} 글자가 상자 밖으로 ${formatPx(clipped)}px 잘려 나갑니다',
+          '[잘라냄] ${describeLeaf(leaf)} 글자가 상자 밖으로 ${formatPx(clipped)}px 잘려 나갑니다',
         );
       }
     }
@@ -381,7 +367,7 @@ class _Audit {
         add(
           LayoutFindingKind.offscreen,
           LayoutSeverity.warning,
-          '[이탈] ${_describe(leaf)} 화면 $side 밖으로 ${formatPx(outside)}px 나갑니다',
+          '[이탈] ${describeLeaf(leaf)} 화면 $side 밖으로 ${formatPx(outside)}px 나갑니다',
         );
       }
     }
@@ -390,7 +376,7 @@ class _Audit {
       add(
         LayoutFindingKind.truncation,
         LayoutSeverity.notice,
-        '[말줄임] ${_describe(leaf)} 텍스트가 말줄임 처리됐습니다 (maxLines ${box.maxLines})',
+        '[말줄임] ${describeLeaf(leaf)} 텍스트가 말줄임 처리됐습니다 (maxLines ${box.maxLines})',
       );
     }
     return found;
@@ -426,13 +412,6 @@ List<LayoutFinding> _group(List<LayoutFinding> findings) {
     );
   }
   return groups.values.toList();
-}
-
-String _describe(ContentLeaf leaf) {
-  final text = leaf.text.isEmpty
-      ? '[이미지]'
-      : "'${leaf.text.length > 20 ? '${leaf.text.substring(0, 20)}…' : leaf.text}'";
-  return '$text(${sourceLocationOf(leaf.box) ?? '위치 불명'})';
 }
 
 /// 자식 목록 순서가 곧 그리는 순서인 위젯(Stack·Flex·Wrap·Overlay 등). 뷰포트는 역순으로 그릴 수
