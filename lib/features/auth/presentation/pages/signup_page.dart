@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_password_field.dart';
 import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
@@ -27,8 +28,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -116,42 +115,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    AuthTextField(
-                      controller: _emailController,
-                      label: '이메일',
-                      hint: 'example@email.com',
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: Icons.email_outlined,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '이메일을 입력해주세요';
-                        }
-                        if (!value.contains('@')) {
-                          return '올바른 이메일 형식이 아닙니다';
-                        }
-                        return null;
-                      },
-                    ),
+                    AuthEmailField(controller: _emailController),
                     const SizedBox(height: 16),
-                    AuthTextField(
+                    AuthPasswordField(
                       controller: _passwordController,
                       label: '비밀번호',
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: Icons.lock_outlined,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return '비밀번호를 입력해주세요';
@@ -163,24 +131,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    AuthTextField(
+                    AuthPasswordField(
                       controller: _confirmPasswordController,
                       label: '비밀번호 확인',
-                      obscureText: _obscureConfirmPassword,
                       textInputAction: TextInputAction.done,
-                      prefixIcon: Icons.lock_outlined,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
                       onSubmitted: (_) => _handleSignup(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -200,8 +154,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 text: '회원가입',
                 onPressed: _handleSignup,
                 isLoading: _isLoading,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               GoogleSignInButton(signUp: true, onError: _showError),
               const SizedBox(height: 24),

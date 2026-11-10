@@ -6,7 +6,8 @@ import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_password_field.dart';
 import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -44,7 +45,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
   String? _errorMessage;
 
   /// Google을 연결할 기존 계정 이메일. 있으면 계정 연결 화면이다.
@@ -216,42 +216,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     if (_linkEmail case final linkEmail?)
                       _AccountLinkNotice(email: linkEmail)
                     else
-                      AuthTextField(
-                        controller: _emailController,
-                        label: '이메일',
-                        hint: 'example@email.com',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icons.email_outlined,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '이메일을 입력해주세요';
-                          }
-                          if (!value.contains('@')) {
-                            return '올바른 이메일 형식이 아닙니다';
-                          }
-                          return null;
-                        },
-                      ),
+                      AuthEmailField(controller: _emailController),
                     const SizedBox(height: 16),
-                    AuthTextField(
+                    AuthPasswordField(
                       controller: _passwordController,
                       label: '비밀번호',
-                      obscureText: _obscurePassword,
                       textInputAction: TextInputAction.done,
-                      prefixIcon: Icons.lock_outlined,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
                       onSubmitted: (_) => _handleLogin(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -280,8 +250,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 text: _linkEmail == null ? '로그인' : '로그인하고 Google 연결',
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
 
               if (_linkEmail == null)

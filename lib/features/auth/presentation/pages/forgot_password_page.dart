@@ -14,6 +14,8 @@ import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_password_field.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -138,23 +140,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ...switch (_step) {
                 _Step.email when accountEmail != null => const <Widget>[],
                 _Step.email => [
-                  AuthTextField(
+                  AuthEmailField(
                     controller: _emailController,
-                    label: '이메일',
-                    hint: 'example@email.com',
-                    keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.email_outlined,
                     onSubmitted: (_) => _submit(),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '이메일을 입력해주세요';
-                      }
-                      if (!value.contains('@')) {
-                        return '올바른 이메일 형식이 아닙니다';
-                      }
-                      return null;
-                    },
                   ),
                 ],
                 _Step.code => [
@@ -173,11 +162,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   ),
                 ],
                 _Step.newPassword => [
-                  AuthTextField(
+                  AuthPasswordField(
                     controller: _passwordController,
                     label: '새 비밀번호',
-                    obscureText: true,
-                    prefixIcon: Icons.lock_outlined,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '새 비밀번호를 입력해주세요';
@@ -189,12 +176,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  AuthTextField(
+                  AuthPasswordField(
                     controller: _confirmPasswordController,
                     label: '새 비밀번호 확인',
-                    obscureText: true,
                     textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.lock_outlined,
                     onSubmitted: (_) => _submit(),
                     validator: (value) => value != _passwordController.text
                         ? '비밀번호가 일치하지 않습니다'
@@ -207,8 +192,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 text: buttonText,
                 onPressed: _submit,
                 isLoading: _isLoading,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               if (_step == _Step.code)
                 TextButton(

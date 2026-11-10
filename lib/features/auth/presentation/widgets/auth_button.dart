@@ -6,8 +6,6 @@ class AuthButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
-  final Color? backgroundColor;
-  final Color? foregroundColor;
 
   const AuthButton({
     super.key,
@@ -15,8 +13,6 @@ class AuthButton extends StatelessWidget {
     this.onPressed,
     this.isLoading = false,
     this.icon,
-    this.backgroundColor,
-    this.foregroundColor,
   });
 
   @override
@@ -24,8 +20,6 @@ class AuthButton extends StatelessWidget {
     return FilledButton(
       onPressed: isLoading ? null : onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
       ),

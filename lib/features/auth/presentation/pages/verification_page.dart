@@ -12,6 +12,7 @@ import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -137,31 +138,16 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
               ),
               const SizedBox(height: 32),
               if (!hasFlow) ...[
-                AuthTextField(
+                AuthEmailField(
                   controller: _emailController,
-                  label: '이메일',
-                  hint: 'example@email.com',
-                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,
-                  prefixIcon: Icons.email_outlined,
                   onSubmitted: (_) => _sendCode(),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '이메일을 입력해주세요';
-                    }
-                    if (!value.contains('@')) {
-                      return '올바른 이메일 형식이 아닙니다';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 32),
                 AuthButton(
                   text: '코드 받기',
                   onPressed: _sendCode,
                   isLoading: _isLoading,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
               ] else ...[
                 AuthTextField(
@@ -181,8 +167,6 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                   text: '인증하기',
                   onPressed: _verify,
                   isLoading: _isLoading,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 TextButton(
                   onPressed: _isLoading
