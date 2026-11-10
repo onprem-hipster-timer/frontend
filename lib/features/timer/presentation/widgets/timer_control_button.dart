@@ -8,6 +8,9 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 집중 시간이 끝나면([timeUp]) 일시정지·재개 대신 연장([onExtend]) 버튼을 둔다.
 /// 활성 타이머 없이 휴식을 골랐으면([breakSelected]) 시작 버튼이 휴식을 바로 시작하고([onStartBreak]),
 /// 시간이 남은 일시정지 타이머와 시간이 끝난 타이머에는 휴식 버튼을 더 둔다. 휴식을 시작할 수 없으면 [onStartBreak]이 null이고 휴식 버튼이 없다.
+/// 버튼 사이 간격. 오탭을 막으려 넉넉히 두되, 좁은 칸에서는 줄어든다
+const _gap = Flexible(child: SizedBox(width: 40));
+
 class TimerControlButton extends StatelessWidget {
   final TimerRead? activeTimer;
   final bool starting;
@@ -89,7 +92,7 @@ class TimerControlButton extends StatelessWidget {
           backgroundColor: theme.colorScheme.error,
           child: Icon(Icons.check, color: theme.colorScheme.onError),
         ),
-        const SizedBox(width: 40),
+        _gap,
         FloatingActionButton(
           onPressed: onMain,
           tooltip: mainTooltip,
@@ -97,7 +100,7 @@ class TimerControlButton extends StatelessWidget {
           child: Icon(mainIcon, color: theme.colorScheme.onPrimary),
         ),
         if (onBreak != null) ...[
-          const SizedBox(width: 40),
+          _gap,
           FloatingActionButton.small(
             onPressed: onBreak,
             tooltip: '휴식',
