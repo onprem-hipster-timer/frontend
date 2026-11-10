@@ -6,7 +6,6 @@ max_file_lines lib/core/providers/auth_provider.dart - 482
 max_file_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart - 488
 max_file_lines lib/features/calendar/presentation/widgets/calendar_view.dart - 718
 max_file_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart - 690
-max_file_lines lib/features/tag/presentation/pages/tag_management_page.dart - 495
 max_file_lines lib/features/timer/presentation/pages/timer_page.dart - 1747
 max_file_lines lib/features/timer/presentation/providers/timer_providers.dart - 682
 max_file_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart - 1137
@@ -17,7 +16,6 @@ max_widget_class_lines lib/features/auth/presentation/pages/signup_page.dart _Si
 max_widget_class_lines lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState 456
 max_widget_class_lines lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState 675
 max_widget_class_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState 568
-max_widget_class_lines lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage 481
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState 493
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState 391
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState 458
@@ -52,9 +50,6 @@ no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_vie
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildCalendar -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildDefaultMonthCell -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildMonthCell -
-no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagGroupItem -
-no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagItem -
-no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagList -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildColorPicker -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildFormSheet -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState._buildGroupSelector -
