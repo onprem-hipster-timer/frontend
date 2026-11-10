@@ -37,7 +37,7 @@ class TagGroupSelectorPage extends ConsumerWidget {
             );
           }
 
-          return _buildTagGroupGrid(context, theme, tagGroups);
+          return _TagGroupGrid(tagGroups: tagGroups);
         },
         loading: () => const AppLoading(),
         error: (error, stack) => AppErrorState(
@@ -46,47 +46,6 @@ class TagGroupSelectorPage extends ConsumerWidget {
           secondaryLabel: '돌아가기',
           onSecondary: () => Navigator.of(context).pop(),
         ),
-      ),
-    );
-  }
-
-  /// 태그 그룹 그리드 뷰
-  Widget _buildTagGroupGrid(
-    BuildContext context,
-    ThemeData theme,
-    List<TagGroupRead> tagGroups,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 설명 텍스트
-          const AppHintCard(message: '새로 만들 투두들이 속할 그룹을 선택해주세요.'),
-
-          const SizedBox(height: 24),
-
-          // 그리드 뷰
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.2,
-              ),
-              itemCount: tagGroups.length + 1,
-              itemBuilder: (context, index) {
-                if (index == tagGroups.length) return const _NewGroupCard();
-                final tagGroup = tagGroups[index];
-                return TodoGroupCard(
-                  group: tagGroup,
-                  onTap: () => Navigator.of(context).pop(tagGroup),
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -120,6 +79,50 @@ class _NewGroupCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 태그 그룹 카드 격자
+class _TagGroupGrid extends StatelessWidget {
+  const _TagGroupGrid({required this.tagGroups});
+
+  final List<TagGroupRead> tagGroups;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 설명 텍스트
+          const AppHintCard(message: '새로 만들 투두들이 속할 그룹을 선택해주세요.'),
+
+          const SizedBox(height: 24),
+
+          // 그리드 뷰
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: tagGroups.length + 1,
+              itemBuilder: (context, index) {
+                if (index == tagGroups.length) return const _NewGroupCard();
+                final tagGroup = tagGroups[index];
+                return TodoGroupCard(
+                  group: tagGroup,
+                  onTap: () => Navigator.of(context).pop(tagGroup),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
