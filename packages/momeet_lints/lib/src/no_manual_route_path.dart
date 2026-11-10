@@ -32,8 +32,8 @@ class NoManualRoutePath extends AnalysisRule {
     severity: DiagnosticSeverity.WARNING,
   );
 
-  /// router.dart 자체(리다이렉트 로직)는 예외 처리
-  static final _routerFilePattern = RegExp(r'/router\.dart$');
+  /// 라우터(router.dart)와 리다이렉트 로직(auth_redirect.dart)은 예외 처리
+  static final _routerFilePattern = RegExp(r'/(router|auth_redirect)\.dart$');
 
   /// 테스트 파일은 예외 처리
   ///

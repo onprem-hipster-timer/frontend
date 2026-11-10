@@ -56,6 +56,12 @@ class NoManualRoutePathTest extends AnalysisRuleTest {
     await assertNoDiagnosticsInFile(path);
   }
 
+  Future<void> test_authRedirectFile_skipped() async {
+    final path = '$testPackageLibPath/auth_redirect.dart';
+    newFile(path, "${_route}String a() => '\${AppRoute.todo.path}/x';\n");
+    await assertNoDiagnosticsInFile(path);
+  }
+
   Future<void> test_testFile_skipped() async {
     final path = '$testPackageRootPath/test/router_test.dart';
     newFile(path, "${_route}String a() => '\${AppRoute.todo.path}/x';\n");
