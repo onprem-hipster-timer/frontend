@@ -68,6 +68,7 @@ class TimerDial extends StatefulWidget {
     this.onChanged,
     this.onPreview,
     this.label,
+    this.labels = true,
   });
 
   final Duration remaining;
@@ -82,6 +83,9 @@ class TimerDial extends StatefulWidget {
 
   /// 고르는 시간의 이름 (스크린 리더용)
   final String? label;
+
+  /// 눈금 숫자를 그릴지. 끄면 원판을 그만큼 크게 그린다
+  final bool labels;
 
   @override
   State<TimerDial> createState() => _TimerDialState();
@@ -172,6 +176,7 @@ class _TimerDialState extends State<TimerDial>
                 faceColor: colorScheme.surfaceContainerHighest,
                 tickColor: colorScheme.onSurfaceVariant,
                 knobColor: colorScheme.onSurfaceVariant,
+                labels: widget.labels,
                 labelStyle:
                     Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
@@ -264,6 +269,7 @@ class _TimerDialPainter extends CustomPainter {
     required this.faceColor,
     required this.tickColor,
     required this.knobColor,
+    required this.labels,
     required this.labelStyle,
   }) : fraction = fraction.clamp(0.0, 1.0);
 
@@ -276,6 +282,7 @@ class _TimerDialPainter extends CustomPainter {
   final Color faceColor;
   final Color tickColor;
   final Color knobColor;
+  final bool labels;
   final TextStyle labelStyle;
 
   @override
@@ -283,7 +290,7 @@ class _TimerDialPainter extends CustomPainter {
     final side = math.min(size.width, size.height);
     if (side <= 0) return;
     final center = size.center(Offset.zero);
-    final showLabels = side >= _minLabelSide;
+    final showLabels = labels && side >= _minLabelSide;
     final radius = side / 2 * (showLabels ? 0.78 : 0.96);
 
     canvas.drawCircle(center, radius, Paint()..color = faceColor);
@@ -341,5 +348,6 @@ class _TimerDialPainter extends CustomPainter {
       oldDelegate.faceColor != faceColor ||
       oldDelegate.tickColor != tickColor ||
       oldDelegate.knobColor != knobColor ||
-      oldDelegate.labelStyle != labelStyle;
+      oldDelegate.labelStyle != labelStyle ||
+      oldDelegate.labels != labels;
 }
