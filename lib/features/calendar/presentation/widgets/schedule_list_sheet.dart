@@ -40,10 +40,14 @@ class ScheduleListSheet extends StatelessWidget {
             children: [
               Icon(Icons.calendar_today, size: 20, color: colorScheme.primary),
               const SizedBox(width: 12),
-              Text(
-                _headerDateFormat.format(date),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  _headerDateFormat.format(date),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
