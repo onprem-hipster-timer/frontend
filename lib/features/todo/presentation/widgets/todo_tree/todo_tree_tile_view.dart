@@ -18,6 +18,7 @@ class TodoTreeTileView extends StatelessWidget {
     this.status,
     this.meta = const [],
     this.trailing,
+    this.footer,
     this.selected = false,
     this.onTap,
   });
@@ -36,6 +37,9 @@ class TodoTreeTileView extends StatelessWidget {
 
   /// 오른쪽 끝(버튼 등)
   final Widget? trailing;
+
+  /// 제목·[meta] 아래 오른쪽에 붙이는 줄. 폭이 좁아 [trailing]을 옆에 둘 수 없을 때 쓴다
+  final Widget? footer;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -44,6 +48,7 @@ class TodoTreeTileView extends StatelessWidget {
     final theme = Theme.of(context);
     final description = todo.description;
     final trailing = this.trailing;
+    final footer = this.footer;
     return Semantics(
       container: true,
       selected: selected,
@@ -91,6 +96,8 @@ class TodoTreeTileView extends StatelessWidget {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: meta,
                         ),
+                      if (footer != null)
+                        Align(alignment: Alignment.centerRight, child: footer),
                     ],
                   ),
                 ),

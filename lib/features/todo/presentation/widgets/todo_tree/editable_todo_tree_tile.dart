@@ -54,7 +54,8 @@ class EditableTodoTreeTile extends ConsumerWidget {
         ref.watch(expandedTodoIdsProvider).contains(todo.id);
     final selected = ref.watch(selectedTodoIdProvider) == todo.id;
 
-    final view = TodoTreeTileView(
+    final actions = _TileActions(node: node);
+    Widget view(bool narrow) => TodoTreeTileView(
       todo: todo,
       depth: node.depth,
       leading: node.hasChildren
@@ -72,7 +73,8 @@ class EditableTodoTreeTile extends ConsumerWidget {
         if (todo.tags.isNotEmpty) TodoTagIndicators(tags: todo.tags),
         if (node.hasChildren) TodoChildCountBadge(count: node.children.length),
       ],
-      trailing: _TileActions(node: node),
+      trailing: narrow ? null : actions,
+      footer: narrow ? actions : null,
       selected: selected,
       onTap: () {
         ref.read(selectedTodoIdProvider.notifier).select(todo.id);
@@ -86,7 +88,19 @@ class EditableTodoTreeTile extends ConsumerWidget {
         _DropOnto(
           node: node,
           tree: tree,
-          child: _DragHandle(todo: todo, child: view),
+          child: _DragHandle(
+            todo: todo,
+            // 버튼을 옆에 두면 제목 칸이 너무 좁아지는 폭이면 버튼을 제목 아래로 내린다
+            child: LayoutBuilder(
+              builder: (context, constraints) => view(
+                _TileActions.crowds(
+                  context,
+                  todo,
+                  constraints.maxWidth - node.depth * kIndentWidth,
+                ),
+              ),
+            ),
+          ),
         ),
         if (node.hasChildren && expanded)
           for (final child in node.children)
@@ -210,6 +224,23 @@ class _TileActions extends ConsumerWidget {
   const _TileActions({required this.node});
 
   final TodoTreeNode node;
+
+  /// [width] 폭의 줄에 버튼을 옆에 두면 제목 칸이 글자 배율을 반영한 최소 폭(140)보다 좁아지는지
+  ///
+  /// 버튼 폭은 고정 부분(타이머 버튼 40, 버튼 안쪽 여백·아이콘·간격 44씩, 사이 8)과
+  /// 글자 배율을 반영한 '수정'·'삭제' 글자 폭으로 잰다. 왼쪽 펼침·상태 칸과 여백은 64다.
+  static bool crowds(BuildContext context, TodoRead todo, double width) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final painter = TextPainter(
+      text: const TextSpan(text: '수정', style: TextStyle(fontSize: 12)),
+      textScaler: scaler,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final label = painter.width;
+    painter.dispose();
+    final buttons = (canLinkTimer(todo) ? 40 : 0) + 2 * (44 + label) + 8 + 8;
+    return width - 64 - buttons < scaler.scale(140);
+  }
 
   static final _compact = OutlinedButton.styleFrom(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
