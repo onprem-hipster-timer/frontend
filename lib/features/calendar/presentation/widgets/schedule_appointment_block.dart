@@ -3,9 +3,12 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/widgets/marquee_text.dart';
 
 /// SfCalendar의 appointmentBuilder가 그리는 일정 블록. 보기 종류에 맞는 모양을 고른다.
-class ScheduleAppointmentBlock extends StatelessWidget {
+///
+/// 마우스를 올린 블록은 다 들어가지 않는 제목을 흘려 보인다([MarqueeText]).
+class ScheduleAppointmentBlock extends StatefulWidget {
   const ScheduleAppointmentBlock({
     super.key,
     required this.details,
@@ -16,25 +19,46 @@ class ScheduleAppointmentBlock extends StatelessWidget {
   final CalendarViewType viewType;
 
   @override
+  State<ScheduleAppointmentBlock> createState() =>
+      _ScheduleAppointmentBlockState();
+}
+
+class _ScheduleAppointmentBlockState extends State<ScheduleAppointmentBlock> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final appointment = details.appointments.first as Appointment;
-    return switch (viewType) {
-      CalendarViewType.month => _MonthBlock(appointment: appointment),
-      CalendarViewType.day || CalendarViewType.week => _TimeSlotBlock(
-        appointment: appointment,
-        height: details.bounds.height,
-      ),
-      CalendarViewType.agenda ||
-      CalendarViewType.year => _AgendaBlock(appointment: appointment),
-    };
+    final appointment = widget.details.appointments.first as Appointment;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: switch (widget.viewType) {
+        CalendarViewType.month => _MonthBlock(
+          appointment: appointment,
+          active: _hovered,
+        ),
+        CalendarViewType.day || CalendarViewType.week => _TimeSlotBlock(
+          appointment: appointment,
+          height: widget.details.bounds.height,
+          active: _hovered,
+        ),
+        CalendarViewType.agenda || CalendarViewType.year => _AgendaBlock(
+          appointment: appointment,
+          active: _hovered,
+        ),
+      },
+    );
   }
 }
 
 /// 월 보기: 칸이 좁아 제목 한 줄만 보인다
 class _MonthBlock extends StatelessWidget {
-  const _MonthBlock({required this.appointment});
+  const _MonthBlock({required this.appointment, required this.active});
 
   final Appointment appointment;
+
+  /// 제목을 흘려 보일지
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +69,9 @@ class _MonthBlock extends StatelessWidget {
         borderRadius: AppRadius.xsAll,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      child: Text(
+      child: MarqueeText(
         appointment.subject,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        active: active,
         style: TextStyle(
           color: _contrastOn(appointment.color),
           fontSize: 11,
@@ -61,10 +84,17 @@ class _MonthBlock extends StatelessWidget {
 
 /// 일·주 보기: 블록 [height]에 따라 시간과 설명을 더 보인다
 class _TimeSlotBlock extends StatelessWidget {
-  const _TimeSlotBlock({required this.appointment, required this.height});
+  const _TimeSlotBlock({
+    required this.appointment,
+    required this.height,
+    required this.active,
+  });
 
   final Appointment appointment;
   final double height;
+
+  /// 제목을 흘려 보일지
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -117,10 +147,10 @@ class _TimeSlotBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    MarqueeText(
                       appointment.subject,
+                      active: active,
                       maxLines: lines.title,
-                      overflow: TextOverflow.ellipsis,
                       style: titleStyle,
                     ),
                     if (lines.time)
@@ -259,9 +289,12 @@ class _SubLine extends StatelessWidget {
 
 /// 일정 목록 보기: 시작 시각과 제목 한 줄
 class _AgendaBlock extends StatelessWidget {
-  const _AgendaBlock({required this.appointment});
+  const _AgendaBlock({required this.appointment, required this.active});
 
   final Appointment appointment;
+
+  /// 제목을 흘려 보일지
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -288,10 +321,9 @@ class _AgendaBlock extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(
+            child: MarqueeText(
               appointment.subject,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              active: active,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
             ),
           ),
