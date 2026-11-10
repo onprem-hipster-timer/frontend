@@ -98,7 +98,7 @@ class ScaleText {
     required this.fontSize,
     required this.visible,
     required this.shownWhole,
-    required this.inScroll,
+    required this.scroll,
     required this.moving,
   });
 
@@ -114,7 +114,11 @@ class ScaleText {
 
   /// 말줄임되지 않았고 상자 밖으로 잘리지도 않았다.
   final bool shownWhole;
-  final bool inScroll;
+
+  /// 품고 있는 가장 가까운 스크롤 영역의 소스 위치. 스크롤 밖이면 null.
+  final String? scroll;
+
+  bool get inScroll => scroll != null;
 
   /// 직전 프레임 뒤로 움직였다(흐르는 글자).
   final bool moving;
@@ -148,7 +152,7 @@ ScaleSnapshot captureScaleSnapshot(
   final view = auditViewRect(tester);
   final leaves = [
     for (final leaf in collectContentLeaves(auditRoots(tester, within), view))
-      if (leaf.box is RenderParagraph) leaf,
+      if (leaf.box is RenderParagraph && !_isIcon(leaf.text)) leaf,
   ]..sort(_readingOrder);
   final texts = _keyed(
     leaves,
@@ -203,6 +207,13 @@ List<LayoutFinding>? recordScaleCase(
   return compareScaleSnapshots(base, snapshot, options: options);
 }
 
+/// 아이콘 글꼴의 글리프(사용자 정의 영역)만으로 된 문단. 아이콘은 글자 배율을 따르지 않는다.
+bool _isIcon(String text) =>
+    text.isNotEmpty &&
+    text.runes.every(
+      (r) => (r >= 0xE000 && r <= 0xF8FF) || r >= 0xF0000,
+    );
+
 int _readingOrder(ContentLeaf a, ContentLeaf b) {
   final ra = unionRect(a.rawBoxes);
   final rb = unionRect(b.rawBoxes);
@@ -253,7 +264,11 @@ ScaleText _textOf(
     visible: leaf.isVisible,
     shownWhole:
         !paragraph.didExceedMaxLines && clipped <= options.edgeTolerance,
-    inScroll: leaf.ancestors.any((a) => a is RenderAbstractViewport),
+    scroll: switch (leaf.ancestors.whereType<RenderAbstractViewport>()) {
+      final viewports when viewports.isNotEmpty =>
+        '${sourceLocationOf(viewports.first as RenderObject)}',
+      _ => null,
+    },
     moving: moving,
   );
 }
@@ -328,7 +343,10 @@ List<ScaleTarget> _targets(WidgetTester tester, Rect view) {
           data.hasAction(SemanticsAction.scrollDown) ||
           data.hasAction(SemanticsAction.scrollLeft) ||
           data.hasAction(SemanticsAction.scrollRight);
-      if (!node.isMergedIntoParent && data.hasAction(SemanticsAction.tap)) {
+      // 눌러서 닫는 영역(시트·다이얼로그 뒤 장벽)은 버튼이 아니다.
+      if (!node.isMergedIntoParent &&
+          data.hasAction(SemanticsAction.tap) &&
+          !data.hasAction(SemanticsAction.dismiss)) {
         final rect = _semanticsRect(node);
         found.add((
           node,
@@ -466,9 +484,12 @@ Iterable<LayoutFinding> _vanished(
         consume(addedSpots, '${was.location}')) {
       continue;
     }
-    // 스크롤 목록은 화면 아래 항목을 만들지 않는다. 뒤 문단이 남아 있을 때만 사라진 것으로 본다.
+    // 스크롤 목록은 화면 아래 항목을 만들지 않는다. 같은 목록의 뒤 문단이 남아 있을 때만 사라진 것으로 본다.
     if (was.inScroll &&
-        !base.texts.skip(i + 1).any((later) => after.contains(later.key))) {
+        !base.texts.skip(i + 1).any(
+              (later) =>
+                  later.scroll == was.scroll && after.contains(later.key),
+            )) {
       continue;
     }
     yield _finding(

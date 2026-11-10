@@ -212,6 +212,30 @@ void main() {
       expect(ofKind(found, LayoutFindingKind.scaleVanished), isEmpty);
     });
 
+    testWidgets('목록 밖 글자가 남아 있어도 목록 끝이 안 만들어진 것은 사라진 것이 아니다', (
+      tester,
+    ) async {
+      final found = await compareScales(
+        tester,
+        'vanish-lazy-footer',
+        () => Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: [
+                  for (var i = 0; i < 60; i++)
+                    Text('항목 $i', style: squareStyle),
+                ],
+              ),
+            ),
+            const Text('하단', style: squareStyle),
+          ],
+        ),
+      );
+
+      expect(ofKind(found, LayoutFindingKind.scaleVanished), isEmpty);
+    });
+
     testWidgets('목록 안이어도 뒤 항목이 남아 있는데 앞 글자가 없어지면 경고한다', (tester) async {
       final found = await compareScales(
         tester,
@@ -271,6 +295,22 @@ void main() {
       );
     });
 
+    testWidgets('시트 뒤 배경(눌러서 닫는 장벽)은 버튼으로 보지 않는다', (tester) async {
+      final found = await compareScales(
+        tester,
+        'pushed-barrier',
+        () => _ByScale(
+          normal: SizedBox(
+            height: 300,
+            child: ModalBarrier(semanticsLabel: '닫기', onDismiss: () {}),
+          ),
+          large: const SizedBox(),
+        ),
+      );
+
+      expect(ofKind(found, LayoutFindingKind.scaleUnreachable), isEmpty);
+    });
+
     testWidgets('화면 안에 남아 있으면 보고하지 않는다', (tester) async {
       final found = await compareScales(
         tester,
@@ -315,6 +355,27 @@ void main() {
               ),
             ),
           ],
+        ),
+      );
+
+      expect(ofKind(found, LayoutFindingKind.scaleInversion), isEmpty);
+    });
+
+    testWidgets('배율을 따르지 않는 아이콘은 글자와 비교하지 않는다', (tester) async {
+      final found = await compareScales(
+        tester,
+        'inversion-icon',
+        () => const Center(
+          child: SizedBox(
+            width: 300,
+            height: 100,
+            child: Row(
+              children: [
+                Icon(IconData(0xe000), size: 24),
+                Text('오늘', style: TextStyle(fontSize: 14, height: 1)),
+              ],
+            ),
+          ),
         ),
       );
 
