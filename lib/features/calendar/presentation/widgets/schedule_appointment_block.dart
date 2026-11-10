@@ -57,6 +57,8 @@ class _ScheduleAppointmentBlockState extends State<ScheduleAppointmentBlock> {
 }
 
 /// 칸에 다 들어가지 않아 숨긴 일정 [count]개를 +N으로 보인다. 누르면 그날 일정 목록이 열린다
+///
+/// 칸 폭은 글자 배율을 따르지 않으므로 일정 칩과 같이 [monthChipMaxTextScale]까지만 키운다.
 class _MoreBlock extends StatelessWidget {
   const _MoreBlock({required this.count});
 
@@ -65,17 +67,22 @@ class _MoreBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      alignment: Alignment.centerLeft,
-      child: Text(
-        '+$count',
-        semanticsLabel: '일정 $count개 더',
-        maxLines: 1,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: monthChipMaxTextScale(constraints.maxWidth),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          alignment: Alignment.centerLeft,
+          child: Text(
+            '+$count',
+            semanticsLabel: '일정 $count개 더',
+            maxLines: 1,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );

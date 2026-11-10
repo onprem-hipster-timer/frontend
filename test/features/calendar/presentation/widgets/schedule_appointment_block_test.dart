@@ -82,6 +82,42 @@ void main() {
     expect(find.text('고객 미팅'), findsNothing);
   });
 
+  testWidgets('좁은 월 칸의 +N은 글자가 커도 잘리지 않는 만큼만 키운다', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    const bounds = Rect.fromLTWH(0, 0, 40, 20);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox.fromSize(
+            size: bounds.size,
+            child: ScheduleAppointmentBlock(
+              details: CalendarAppointmentDetails(
+                DateTime(2026, 11, 9),
+                [for (var i = 0; i < 5; i++) _appointment],
+                bounds,
+                isMoreAppointmentRegion: true,
+              ),
+              viewType: CalendarViewType.month,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester
+          .renderObject<RenderParagraph>(
+            find.descendant(
+              of: find.text('+5'),
+              matching: find.byType(RichText),
+            ),
+          )
+          .didExceedMaxLines,
+      isFalse,
+    );
+  });
+
   testWidgets('좁은 월 칸은 글자가 커도 제목이 두 글자는 남는 만큼만 키운다', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
