@@ -124,7 +124,7 @@ void main() {
       expect(find.text('태그 수정'), findsOneWidget);
       expect(find.text('공부'), findsOneWidget);
       expect(find.text('학습'), findsOneWidget);
-      expect(find.text('(수정 불가)'), findsOneWidget);
+      expect(find.bySemanticsLabel('수정 불가'), findsOneWidget);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
 
       await tester.enterText(nameField(), '공부 2');

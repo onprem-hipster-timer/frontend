@@ -253,12 +253,11 @@ class _FixedGroupField extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                '(수정 불가)',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
+              Icon(
+                Icons.lock_outline,
+                size: 16,
+                semanticLabel: '수정 불가',
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],
           ),
