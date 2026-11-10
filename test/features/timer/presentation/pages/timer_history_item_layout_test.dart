@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:momeet/core/network/server_clock.dart';
-import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_history_item.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
