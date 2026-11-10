@@ -15,7 +15,6 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 일정을 선택하면 상세 페이지로 이동합니다.
 class ScheduleListSheet extends StatelessWidget {
   static final _headerDateFormat = DateFormat('M월 d일 (E)', 'ko');
-  static final _timeFormat = DateFormat('HH:mm');
 
   final DateTime date;
   final List<ScheduleRead> schedules;
@@ -70,7 +69,7 @@ class ScheduleListSheet extends StatelessWidget {
                 const Divider(height: 1, indent: 56),
             itemBuilder: (context, index) {
               final schedule = schedules[index];
-              return _buildScheduleTile(context, theme, schedule);
+              return _ScheduleTile(schedule: schedule);
             },
           ),
         ),
@@ -80,12 +79,19 @@ class ScheduleListSheet extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildScheduleTile(
-    BuildContext context,
-    ThemeData theme,
-    ScheduleRead schedule,
-  ) {
+/// 일정 한 줄. 누르면 시트를 닫고 상세로 간다.
+class _ScheduleTile extends StatelessWidget {
+  static final _timeFormat = DateFormat('HH:mm');
+
+  const _ScheduleTile({required this.schedule});
+
+  final ScheduleRead schedule;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final hasTag = schedule.tags.isNotEmpty;
     final tagColor = hasTag
         ? HexColor.fromHex(schedule.tags.first.color)
