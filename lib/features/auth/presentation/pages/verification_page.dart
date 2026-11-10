@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_code_field.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
@@ -150,17 +150,10 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                   isLoading: _isLoading,
                 ),
               ] else ...[
-                AuthTextField(
+                AuthCodeField(
                   controller: _codeController,
                   label: '인증 코드',
-                  hint: '6자리 숫자',
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  prefixIcon: Icons.pin_outlined,
                   onSubmitted: (_) => _verify(),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? '인증 코드를 입력해주세요'
-                      : null,
                 ),
                 const SizedBox(height: 32),
                 AuthButton(

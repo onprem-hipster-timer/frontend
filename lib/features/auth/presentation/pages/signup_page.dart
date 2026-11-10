@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_heading.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_switch_prompt.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_new_password_fields.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_password_field.dart';
 import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
@@ -95,20 +97,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                '회원가입',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'momeet과 함께 하루를 시작하세요',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              const AuthHeading(
+                title: '회원가입',
+                subtitle: 'momeet과 함께 하루를 시작하세요',
               ),
               const SizedBox(height: 32),
               Form(
@@ -117,34 +108,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   children: [
                     AuthEmailField(controller: _emailController),
                     const SizedBox(height: 16),
-                    AuthPasswordField(
-                      controller: _passwordController,
+                    AuthNewPasswordFields(
+                      password: _passwordController,
+                      confirm: _confirmPasswordController,
                       label: '비밀번호',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '비밀번호를 입력해주세요';
-                        }
-                        if (value.length < 8) {
-                          return '비밀번호는 8자 이상이어야 합니다';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    AuthPasswordField(
-                      controller: _confirmPasswordController,
-                      label: '비밀번호 확인',
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _handleSignup(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '비밀번호를 다시 입력해주세요';
-                        }
-                        if (value != _passwordController.text) {
-                          return '비밀번호가 일치하지 않습니다';
-                        }
-                        return null;
-                      },
+                      onSubmitted: _handleSignup,
                     ),
                   ],
                 ),
@@ -157,18 +125,13 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
               GoogleSignInButton(signUp: true, onError: _showError),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('이미 계정이 있으신가요?'),
-                  TextButton(
-                    onPressed: () => context.go(
-                      AppRoute.login.path,
-                      extra: _emailController.text.trim(),
-                    ),
-                    child: const Text('로그인'),
-                  ),
-                ],
+              AuthSwitchPrompt(
+                question: '이미 계정이 있으신가요?',
+                actionLabel: '로그인',
+                onPressed: () => context.go(
+                  AppRoute.login.path,
+                  extra: _emailController.text.trim(),
+                ),
               ),
             ],
           ),
