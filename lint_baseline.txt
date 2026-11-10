@@ -21,7 +21,6 @@ max_widget_class_lines lib/features/tag/presentation/pages/tag_management_page.d
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_form_sheet.dart _TagFormSheetState 493
 max_widget_class_lines lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState 391
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState 458
-max_widget_class_lines lib/features/timer/presentation/widgets/timer_share_sheet.dart _TimerShareSheetState 225
 max_widget_class_lines lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage 428
 max_widget_class_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState 1064
 max_build_lines lib/features/auth/presentation/pages/forgot_password_page.dart _ForgotPasswordPageState.build 127
@@ -65,7 +64,6 @@ no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sh
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/tag/presentation/widgets/tag_group_form_sheet.dart _TagGroupFormSheetState._buildNameField -
 no_widget_helper_methods lib/features/timer/presentation/pages/timer_page.dart _TimerHistoryListState._buildHistoryList -
-no_widget_helper_methods lib/features/timer/presentation/widgets/timer_share_sheet.dart _TimerShareSheetState._friendList -
 no_widget_helper_methods lib/features/todo/presentation/pages/tag_group_selector_page.dart TagGroupSelectorPage._buildTagGroupGrid -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_dashboard_page.dart TodoDashboardPage._buildGroupGrid -
 no_widget_helper_methods lib/features/todo/presentation/pages/todo_group_detail_page.dart TodoGroupDetailPage._buildAppBar -

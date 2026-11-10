@@ -211,7 +211,20 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
               ],
             ),
           ),
-          if (friends != null) _friendList(friends),
+          if (friends != null)
+            _FriendChecklist(
+              friends: friends,
+              selected: _friendIds,
+              enabled: !_saving,
+              onChanged: (id, checked) => setState(() {
+                if (checked) {
+                  _friendIds.add(id);
+                } else {
+                  _friendIds.remove(id);
+                }
+              }),
+              onRetry: () => ref.invalidate(friendsProvider),
+            ),
           const SizedBox(height: 16),
           AppFormActionBar(
             submitLabel: '저장',
@@ -224,8 +237,26 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
       ),
     );
   }
+}
 
-  Widget _friendList(AsyncValue<List<FriendRead>> friends) {
+/// 공유할 친구를 고르는 체크 목록
+class _FriendChecklist extends StatelessWidget {
+  const _FriendChecklist({
+    required this.friends,
+    required this.selected,
+    required this.enabled,
+    required this.onChanged,
+    required this.onRetry,
+  });
+
+  final AsyncValue<List<FriendRead>> friends;
+  final Set<String> selected;
+  final bool enabled;
+  final void Function(String userId, bool checked) onChanged;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: friends.when(
@@ -233,10 +264,7 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
             const Padding(padding: EdgeInsets.all(16), child: AppLoading()),
         error: (error, _) => ListTile(
           title: const Text('친구 목록을 불러오지 못했습니다'),
-          trailing: TextButton(
-            onPressed: () => ref.invalidate(friendsProvider),
-            child: const Text('다시 시도'),
-          ),
+          trailing: TextButton(onPressed: onRetry, child: const Text('다시 시도')),
         ),
         data: (friends) => friends.isEmpty
             ? const ListTile(title: Text('친구가 없습니다'))
@@ -244,15 +272,10 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
                 children: [
                   for (final friend in friends)
                     CheckboxListTile(
-                      value: _friendIds.contains(friend.userId),
-                      enabled: !_saving,
-                      onChanged: (checked) => setState(() {
-                        if (checked ?? false) {
-                          _friendIds.add(friend.userId);
-                        } else {
-                          _friendIds.remove(friend.userId);
-                        }
-                      }),
+                      value: selected.contains(friend.userId),
+                      enabled: enabled,
+                      onChanged: (checked) =>
+                          onChanged(friend.userId, checked ?? false),
                       title: Text(
                         friend.displayName ?? '이름 없는 친구',
                         maxLines: 1,
