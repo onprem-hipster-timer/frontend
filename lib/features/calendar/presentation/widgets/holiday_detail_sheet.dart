@@ -15,74 +15,77 @@ class HolidayDetailSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 헤더
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: Column(
-            children: [
-              // 휴일 아이콘
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.of(context).holiday.withValues(alpha: 0.1),
-                  borderRadius: AppRadius.pillAll,
-                ),
-                child: Icon(
-                  Icons.calendar_today,
-                  color: AppColors.of(context).holiday,
-                  size: 30,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // 휴일 이름
-              Text(
-                holiday.dateName,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.of(context).holiday,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 8),
-
-              // 날짜 표시
-              Text(
-                _formatDate(holiday.locdate),
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // 닫기 버튼
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.lgAll,
-                    ),
+    // 낮은 화면·큰 글자에서는 시트 안에서 굴린다
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 헤더
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              children: [
+                // 휴일 아이콘
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.of(context).holiday.withValues(alpha: 0.1),
+                    borderRadius: AppRadius.pillAll,
                   ),
-                  child: const Text('닫기'),
+                  child: Icon(
+                    Icons.calendar_today,
+                    color: AppColors.of(context).holiday,
+                    size: 30,
+                  ),
                 ),
-              ),
 
-              // 안전 영역 확보
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+
+                // 휴일 이름
+                Text(
+                  holiday.dateName,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.of(context).holiday,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 8),
+
+                // 날짜 표시
+                Text(
+                  _formatDate(holiday.locdate),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 닫기 버튼
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.lgAll,
+                      ),
+                    ),
+                    child: const Text('닫기'),
+                  ),
+                ),
+
+                // 안전 영역 확보
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
