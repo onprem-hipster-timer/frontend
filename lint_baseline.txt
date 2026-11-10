@@ -12,4 +12,3 @@ max_widget_class_lines lib/features/calendar/presentation/widgets/calendar_view.
 max_widget_class_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState 568
 max_widget_class_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState 339
 max_build_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState.build 274
-max_build_lines lib/features/mypage/presentation/widgets/activity_stats_section.dart ActivityStatsSection.build 205
