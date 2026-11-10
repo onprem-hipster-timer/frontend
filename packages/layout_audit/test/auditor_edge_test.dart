@@ -93,6 +93,45 @@ void main() {
     );
   });
 
+  testWidgets('불투명한 층에 덮여 그려지지 않는 아래 층은 화면이 바뀌어도 점검하지 않는다', (tester) async {
+    final overlay = GlobalKey<OverlayState>();
+    await pumpInApp(
+      tester,
+      // 앱의 Navigator 오버레이처럼 잘라내지 않는다
+      Overlay(
+        key: overlay,
+        clipBehavior: Clip.none,
+        initialEntries: [
+          // 라우트 화면처럼 그리기 경계로 감싼다
+          OverlayEntry(
+            maintainState: true,
+            builder: (_) =>
+                const RepaintBoundary(child: Center(child: Text('아래 층'))),
+          ),
+        ],
+      ),
+    );
+    overlay.currentState!.insert(
+      OverlayEntry(
+        opaque: true,
+        builder: (_) => const ColoredBox(
+          color: Color(0xFFFFFFFF),
+          child: Align(alignment: Alignment.topLeft, child: Text('위 층')),
+        ),
+      ),
+    );
+    await tester.pump();
+    // 덮인 뒤 화면이 줄고 글자가 커지면 아래 층 글자는 다시 재지만 자리는 옛 화면 기준으로 남는다
+    tester.view.physicalSize = const Size(320, 300);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pump();
+
+    final f = auditLayout(tester, policy: const LayoutAuditPolicy());
+    expect(f.expand((e) => e.texts), isNot(contains('아래 층')));
+  });
+
   testWidgets('within이 여러 요소에 매치돼도 발견을 중복 보고하지 않는다', (tester) async {
     await pumpInApp(
         tester,
