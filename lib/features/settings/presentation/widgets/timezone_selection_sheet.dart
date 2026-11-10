@@ -130,15 +130,17 @@ class _SheetHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
       child: Row(
         children: [
-          Text(
-            '타임존 선택',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Text(
+              '타임존 선택',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const Spacer(),
           IconButton(
             onPressed: () => context.pop(),
+            tooltip: '닫기',
             icon: Icon(Icons.close, color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
