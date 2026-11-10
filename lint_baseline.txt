@@ -55,7 +55,6 @@ no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_vie
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildCalendar -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildDefaultMonthCell -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildMonthCell -
-no_widget_helper_methods lib/features/mypage/presentation/widgets/tag_stats_section.dart TagStatsSection._buildTagChip -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagGroupItem -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagItem -
 no_widget_helper_methods lib/features/tag/presentation/pages/tag_management_page.dart TagManagementPage._buildTagList -

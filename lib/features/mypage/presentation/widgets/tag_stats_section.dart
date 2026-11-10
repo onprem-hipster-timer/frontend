@@ -56,11 +56,10 @@ class TagStatsSection extends ConsumerWidget {
                   runSpacing: 12,
                   children: topTags
                       .map(
-                        (tagItem) => _buildTagChip(
-                          context,
-                          tagItem.tagName,
-                          tagItem.count,
-                          _getTagColor(context, tagItem.tagId),
+                        (tagItem) => _TagChip(
+                          name: tagItem.tagName,
+                          count: tagItem.count,
+                          color: _getTagColor(context, tagItem.tagId),
                         ),
                       )
                       .toList(),
@@ -92,12 +91,28 @@ class TagStatsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildTagChip(
-    BuildContext context,
-    String tagName,
-    int count,
-    Color color,
-  ) {
+  Color _getTagColor(BuildContext context, String tagId) {
+    final colors = AppColors.of(context).categorical;
+
+    final index = tagId.hashCode.abs() % colors.length;
+    return colors[index];
+  }
+}
+
+/// 태그 이름과 사용 횟수를 담은 칩
+class _TagChip extends StatelessWidget {
+  const _TagChip({
+    required this.name,
+    required this.count,
+    required this.color,
+  });
+
+  final String name;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
@@ -111,7 +126,7 @@ class TagStatsSection extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            tagName,
+            name,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: color,
@@ -135,12 +150,5 @@ class TagStatsSection extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Color _getTagColor(BuildContext context, String tagId) {
-    final colors = AppColors.of(context).categorical;
-
-    final index = tagId.hashCode.abs() % colors.length;
-    return colors[index];
   }
 }
