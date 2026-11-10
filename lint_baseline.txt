@@ -29,5 +29,4 @@ max_build_lines lib/features/timer/presentation/pages/timer_page.dart TimerContr
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart TimerHistoryItem.build 158
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState.build 280
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerGalleryState.build 86
-max_build_lines lib/features/timer/presentation/widgets/timer_dial.dart _TimerDialState.build 86
 max_build_lines lib/shared/pages/security_warning_page.dart SecurityWarningPage.build 107

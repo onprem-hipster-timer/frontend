@@ -186,19 +186,7 @@ class _TimerDialState extends State<TimerDial>
         final onChanged = widget.onChanged;
         if (onChanged != null) {
           final remaining = widget.remaining;
-
-          // steps번 [dialStep]만큼 옮긴 값. [dialStep]~한 바퀴 시간 밖이라 그 쪽으로 옮겨지지 않으면 null
-          Duration? stepped(int steps) {
-            final next = Duration(
-              seconds: (remaining.inSeconds + steps * dialStep.inSeconds).clamp(
-                dialStep.inSeconds,
-                dialFace.inSeconds,
-              ),
-            );
-            final moved = steps > 0 ? next > remaining : next < remaining;
-            return moved ? next : null;
-          }
-
+          Duration? stepped(int steps) => _stepped(steps, dialFace);
           final up = stepped(1);
           final down = stepped(-1);
           dial = Semantics(
@@ -238,6 +226,19 @@ class _TimerDialState extends State<TimerDial>
         return Center(child: dial);
       },
     );
+  }
+
+  /// steps번 [dialStep]만큼 옮긴 값. [dialStep]~한 바퀴 시간 밖이라 그 쪽으로 옮겨지지 않으면 null
+  Duration? _stepped(int steps, Duration face) {
+    final remaining = widget.remaining;
+    final next = Duration(
+      seconds: (remaining.inSeconds + steps * dialStep.inSeconds).clamp(
+        dialStep.inSeconds,
+        face.inSeconds,
+      ),
+    );
+    final moved = steps > 0 ? next > remaining : next < remaining;
+    return moved ? next : null;
   }
 
   static String _durationText(Duration duration) {
