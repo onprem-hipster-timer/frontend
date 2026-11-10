@@ -100,55 +100,48 @@ class _GroupAppBar extends ConsumerWidget {
             ? HexColor.fromHex(group.color)
             : theme.colorScheme.primary;
 
-        return SliverAppBar(
-          expandedHeight: 120,
-          floating: false,
-          pinned: true,
-          backgroundColor: groupColor.withValues(alpha: 0.1),
-          foregroundColor: groupColor,
-          leading: const _BackToDashboard(),
-          actions: [
-            if (group != null)
-              IconButton(
-                icon: const Icon(Icons.settings),
-                tooltip: '그룹 설정',
-                onPressed: () => _showGroupSettings(context, ref, group),
-              ),
-          ],
-          flexibleSpace: FlexibleSpaceBar(
-            title: Text(
-              group?.name ?? '할 일 그룹',
-              style: TextStyle(color: groupColor, fontWeight: FontWeight.w600),
-            ),
-            background: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    groupColor.withValues(alpha: 0.15),
-                    groupColor.withValues(alpha: 0.05),
-                  ],
+        final description = group?.description;
+        return SliverMainAxisGroup(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: groupColor.withValues(alpha: 0.12),
+              foregroundColor: groupColor,
+              leading: const _BackToDashboard(),
+              title: Text(
+                group?.name ?? '할 일 그룹',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: groupColor,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              child: group?.description != null
-                  ? Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Text(
-                          group!.description!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: groupColor.withValues(alpha: 0.8),
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                  : null,
+              actions: [
+                if (group != null)
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    tooltip: '그룹 설정',
+                    onPressed: () => _showGroupSettings(context, ref, group),
+                  ),
+              ],
             ),
-          ),
+            if (description != null && description.isNotEmpty)
+              SliverToBoxAdapter(
+                child: ColoredBox(
+                  color: groupColor.withValues(alpha: 0.06),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: Text(
+                      description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
       loading: () => SliverAppBar(
