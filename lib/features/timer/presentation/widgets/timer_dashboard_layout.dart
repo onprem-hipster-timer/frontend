@@ -11,6 +11,7 @@ const _sideDialMinSide = 80.0;
 /// 대시보드 배치
 ///
 /// 보통은 위에서부터 [addTimer], [header], [dial](남는 높이를 모두 씀), [controls]를 둔다.
+/// 높이 400 미만인데 다이얼을 옆에 둘 수 없으면 다이얼을 칸 높이의 절반으로 두고 넘치는 만큼 굴린다.
 /// 높이 400 미만이고 폭이 높이 이상이며 옆에 두어도 다이얼이 [_sideDialMinSide] 이상인 칸(가로 휴대폰)은
 /// 다이얼을 왼쪽에 두고 나머지를 오른쪽에 두며, 오른쪽이 칸보다 길면 굴린다.
 class TimerDashboardLayout extends StatelessWidget {
@@ -51,8 +52,27 @@ class TimerDashboardLayout extends StatelessWidget {
         children: [header, gap, ...controls],
       );
     }
+    if (short) {
+      // 낮고 좁은 칸은 다이얼을 칸 높이의 절반으로 두고, 나머지가 넘치면 굴린다
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Column(
+          children: [
+            if (addTimer != null) ...[
+              Align(alignment: Alignment.centerRight, child: addTimer),
+              gap,
+            ],
+            header,
+            gap,
+            SizedBox(height: constraints.maxHeight / 2, child: dial),
+            gap,
+            ...controls,
+          ],
+        ),
+      );
+    }
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24, vertical: short ? 8 : 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           if (addTimer != null) ...[
