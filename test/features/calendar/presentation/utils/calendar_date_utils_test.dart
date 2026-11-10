@@ -6,20 +6,64 @@ void main() {
   group('autoMonthEventsPerDay', () {
     // 기기별 칸 높이(앱바·도구 줄·내비를 뺀 달력 높이 ÷ 6)에서 잰 값
     test('칸에 읽히는 줄(18 × 배율)이 들어가는 만큼 보인다', () {
-      expect(autoMonthEventsPerDay(cellHeight: 96.3, textScale: 1), 3);
-      expect(autoMonthEventsPerDay(cellHeight: 143, textScale: 1), 5);
-      expect(autoMonthEventsPerDay(cellHeight: 91, textScale: 1), 2);
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 96.3, textScale: 1),
+        3,
+      );
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 143, textScale: 1),
+        5,
+      );
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 91, textScale: 1),
+        2,
+      );
     });
 
     test('글자가 커지면 줄이 커져 덜 보인다', () {
-      expect(autoMonthEventsPerDay(cellHeight: 96.3, textScale: 1.3), 2);
-      expect(autoMonthEventsPerDay(cellHeight: 143, textScale: 1.3), 4);
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 96.3, textScale: 1.3),
+        2,
+      );
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 143, textScale: 1.3),
+        4,
+      );
+    });
+
+    test('좁은 칸은 일정 글자를 덜 키우므로 같은 높이에 더 들어간다', () {
+      expect(
+        autoMonthEventsPerDay(cellWidth: 46, cellHeight: 115, textScale: 1.3),
+        greaterThan(
+          autoMonthEventsPerDay(
+            cellWidth: 100,
+            cellHeight: 115,
+            textScale: 1.3,
+          ),
+        ),
+      );
     });
 
     test('한 줄도 들어가지 않는 칸은 0, 아주 높아도 여섯을 넘지 않는다', () {
-      expect(autoMonthEventsPerDay(cellHeight: 30, textScale: 1.3), 0);
-      expect(autoMonthEventsPerDay(cellHeight: 60, textScale: 1), 1);
-      expect(autoMonthEventsPerDay(cellHeight: 500, textScale: 1), 6);
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 30, textScale: 1.3),
+        0,
+      );
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 60, textScale: 1),
+        1,
+      );
+      expect(
+        autoMonthEventsPerDay(cellWidth: 100, cellHeight: 500, textScale: 1),
+        6,
+      );
+    });
+  });
+
+  group('monthChipMaxTextScale', () {
+    test('일정 칩에 두 글자와 말줄임이 남는 배율, 최소 1', () {
+      expect(monthChipMaxTextScale(43), 1);
+      expect(monthChipMaxTextScale(76), 2);
     });
   });
 

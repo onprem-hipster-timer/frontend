@@ -3,6 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/widgets/marquee_text.dart';
 
 /// SfCalendar의 appointmentBuilder가 그리는 일정 블록. 보기 종류에 맞는 모양을 고른다.
@@ -52,6 +53,8 @@ class _ScheduleAppointmentBlockState extends State<ScheduleAppointmentBlock> {
 }
 
 /// 월 보기: 칸이 좁아 제목 한 줄만 보인다
+///
+/// 칸 폭은 글자 배율을 따르지 않으므로 글자는 [monthChipMaxTextScale]까지만 키운다.
 class _MonthBlock extends StatelessWidget {
   const _MonthBlock({required this.appointment, required this.active});
 
@@ -60,22 +63,29 @@ class _MonthBlock extends StatelessWidget {
   /// 제목을 흘려 보일지
   final bool active;
 
+  static const _fontSize = 11.0;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
-      decoration: BoxDecoration(
-        color: appointment.color.withValues(alpha: 0.9),
-        borderRadius: AppRadius.xsAll,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      child: MarqueeText(
-        appointment.subject,
-        active: active,
-        style: TextStyle(
-          color: _contrastOn(appointment.color),
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
+    return LayoutBuilder(
+      builder: (context, constraints) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: monthChipMaxTextScale(constraints.maxWidth),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 0.5),
+          decoration: BoxDecoration(
+            color: appointment.color.withValues(alpha: 0.9),
+            borderRadius: AppRadius.xsAll,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          child: MarqueeText(
+            appointment.subject,
+            active: active,
+            style: TextStyle(
+              color: _contrastOn(appointment.color),
+              fontSize: _fontSize,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );

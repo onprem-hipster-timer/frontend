@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
@@ -16,8 +17,9 @@ Future<void> _pump(
   WidgetTester tester,
   CalendarViewType viewType, {
   double height = 100,
+  double width = 120,
 }) async {
-  final bounds = Rect.fromLTWH(0, 0, 120, height);
+  final bounds = Rect.fromLTWH(0, 0, width, height);
   await tester.pumpWidget(
     MaterialApp(
       home: Center(
@@ -41,6 +43,20 @@ void main() {
 
     expect(find.text('회의'), findsOneWidget);
     expect(find.textContaining('안건'), findsNothing);
+  });
+
+  testWidgets('좁은 월 칸은 글자가 커도 제목이 두 글자는 남는 만큼만 키운다', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    await _pump(tester, CalendarViewType.month, height: 40, width: 46);
+    final narrow = tester.renderObject<RenderParagraph>(find.text('회의'));
+    expect(narrow.didExceedMaxLines, isFalse);
+    expect(narrow.textScaler.scale(1), lessThan(2));
+
+    await _pump(tester, CalendarViewType.month, height: 40, width: 200);
+    final wide = tester.renderObject<RenderParagraph>(find.text('회의'));
+    expect(wide.textScaler.scale(1), 2);
   });
 
   testWidgets('일·주 보기는 들어가는 만큼만 시간과 설명 줄을 더 보인다', (tester) async {

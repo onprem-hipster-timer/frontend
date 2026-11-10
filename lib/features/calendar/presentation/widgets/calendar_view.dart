@@ -151,6 +151,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
   /// 월 보기 칸 높이에 맞는 일정 수. 위쪽 요일 줄을 뺀 높이를 주 수로 나눠 칸 높이를 구한다
   int _autoEventsPerDay(BuildContext context, BoxConstraints constraints) =>
       autoMonthEventsPerDay(
+        cellWidth: constraints.maxWidth / DateTime.daysPerWeek,
         cellHeight:
             (constraints.maxHeight - _monthViewHeaderHeight) / monthWeeksInView,
         textScale: MediaQuery.textScalerOf(context).scale(1),
