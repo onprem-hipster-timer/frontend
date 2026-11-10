@@ -7,7 +7,7 @@ max_file_lines lib/features/calendar/presentation/pages/schedule_detail_page.dar
 max_file_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart - 690
 max_file_lines lib/features/timer/presentation/pages/timer_page.dart - 1747
 max_file_lines lib/features/timer/presentation/providers/timer_providers.dart - 682
-max_file_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart - 1137
+max_file_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart - 407
 max_file_lines lib/router.dart - 502
 max_widget_class_lines lib/features/auth/presentation/pages/forgot_password_page.dart _ForgotPasswordPageState 203
 max_widget_class_lines lib/features/auth/presentation/pages/login_page.dart _LoginPageState 271
@@ -15,7 +15,7 @@ max_widget_class_lines lib/features/auth/presentation/pages/signup_page.dart _Si
 max_widget_class_lines lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState 305
 max_widget_class_lines lib/features/calendar/presentation/widgets/schedule_form_sheet.dart _ScheduleFormSheetState 568
 max_widget_class_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDashboardState 458
-max_widget_class_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState 1064
+max_widget_class_lines lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState 339
 max_build_lines lib/features/auth/presentation/pages/forgot_password_page.dart _ForgotPasswordPageState.build 127
 max_build_lines lib/features/auth/presentation/pages/login_page.dart _LoginPageState.build 128
 max_build_lines lib/features/auth/presentation/pages/signup_page.dart _SignupPageState.build 138
@@ -31,10 +31,3 @@ max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerDash
 max_build_lines lib/features/timer/presentation/pages/timer_page.dart _TimerGalleryState.build 86
 max_build_lines lib/features/timer/presentation/widgets/timer_dial.dart _TimerDialState.build 86
 max_build_lines lib/shared/pages/security_warning_page.dart SecurityWarningPage.build 107
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTagGroup -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTags -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildStatusSelector -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildTagGroupSection -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildTagSelector -
-no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildTitleField -

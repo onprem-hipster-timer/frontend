@@ -7,18 +7,15 @@ import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_dialog.dart';
 import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
-import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_status_chips.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_picker.dart';
 
 /// 서버에 보낼 상태. UNSCHEDULED/SCHEDULED는 서버가 마감일 유무로 정하는 값이라
 /// 보내지 않는다(보내서 실제와 다르면 422). 사용자가 고르는 상태는 완료·취소뿐이다.
 @visibleForTesting
 TodoStatus? todoStatusForRequest(TodoStatus selected) =>
     isActiveTodoStatus(selected) ? null : selected;
-
-/// 완료·취소가 아닌 "진행 중" 상태인지 (미예정과 예정됨을 하나로 본다)
-bool isActiveTodoStatus(TodoStatus status) =>
-    status == TodoStatus.unscheduled || status == TodoStatus.scheduled;
 
 /// Todo 생성/수정 폼 시트
 ///
@@ -86,7 +83,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isLoading = _isEditMode
         ? ref.watch(updateTodoMutation).isPending
         : ref.watch(createTodoMutation).isPending;
@@ -100,9 +96,46 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         busy: isLoading,
       ),
       children: [
-        _buildTitleField(),
-        _buildDescriptionField(),
-        _buildStatusSelector(theme),
+        TextFormField(
+          controller: _titleController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '할 일 제목',
+            hintText: '할 일을 입력하세요',
+            prefixIcon: Icon(Icons.task_alt),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '할 일 제목을 입력해주세요';
+            }
+            if (value.trim().length > 200) {
+              return '제목은 200자 이하로 입력해주세요';
+            }
+            return null;
+          },
+          textInputAction: TextInputAction.next,
+        ),
+        TextFormField(
+          controller: _descriptionController,
+          decoration: const InputDecoration(
+            labelText: '설명 (선택사항)',
+            hintText: '상세 설명을 입력하세요',
+            prefixIcon: Icon(Icons.notes),
+            alignLabelWithHint: true,
+          ),
+          maxLines: 3,
+          validator: (value) {
+            if (value != null && value.length > 500) {
+              return '설명은 500자 이하로 입력해주세요';
+            }
+            return null;
+          },
+          textInputAction: TextInputAction.done,
+        ),
+        TodoFormStatusChips(
+          selected: _selectedStatus,
+          onChanged: (status) => setState(() => _selectedStatus = status),
+        ),
         AppPickerField(
           label: '마감일',
           icon: Icons.calendar_today,
@@ -113,467 +146,36 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           onTap: () => _selectDeadline(context),
           onClear: () => setState(() => _selectedDeadline = null),
         ),
-        _buildTagSelector(theme),
-      ],
-    );
-  }
-
-  /// 할 일 제목 입력 필드
-  Widget _buildTitleField() {
-    return TextFormField(
-      controller: _titleController,
-      autofocus: true,
-      decoration: const InputDecoration(
-        labelText: '할 일 제목',
-        hintText: '할 일을 입력하세요',
-        prefixIcon: Icon(Icons.task_alt),
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return '할 일 제목을 입력해주세요';
-        }
-        if (value.trim().length > 200) {
-          return '제목은 200자 이하로 입력해주세요';
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.next,
-    );
-  }
-
-  /// 설명 입력 필드
-  Widget _buildDescriptionField() {
-    return TextFormField(
-      controller: _descriptionController,
-      decoration: const InputDecoration(
-        labelText: '설명 (선택사항)',
-        hintText: '상세 설명을 입력하세요',
-        prefixIcon: Icon(Icons.notes),
-        alignLabelWithHint: true,
-      ),
-      maxLines: 3,
-      validator: (value) {
-        if (value != null && value.length > 500) {
-          return '설명은 500자 이하로 입력해주세요';
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.done,
-    );
-  }
-
-  /// 상태 선택기
-  Widget _buildStatusSelector(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppSectionHeader('상태'),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            // 미예정·예정됨은 서버가 마감일로 정하므로 "진행 중" 하나로 보여 준다
-            children:
-                const [
-                  TodoStatus.unscheduled,
-                  TodoStatus.done,
-                  TodoStatus.cancelled,
-                ].map((status) {
-                  final isSelected = status == TodoStatus.unscheduled
-                      ? isActiveTodoStatus(_selectedStatus)
-                      : _selectedStatus == status;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(_getStatusLabel(status)),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _selectedStatus = status;
-                          });
-                        }
-                      },
-                      avatar: Icon(
-                        _getStatusIcon(status),
-                        size: 18,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimary
-                            : _getStatusColor(status),
-                      ),
-                      selectedColor: _getStatusColor(status),
-                      checkmarkColor: theme.colorScheme.onPrimary,
-                    ),
-                  );
-                }).toList(),
-          ),
+        TodoTagPicker(
+          lockedGroupId: _isEditMode || _selectedTagGroupId.isEmpty
+              ? null
+              : _selectedTagGroupId,
+          selectedTagIds: _selectedTagIds,
+          onToggle: _toggleTag,
+          onCreateTag: ({groupId}) =>
+              _showCreateTagDialog(context, defaultGroupId: groupId),
+          onFirstGroup: _isEditMode || _selectedTagGroupId.isNotEmpty
+              ? null
+              : _useFirstGroup,
         ),
       ],
     );
   }
 
-  /// 태그 선택기
-  Widget _buildTagSelector(ThemeData theme) {
-    final tagTreeAsync = ref.watch(tag_providers.tagTreeProvider);
-
-    return tagTreeAsync.when(
-      data: (tagGroups) {
-        // 생성 모드에서 tagGroupId가 비어있다면 첫 번째 그룹을 기본값으로 설정
-        if (!_isEditMode &&
-            _selectedTagGroupId.isEmpty &&
-            tagGroups.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              _selectedTagGroupId = tagGroups.first.group.id;
-            });
-          });
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 태그 섹션 헤더 (제목 + 새 태그 추가 버튼)
-            AppSectionHeader(
-              '태그',
-              trailing: TextButton.icon(
-                onPressed: () => _showCreateTagDialog(context),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('새 태그'),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // 선택된 태그 그룹 표시 (생성 모드에서만)
-            if (!_isEditMode && _selectedTagGroupId.isNotEmpty) ...[
-              _buildSelectedTagGroup(theme, tagGroups),
-              const SizedBox(height: 12),
-            ],
-
-            // 선택된 태그들 표시 (상단에 고정)
-            if (_selectedTagIds.isNotEmpty) ...[
-              _buildSelectedTags(theme, tagGroups),
-              const SizedBox(height: 16),
-            ],
-
-            // 태그 그룹별로 태그 표시
-            if (tagGroups.isNotEmpty)
-              ...tagGroups.map(
-                (tagGroup) => _buildTagGroupSection(theme, tagGroup),
-              )
-            else
-              AppEmptyState(
-                icon: Icons.label_outline,
-                title: '아직 태그가 없습니다',
-                message: '새 태그를 만들어 할 일을 분류해보세요',
-                actionLabel: '첫 태그 만들기',
-                onAction: () => _showCreateTagDialog(context),
-              ),
-          ],
-        );
-      },
-      loading: () => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppSectionHeader('태그'),
-          const SizedBox(height: 8),
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-        ],
-      ),
-      error: (error, stack) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppSectionHeader(
-            '태그',
-            trailing: TextButton.icon(
-              onPressed: () => _showCreateTagDialog(context),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('새 태그'),
-              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
-              borderRadius: AppRadius.mdAll,
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.error_outline, color: theme.colorScheme.error),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '태그를 불러오지 못했습니다: $error',
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 선택된 태그 그룹 표시 (생성 모드에서만)
-  Widget _buildSelectedTagGroup(
-    ThemeData theme,
-    List<TagGroupWithTags> tagGroups,
-  ) {
-    // 현재 선택된 태그 그룹 찾기
-    final selectedGroup = tagGroups.firstWhere(
-      (group) => group.group.id == _selectedTagGroupId,
-      orElse: () => tagGroups.isNotEmpty
-          ? tagGroups.first
-          : throw StateError('No tag groups available'),
-    );
-
-    final groupColor = HexColor.fromHex(selectedGroup.group.color);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: groupColor.withValues(alpha: 0.1),
-        borderRadius: AppRadius.pillAll,
-        border: Border.all(color: groupColor.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.folder_rounded, size: 16, color: groupColor),
-          const SizedBox(width: 6),
-          Text(
-            '${selectedGroup.group.name} 그룹',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: groupColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.lock_outline,
-            size: 12,
-            color: groupColor.withValues(alpha: 0.7),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 선택된 태그들을 상단에 표시
-  Widget _buildSelectedTags(ThemeData theme, List<TagGroupWithTags> tagGroups) {
-    // 선택된 태그들을 찾아서 표시
-    final selectedTags = <TagRead>[];
-    for (final group in tagGroups) {
-      for (final tag in group.tags) {
-        if (_selectedTagIds.contains(tag.id)) {
-          selectedTags.add(tag);
-        }
+  void _toggleTag(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedTagIds.add(id);
+      } else {
+        _selectedTagIds.remove(id);
       }
-    }
-
-    if (selectedTags.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '선택된 태그 (${selectedTags.length})',
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: selectedTags.map((tag) {
-            final tagColor = HexColor.fromHex(tag.color);
-
-            return Chip(
-              label: Text(tag.name),
-              backgroundColor: tagColor.withValues(alpha: 0.2),
-              side: BorderSide(color: tagColor, width: 1),
-              deleteIcon: Icon(Icons.close, size: 16, color: tagColor),
-              onDeleted: () {
-                setState(() {
-                  _selectedTagIds.remove(tag.id);
-                });
-              },
-              labelStyle: TextStyle(
-                color: tagColor,
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
+    });
   }
 
-  /// 태그 그룹 섹션
-  Widget _buildTagGroupSection(ThemeData theme, TagGroupWithTags tagGroup) {
-    if (tagGroup.tags.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 그룹 헤더
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: HexColor.fromHex(tagGroup.group.color),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    tagGroup.group.name,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                // 이 그룹에 새 태그 추가 버튼
-                TextButton.icon(
-                  onPressed: () => _showCreateTagDialog(
-                    context,
-                    defaultGroupId: tagGroup.group.id,
-                  ),
-                  icon: const Icon(Icons.add, size: 14),
-                  label: const Text('추가'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    textStyle: theme.textTheme.labelSmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 태그 칩들
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ...tagGroup.tags.map<Widget>((tag) {
-                  final isSelected = _selectedTagIds.contains(tag.id);
-                  final tagColor = HexColor.fromHex(tag.color);
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(tag.name),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedTagIds.add(tag.id);
-                          } else {
-                            _selectedTagIds.remove(tag.id);
-                          }
-                        });
-                      },
-                      selectedColor: tagColor.withValues(alpha: 0.2),
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.3),
-                      checkmarkColor: tagColor,
-                      side: BorderSide(
-                        color: isSelected
-                            ? tagColor
-                            : theme.colorScheme.outline.withValues(alpha: 0.3),
-                        width: isSelected ? 1.5 : 0.8,
-                      ),
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? tagColor
-                            : theme.colorScheme.onSurface,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                        fontSize: 13,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  );
-                }),
-
-                // 이 그룹에 태그 추가하는 플러스 버튼
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: ActionChip(
-                    avatar: Icon(
-                      Icons.add,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                    label: Text(
-                      '태그 추가',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    onPressed: () => _showCreateTagDialog(
-                      context,
-                      defaultGroupId: tagGroup.group.id,
-                    ),
-                    backgroundColor: theme.colorScheme.primaryContainer
-                        .withValues(alpha: 0.3),
-                    side: BorderSide(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                      width: 1,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  /// 새 할 일의 그룹을 정하지 않았으면 첫 그룹으로 한다
+  void _useFirstGroup(String groupId) {
+    if (mounted) setState(() => _selectedTagGroupId = groupId);
   }
-
-  // ============================================================
-  // Event Handlers
-  // ============================================================
 
   /// 마감일 선택
   Future<void> _selectDeadline(BuildContext context) async {
@@ -775,55 +377,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           kind: AppNoticeKind.error,
         );
       }
-    }
-  }
-
-  // ============================================================
-  // Helper Methods
-  // ============================================================
-
-  String _getStatusLabel(TodoStatus status) {
-    switch (status) {
-      case TodoStatus.unscheduled:
-      case TodoStatus.scheduled:
-        return '진행 중';
-      case TodoStatus.done:
-        return '완료';
-      case TodoStatus.cancelled:
-        return '취소';
-      case TodoStatus.$unknown:
-        return '알 수 없음';
-    }
-  }
-
-  IconData _getStatusIcon(TodoStatus status) {
-    switch (status) {
-      case TodoStatus.unscheduled:
-        return Icons.radio_button_unchecked;
-      case TodoStatus.scheduled:
-        return Icons.schedule;
-      case TodoStatus.done:
-        return Icons.check_circle;
-      case TodoStatus.cancelled:
-        return Icons.cancel;
-      case TodoStatus.$unknown:
-        return Icons.help_outline;
-    }
-  }
-
-  Color _getStatusColor(TodoStatus status) {
-    final theme = Theme.of(context);
-    switch (status) {
-      case TodoStatus.unscheduled:
-        return theme.colorScheme.onSurfaceVariant;
-      case TodoStatus.scheduled:
-        return theme.colorScheme.primary;
-      case TodoStatus.done:
-        return theme.colorScheme.tertiary;
-      case TodoStatus.cancelled:
-        return theme.colorScheme.error;
-      case TodoStatus.$unknown:
-        return theme.colorScheme.onSurfaceVariant;
     }
   }
 }
