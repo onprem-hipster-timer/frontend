@@ -36,21 +36,32 @@ class ScheduleListSheet extends StatelessWidget {
         // 날짜 헤더
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-          child: Row(
+          // 한 줄에 다 들어가지 않으면 일정 개수를 날짜 아래로 내린다
+          child: OverflowBar(
+            spacing: 8,
+            overflowSpacing: 4,
             children: [
-              Icon(Icons.calendar_today, size: 20, color: colorScheme.primary),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  _headerDateFormat.format(date),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 20,
+                    color: colorScheme.primary,
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      _headerDateFormat.format(date),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
               Text(
                 '${schedules.length}개 일정',
                 style: theme.textTheme.bodySmall?.copyWith(
