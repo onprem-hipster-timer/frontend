@@ -55,3 +55,15 @@ DateTime? parseHolidayDate(String locdate) {
     return null;
   }
 }
+
+/// [holidays] 중 [date]에 쉬는 날(isHoliday). 없으면 null
+HolidayItem? holidayOn(Iterable<HolidayItem> holidays, DateTime date) {
+  return holidays.where((h) {
+    final holidayDate = parseHolidayDate(h.locdate);
+    return h.isHoliday &&
+        holidayDate != null &&
+        holidayDate.year == date.year &&
+        holidayDate.month == date.month &&
+        holidayDate.day == date.day;
+  }).firstOrNull;
+}

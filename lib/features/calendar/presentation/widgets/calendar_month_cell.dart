@@ -27,14 +27,7 @@ class CalendarMonthCell extends ConsumerWidget {
     );
     final holiday = ref
         .watch(currentHolidaysProvider)
-        .whenOrNull(
-          data: (holidays) => holidays.where((h) {
-            final holidayDate = parseHolidayDate(h.locdate);
-            return h.isHoliday &&
-                holidayDate != null &&
-                fmt.isSameDay(holidayDate, date);
-          }).firstOrNull,
-        );
+        .whenOrNull(data: (holidays) => holidayOn(holidays, date));
     final dateStyle = _dateTextStyle(
       date: date,
       isHoliday: holiday != null,

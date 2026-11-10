@@ -1,22 +1,17 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:go_router/go_router.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
-import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view_style.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_view_actions.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_appointment_block.dart';
-import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
-import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
-import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_data_source.dart';
-import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
-    as fmt;
-import 'package:momeet/router.dart';
-import 'package:go_router/go_router.dart';
 
 /// 빈 CalendarDataSource (로딩용)
 class _EmptyDataSource extends ScheduleCalendarDataSource {
@@ -105,12 +100,12 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               allowAppointmentResize: true,
               monthCellBuilder: (context, details) =>
                   CalendarMonthCell(details: details),
-              specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
+              specialRegions: _holidayRegions(),
               onViewChanged: _onViewChanged,
               onTap: _onCalendarTap,
               onLongPress: _onCalendarLongPress,
-              onDragEnd: _onDragEnd,
-              onAppointmentResizeEnd: _onResizeEnd,
+              onDragEnd: (details) => moveDraggedSchedule(ref, details),
+              onAppointmentResizeEnd: (details) => resizeSchedule(ref, details),
               backgroundColor: colorScheme.surface,
               cellBorderColor: colorScheme.outlineVariant.withValues(
                 alpha: 0.3,
@@ -188,77 +183,34 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     } else if (details.targetElement == CalendarElement.moreAppointmentRegion &&
         details.date != null) {
       // "+N more" 탭 → 바텀시트 일정 리스트
-      _showScheduleListSheet(details.date!);
+      openSchedulesOnDay(context, ref, details.date!);
     } else if (details.targetElement == CalendarElement.calendarCell &&
         details.date != null) {
       // 날짜 셀 탭 - 휴일 확인 후 처리
-      _handleDateCellTap(details.date!);
+      openCalendarDate(context, ref, details.date!);
     }
   }
 
-  /// 날짜 셀 탭 처리 (휴일 포함)
-  void _handleDateCellTap(DateTime date) {
-    // 선택 날짜 변경
-    ref.read(calendarSettingsProvider.notifier).setSelectedDate(date);
-
-    // 해당 날짜에 일정이 있는지 확인 (멀티-데이 포함)
-    final scheduleDataSource = ref.read(scheduleOnlyDataSourceProvider).value;
-    final hasAppointments =
-        scheduleDataSource?.getAppointmentsForDate(date).isNotEmpty ?? false;
-
-    // 휴일인지 확인 — loading/error 시에도 일정/생성 폼은 동작해야 함
-    final holidayAsync = ref.read(currentHolidaysProvider);
-    final holiday = holidayAsync.whenOrNull(
-      data: (holidays) => holidays.where((h) {
-        final holidayDate = parseHolidayDate(h.locdate);
-        return h.isHoliday &&
-            holidayDate != null &&
-            fmt.isSameDay(holidayDate, date);
-      }).firstOrNull,
-    );
-
-    if (hasAppointments && context.mounted) {
-      _showScheduleListSheet(date);
-    } else if (holiday != null && context.mounted) {
-      showHolidayDetailSheet(context, holiday);
-    } else if (context.mounted) {
-      showScheduleFormSheet(context, initialDate: date);
-    }
-  }
-
-  /// 일정 탭 처리
+  /// 일정을 누르면 [CalendarViewWidget.onScheduleTap]을, 없으면 일정 상세로 간다
   void _handleScheduleTap(String scheduleId) {
-    // 외부 콜백이 있으면 우선 사용
-    if (widget.onScheduleTap != null) {
-      widget.onScheduleTap!(scheduleId);
+    final onScheduleTap = widget.onScheduleTap;
+    if (onScheduleTap != null) {
+      onScheduleTap(scheduleId);
       return;
     }
+    context.pushNamed(
+      AppRoute.scheduleDetail.name,
+      queryParameters: {'id': scheduleId},
+    );
+  }
 
-    if (context.mounted) {
-      context.pushNamed(
-        AppRoute.scheduleDetail.name,
-        queryParameters: {'id': scheduleId},
+  /// 일·주 보기의 공휴일 구역. build에서 부르므로 공휴일을 나중에 불러와도 반영된다
+  List<TimeRegion>? _holidayRegions() => ref
+      .watch(currentHolidaysProvider)
+      .whenOrNull(
+        data: (holidays) =>
+            calendarHolidayRegions(holidays, AppColors.of(context).holiday),
       );
-    }
-  }
-
-  /// 다중 일정 바텀시트 표시
-  void _showScheduleListSheet(DateTime date) {
-    final schedules = ref.read(filteredSchedulesProvider).value;
-    final daySchedules =
-        schedules
-            ?.where(
-              (s) => fmt.isIncludeDay(
-                s.startTime.toLocal(),
-                s.endTime.toLocal(),
-                date,
-              ),
-            )
-            .toList() ??
-        [];
-    if (daySchedules.isEmpty || !context.mounted) return;
-    showScheduleListSheet(context, date, daySchedules);
-  }
 
   /// 캘린더 길게 누르기 콜백
   void _onCalendarLongPress(CalendarLongPressDetails details) {
@@ -267,89 +219,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       // 새 일정 생성
       widget.onDateLongPress?.call(details.date!);
     }
-  }
-
-  /// 드래그 앤 드롭 완료 콜백
-  void _onDragEnd(AppointmentDragEndDetails details) {
-    if (details.appointment == null || details.droppingTime == null) return;
-
-    final appointment = details.appointment as Appointment;
-    final appointmentId = appointment.id as String?;
-    if (appointmentId == null) return; // 일정만 드래그 가능
-
-    // 시간 차이 계산
-    final duration = appointment.endTime.difference(appointment.startTime);
-    final newStartTime = details.droppingTime!;
-    final newEndTime = newStartTime.add(duration);
-
-    // API 호출로 일정 이동
-    updateScheduleMutation.run(
-      ref,
-      (tsx) => tsx
-          .get(scheduleMutationsProvider.notifier)
-          .moveSchedule(
-            appointmentId,
-            newStartTime: newStartTime,
-            newEndTime: newEndTime,
-          ),
-    );
-  }
-
-  /// 리사이즈 완료 콜백
-  void _onResizeEnd(AppointmentResizeEndDetails details) {
-    if (details.appointment == null) return;
-
-    final appointment = details.appointment as Appointment;
-    final appointmentId = appointment.id as String?;
-    if (appointmentId == null) return; // 일정만 리사이즈 가능
-
-    // API 호출로 일정 리사이즈
-    updateScheduleMutation.run(
-      ref,
-      (tsx) => tsx
-          .get(scheduleMutationsProvider.notifier)
-          .resizeSchedule(
-            appointmentId,
-            newStartTime: details.startTime,
-            newEndTime: details.endTime!,
-          ),
-    );
-  }
-
-  /// Special Regions 빌더 - 일간/주간 뷰 휴일 표시
-  ///
-  /// build 경로(_buildCalendar)에서 호출되므로 watch로 구독해야
-  /// 휴일 데이터가 나중에 로드돼도 캘린더에 반영됩니다.
-  List<TimeRegion> _buildSpecialRegions(CalendarSettingsState settings) {
-    final holidayAsync = ref.watch(currentHolidaysProvider);
-
-    return holidayAsync.when(
-      data: (holidays) {
-        return holidays
-            .where((holiday) => holiday.isHoliday)
-            .map((holiday) {
-              final holidayDate = parseHolidayDate(holiday.locdate);
-              if (holidayDate == null) return null;
-
-              return TimeRegion(
-                startTime: holidayDate,
-                endTime: holidayDate.add(const Duration(days: 1)),
-                text: holiday.dateName,
-                color: AppColors.of(context).holiday.withValues(alpha: 0.1),
-                enablePointerInteraction: false,
-                textStyle: TextStyle(
-                  color: AppColors.of(context).holiday,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              );
-            })
-            .whereType<TimeRegion>()
-            .toList();
-      },
-      loading: () => [],
-      error: (error, stack) => [],
-    );
   }
 }
 

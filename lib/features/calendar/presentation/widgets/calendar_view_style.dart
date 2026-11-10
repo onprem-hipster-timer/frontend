@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -105,3 +107,25 @@ BoxDecoration calendarSelectionDecoration(ColorScheme colorScheme) =>
       border: Border.all(color: colorScheme.primary, width: 1.5),
       borderRadius: AppRadius.smAll,
     );
+
+/// 일·주 보기에서 공휴일 하루를 [color]로 옅게 칠하고 이름을 쓰는 구역
+List<TimeRegion> calendarHolidayRegions(
+  List<HolidayItem> holidays,
+  Color color,
+) => [
+  for (final holiday in holidays)
+    if (holiday.isHoliday)
+      if (parseHolidayDate(holiday.locdate) case final date?)
+        TimeRegion(
+          startTime: date,
+          endTime: date.add(const Duration(days: 1)),
+          text: holiday.dateName,
+          color: color.withValues(alpha: 0.1),
+          enablePointerInteraction: false,
+          textStyle: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+];
