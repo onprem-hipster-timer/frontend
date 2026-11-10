@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/router.dart';
+import 'package:momeet/auth_redirect.dart';
 
 void main() {
   // ============================================================
