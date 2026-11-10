@@ -6,6 +6,7 @@ import 'package:momeet/features/calendar/presentation/providers/calendar_provide
 import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_appointment_block.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
@@ -123,7 +124,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               // ============================================================
               // 휴일 표시 설정
               // ============================================================
-              monthCellBuilder: _buildMonthCell, // 월간 뷰 휴일 표시
+              monthCellBuilder: (context, details) =>
+                  CalendarMonthCell(details: details),
               specialRegions: _buildSpecialRegions(settings), // 일간/주간 뷰 휴일 표시
               // ============================================================
               // 콜백 설정
@@ -434,204 +436,6 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
             newEndTime: details.endTime!,
           ),
     );
-  }
-
-  // ============================================================
-  // 휴일 표시 관련 헬퍼 메서드들
-  // ============================================================
-
-  /// 월간 뷰 셀 빌더 - 휴일 표시
-  Widget _buildMonthCell(BuildContext context, MonthCellDetails details) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isToday = fmt.isSameDay(details.date, DateTime.now());
-    final isCurrentMonth =
-        details.date.month ==
-        details.visibleDates[details.visibleDates.length ~/ 2].month;
-    final highlightWeekends = ref
-        .watch(calendarSettingsProvider)
-        .highlightWeekends;
-
-    // 휴일 확인
-    final holidayAsync = ref.watch(currentHolidaysProvider);
-
-    return holidayAsync.when(
-      data: (holidays) {
-        // 현재 날짜에 해당하는 휴일 찾기
-        final holiday = holidays.where((h) {
-          final holidayDate = parseHolidayDate(h.locdate);
-          return h.isHoliday &&
-              holidayDate != null &&
-              fmt.isSameDay(holidayDate, details.date);
-        }).firstOrNull;
-
-        final isHoliday = holiday != null;
-        final dateStyle = _monthDateTextStyle(
-          date: details.date,
-          isHoliday: isHoliday,
-          isCurrentMonth: isCurrentMonth,
-          highlightWeekends: highlightWeekends,
-          colorScheme: colorScheme,
-        );
-
-        return Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-              width: 0.5,
-            ),
-            color: isToday
-                ? colorScheme.primary.withValues(alpha: 0.1)
-                : colorScheme.surface,
-          ),
-          child: Stack(
-            children: [
-              // 날짜 (좌측 상단)
-              Positioned(
-                left: 4,
-                top: 4,
-                child: isToday
-                    ? CircleAvatar(
-                        radius: 12,
-                        backgroundColor: colorScheme.primary,
-                        child: Text(
-                          '${details.date.day}',
-                          style: TextStyle(
-                            color: colorScheme.onPrimary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      )
-                    : Text(
-                        '${details.date.day}',
-                        style: TextStyle(
-                          color: dateStyle.color,
-                          fontSize: 14,
-                          fontWeight: dateStyle.weight,
-                        ),
-                      ),
-              ),
-
-              // 휴일 이름 (우측 상단)
-              if (isHoliday)
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 60),
-                    child: Text(
-                      holiday.dateName,
-                      style: TextStyle(
-                        color: AppColors.of(context).holiday,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-      loading: () => _buildDefaultMonthCell(context, details),
-      error: (error, stack) => _buildDefaultMonthCell(context, details),
-    );
-  }
-
-  /// 기본 월간 셀 (휴일 로딩 실패 시)
-  Widget _buildDefaultMonthCell(
-    BuildContext context,
-    MonthCellDetails details,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isToday = fmt.isSameDay(details.date, DateTime.now());
-    final isCurrentMonth =
-        details.date.month ==
-        details.visibleDates[details.visibleDates.length ~/ 2].month;
-    final highlightWeekends = ref
-        .watch(calendarSettingsProvider)
-        .highlightWeekends;
-    final dateStyle = _monthDateTextStyle(
-      date: details.date,
-      isHoliday: false,
-      isCurrentMonth: isCurrentMonth,
-      highlightWeekends: highlightWeekends,
-      colorScheme: colorScheme,
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-          width: 0.5,
-        ),
-        color: isToday
-            ? colorScheme.primary.withValues(alpha: 0.1)
-            : colorScheme.surface,
-      ),
-      child: Stack(
-        children: [
-          // 날짜 (좌측 상단)
-          Positioned(
-            left: 4,
-            top: 4,
-            child: isToday
-                ? CircleAvatar(
-                    radius: 12,
-                    backgroundColor: colorScheme.primary,
-                    child: Text(
-                      '${details.date.day}',
-                      style: TextStyle(
-                        color: colorScheme.onPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                : Text(
-                    '${details.date.day}',
-                    style: TextStyle(
-                      color: dateStyle.color,
-                      fontSize: 14,
-                      fontWeight: dateStyle.weight,
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 월간 셀 날짜 텍스트 스타일.
-  ///
-  /// 한국 달력 관례에 따라 공휴일·일요일은 빨강, 토요일은 파랑으로 표시하고,
-  /// 나머지는 현재 달 여부에 따라 기본/흐림 색을 쓴다. 주말 강조는
-  /// [highlightWeekends] 설정으로 끌 수 있으나, 공휴일은 항상 강조한다.
-  ({Color color, FontWeight weight}) _monthDateTextStyle({
-    required DateTime date,
-    required bool isHoliday,
-    required bool isCurrentMonth,
-    required bool highlightWeekends,
-    required ColorScheme colorScheme,
-  }) {
-    final isSunday = date.weekday == DateTime.sunday;
-    final isSaturday = date.weekday == DateTime.saturday;
-
-    if (isHoliday || (highlightWeekends && isSunday)) {
-      return (color: AppColors.of(context).holiday, weight: FontWeight.w600);
-    }
-    if (highlightWeekends && isSaturday) {
-      return (color: AppColors.of(context).saturday, weight: FontWeight.w600);
-    }
-    final base = isCurrentMonth
-        ? colorScheme.onSurface
-        : colorScheme.onSurface.withValues(alpha: 0.4);
-    return (color: base, weight: FontWeight.normal);
   }
 
   /// Special Regions 빌더 - 일간/주간 뷰 휴일 표시

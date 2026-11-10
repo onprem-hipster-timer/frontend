@@ -41,8 +41,6 @@ no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detai
 no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildTagsSection -
 no_widget_helper_methods lib/features/calendar/presentation/pages/schedule_detail_page.dart _ScheduleDetailPageState._buildTodoConversionRow -
 no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildCalendar -
-no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildDefaultMonthCell -
-no_widget_helper_methods lib/features/calendar/presentation/widgets/calendar_view.dart _CalendarViewWidgetState._buildMonthCell -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildDescriptionField -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTagGroup -
 no_widget_helper_methods lib/features/todo/presentation/widgets/todo_form_sheet.dart _TodoFormSheetState._buildSelectedTags -
