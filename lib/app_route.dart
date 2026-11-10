@@ -36,6 +36,8 @@ enum AppRoute {
   authError(path: '/auth-error', requiresAuth: false, authNeutral: true),
 
   // 인증 필요 (보호된 페이지)
+  // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
+  consent(path: '/consent'),
   calendar(path: '/'),
   scheduleDetail(path: '/schedule/detail'),
   todo(path: '/todo'),
