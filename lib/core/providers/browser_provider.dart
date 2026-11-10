@@ -15,3 +15,9 @@ final browserRedirectProvider = Provider<Future<void> Function(Uri url)>(
   (ref) =>
       (url) => launchUrl(url, webOnlyWindowName: '_self'),
 );
+
+/// [url]을 새 탭(앱이면 외부 브라우저)으로 연다 (약관 보기)
+final openLinkProvider = Provider<Future<void> Function(Uri url)>(
+  (ref) =>
+      (url) => launchUrl(url),
+);

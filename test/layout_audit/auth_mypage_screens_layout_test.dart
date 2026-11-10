@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart' show setUpAll;
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/auth/presentation/pages/auth_error_page.dart';
+import 'package:momeet/features/auth/presentation/pages/consent_page.dart';
 import 'package:momeet/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
@@ -12,7 +13,9 @@ import 'package:momeet/features/mypage/presentation/providers/my_page_providers.
 import 'package:momeet/features/settings/presentation/widgets/timezone_selection_sheet.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 
+import '../helpers/fake_rest_clients.dart';
 import '../helpers/kratos_mocks.dart';
 import '../helpers/layout_audit_app.dart';
 
@@ -65,6 +68,18 @@ void main() {
     subject: '안내',
     texts: const [StressTexts.koreanLong],
     build: (text) => signedOutApp(const AuthErrorPage()),
+  );
+
+  testLayoutAudit(
+    'consent_page',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => wrapWithApp(
+      overrides: [
+        ...signedIn.overrides,
+        usersApiProvider.overrideWithValue(FakeUsersClient()),
+      ],
+    )(const ConsentPage()),
   );
 
   testLayoutAudit(

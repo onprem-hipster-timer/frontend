@@ -1,4 +1,5 @@
-import 'package:dio/dio.dart' show RequestOptions;
+import 'package:dio/dio.dart'
+    show DioException, DioExceptionType, RequestOptions, Response;
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -392,4 +393,69 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
     _failWrite();
     convertedToTodo.add((scheduleId, tagGroupId));
   }
+}
+
+/// 약관 동의 테스트용 현재 약관 버전.
+const testConsentVersion = '2026-11-01';
+
+/// 메모리에 내 프로필을 들고 있는 [UsersClient]. 받은 동의 요청을 기록한다.
+///
+/// 동의하면 [profile]의 `consentRequired`가 false가 된다.
+class FakeUsersClient extends Fake implements UsersClient {
+  FakeUsersClient({
+    bool consentRequired = true,
+    String consentVersion = testConsentVersion,
+  }) : profile = MyProfileRead(
+         id: 'test-uid',
+         friendCode: 'FRIEND01',
+         consentVersion: consentVersion,
+         consentRequired: consentRequired,
+       );
+
+  MyProfileRead profile;
+
+  /// 프로필 조회 횟수
+  int reads = 0;
+
+  final agreed = <ConsentCreate>[];
+
+  /// 설정하면 프로필 조회가 이 오류로 실패한다.
+  Object? readError;
+
+  /// 설정하면 동의 요청이 이 오류로 실패한다.
+  Object? consentError;
+
+  /// 설정하면 동의 요청이 이것이 끝날 때까지 기다린다.
+  Future<void>? consentGate;
+
+  @override
+  Future<MyProfileRead> getMyProfileV1UsersMeGet({
+    RequestOptions? options,
+  }) async {
+    reads++;
+    if (readError != null) throw readError!;
+    return profile;
+  }
+
+  @override
+  Future<MyProfileRead> putMyConsentV1UsersMeConsentPut({
+    required ConsentCreate body,
+    RequestOptions? options,
+  }) async {
+    agreed.add(body);
+    await consentGate;
+    if (consentError != null) throw consentError!;
+    profile = profile.copyWith(consentRequired: false);
+    return profile;
+  }
+}
+
+/// 서버가 [statusCode]로 거절한 요청의 오류.
+DioException httpError(String path, int statusCode) {
+  final request = RequestOptions(path: path);
+  return DioException(
+    requestOptions: request,
+    response: Response(requestOptions: request, statusCode: statusCode),
+    type: DioExceptionType.badResponse,
+  );
 }
