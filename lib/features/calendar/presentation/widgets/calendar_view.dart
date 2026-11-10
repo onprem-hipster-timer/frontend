@@ -123,6 +123,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               timeSlotViewSettings: calendarTimeSlotViewSettings(
                 colorScheme,
                 use24HourFormat: settings.use24HourFormat,
+                textScaler: MediaQuery.textScalerOf(context),
               ),
               scheduleViewSettings: calendarScheduleViewSettings(colorScheme),
               appointmentBuilder: (context, details) =>

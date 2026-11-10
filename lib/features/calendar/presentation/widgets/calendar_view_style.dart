@@ -50,13 +50,15 @@ MonthViewSettings calendarMonthViewSettings(
   showTrailingAndLeadingDates: true,
 );
 
+/// 한 시간 칸은 글자 배율만큼 높여 큰 글자에서도 한 시간 일정에 제목과 시간이 들어가게 한다
 TimeSlotViewSettings calendarTimeSlotViewSettings(
   ColorScheme colorScheme, {
   required bool use24HourFormat,
+  required TextScaler textScaler,
 }) => TimeSlotViewSettings(
   startHour: 0,
   endHour: 24,
-  timeIntervalHeight: 60,
+  timeIntervalHeight: textScaler.scale(60),
   timeFormat: use24HourFormat ? 'HH:mm' : 'h:mm a',
   timeTextStyle: TextStyle(
     color: colorScheme.onSurface.withValues(alpha: 0.6),
