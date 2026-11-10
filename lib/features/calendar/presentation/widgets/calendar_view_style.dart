@@ -23,14 +23,17 @@ ViewHeaderStyle calendarViewHeaderStyle(ColorScheme colorScheme) =>
       ),
     );
 
-/// [eventsPerDay]는 월 칸 하나에 보일 일정 수
+/// [eventsPerDay]는 월 칸 하나에 보일 일정 수. 0이면 점으로만 보인다
 MonthViewSettings calendarMonthViewSettings(
   ColorScheme colorScheme,
   int eventsPerDay,
 ) => MonthViewSettings(
   showAgenda: false,
-  appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-  appointmentDisplayCount: eventsPerDay,
+  // 일정 한 줄도 들어가지 않는 낮은 칸은 일정 막대 대신 점으로 있다는 것만 보인다
+  appointmentDisplayMode: eventsPerDay == 0
+      ? MonthAppointmentDisplayMode.indicator
+      : MonthAppointmentDisplayMode.appointment,
+  appointmentDisplayCount: eventsPerDay == 0 ? 1 : eventsPerDay,
   monthCellStyle: MonthCellStyle(
     textStyle: TextStyle(color: colorScheme.onSurface, fontSize: 14),
     trailingDatesTextStyle: TextStyle(

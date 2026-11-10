@@ -101,7 +101,7 @@ bool periodContains(
   int firstDayOfWeek,
 ) => periodStart(viewType, date, firstDayOfWeek) == start;
 
-/// 월 보기 칸 하나에 읽을 수 있게 들어가는 일정 수(1~6).
+/// 월 보기 칸 하나에 읽을 수 있게 들어가는 일정 수(0~6). 0이면 한 줄도 들어가지 않는다.
 ///
 /// 달력은 칸에서 날짜 숫자 자리를 뺀 높이를 일정 수로 똑같이 나눈다. 날짜 자리는 글자 배율에
 /// 비례하고(1.0에서 약 42), 11pt 일정 한 줄은 18 × 배율은 돼야 읽힌다. 이 값은 기기 크기
@@ -112,5 +112,5 @@ int autoMonthEventsPerDay({
 }) {
   final dateHeader = 20 + 22 * textScale;
   final minRow = 18 * textScale;
-  return ((cellHeight - dateHeader) / minRow).floor().clamp(1, 6);
+  return ((cellHeight - dateHeader) / minRow).floor().clamp(0, 6);
 }

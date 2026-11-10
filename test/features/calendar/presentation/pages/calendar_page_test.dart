@@ -13,6 +13,7 @@ import 'package:momeet/features/calendar/presentation/providers/calendar_provide
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/sheet_host.dart';
@@ -201,6 +202,29 @@ void main() {
 
     await tapVisible(tester, find.widgetWithText(ChoiceChip, '자동'));
     expect(settings().monthEventsPerDay, isNull);
+  });
+
+  testWidgets('일정 한 줄도 들어가지 않는 낮은 월 칸은 일정을 점으로 보이고 오류가 나지 않는다', (tester) async {
+    await pumpPage(tester, size: const Size(800, 360));
+
+    expect(tester.takeException(), isNull);
+    final calendar = tester.widget<SfCalendar>(find.byType(SfCalendar));
+    expect(
+      calendar.monthViewSettings.appointmentDisplayMode,
+      MonthAppointmentDisplayMode.indicator,
+    );
+  });
+
+  testWidgets('칸이 넉넉한 월 보기는 일정을 막대로 보인다', (tester) async {
+    await pumpPage(tester);
+
+    expect(
+      tester
+          .widget<SfCalendar>(find.byType(SfCalendar))
+          .monthViewSettings
+          .appointmentDisplayMode,
+      MonthAppointmentDisplayMode.appointment,
+    );
   });
 
   testWidgets('추가 버튼은 새 일정 시트를 연다', (tester) async {

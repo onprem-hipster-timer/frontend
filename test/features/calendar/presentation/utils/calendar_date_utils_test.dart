@@ -16,8 +16,9 @@ void main() {
       expect(autoMonthEventsPerDay(cellHeight: 143, textScale: 1.3), 4);
     });
 
-    test('칸이 아주 낮아도 하나는 보이고, 아주 높아도 여섯을 넘지 않는다', () {
-      expect(autoMonthEventsPerDay(cellHeight: 30, textScale: 1.3), 1);
+    test('한 줄도 들어가지 않는 칸은 0, 아주 높아도 여섯을 넘지 않는다', () {
+      expect(autoMonthEventsPerDay(cellHeight: 30, textScale: 1.3), 0);
+      expect(autoMonthEventsPerDay(cellHeight: 60, textScale: 1), 1);
       expect(autoMonthEventsPerDay(cellHeight: 500, textScale: 1), 6);
     });
   });

@@ -82,9 +82,10 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final eventsPerDay =
-            settings.monthEventsPerDay ??
-            _autoEventsPerDay(context, constraints);
+        // 직접 고른 수도 칸에 들어가는 수까지만 쓴다
+        final fits = _autoEventsPerDay(context, constraints);
+        final chosen = settings.monthEventsPerDay;
+        final eventsPerDay = chosen == null || chosen > fits ? fits : chosen;
         return Stack(
           children: [
             SfCalendar(
