@@ -100,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Auth
+- 인증 메일 링크(`/verification?flow=&code=`)로 열면 코드를 채워 두고, 인증하기를 눌러야 제출한다. 코드는 주소창에서 지운다. `code`가 flow 없이 오거나 6자리 숫자가 아니면 보안 경고 화면으로 보낸다
+
 #### Todo
 - 할 일 고르기 화면(`showTodoPicker`): 그룹별 트리로 보이고 제목으로 찾으며, 한 줄을 눌러 하나를 고르거나 체크해 여럿을 고른다
 
