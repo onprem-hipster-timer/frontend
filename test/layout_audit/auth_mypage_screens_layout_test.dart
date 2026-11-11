@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart' show setUpAll;
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/auth/presentation/pages/account_deletion_pending_page.dart';
 import 'package:momeet/features/auth/presentation/pages/auth_error_page.dart';
 import 'package:momeet/features/auth/presentation/pages/consent_page.dart';
 import 'package:momeet/features/auth/presentation/pages/forgot_password_page.dart';
@@ -31,6 +33,7 @@ void main() {
     signedOut = await KratosTestHarness.create(authenticated: false);
     signedOut.stubCreateFlow(KratosFlowType.login, 'flow-login');
     signedIn = await KratosTestHarness.create();
+    await initializeDateFormatting('ko');
   });
 
   Widget signedOutApp(Widget child) =>
@@ -80,6 +83,20 @@ void main() {
         usersApiProvider.overrideWithValue(FakeUsersClient()),
       ],
     )(const ConsentPage()),
+  );
+
+  testLayoutAudit(
+    'account_deletion_pending_page',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => wrapWithApp(
+      overrides: [
+        ...signedIn.overrides,
+        usersApiProvider.overrideWithValue(
+          FakeUsersClient(deletionPending: true),
+        ),
+      ],
+    )(const AccountDeletionPendingPage()),
   );
 
   testLayoutAudit(

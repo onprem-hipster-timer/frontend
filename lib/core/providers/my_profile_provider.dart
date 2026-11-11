@@ -1,4 +1,4 @@
-// 본인 프로필(GET /v1/users/me)과 약관 동의
+// 본인 프로필(GET /v1/users/me)과 약관 동의·회원 탈퇴
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -36,6 +36,14 @@ class MyProfileNotifier extends _$MyProfileNotifier {
         );
     state = AsyncData(profile);
   }
+
+  /// 회원 탈퇴 신청을 취소한다. 실패하면 오류를 그대로 던진다.
+  Future<void> cancelDeletion() async {
+    final profile = await ref
+        .read(usersApiProvider)
+        .cancelMyDeletionV1UsersMeDeletionDelete();
+    state = AsyncData(profile);
+  }
 }
 
 /// 로그인한 사용자가 약관에 동의해야 하는지. 프로필을 불러오는 중이거나 실패했으면 null
@@ -44,4 +52,13 @@ bool? consentRequired(Ref ref) {
   final profile = ref.watch(myProfileProvider);
   if (profile.isLoading || profile.hasError) return null;
   return profile.value?.consentRequired;
+}
+
+/// 로그인한 사용자가 탈퇴를 신청해 파기를 기다리는지. 프로필을 불러오는 중이거나 실패했으면 null
+@riverpod
+bool? deletionPending(Ref ref) {
+  final profile = ref.watch(myProfileProvider);
+  if (profile.isLoading || profile.hasError) return null;
+  final value = profile.value;
+  return value == null ? null : value.deletionRequestedAt != null;
 }
