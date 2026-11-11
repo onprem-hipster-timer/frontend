@@ -31,7 +31,8 @@ class SessionTokenStore {
   /// 옮기지 못하면 이전 키를 남겨 다음 시작에 다시 옮긴다.
   Future<void> load() async {
     final legacy = _prefs.getString(sessionTokenKey);
-    if (legacy != null) {
+    if (legacy != null && legacy.isEmpty) await _prefs.remove(sessionTokenKey);
+    if (legacy != null && legacy.isNotEmpty) {
       _token = legacy;
       try {
         await _storage.write(key: sessionTokenKey, value: legacy);
@@ -54,10 +55,14 @@ class SessionTokenStore {
     await _syncHasSession();
   }
 
-  /// 토큰을 지운다.
+  /// 토큰을 지운다. 보안 저장소에서 지우지 못해도 이 앱 실행에서는 토큰 없음이 된다.
+  ///
+  /// 남은 토큰은 끝난 세션이라 다음 시작의 세션 확인에서 지워진다.
   Future<void> clear() async {
-    await _storage.delete(key: sessionTokenKey);
     _token = null;
+    try {
+      await _storage.delete(key: sessionTokenKey);
+    } catch (_) {}
     await _syncHasSession();
   }
 

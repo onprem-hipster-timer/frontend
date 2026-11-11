@@ -117,6 +117,36 @@ void main() {
     });
   });
 
+  group('저장소 오류', () {
+    test('보안 저장소에서 지우지 못해도 메모리 토큰과 세션 표시는 지운다', () async {
+      final prefs = await setUpDevice(prefs: {hasSessionKey: true});
+      final storage = _MockSecureStorage();
+      when(
+        () => storage.read(key: sessionTokenKey),
+      ).thenAnswer((_) async => 'ory_st_a');
+      when(
+        () => storage.delete(key: sessionTokenKey),
+      ).thenThrow(PlatformException(code: 'delete_failed'));
+      final store = SessionTokenStore(storage, prefs);
+      await store.load();
+
+      await store.clear();
+
+      expect(store.token, isNull);
+      expect(prefs.getBool(hasSessionKey), isNull);
+    });
+
+    test('이전 키의 빈 토큰은 세션으로 보지 않는다', () async {
+      final prefs = await setUpDevice(prefs: {sessionTokenKey: ''});
+
+      final store = await start(prefs);
+
+      expect(store.token, isNull);
+      expect(prefs.getBool(hasSessionKey), isNull);
+      expect(prefs.getString(sessionTokenKey), isNull);
+    });
+  });
+
   group('세션 표시', () {
     test('저장하면 세션 표시를 남기고 지우면 함께 지운다', () async {
       final prefs = await setUpDevice();
