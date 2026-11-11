@@ -87,6 +87,10 @@ jobs:
       - name: Check formatting
         run: dart format --set-exit-if-changed .
 
+      # 루트 analyze가 packages/momeet_lints도 분석하므로 그 의존성을 먼저 받는다
+      - name: Install lint plugin dependencies
+        run: cd packages/momeet_lints && dart pub get
+
       # flutter analyze는 analyzer 플러그인(momeet_lints) 결과를 기다리지 않는다
       - name: Analyze
         run: dart analyze --fatal-infos
@@ -98,7 +102,7 @@ jobs:
         run: cd packages/layout_audit && flutter pub get && flutter test
 
       - name: Lint rule tests
-        run: cd packages/momeet_lints && dart pub get && dart test
+        run: cd packages/momeet_lints && dart test
 
   arch-guard:
     name: Auth Architecture Guard
