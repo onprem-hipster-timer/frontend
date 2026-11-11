@@ -97,6 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 아키텍처 린트(`packages/momeet_lints`)를 새 analyzer 플러그인(`analysis_server_plugin`)으로 옮긴다. `dart analyze`와 IDE에서 함께 돌고, CI 분석 단계는 `dart analyze --fatal-infos`가 맡는다. `dart run custom_lint` 단계는 없앤다
 - 위젯 크기·구조 린트: 위젯·State 클래스 200줄, `build` 80줄, `lib/` 파일 400줄 상한, Widget을 돌려주는 helper 금지, `lib/shared/ui/`의 기능·Riverpod·go_router import 금지. 기존 코드도 모두 이 규칙을 지킨다
 - 구조 린트를 더한다: Flutter의 시트·다이얼로그·알림·날짜 고르기는 `lib/shared/ui/`의 `showApp…` 함수로만 연다, 파일당 공개 위젯 하나, 한 파일 안의 같은 모양 위젯 트리 금지, 테마 밖 Material 이름 색 금지, `ref`를 쓰지 않는 Consumer 위젯 금지, `MediaQuery` 개별 접근자, `whenOrNull`
+- CI(`.github/workflows/test.yml`)를 정적 검사 잡(format → 코드 생성 → `dart analyze` → 패키지 테스트)과 2개 샤드 테스트 잡으로 나눈다. 코드 생성은 `.github/actions/codegen`이 맡는다
+- codegen 캐시는 코드 생성이 성공했을 때만 저장하고, 키에 `build.yaml`을 넣는다. 다른 캐시를 지우는 단계는 없앤다(오래된 캐시는 GitHub가 정리한다)
+- CI는 dev push에도 돌아 dev로 가는 PR이 쓸 캐시를 만든다. 실행 중 취소는 PR만 하고, 문서만 바뀐 push·PR에서는 돌지 않는다
 
 ### Added
 
