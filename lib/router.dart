@@ -9,6 +9,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/my_profile_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart'
     deferred as calendar;
@@ -34,11 +35,14 @@ export 'package:momeet/app_route.dart';
 
 /// 인증 상태 변화를 GoRouter에 전달하는 Listenable
 ///
-/// authProvider의 상태가 변경되면 notifyListeners()를 호출하여
+/// authProvider나 약관 동의 필요 여부가 바뀌면 notifyListeners()를 호출하여
 /// GoRouter가 redirect를 재평가하도록 합니다.
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
     ref.listen<AuthStatus>(authProvider, (previous, next) {
+      notifyListeners();
+    });
+    ref.listen<bool?>(consentRequiredProvider, (previous, next) {
       notifyListeners();
     });
   }
@@ -60,6 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         matchedLocation: state.matchedLocation,
         redirectAfterLogin: state.uri.queryParameters['redirect'],
         queryParameters: state.uri.queryParameters,
+        consentRequired: ref.read(consentRequiredProvider),
       );
     },
 
@@ -106,6 +111,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           flowId: state.uri.queryParameters['flow'],
           email: state.extra is String ? state.extra as String : null,
         ),
+      ),
+
+      GoRoute(
+        path: AppRoute.consent.path,
+        name: AppRoute.consent.name,
+        builder: (context, state) => const ConsentPage(),
       ),
 
       GoRoute(

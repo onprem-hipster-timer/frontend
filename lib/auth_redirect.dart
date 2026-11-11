@@ -56,12 +56,15 @@ bool isValidAuthLink(String path, Map<String, String> queryParameters) {
 /// 인증 상태에 따른 리다이렉트 로직 (순수 함수 — 테스트 가능)
 ///
 /// 반환값이 null이면 리다이렉트 없음.
+/// [consentRequired]는 로그인한 사용자가 약관에 동의해야 하는지. null이면 아직 모른다
+/// (프로필을 불러오는 중이거나 실패). 모르면 동의가 필요한 것으로 본다.
 String? authRedirect({
   required bool isAuthenticated,
   required bool isAuthLoading,
   required String matchedLocation,
   String? redirectAfterLogin,
   Map<String, String> queryParameters = const {},
+  bool? consentRequired = false,
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
@@ -101,17 +104,38 @@ String? authRedirect({
   if (isAuthenticated &&
       isPublicRoute &&
       !AppRoute.neutralPaths.contains(matchedLocation)) {
-    if (redirectAfterLogin != null && redirectAfterLogin.isNotEmpty) {
-      if (isValidRedirectPath(redirectAfterLogin)) {
-        return redirectAfterLogin;
+    return _destination(redirectAfterLogin);
+  }
+
+  // 4. 약관 동의 전이면 보호된 페이지 대신 동의 화면으로 (동의 후 원래 경로로 돌아가도록)
+  final isConsentRoute = matchedLocation == AppRoute.consent.path;
+  if (isAuthenticated && !isPublicRoute) {
+    if (consentRequired != false && !isConsentRoute) {
+      if (matchedLocation == AppRoute.calendar.path) {
+        return AppRoute.consent.path;
       }
-      if (!AppRoute.publicPaths.contains(redirectAfterLogin)) {
-        return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(redirectAfterLogin)}';
-      }
+      return '${AppRoute.consent.path}?redirect=${Uri.encodeComponent(matchedLocation)}';
     }
-    return AppRoute.calendar.path;
+    // 4-1. 동의가 필요 없으면 동의 화면에 머물지 않는다
+    if (consentRequired == false && isConsentRoute) {
+      return _destination(redirectAfterLogin);
+    }
   }
 
   // 리다이렉트 없음
   return null;
+}
+
+/// 로그인·약관 동의를 마친 뒤 갈 곳. [redirect]가 안전한 내부 경로가 아니면 메인 앱으로,
+/// 등록되지 않은 경로면 보안 경고로 보낸다.
+String _destination(String? redirect) {
+  if (redirect != null && redirect.isNotEmpty) {
+    if (isValidRedirectPath(redirect)) {
+      return redirect;
+    }
+    if (!AppRoute.publicPaths.contains(redirect)) {
+      return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(redirect)}';
+    }
+  }
+  return AppRoute.calendar.path;
 }

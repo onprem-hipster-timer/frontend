@@ -865,5 +865,182 @@ void main() {
         expect(result, isNull);
       });
     });
+
+    // ----------------------------------------------------------
+    // 약관 동의 (로그인한 사용자)
+    // ----------------------------------------------------------
+    group('약관 동의', () {
+      String? signedIn(
+        String location, {
+        required bool? consentRequired,
+        String? redirect,
+      }) => authRedirect(
+        isAuthenticated: true,
+        isAuthLoading: false,
+        matchedLocation: location,
+        redirectAfterLogin: redirect,
+        queryParameters: {'redirect': ?redirect},
+        consentRequired: consentRequired,
+      );
+
+      String consentFor(String path) =>
+          '${AppRoute.consent.path}?redirect=${Uri.encodeComponent(path)}';
+
+      test('동의가 필요하면 보호된 페이지 대신 동의 화면으로 가고, 원래 경로를 기억한다', () {
+        for (final path in [
+          AppRoute.todo.path,
+          AppRoute.mypage.path,
+          AppRoute.timer.path,
+          AppRoute.tags.path,
+          '/todo/group-1',
+          AppRoute.scheduleDetail.path,
+        ]) {
+          expect(
+            signedIn(path, consentRequired: true),
+            consentFor(path),
+            reason: path,
+          );
+        }
+      });
+
+      test('동의가 필요하면 루트(/)는 돌아갈 곳 없이 동의 화면으로 간다', () {
+        expect(
+          signedIn(AppRoute.calendar.path, consentRequired: true),
+          AppRoute.consent.path,
+        );
+      });
+
+      test('동의가 필요하면 동의 화면에 머문다', () {
+        expect(signedIn(AppRoute.consent.path, consentRequired: true), isNull);
+        expect(
+          signedIn(
+            AppRoute.consent.path,
+            consentRequired: true,
+            redirect: AppRoute.todo.path,
+          ),
+          isNull,
+        );
+      });
+
+      test('동의가 필요한지 아직 모르면(프로필 불러오는 중·실패) 보호된 페이지를 열지 않는다', () {
+        expect(
+          signedIn(AppRoute.todo.path, consentRequired: null),
+          consentFor(AppRoute.todo.path),
+        );
+        expect(
+          signedIn(AppRoute.calendar.path, consentRequired: null),
+          AppRoute.consent.path,
+        );
+        expect(signedIn(AppRoute.consent.path, consentRequired: null), isNull);
+      });
+
+      test('동의가 필요 없으면 보호된 페이지를 그대로 연다', () {
+        expect(signedIn(AppRoute.todo.path, consentRequired: false), isNull);
+        expect(
+          signedIn(AppRoute.calendar.path, consentRequired: false),
+          isNull,
+        );
+      });
+
+      test('동의가 필요 없으면 동의 화면에서 기억한 경로로 돌아간다', () {
+        expect(
+          signedIn(
+            AppRoute.consent.path,
+            consentRequired: false,
+            redirect: '/todo/group-1',
+          ),
+          '/todo/group-1',
+        );
+      });
+
+      test('동의가 필요 없고 돌아갈 곳이 없으면 동의 화면에서 메인으로 간다', () {
+        expect(
+          signedIn(AppRoute.consent.path, consentRequired: false),
+          AppRoute.calendar.path,
+        );
+        expect(
+          signedIn(
+            AppRoute.consent.path,
+            consentRequired: false,
+            redirect: AppRoute.login.path,
+          ),
+          AppRoute.calendar.path,
+        );
+      });
+
+      test('동의 화면의 돌아갈 곳이 외부 주소면 보안 경고로 보낸다', () {
+        const evil = 'https://evil.com';
+        expect(
+          signedIn(
+            AppRoute.consent.path,
+            consentRequired: false,
+            redirect: evil,
+          ),
+          '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(evil)}',
+        );
+      });
+
+      test('공개 페이지와 인증 화면은 동의가 필요해도 지금처럼 동작한다', () {
+        for (final route in AppRoute.values.where((r) => r.authNeutral)) {
+          expect(
+            signedIn(route.path, consentRequired: true),
+            isNull,
+            reason: route.path,
+          );
+        }
+        expect(
+          signedIn(AppRoute.landing.path, consentRequired: true),
+          AppRoute.calendar.path,
+        );
+      });
+
+      test('인증 로딩 중이면 동의 여부와 상관없이 /loading으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: AppRoute.consent.path,
+          consentRequired: null,
+        );
+        expect(result, AppRoute.loading.path);
+      });
+
+      test('로그인하지 않았으면 동의 화면도 로그인으로 보낸다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.consent.path,
+          consentRequired: null,
+        );
+        expect(
+          result,
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.consent.path)}',
+        );
+      });
+
+      test('로그인하면 원래 경로를 거쳐 동의 화면으로 가고, 동의하면 그 경로로 돌아온다', () {
+        // 로그인 화면 → 원래 경로
+        final afterLogin = signedIn(
+          AppRoute.login.path,
+          consentRequired: null,
+          redirect: AppRoute.mypage.path,
+        );
+        expect(afterLogin, AppRoute.mypage.path);
+
+        // 원래 경로 → 동의 화면
+        final gated = signedIn(afterLogin!, consentRequired: true);
+        expect(gated, consentFor(AppRoute.mypage.path));
+
+        // 동의 → 원래 경로
+        final uri = Uri.parse(gated!);
+        expect(
+          signedIn(
+            uri.path,
+            consentRequired: false,
+            redirect: uri.queryParameters['redirect'],
+          ),
+          AppRoute.mypage.path,
+        );
+      });
+    });
   });
 }

@@ -43,3 +43,7 @@ final graphQlApiProvider = Provider<GraphQlClient>((ref) {
 final healthApiProvider = Provider<HealthClient>((ref) {
   return ref.watch(moMeetClientProvider).health;
 });
+
+final usersApiProvider = Provider<UsersClient>((ref) {
+  return ref.watch(moMeetClientProvider).users;
+});

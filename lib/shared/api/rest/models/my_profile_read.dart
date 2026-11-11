@@ -13,6 +13,8 @@ abstract class MyProfileRead with _$MyProfileRead {
   const factory MyProfileRead({
     required String id,
     @JsonKey(name: 'friend_code') required String friendCode,
+    @JsonKey(name: 'consent_version') required String consentVersion,
+    @JsonKey(name: 'consent_required') required bool consentRequired,
     @JsonKey(name: 'display_name') String? displayName,
     @JsonKey(name: 'avatar_url') String? avatarUrl,
   }) = _MyProfileRead;

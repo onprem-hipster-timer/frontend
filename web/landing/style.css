@@ -595,6 +595,11 @@ body.landing-active #flutter-host {
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+.landing-footer a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .landing-nav {
