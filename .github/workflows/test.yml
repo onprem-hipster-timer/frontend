@@ -3,12 +3,13 @@ name: CI
 on:
   pull_request:
     branches: [main, dev]
+  # dev push는 dev 범위 캐시를 만들어 dev로 가는 PR이 복원할 수 있게 한다
   push:
-    branches: [main]
+    branches: [main, dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
