@@ -475,7 +475,7 @@ class FakeUsersClient extends Fake implements UsersClient {
       throw httpError(
         '/v1/users/me/consent',
         403,
-        data: {'detail': 'account_deletion_pending'},
+        data: {'message': 'account_deletion_pending'},
       );
     }
     profile = profile.copyWith(consentRequired: false);

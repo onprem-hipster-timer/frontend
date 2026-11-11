@@ -184,7 +184,7 @@ void main() {
   });
 
   group('탈퇴 대기 중이라 거절되면', () {
-    const pendingBody = '{"detail": "account_deletion_pending"}';
+    const pendingBody = '{"message": "account_deletion_pending"}';
     late FakeUsersClient users;
 
     /// 탈퇴 전 프로필을 받아 둔 뒤, 다른 곳에서 탈퇴를 신청한 상태로 만든다.
@@ -243,7 +243,7 @@ void main() {
     });
 
     test('다른 403은 프로필을 다시 받지 않는다', () async {
-      final backend = _FakeBackend([403], body: '{"detail": "forbidden"}');
+      final backend = _FakeBackend([403], body: '{"message": "forbidden"}');
       final (container, dio) = await bootSignedIn(backend);
 
       await expectLater(
@@ -268,6 +268,100 @@ void main() {
       await pumpEventQueue();
 
       expect(container.read(deletionPendingProvider), isNull);
+      expect(container.read(consentRequiredProvider), isNull);
+    });
+  });
+
+  group('약관 동의가 필요해 거절되면', () {
+    // backend 오류 응답 형식 (app/core/error_handlers.py)
+    String body(String message) =>
+        '{"error_id": "e", "status_code": 403, "error_type": "ConsentRequiredError", '
+        '"message": "$message", "timestamp": "t", "path": "/v1/todos"}';
+    late FakeUsersClient users;
+
+    /// 동의한 프로필을 받아 둔 뒤, 약관 버전이 바뀌어 다시 동의가 필요한 상태로 만든다.
+    Future<(ProviderContainer, Dio)> bootSignedIn(_FakeBackend backend) async {
+      harness = await KratosTestHarness.create();
+      users = FakeUsersClient(consentRequired: false);
+      final (container, dio) = await boot(backend, users: users);
+      await container.read(myProfileProvider.future);
+      users.profile = users.profile.copyWith(consentRequired: true);
+      return (container, dio);
+    }
+
+    test('오류는 그대로 내고 프로필을 다시 받아 동의가 필요한 상태가 된다', () async {
+      final backend = _FakeBackend([403], body: body('consent_required'));
+      final (container, dio) = await bootSignedIn(backend);
+      expect(container.read(consentRequiredProvider), isFalse);
+
+      await expectLater(
+        dio.get<dynamic>('/v1/todos'),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.response?.statusCode,
+            'status',
+            403,
+          ),
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(backend.requests, hasLength(1));
+      expect(users.reads, 2);
+      expect(container.read(consentRequiredProvider), isTrue);
+    });
+
+    test('여러 요청이 한꺼번에 거절돼도 프로필은 한 번만 다시 받는다', () async {
+      final backend = _FakeBackend([403], body: body('consent_required'));
+      final (container, dio) = await bootSignedIn(backend);
+      final gate = Completer<void>();
+      users.readGate = gate.future;
+
+      await Future.wait([
+        for (var i = 0; i < 3; i++)
+          dio.get<dynamic>('/v1/todos').then((_) {}, onError: (_) {}),
+      ]);
+      await pumpEventQueue();
+      // 다시 받는 동안에는 지금 프로필을 그대로 둔다 (불러오는 중으로 바뀌어 화면이 흔들리지 않게)
+      expect(container.read(consentRequiredProvider), isFalse);
+      gate.complete();
+      await pumpEventQueue();
+
+      expect(users.reads, 2);
+      expect(container.read(consentRequiredProvider), isTrue);
+    });
+
+    test('다른 403이나 다른 키에 담긴 같은 값은 프로필을 다시 받지 않는다', () async {
+      for (final other in [
+        body('forbidden'),
+        '{"detail": "consent_required"}',
+        '"consent_required"',
+      ]) {
+        final backend = _FakeBackend([403], body: other);
+        final (container, dio) = await bootSignedIn(backend);
+
+        await expectLater(
+          dio.get<dynamic>('/v1/todos'),
+          throwsA(isA<DioException>()),
+        );
+        await pumpEventQueue();
+
+        expect(users.reads, 1, reason: other);
+        expect(container.read(consentRequiredProvider), isFalse, reason: other);
+      }
+    });
+
+    test('프로필을 다시 받지 못하면 모르는 상태가 되어 보호된 페이지를 닫는다', () async {
+      final backend = _FakeBackend([403], body: body('consent_required'));
+      final (container, dio) = await bootSignedIn(backend);
+      users.readError = httpError('/v1/users/me', 500);
+
+      await expectLater(
+        dio.get<dynamic>('/v1/todos'),
+        throwsA(isA<DioException>()),
+      );
+      await pumpEventQueue();
+
       expect(container.read(consentRequiredProvider), isNull);
     });
   });

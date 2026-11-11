@@ -18,8 +18,8 @@ import 'package:momeet/core/providers/my_profile_provider.dart';
 ///   세션이 끝났으면 AuthNotifier가 미인증으로 바꾸고 요청은 401로 끝난다.
 /// - 동시 갱신은 AuthNotifier가 한 번으로 합치므로 대기열(Queued) 방식을 쓰지 않는다.
 ///   대기열 방식에서 onError 안의 재시도가 다시 실패하면 onError끼리 기다리며 멈춘다.
-/// - 탈퇴 대기 중이라 거절(403 `account_deletion_pending`)되면 프로필을 다시 받아
-///   라우터가 탈퇴 대기 화면으로 보내게 한다.
+/// - 프로필 상태 때문에 거절(403, [_profileStateErrors])되면 프로필을 다시 받아
+///   라우터가 그 상태의 화면(약관 동의, 탈퇴 대기)으로 보내게 한다.
 class AuthInterceptor extends Interceptor {
   final Ref ref;
 
@@ -83,7 +83,7 @@ class AuthInterceptor extends Interceptor {
       debugPrint('   Status: ${err.response?.statusCode}');
     }
 
-    if (_isDeletionPending(err.response)) {
+    if (_isProfileStateError(err.response)) {
       unawaited(ref.read(myProfileProvider.notifier).reload());
       return handler.next(err);
     }
@@ -106,11 +106,14 @@ class AuthInterceptor extends Interceptor {
   }
 }
 
-bool _isDeletionPending(Response<dynamic>? response) {
+/// 프로필을 다시 받으면 풀리는 403의 오류 코드 (backend 오류 응답의 `message`)
+const _profileStateErrors = {'consent_required', 'account_deletion_pending'};
+
+bool _isProfileStateError(Response<dynamic>? response) {
   final data = response?.data;
   return response?.statusCode == 403 &&
       data is Map &&
-      data['detail'] == 'account_deletion_pending';
+      _profileStateErrors.contains(data['message']);
 }
 
 /// Dio 클라이언트 프로바이더
