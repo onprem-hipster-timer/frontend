@@ -95,15 +95,15 @@ class _AccountDeletionPendingPageState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${_dateTimeFormat.format(scheduledAt.toLocal())}에 '
-                        '계정과 모든 데이터가 지워집니다.',
+                        '${_dateTimeFormat.format(scheduledAt.toLocal())}까지 '
+                        '탈퇴를 취소할 수 있습니다.',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '그 전에 취소하면 아무것도 지워지지 않습니다. '
+                        '그 뒤 하루 안에 계정과 모든 데이터가 지워지며, '
                         '지워진 뒤에는 되돌릴 수 없습니다.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,

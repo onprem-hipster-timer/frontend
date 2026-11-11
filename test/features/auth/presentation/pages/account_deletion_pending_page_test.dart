@@ -70,12 +70,13 @@ void main() {
     return button.onPressed != null;
   }
 
-  testWidgets('파기 예정 날짜와 되돌릴 수 없다는 것을 알린다', (tester) async {
+  testWidgets('취소할 수 있는 기한과, 그 뒤 지워져 되돌릴 수 없다는 것을 알린다', (tester) async {
     await pumpPage(tester);
 
     // 신청 시각(UTC 11월 11일 03:00)에서 3일 뒤. 어느 시간대에서도 같은 날이다
     expect(find.textContaining('2026년 11월 14일'), findsOneWidget);
-    expect(find.textContaining('계정과 모든 데이터가 지워집니다'), findsOneWidget);
+    expect(find.textContaining('까지 탈퇴를 취소할 수 있습니다'), findsOneWidget);
+    expect(find.textContaining('계정과 모든 데이터가 지워지며'), findsOneWidget);
     expect(find.textContaining('되돌릴 수 없습니다'), findsOneWidget);
     expect(enabled(tester, _cancel), isTrue);
     expect(enabled(tester, _logout), isTrue);
