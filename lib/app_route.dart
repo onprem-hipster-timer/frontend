@@ -38,6 +38,8 @@ enum AppRoute {
   // 인증 필요 (보호된 페이지)
   // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
   consent(path: '/consent'),
+  // 탈퇴를 신청한 사용자는 다른 보호 페이지(약관 동의 포함) 대신 여기로 온다
+  accountDeletion(path: '/account-deletion'),
   calendar(path: '/'),
   scheduleDetail(path: '/schedule/detail'),
   todo(path: '/todo'),

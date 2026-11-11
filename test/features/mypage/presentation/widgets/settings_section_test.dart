@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/mypage/presentation/widgets/settings_section.dart';
 
 import '../../../../helpers/kratos_mocks.dart';
@@ -96,5 +97,13 @@ void main() {
     await tapText(tester, '개인정보처리방침');
 
     expect(opened, [LegalLinks.terms, LegalLinks.privacy]);
+  });
+
+  testWidgets('맨 아래 회원 탈퇴를 누르면 탈퇴 확인을 연다', (tester) async {
+    await pumpSettings(tester, InMemoryAnalyticsConsentBridge());
+
+    await tapText(tester, '회원 탈퇴');
+
+    expect(find.byType(AccountDeletionDialog), findsOneWidget);
   });
 }

@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart' show setUpAll;
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/auth/presentation/pages/account_deletion_pending_page.dart';
 import 'package:momeet/features/auth/presentation/pages/auth_error_page.dart';
 import 'package:momeet/features/auth/presentation/pages/consent_page.dart';
 import 'package:momeet/features/auth/presentation/pages/forgot_password_page.dart';
@@ -10,6 +12,7 @@ import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_settings_drawer.dart';
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
+import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/settings/presentation/widgets/timezone_selection_sheet.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
@@ -31,6 +34,7 @@ void main() {
     signedOut = await KratosTestHarness.create(authenticated: false);
     signedOut.stubCreateFlow(KratosFlowType.login, 'flow-login');
     signedIn = await KratosTestHarness.create();
+    await initializeDateFormatting('ko');
   });
 
   Widget signedOutApp(Widget child) =>
@@ -83,6 +87,20 @@ void main() {
   );
 
   testLayoutAudit(
+    'account_deletion_pending_page',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => wrapWithApp(
+      overrides: [
+        ...signedIn.overrides,
+        usersApiProvider.overrideWithValue(
+          FakeUsersClient(deletionPending: true),
+        ),
+      ],
+    )(const AccountDeletionPendingPage()),
+  );
+
+  testLayoutAudit(
     'security_warning_page',
     subject: '막은 경로',
     build: (text) =>
@@ -118,6 +136,18 @@ void main() {
         ),
       ],
     )(const MyPage()),
+  );
+
+  testLayoutAudit(
+    'account_deletion_dialog',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => wrapWithApp(
+      overrides: [
+        ...signedIn.overrides,
+        usersApiProvider.overrideWithValue(FakeUsersClient()),
+      ],
+    )(const AccountDeletionDialog()),
   );
 
   testLayoutAudit(

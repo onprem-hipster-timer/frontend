@@ -17,6 +17,8 @@ abstract class MyProfileRead with _$MyProfileRead {
     @JsonKey(name: 'consent_required') required bool consentRequired,
     @JsonKey(name: 'display_name') String? displayName,
     @JsonKey(name: 'avatar_url') String? avatarUrl,
+    @JsonKey(name: 'deletion_requested_at') DateTime? deletionRequestedAt,
+    @JsonKey(name: 'deletion_scheduled_at') DateTime? deletionScheduledAt,
   }) = _MyProfileRead;
 
   factory MyProfileRead.fromJson(Map<String, Object?> json) =>

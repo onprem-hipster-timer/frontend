@@ -6,6 +6,7 @@ import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
+import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/settings/settings.dart';
 import 'package:momeet/router.dart';
 
@@ -73,6 +74,18 @@ class SettingsSection extends StatelessWidget {
                 onTap: onSignOut,
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // 실수로 누르지 않도록 설정 목록 밖 맨 아래에 작게 둔다
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => showAccountDeletionDialog(context),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
+            ),
+            child: const Text('회원 탈퇴'),
           ),
         ),
       ],

@@ -34,4 +34,22 @@ abstract class UsersClient {
     @Body() required ConsentCreate body,
     @DioOptions() RequestOptions? options,
   });
+
+  /// Request My Deletion.
+  ///
+  /// 회원 탈퇴 신청. 계정이 휴면이 되고 `deletion_scheduled_at` 뒤 파기된다.
+  ///
+  /// 다시 보내도 처음 신청 시각을 유지한다. 새로 신청하면 커밋 뒤 모든 기기의 로그인 세션을 끊는다.
+  @POST('/v1/users/me/deletion')
+  Future<MyProfileRead> requestMyDeletionV1UsersMeDeletionPost({
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Cancel My Deletion.
+  ///
+  /// 회원 탈퇴 신청 취소. 신청하지 않았으면 아무것도 바꾸지 않는다.
+  @DELETE('/v1/users/me/deletion')
+  Future<MyProfileRead> cancelMyDeletionV1UsersMeDeletionDelete({
+    @DioOptions() RequestOptions? options,
+  });
 }

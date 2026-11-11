@@ -19,7 +19,7 @@ import 'package:momeet/core/providers/my_profile_provider.dart';
 /// - 동시 갱신은 AuthNotifier가 한 번으로 합치므로 대기열(Queued) 방식을 쓰지 않는다.
 ///   대기열 방식에서 onError 안의 재시도가 다시 실패하면 onError끼리 기다리며 멈춘다.
 /// - 프로필 상태 때문에 거절([_profileStateStatuses])되면 프로필을 다시 받아
-///   라우터가 그 상태의 화면(약관 동의 등)으로 보내게 한다.
+///   라우터가 그 상태의 화면(약관 동의, 탈퇴 대기)으로 보내게 한다.
 class AuthInterceptor extends Interceptor {
   final Ref ref;
 
@@ -106,8 +106,8 @@ class AuthInterceptor extends Interceptor {
   }
 }
 
-/// 프로필을 다시 받으면 풀리는 거절 상태 코드 (428: 약관 동의 필요)
-const _profileStateStatuses = {428};
+/// 프로필을 다시 받으면 풀리는 거절 상태 코드 (428: 약관 동의 필요, 423: 탈퇴 대기)
+const _profileStateStatuses = {428, 423};
 
 bool _isProfileStateError(Response<dynamic>? response) =>
     _profileStateStatuses.contains(response?.statusCode);

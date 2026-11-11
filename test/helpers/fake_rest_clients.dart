@@ -398,18 +398,28 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
 /// 약관 동의 테스트용 현재 약관 버전.
 const testConsentVersion = '2026-11-01';
 
-/// 메모리에 내 프로필을 들고 있는 [UsersClient]. 받은 동의 요청을 기록한다.
+/// 탈퇴 테스트에서 신청한 시각. 파기는 3일 뒤다.
+final testDeletionRequestedAt = DateTime.utc(2026, 11, 11, 3);
+
+/// 메모리에 내 프로필을 들고 있는 [UsersClient]. 받은 동의·탈퇴 요청을 기록한다.
 ///
-/// 동의하면 [profile]의 `consentRequired`가 false가 된다.
+/// 동의하면 [profile]의 `consentRequired`가 false가 된다. 탈퇴를 신청하면
+/// [testDeletionRequestedAt]에 신청한 것이 되고(이미 신청했으면 그대로), 취소하면 지워진다.
+/// 탈퇴 대기 중에는 동의 요청을 423으로 거절한다.
 class FakeUsersClient extends Fake implements UsersClient {
   FakeUsersClient({
     bool consentRequired = true,
     String consentVersion = testConsentVersion,
+    bool deletionPending = false,
   }) : profile = MyProfileRead(
          id: 'test-uid',
          friendCode: 'FRIEND01',
          consentVersion: consentVersion,
          consentRequired: consentRequired,
+         deletionRequestedAt: deletionPending ? testDeletionRequestedAt : null,
+         deletionScheduledAt: deletionPending
+             ? testDeletionRequestedAt.add(const Duration(days: 3))
+             : null,
        );
 
   MyProfileRead profile;
@@ -431,6 +441,18 @@ class FakeUsersClient extends Fake implements UsersClient {
   /// 설정하면 동의 요청이 이것이 끝날 때까지 기다린다.
   Future<void>? consentGate;
 
+  /// 탈퇴 신청(POST) 횟수
+  int deletionRequests = 0;
+
+  /// 탈퇴 취소(DELETE) 횟수
+  int deletionCancels = 0;
+
+  /// 설정하면 탈퇴 신청·취소가 이 오류로 실패한다.
+  Object? deletionError;
+
+  /// 설정하면 탈퇴 신청·취소가 이것이 끝날 때까지 기다린다.
+  Future<void>? deletionGate;
+
   @override
   Future<MyProfileRead> getMyProfileV1UsersMeGet({
     RequestOptions? options,
@@ -449,12 +471,47 @@ class FakeUsersClient extends Fake implements UsersClient {
     agreed.add(body);
     await consentGate;
     if (consentError != null) throw consentError!;
+    if (profile.deletionRequestedAt != null) {
+      throw httpError(
+        '/v1/users/me/consent',
+        423,
+        data: {'message': 'account_deletion_pending'},
+      );
+    }
     profile = profile.copyWith(consentRequired: false);
+    return profile;
+  }
+
+  @override
+  Future<MyProfileRead> requestMyDeletionV1UsersMeDeletionPost({
+    RequestOptions? options,
+  }) async {
+    deletionRequests++;
+    await deletionGate;
+    if (deletionError != null) throw deletionError!;
+    final requestedAt = profile.deletionRequestedAt ?? testDeletionRequestedAt;
+    profile = profile.copyWith(
+      deletionRequestedAt: requestedAt,
+      deletionScheduledAt: requestedAt.add(const Duration(days: 3)),
+    );
+    return profile;
+  }
+
+  @override
+  Future<MyProfileRead> cancelMyDeletionV1UsersMeDeletionDelete({
+    RequestOptions? options,
+  }) async {
+    deletionCancels++;
+    await deletionGate;
+    if (deletionError != null) throw deletionError!;
+    profile = profile.copyWith(
+      deletionRequestedAt: null,
+      deletionScheduledAt: null,
+    );
     return profile;
   }
 }
 
-/// 서버가 [statusCode]로 거절한 요청의 오류.
 /// 서버가 [statusCode]로 거절한 요청의 오류. [data]는 응답 본문이다.
 DioException httpError(String path, int statusCode, {Object? data}) {
   final request = RequestOptions(path: path);

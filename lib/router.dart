@@ -35,7 +35,7 @@ export 'package:momeet/app_route.dart';
 
 /// 인증 상태 변화를 GoRouter에 전달하는 Listenable
 ///
-/// authProvider나 약관 동의 필요 여부가 바뀌면 notifyListeners()를 호출하여
+/// authProvider나 약관 동의 필요 여부, 탈퇴 대기 여부가 바뀌면 notifyListeners()를 호출하여
 /// GoRouter가 redirect를 재평가하도록 합니다.
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
@@ -43,6 +43,9 @@ class _AuthChangeNotifier extends ChangeNotifier {
       notifyListeners();
     });
     ref.listen<bool?>(consentRequiredProvider, (previous, next) {
+      notifyListeners();
+    });
+    ref.listen<bool?>(deletionPendingProvider, (previous, next) {
       notifyListeners();
     });
   }
@@ -65,6 +68,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirectAfterLogin: state.uri.queryParameters['redirect'],
         queryParameters: state.uri.queryParameters,
         consentRequired: ref.read(consentRequiredProvider),
+        deletionPending: ref.read(deletionPendingProvider),
       );
     },
 
@@ -117,6 +121,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.consent.path,
         name: AppRoute.consent.name,
         builder: (context, state) => const ConsentPage(),
+      ),
+
+      GoRoute(
+        path: AppRoute.accountDeletion.path,
+        name: AppRoute.accountDeletion.name,
+        builder: (context, state) => const AccountDeletionPendingPage(),
       ),
 
       GoRoute(

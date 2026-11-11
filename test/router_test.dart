@@ -1042,5 +1042,186 @@ void main() {
         );
       });
     });
+    // ----------------------------------------------------------
+    // 탈퇴 대기 (로그인한 사용자)
+    // ----------------------------------------------------------
+    group('탈퇴 대기', () {
+      String? signedIn(
+        String location, {
+        required bool? deletionPending,
+        bool? consentRequired = false,
+        String? redirect,
+      }) => authRedirect(
+        isAuthenticated: true,
+        isAuthLoading: false,
+        matchedLocation: location,
+        redirectAfterLogin: redirect,
+        queryParameters: {'redirect': ?redirect},
+        consentRequired: consentRequired,
+        deletionPending: deletionPending,
+      );
+
+      final grace = AppRoute.accountDeletion.path;
+      String graceFor(String path) =>
+          '$grace?redirect=${Uri.encodeComponent(path)}';
+
+      test('탈퇴를 신청했으면 보호된 페이지 대신 탈퇴 대기 화면으로 가고, 원래 경로를 기억한다', () {
+        for (final path in [
+          AppRoute.todo.path,
+          AppRoute.mypage.path,
+          '/todo/group-1',
+          AppRoute.scheduleDetail.path,
+        ]) {
+          expect(
+            signedIn(path, deletionPending: true),
+            graceFor(path),
+            reason: path,
+          );
+        }
+        expect(signedIn(AppRoute.calendar.path, deletionPending: true), grace);
+      });
+
+      test('약관 동의가 필요하거나 아직 몰라도 탈퇴 대기 화면이 먼저다', () {
+        for (final consent in [true, null]) {
+          expect(
+            signedIn(
+              AppRoute.todo.path,
+              deletionPending: true,
+              consentRequired: consent,
+            ),
+            graceFor(AppRoute.todo.path),
+            reason: '$consent',
+          );
+          expect(
+            signedIn(grace, deletionPending: true, consentRequired: consent),
+            isNull,
+            reason: '$consent',
+          );
+        }
+      });
+
+      test('동의 화면에 있다가 탈퇴 신청이 확인되면 동의 화면이 기억한 경로를 넘겨받는다', () {
+        expect(
+          signedIn(
+            AppRoute.consent.path,
+            deletionPending: true,
+            consentRequired: true,
+            redirect: AppRoute.todo.path,
+          ),
+          graceFor(AppRoute.todo.path),
+        );
+        expect(
+          signedIn(
+            AppRoute.consent.path,
+            deletionPending: true,
+            consentRequired: true,
+          ),
+          grace,
+        );
+      });
+
+      test('탈퇴 신청 여부를 아직 모르면(프로필 불러오는 중·실패) 탈퇴 대기 화면에 머문다', () {
+        expect(
+          signedIn(grace, deletionPending: null, consentRequired: null),
+          isNull,
+        );
+        expect(
+          signedIn(
+            grace,
+            deletionPending: null,
+            consentRequired: null,
+            redirect: AppRoute.todo.path,
+          ),
+          isNull,
+        );
+      });
+
+      test('탈퇴 신청 여부를 모르면 다른 보호된 페이지는 열지 않는다', () {
+        expect(
+          signedIn(
+            AppRoute.todo.path,
+            deletionPending: null,
+            consentRequired: null,
+          ),
+          '${AppRoute.consent.path}?redirect=${Uri.encodeComponent(AppRoute.todo.path)}',
+        );
+      });
+
+      test('탈퇴를 취소했고 동의가 필요 없으면 기억한 경로로, 없으면 메인으로 간다', () {
+        expect(
+          signedIn(grace, deletionPending: false, redirect: '/todo/group-1'),
+          '/todo/group-1',
+        );
+        expect(signedIn(grace, deletionPending: false), AppRoute.calendar.path);
+      });
+
+      test('탈퇴를 취소했는데 동의가 필요하면 기억한 경로를 넘겨 동의 화면으로 간다', () {
+        expect(
+          signedIn(
+            grace,
+            deletionPending: false,
+            consentRequired: true,
+            redirect: AppRoute.todo.path,
+          ),
+          '${AppRoute.consent.path}?redirect=${Uri.encodeComponent(AppRoute.todo.path)}',
+        );
+        expect(
+          signedIn(grace, deletionPending: false, consentRequired: null),
+          AppRoute.consent.path,
+        );
+      });
+
+      test('탈퇴 대기 화면의 돌아갈 곳이 외부 주소면 취소한 뒤 보안 경고로 보낸다', () {
+        const evil = 'https://evil.com';
+        expect(signedIn(grace, deletionPending: true, redirect: evil), isNull);
+        expect(
+          signedIn(grace, deletionPending: false, redirect: evil),
+          '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(evil)}',
+        );
+      });
+
+      test('탈퇴를 신청하지 않았으면 보호된 페이지를 그대로 연다', () {
+        expect(signedIn(AppRoute.todo.path, deletionPending: false), isNull);
+        expect(
+          signedIn(AppRoute.calendar.path, deletionPending: false),
+          isNull,
+        );
+      });
+
+      test('공개 페이지와 인증 화면은 탈퇴를 신청했어도 지금처럼 동작한다', () {
+        for (final route in AppRoute.values.where((r) => r.authNeutral)) {
+          expect(
+            signedIn(route.path, deletionPending: true),
+            isNull,
+            reason: route.path,
+          );
+        }
+        expect(
+          signedIn(AppRoute.landing.path, deletionPending: true),
+          AppRoute.calendar.path,
+        );
+        expect(
+          signedIn(
+            AppRoute.login.path,
+            deletionPending: true,
+            redirect: AppRoute.mypage.path,
+          ),
+          AppRoute.mypage.path,
+        );
+      });
+
+      test('로그인하지 않았으면 탈퇴 대기 화면도 로그인으로 보낸다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: grace,
+          deletionPending: null,
+        );
+        expect(
+          result,
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(grace)}',
+        );
+      });
+    });
   });
 }
