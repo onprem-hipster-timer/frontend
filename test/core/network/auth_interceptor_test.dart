@@ -185,8 +185,8 @@ void main() {
 
   group('약관 동의가 필요해 거절되면', () {
     // backend 오류 응답 형식 (app/core/error_handlers.py)
-    String body(String message) =>
-        '{"error_id": "e", "status_code": 403, "error_type": "ConsentRequiredError", '
+    String body(int status, String message) =>
+        '{"error_id": "e", "status_code": $status, "error_type": "ConsentRequiredError", '
         '"message": "$message", "timestamp": "t", "path": "/v1/todos"}';
     late FakeUsersClient users;
 
@@ -201,7 +201,7 @@ void main() {
     }
 
     test('오류는 그대로 내고 프로필을 다시 받아 동의가 필요한 상태가 된다', () async {
-      final backend = _FakeBackend([403], body: body('consent_required'));
+      final backend = _FakeBackend([428], body: body(428, 'consent_required'));
       final (container, dio) = await bootSignedIn(backend);
       expect(container.read(consentRequiredProvider), isFalse);
 
@@ -211,7 +211,7 @@ void main() {
           isA<DioException>().having(
             (e) => e.response?.statusCode,
             'status',
-            403,
+            428,
           ),
         ),
       );
@@ -223,7 +223,7 @@ void main() {
     });
 
     test('여러 요청이 한꺼번에 거절돼도 프로필은 한 번만 다시 받는다', () async {
-      final backend = _FakeBackend([403], body: body('consent_required'));
+      final backend = _FakeBackend([428], body: body(428, 'consent_required'));
       final (container, dio) = await bootSignedIn(backend);
       final gate = Completer<void>();
       users.readGate = gate.future;
@@ -242,13 +242,11 @@ void main() {
       expect(container.read(consentRequiredProvider), isTrue);
     });
 
-    test('다른 403이나 다른 키에 담긴 같은 값은 프로필을 다시 받지 않는다', () async {
-      for (final other in [
-        body('forbidden'),
-        '{"detail": "consent_required"}',
-        '"consent_required"',
-      ]) {
-        final backend = _FakeBackend([403], body: other);
+    test('다른 거절(403 등)은 본문이 같아도 프로필을 다시 받지 않는다', () async {
+      for (final status in [403, 409, 400]) {
+        final backend = _FakeBackend([
+          status,
+        ], body: body(status, 'consent_required'));
         final (container, dio) = await bootSignedIn(backend);
 
         await expectLater(
@@ -257,13 +255,31 @@ void main() {
         );
         await pumpEventQueue();
 
-        expect(users.reads, 1, reason: other);
-        expect(container.read(consentRequiredProvider), isFalse, reason: other);
+        expect(users.reads, 1, reason: '$status');
+        expect(
+          container.read(consentRequiredProvider),
+          isFalse,
+          reason: '$status',
+        );
       }
     });
 
+    test('본문이 없어도 428이면 프로필을 다시 받는다', () async {
+      final backend = _FakeBackend([428], body: '');
+      final (container, dio) = await bootSignedIn(backend);
+
+      await expectLater(
+        dio.get<dynamic>('/v1/todos'),
+        throwsA(isA<DioException>()),
+      );
+      await pumpEventQueue();
+
+      expect(users.reads, 2);
+      expect(container.read(consentRequiredProvider), isTrue);
+    });
+
     test('프로필을 다시 받지 못하면 모르는 상태가 되어 보호된 페이지를 닫는다', () async {
-      final backend = _FakeBackend([403], body: body('consent_required'));
+      final backend = _FakeBackend([428], body: body(428, 'consent_required'));
       final (container, dio) = await bootSignedIn(backend);
       users.readError = httpError('/v1/users/me', 500);
 

@@ -18,7 +18,7 @@ import 'package:momeet/core/providers/my_profile_provider.dart';
 ///   세션이 끝났으면 AuthNotifier가 미인증으로 바꾸고 요청은 401로 끝난다.
 /// - 동시 갱신은 AuthNotifier가 한 번으로 합치므로 대기열(Queued) 방식을 쓰지 않는다.
 ///   대기열 방식에서 onError 안의 재시도가 다시 실패하면 onError끼리 기다리며 멈춘다.
-/// - 프로필 상태 때문에 거절(403, [_profileStateErrors])되면 프로필을 다시 받아
+/// - 프로필 상태 때문에 거절([_profileStateStatuses])되면 프로필을 다시 받아
 ///   라우터가 그 상태의 화면(약관 동의 등)으로 보내게 한다.
 class AuthInterceptor extends Interceptor {
   final Ref ref;
@@ -106,15 +106,11 @@ class AuthInterceptor extends Interceptor {
   }
 }
 
-/// 프로필을 다시 받으면 풀리는 403의 오류 코드 (backend 오류 응답의 `message`)
-const _profileStateErrors = {'consent_required'};
+/// 프로필을 다시 받으면 풀리는 거절 상태 코드 (428: 약관 동의 필요)
+const _profileStateStatuses = {428};
 
-bool _isProfileStateError(Response<dynamic>? response) {
-  final data = response?.data;
-  return response?.statusCode == 403 &&
-      data is Map &&
-      _profileStateErrors.contains(data['message']);
-}
+bool _isProfileStateError(Response<dynamic>? response) =>
+    _profileStateStatuses.contains(response?.statusCode);
 
 /// Dio 클라이언트 프로바이더
 ///
