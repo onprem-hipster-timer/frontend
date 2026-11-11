@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - name: Restore codegen cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       id: codegen-cache
       with:
         path: |
@@ -39,7 +39,7 @@ runs:
     # 코드 생성이 끝까지 성공했을 때만 저장한다 (취소·실패한 실행의 빈 결과를 저장하지 않는다)
     - name: Save codegen cache
       if: steps.codegen.outcome == 'success'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v6
       with:
         path: |
           .dart_tool/build
