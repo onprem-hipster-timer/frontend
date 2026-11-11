@@ -145,7 +145,9 @@ abstract class TimersClient {
 
   /// Update Timer.
   ///
-  /// 타이머 메타데이터 업데이트 (title, description, tags).
+  /// 타이머 메타데이터 업데이트 (title, description, tags, todo_id, schedule_id, allocated_duration).
+  ///
+  /// allocated_duration은 현재 경과 시간(실행 중이면 지금까지 실행한 구간 포함)보다 커야 한다 (아니면 422). 만료된 타이머는 늘린 뒤 재개할 수 있다.
   ///
   /// [includeSchedule] - Schedule 정보 포함 여부 (기본값: false).
   ///

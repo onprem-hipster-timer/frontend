@@ -68,5 +68,6 @@ export 'models/validation_error.dart';
 export 'models/visibility_level.dart';
 export 'models/visibility_read.dart';
 export 'models/visibility_update.dart';
+export 'models/consent_create.dart';
 // Root client
 export 'mo_meet_client.dart';

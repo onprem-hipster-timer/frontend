@@ -33,11 +33,7 @@ class TagGroupsRaw extends _$TagGroupsRaw {
   Future<List<TagGroupReadWithTags>> build() async {
     final api = ref.watch(tagsApiProvider);
 
-    try {
-      return await api.readTagGroupsV1TagsGroupsGet();
-    } catch (error) {
-      throw Exception('태그 그룹 조회 실패: $error');
-    }
+    return api.readTagGroupsV1TagsGroupsGet();
   }
 
   // ----- Tag Group CUD -----

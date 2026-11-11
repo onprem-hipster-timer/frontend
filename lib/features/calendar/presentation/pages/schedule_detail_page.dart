@@ -1,20 +1,17 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
-import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart';
 import 'package:momeet/features/calendar/presentation/utils/source_todo_policy_dialog.dart';
-import 'package:momeet/features/calendar/presentation/widgets/info_row.dart';
+import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_info.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
@@ -31,14 +28,14 @@ class ScheduleDetailPage extends ConsumerStatefulWidget {
 enum _PendingAction { convert, delete }
 
 class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
-  static final _createdAtFormat = DateFormat('yyyy.MM.dd HH:mm');
-
   _PendingAction? _pendingAction;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final scheduleAsync = ref.watch(scheduleDetailProvider(widget.scheduleId));
+    final isMutating =
+        ref.watch(deleteScheduleMutation).isPending ||
+        ref.watch(convertToTodoMutation).isPending;
 
     return Scaffold(
       appBar: AppBar(
@@ -49,308 +46,47 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
         ),
       ),
       body: scheduleAsync.when(
-        data: (schedule) => _buildBody(context, ref, theme, schedule),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
+        data: (schedule) => SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
+              _ScheduleTitle(title: schedule.title),
+              const SizedBox(height: 24),
+              ScheduleDetailInfo(schedule: schedule),
+              const SizedBox(height: 16),
+              ScheduleTimerSection(scheduleId: schedule.id),
+              const SizedBox(height: 16),
+              _TodoConversionButton(
+                linked: schedule.sourceTodoId != null,
+                converting: _pendingAction == _PendingAction.convert,
+                onOpenLinked: () => _navigateToLinkedTodo(context, schedule),
+                onConvert: isMutating
+                    ? null
+                    : () => _handleConvertToTodo(context, ref, schedule),
               ),
               const SizedBox(height: 16),
-              Text('일정을 불러올 수 없습니다', style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 8),
-              FilledButton.tonal(
-                onPressed: () =>
-                    ref.invalidate(scheduleDetailProvider(widget.scheduleId)),
-                child: const Text('다시 시도'),
+              _EditDeleteButtons(
+                deleting: _pendingAction == _PendingAction.delete,
+                onEdit: isMutating
+                    ? null
+                    : () => showScheduleEditSheet(context, schedule),
+                onDelete: isMutating
+                    ? null
+                    : () => _handleDelete(context, ref, schedule),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBody(
-    BuildContext context,
-    WidgetRef ref,
-    ThemeData theme,
-    ScheduleRead schedule,
-  ) {
-    final isScheduleMutating =
-        ref.watch(deleteScheduleMutation).isPending ||
-        ref.watch(convertToTodoMutation).isPending;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildScheduleHeader(theme, schedule),
-          const SizedBox(height: 24),
-          _buildScheduleInfo(context, schedule),
-          const SizedBox(height: 16),
-          ScheduleTimerSection(scheduleId: schedule.id),
-          const SizedBox(height: 16),
-          _buildTodoConversionRow(context, ref, schedule, isScheduleMutating),
-          const SizedBox(height: 16),
-          _buildActionButtons(context, ref, schedule, isScheduleMutating),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // 일정 정보 섹션
-  // ============================================================
-
-  Widget _buildScheduleHeader(ThemeData theme, ScheduleRead schedule) {
-    return Row(
-      children: [
-        Icon(Icons.event, color: theme.colorScheme.primary, size: 28),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            schedule.title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScheduleInfo(BuildContext context, ScheduleRead schedule) {
-    final statusColor = getScheduleStatusColor(
-      schedule.state,
-      Theme.of(context).brightness,
-    );
-    final statusText = getScheduleStatusText(schedule.state);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InfoRow(
-          icon: Icons.access_time,
-          label: '시간',
-          value: formatScheduleTime(schedule),
-        ),
-        if (schedule.description != null &&
-            schedule.description!.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          InfoRow(
-            icon: Icons.description,
-            label: '설명',
-            value: schedule.description!,
-            isMultiline: true,
-          ),
-        ],
-        if (schedule.tags.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          _buildTagsSection(context, schedule.tags.toList()),
-        ],
-        const SizedBox(height: 16),
-        InfoRow(
-          icon: Icons.flag,
-          label: '상태',
-          valueWidget: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              statusText,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        if (schedule.recurrenceRule != null) ...[
-          const SizedBox(height: 16),
-          InfoRow(
-            icon: Icons.repeat,
-            label: '반복',
-            value: parseRecurrenceRule(schedule.recurrenceRule!),
-          ),
-        ],
-        const SizedBox(height: 16),
-        InfoRow(
-          icon: Icons.schedule,
-          label: '생성',
-          value: _createdAtFormat.format(schedule.createdAt.toLocal()),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTagsSection(BuildContext context, List<TagRead> tags) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.label, size: 20, color: Colors.grey[600]),
-            const SizedBox(width: 12),
-            Text(
-              '태그',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: tags.map((tag) => _buildTagChip(context, tag)).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTagChip(BuildContext context, TagRead tag) {
-    final color = HexColor.fromHex(tag.color);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        tag.name,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w500,
+        loading: () => const AppLoading(),
+        error: (error, stack) => AppErrorState(
+          title: '일정을 불러올 수 없습니다',
+          onRetry: () =>
+              ref.invalidate(scheduleDetailProvider(widget.scheduleId)),
         ),
       ),
     );
   }
-
-  // ============================================================
-  // TODO 변환 + 액션 버튼
-  // ============================================================
-
-  Widget _buildTodoConversionRow(
-    BuildContext context,
-    WidgetRef ref,
-    ScheduleRead schedule,
-    bool isLoading,
-  ) {
-    final hasLinkedTodo = schedule.sourceTodoId != null;
-
-    if (hasLinkedTodo) {
-      return SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => _navigateToLinkedTodo(context, schedule),
-          icon: const Icon(Icons.link),
-          label: const Text('연결된 TODO 보기'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.tonal(
-        onPressed: isLoading
-            ? null
-            : () => _handleConvertToTodo(context, ref, schedule),
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: _pendingAction == _PendingAction.convert
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.transform, size: 18),
-                  SizedBox(width: 8),
-                  Text('TODO로 변환'),
-                ],
-              ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(
-    BuildContext context,
-    WidgetRef ref,
-    ScheduleRead schedule,
-    bool isLoading,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : () => _handleEdit(context, schedule),
-            icon: const Icon(Icons.edit),
-            label: const Text('수정'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: isLoading
-                ? null
-                : () => _handleDelete(context, ref, schedule),
-            icon: _pendingAction == _PendingAction.delete
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.delete),
-            label: Text(
-              _pendingAction == _PendingAction.delete ? '삭제 중...' : '삭제',
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // 핸들러
-  // ============================================================
 
   /// tagGroupId가 없으면 사용자에게 선택하게 한 뒤 TODO로 변환
   Future<void> _handleConvertToTodo(
@@ -381,11 +117,15 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       );
 
       if (context.mounted) {
-        _showSnackBar(context, message: 'TODO로 변환되었습니다');
+        showAppSnackBar(context, 'TODO로 변환되었습니다', kind: AppNoticeKind.success);
       }
     } catch (error) {
       if (context.mounted) {
-        _showSnackBar(context, message: '변환에 실패했습니다: $error', isError: true);
+        showAppSnackBar(
+          context,
+          '변환에 실패했습니다: $error',
+          kind: AppNoticeKind.error,
+        );
       }
     } finally {
       if (mounted) setState(() => _pendingAction = null);
@@ -404,16 +144,12 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     }
   }
 
-  void _handleEdit(BuildContext context, ScheduleRead schedule) {
-    showScheduleEditSheet(context, schedule);
-  }
-
   Future<void> _handleDelete(
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
   ) async {
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '일정 삭제',
       content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
@@ -452,37 +188,158 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
 
       if (deleted && context.mounted) {
         context.pop();
-        _showSnackBar(context, message: '일정이 삭제되었습니다');
+        showAppSnackBar(context, '일정이 삭제되었습니다', kind: AppNoticeKind.success);
       }
     } catch (error) {
       if (context.mounted) {
-        _showSnackBar(context, message: '삭제에 실패했습니다: $error', isError: true);
+        showAppSnackBar(
+          context,
+          '삭제에 실패했습니다: $error',
+          kind: AppNoticeKind.error,
+        );
       }
     } finally {
       if (mounted) setState(() => _pendingAction = null);
     }
   }
+}
 
-  void _showSnackBar(
-    BuildContext context, {
-    required String message,
-    bool isError = false,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error : Icons.check_circle,
-              color: Colors.white,
+/// 상세 화면의 넓은 버튼 공통 모양
+final _actionButtonStyle = ButtonStyle(
+  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 12)),
+  shape: WidgetStatePropertyAll(
+    RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+  ),
+);
+
+/// 일정 제목 줄
+class _ScheduleTitle extends StatelessWidget {
+  const _ScheduleTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(Icons.event, color: theme.colorScheme.primary, size: 28),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
+          ),
         ),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        behavior: SnackBarBehavior.floating,
+      ],
+    );
+  }
+}
+
+/// 할 일과 이어졌으면 그 할 일로 가고, 아니면 할 일로 바꾼다
+class _TodoConversionButton extends StatelessWidget {
+  const _TodoConversionButton({
+    required this.linked,
+    required this.converting,
+    required this.onOpenLinked,
+    required this.onConvert,
+  });
+
+  final bool linked;
+  final bool converting;
+  final VoidCallback onOpenLinked;
+
+  /// null이면 다른 작업이 진행 중이라 누를 수 없다
+  final VoidCallback? onConvert;
+
+  @override
+  Widget build(BuildContext context) {
+    if (linked) {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: onOpenLinked,
+          icon: const Icon(Icons.link),
+          label: const Text('연결된 TODO 보기'),
+          style: _actionButtonStyle,
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonal(
+        onPressed: onConvert,
+        style: _actionButtonStyle,
+        child: converting
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.transform, size: 18),
+                  SizedBox(width: 8),
+                  Text('TODO로 변환'),
+                ],
+              ),
       ),
+    );
+  }
+}
+
+/// 수정·삭제 버튼 줄. 콜백이 null이면 누를 수 없다
+class _EditDeleteButtons extends StatelessWidget {
+  const _EditDeleteButtons({
+    required this.deleting,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final bool deleting;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit),
+            label: const Text('수정'),
+            style: _actionButtonStyle,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: onDelete,
+            icon: deleting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.delete),
+            label: Text(deleting ? '삭제 중...' : '삭제'),
+            style: _actionButtonStyle.copyWith(
+              backgroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.error,
+              ),
+              foregroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.onError,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

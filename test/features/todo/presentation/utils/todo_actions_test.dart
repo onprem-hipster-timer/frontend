@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
@@ -109,9 +109,7 @@ void main() {
     await tester.tap(find.text('삭제'));
     await tester.pumpAndSettle();
 
-    // 일정 정책 다이얼로그: 첫 번째 선택지를 고른다
-    final schedulePolicyChoice = find.byType(ListTile).first;
-    await tester.tap(schedulePolicyChoice);
+    await tester.tap(find.text('일정은 남기기'));
     await tester.pumpAndSettle();
     expect(find.text('연결된 타이머 처리'), findsOneWidget);
     final first = backend.requests.single.uri.queryParameters;

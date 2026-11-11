@@ -448,7 +448,6 @@ hs_err_pid*
 
 # FVM Version Cache
 .fvm/
-.fvmrc
 
 # Lefthook local overrides
 lefthook-local.yml

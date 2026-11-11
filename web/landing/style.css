@@ -595,6 +595,11 @@ body.landing-active #flutter-host {
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+.landing-footer a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .landing-nav {
@@ -635,5 +640,89 @@ body.landing-active #flutter-host {
 
   .cta h2 {
     font-size: 1.4rem;
+  }
+}
+
+/* 사용성 분석 쿠키 동의 (첫 방문에 한 번) */
+.consent-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1rem 1.125rem;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, 'Helvetica Neue', 'Noto Sans KR', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  z-index: 300;
+}
+
+.consent-banner[hidden] {
+  display: none;
+}
+
+.consent-banner-title {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.consent-banner-text {
+  margin: 0;
+  color: var(--ink-light);
+}
+
+.consent-banner-text a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.consent-banner-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.consent-banner-btn {
+  min-width: 72px;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.consent-banner-btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .consent-banner {
+    background: #1f1f1f;
+    color: #f2f2f2;
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .consent-banner-text {
+    color: #c8c8c8;
+  }
+
+  .consent-banner-btn {
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #f2f2f2;
   }
 }

@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 class AuthButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
-  final Color? backgroundColor;
-  final Color? foregroundColor;
 
   const AuthButton({
     super.key,
@@ -14,8 +13,6 @@ class AuthButton extends StatelessWidget {
     this.onPressed,
     this.isLoading = false,
     this.icon,
-    this.backgroundColor,
-    this.foregroundColor,
   });
 
   @override
@@ -23,10 +20,8 @@ class AuthButton extends StatelessWidget {
     return FilledButton(
       onPressed: isLoading ? null : onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
       ),
       child: isLoading
           ? const SizedBox(
@@ -41,11 +36,14 @@ class AuthButton extends StatelessWidget {
                   Icon(icon, size: 20),
                   const SizedBox(width: 8),
                 ],
-                Text(
-                  text,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],

@@ -9,10 +9,8 @@
 import 'dart:async';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart' show JWT;
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
@@ -20,7 +18,11 @@ import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
-part 'auth_provider.freezed.dart';
+import 'package:momeet/core/providers/auth_status.dart';
+
+export 'package:momeet/core/providers/auth_selectors.dart';
+export 'package:momeet/core/providers/auth_status.dart';
+
 part 'auth_provider.g.dart';
 
 /// 세션 토큰을 보관하는 SharedPreferences 키.
@@ -34,32 +36,6 @@ const sessionTokenKey = 'momeet.session_token';
 /// Google을 다녀오는 동안 페이지가 새로 뜨므로 메모리가 아니라 저장소에 둔다.
 /// 이 값이 있어야 돌아온 코드로 세션을 받을 수 있으므로, 남이 보낸 복귀 링크로는 로그인되지 않는다.
 const googleSignInCodeKey = 'momeet.google_sign_in_code';
-
-// ============================================================
-// 상태 모델
-// ============================================================
-
-/// 인증 상태
-@freezed
-sealed class AuthStatus with _$AuthStatus {
-  /// 저장된 세션을 확인하는 중 (앱 시작 시에만)
-  const factory AuthStatus.loading() = AuthLoading;
-
-  /// 인증됨. [accessToken]은 백엔드에 보낼 JWT다.
-  const factory AuthStatus.authenticated({
-    required AuthUser user,
-    required String accessToken,
-  }) = AuthAuthenticated;
-
-  /// 미인증
-  const factory AuthStatus.unauthenticated() = AuthUnauthenticated;
-
-  /// 앱 시작 시 세션을 확인하지 못함 (네트워크 오류 등)
-  const factory AuthStatus.error({
-    required String message,
-    dynamic originalError,
-  }) = AuthStatusError;
-}
 
 // ============================================================
 // 인증 상태 프로바이더
@@ -171,18 +147,20 @@ class AuthNotifier extends _$AuthNotifier {
       });
       await _authenticateWith(result.sessionToken!);
     } catch (e) {
-      final type = AuthErrorType.classify(e);
-      if (type == AuthErrorType.emailNotVerified) {
-        throw EmailNotVerifiedException(
-          message: type.localized,
-          originalError: e,
-          verificationFlowId: e is KratosException
-              ? e.verificationFlowId
-              : null,
-        );
-      }
-      throw AuthException(message: type.localized, originalError: e);
+      throw _signInError(AuthErrorType.classify(e), e);
     }
+  }
+
+  /// 비밀번호 로그인 실패를 앱 예외로 바꾼다. 이메일 인증 전이면 서버가 새로 만든 인증 플로우를 담는다.
+  static AuthException _signInError(AuthErrorType type, Object e) {
+    if (type == AuthErrorType.emailNotVerified) {
+      return EmailNotVerifiedException(
+        message: type.localized,
+        originalError: e,
+        verificationFlowId: e is KratosException ? e.verificationFlowId : null,
+      );
+    }
+    return AuthException(message: type.localized, originalError: e);
   }
 
   /// 이 브라우저에서 시작한 Google 로그인이 돌아오기를 기다리는 중인지
@@ -197,7 +175,7 @@ class AuthNotifier extends _$AuthNotifier {
     required Uri returnTo,
     bool signUp = false,
   }) async {
-    try {
+    return _guard(() async {
       final type = signUp ? KratosFlowType.registration : KratosFlowType.login;
       final flow = await _kratos.createFlow(
         type,
@@ -208,17 +186,12 @@ class AuthNotifier extends _$AuthNotifier {
         flow.sessionTokenExchangeCode!,
       );
       return await _kratos.submitOidc(type, flow.id, 'google');
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// Google에서 돌아온 `code`로 세션을 받아 로그인한다. 교환 코드는 성공·실패와 상관없이 한 번만 쓴다.
   Future<void> completeGoogleSignIn(String code) async {
-    try {
+    return _guard(() async {
       final initCode = _prefs.getString(googleSignInCodeKey);
       await _prefs.remove(googleSignInCodeKey);
       if (initCode == null) {
@@ -229,12 +202,7 @@ class AuthNotifier extends _$AuthNotifier {
         returnToCode: code,
       );
       await _authenticateWith(sessionToken);
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// Google 로그인이 같은 이메일의 기존 계정을 만나 Kratos가 연결을 요청한 로그인 플로우면,
@@ -242,15 +210,10 @@ class AuthNotifier extends _$AuthNotifier {
   ///
   /// Kratos는 이때 브라우저를 로그인 화면(`/login?flow=`)으로 보낸다.
   Future<String?> googleAccountLinkEmail(String flowId) async {
-    try {
+    return _guard(() async {
       final flow = await _kratos.getFlow(KratosFlowType.login, flowId);
       return flow.asksToLinkAccount ? flow.identifier : null;
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 기존 계정의 비밀번호로 로그인해 Google 계정을 연결한다.
@@ -272,6 +235,15 @@ class AuthNotifier extends _$AuthNotifier {
       await _prefs.remove(googleSignInCodeKey);
       await _authenticateWith(result.sessionToken!);
     } catch (e) {
+      throw _signInError(AuthErrorType.classify(e), e);
+    }
+  }
+
+  /// [action]의 오류를 화면에 보일 [AuthException]으로 바꿔 던진다
+  static Future<T> _guard<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } catch (e) {
       throw AuthException(
         message: AuthErrorType.classify(e).localized,
         originalError: e,
@@ -286,7 +258,7 @@ class AuthNotifier extends _$AuthNotifier {
     required String email,
     required String password,
   }) async {
-    try {
+    return _guard(() async {
       final flow = await _kratos.createFlow(KratosFlowType.registration);
       final result = await _kratos.submit(
         KratosFlowType.registration,
@@ -298,29 +270,19 @@ class AuthNotifier extends _$AuthNotifier {
         },
       );
       return result.verificationFlowId;
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 이메일 인증 코드를 보낸다. 새 인증 플로우를 만들어 그 ID를 돌려준다.
   Future<String> sendVerificationCode(String email) async {
-    try {
+    return _guard(() async {
       final flow = await _kratos.createFlow(KratosFlowType.verification);
       await _kratos.submit(KratosFlowType.verification, flow.id, {
         'method': 'code',
         'email': email,
       });
       return flow.id;
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 이메일 인증 코드를 확인한다.
@@ -330,52 +292,37 @@ class AuthNotifier extends _$AuthNotifier {
     required String flowId,
     required String code,
   }) async {
-    try {
+    return _guard(() async {
       await _kratos.submit(KratosFlowType.verification, flowId, {
         'method': 'code',
         'code': code,
       });
       final sessionToken = _sessionToken;
       if (sessionToken != null) await _authenticateWith(sessionToken);
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 로그아웃. 서버 세션을 끝내지 못하면 로그인 상태를 유지하고 예외를 던진다.
   Future<void> signOut() async {
-    try {
+    return _guard(() async {
       final sessionToken = _sessionToken;
       if (sessionToken != null) await _kratos.logout(sessionToken);
       await _prefs.remove(sessionTokenKey);
       _signOuts++;
       state = const AuthStatus.unauthenticated();
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 비밀번호 복구 코드를 이메일로 보낸다. 복구 플로우 ID를 돌려준다.
   Future<String> sendRecoveryCode(String email) async {
-    try {
+    return _guard(() async {
       final flow = await _kratos.createFlow(KratosFlowType.recovery);
       await _kratos.submit(KratosFlowType.recovery, flow.id, {
         'method': 'code',
         'email': email,
       });
       return flow.id;
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 복구 코드를 확인한다. 새 비밀번호를 설정할 settings 플로우 ID를 돌려준다.
@@ -386,19 +333,14 @@ class AuthNotifier extends _$AuthNotifier {
     required String flowId,
     required String code,
   }) async {
-    try {
+    return _guard(() async {
       final result = await _kratos.submit(KratosFlowType.recovery, flowId, {
         'method': 'code',
         'code': code,
       });
       _recoverySessionToken = result.recoverySessionToken!;
       return result.settingsFlowId!;
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 
   /// 복구 세션으로 새 비밀번호를 저장하고 로그인 상태가 된다.
@@ -409,7 +351,7 @@ class AuthNotifier extends _$AuthNotifier {
     required String settingsFlowId,
     required String newPassword,
   }) async {
-    try {
+    return _guard(() async {
       final sessionToken = _recoverySessionToken!;
       await _kratos.submit(KratosFlowType.settings, settingsFlowId, {
         'method': 'password',
@@ -417,12 +359,7 @@ class AuthNotifier extends _$AuthNotifier {
       }, sessionToken: sessionToken);
       _recoverySessionToken = null;
       await _authenticateWith(sessionToken);
-    } catch (e) {
-      throw AuthException(
-        message: AuthErrorType.classify(e).localized,
-        originalError: e,
-      );
-    }
+    });
   }
 }
 
@@ -445,39 +382,4 @@ Future<bool> googleSignInAvailable(Ref ref) async {
   } catch (_) {
     return false;
   }
-}
-
-/// 현재 로그인 중인 사용자
-@riverpod
-AuthUser? currentUser(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .whenOrNull(authenticated: (user, accessToken) => user);
-}
-
-/// 현재 백엔드용 JWT
-@riverpod
-String? accessToken(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .whenOrNull(authenticated: (user, accessToken) => accessToken);
-}
-
-/// 인증 여부 확인
-@riverpod
-bool isAuthenticated(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .maybeWhen(
-        authenticated: (user, accessToken) => true,
-        orElse: () => false,
-      );
-}
-
-/// 인증 로딩 여부 확인
-@riverpod
-bool isAuthLoading(Ref ref) {
-  return ref
-      .watch(authProvider)
-      .maybeWhen(loading: () => true, orElse: () => false);
 }

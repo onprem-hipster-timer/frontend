@@ -1,15 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
+import 'package:layout_audit/layout_audit.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-import '../../../../helpers/rendering_test_devices.dart';
+import '../../../../helpers/calendar_render_harness.dart';
 import '../../../../helpers/schedule_fixtures.dart';
 
 void main() {
@@ -21,7 +20,7 @@ void main() {
     testWidgets('주요 뷰 타입별로 렌더링된다', variant: _calendarViewVariant, (
       tester,
     ) async {
-      await tester.pumpCalendar(viewType: _calendarViewVariant.currentValue!);
+      await _pumpCalendar(tester, viewType: _calendarViewVariant.currentValue!);
 
       expectNoFlutterError(tester);
       expect(find.byType(CalendarViewWidget), findsOneWidget);
@@ -31,7 +30,8 @@ void main() {
       '대표 화면 크기별로 월간 뷰가 렌더링된다',
       variant: TestViewportVariants.renderSmoke,
       (tester) async {
-        await tester.pumpCalendar(
+        await _pumpCalendar(
+          tester,
           viewport: TestViewportVariants.renderSmoke.currentValue!,
         );
 
@@ -41,7 +41,7 @@ void main() {
     );
 
     testWidgets('월간 뷰는 일요일 시작 설정을 SfCalendar에 전달한다', (tester) async {
-      await tester.pumpCalendar();
+      await _pumpCalendar(tester);
 
       final calendar = tester.widget<SfCalendar>(find.byType(SfCalendar));
 
@@ -49,18 +49,18 @@ void main() {
     });
 
     testWidgets('isHoliday=true인 항목만 공휴일 라벨로 렌더링된다', (tester) async {
-      await tester.pumpCalendar();
+      await _pumpCalendar(tester);
 
       expect(find.text('선거일'), findsAtLeastNWidgets(1));
       expect(find.text('비공휴 기념일'), findsNothing);
     });
 
-    testWidgets('일요일 날짜는 공휴일 데이터와 무관하게 빨간색으로 렌더링된다', (tester) async {
-      await tester.pumpCalendar();
+    testWidgets('일요일 날짜는 공휴일 데이터와 무관하게 공휴일 색으로 렌더링된다', (tester) async {
+      await _pumpCalendar(tester);
 
       final redSundayDateExists = tester
           .widgetList<Text>(find.text('5'))
-          .any((text) => text.style?.color == Colors.red);
+          .any((text) => text.style?.color == AppColors.light.holiday);
 
       expect(redSundayDateExists, isTrue);
     });
@@ -76,28 +76,17 @@ final _calendarViewVariant = ValueVariant<CalendarViewType>({
 
 final _displayDate = DateTime(2026, 4);
 
-extension _CalendarPump on WidgetTester {
-  Future<void> pumpCalendar({
-    CalendarViewType viewType = CalendarViewType.month,
-    TestViewport viewport = TestViewports.desktop16x10,
-  }) async {
-    setTestViewport(viewport);
-
-    await pumpWidget(
-      _CalendarRenderHarness(
-        settings: CalendarSettingsState(
-          viewType: viewType,
-          selectedDate: _displayDate,
-          displayDate: _displayDate,
-          firstDayOfWeek: DateTime.sunday,
-        ),
-        schedules: _sampleSchedules(),
-        holidays: _sampleHolidays,
-      ),
-    );
-    await pumpStableFrames();
-  }
-}
+Future<void> _pumpCalendar(
+  WidgetTester tester, {
+  CalendarViewType viewType = CalendarViewType.month,
+  TestViewport viewport = TestViewports.desktop16x10,
+}) => tester.pumpCalendar(
+  displayDate: _displayDate,
+  schedules: _sampleSchedules(),
+  holidays: _sampleHolidays,
+  viewType: viewType,
+  viewport: viewport,
+);
 
 List<ScheduleRead> _sampleSchedules() {
   return [
@@ -127,48 +116,3 @@ const _sampleHolidays = [
     isHoliday: false,
   ),
 ];
-
-class _CalendarRenderHarness extends StatelessWidget {
-  const _CalendarRenderHarness({
-    required this.settings,
-    required this.schedules,
-    required this.holidays,
-  });
-
-  final CalendarSettingsState settings;
-  final List<ScheduleRead> schedules;
-  final List<HolidayItem> holidays;
-
-  @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        calendarSettingsProvider.overrideWith(
-          () => _TestCalendarSettings(settings),
-        ),
-        currentSchedulesProvider.overrideWith((ref) => Future.value(schedules)),
-        currentHolidaysProvider.overrideWith((ref) => Future.value(holidays)),
-      ],
-      child: MaterialApp(
-        locale: const Locale('ko', 'KR'),
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        theme: ThemeData(useMaterial3: true),
-        home: const Scaffold(body: CalendarViewWidget()),
-      ),
-    );
-  }
-}
-
-class _TestCalendarSettings extends CalendarSettings {
-  _TestCalendarSettings(this.initialState);
-
-  final CalendarSettingsState initialState;
-
-  @override
-  CalendarSettingsState build() => initialState;
-}

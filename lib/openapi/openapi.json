@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "onperm-hipster-timer-backend",
-    "version": "v2026.11.07-5ef2872"
+    "version": "v2026.11.09-9b8c67b"
   },
   "paths": {
     "/v1/schedules": {
@@ -11,7 +11,7 @@
           "Schedules"
         ],
         "summary": "Create Schedule",
-        "description": "새 일정 생성\n\nFastAPI Best Practices:\n- async 라우트 사용\n- 트랜잭션 자동 관리 (context manager)\n- Exception Handler가 예외 처리",
+        "description": "\uc0c8 \uc77c\uc815 \uc0dd\uc131\n\nFastAPI Best Practices:\n- async \ub77c\uc6b0\ud2b8 \uc0ac\uc6a9\n- \ud2b8\ub79c\uc7ad\uc158 \uc790\ub3d9 \uad00\ub9ac (context manager)\n- Exception Handler\uac00 \uc608\uc678 \ucc98\ub9ac",
         "operationId": "create_schedule_v1_schedules_post",
         "security": [
           {
@@ -32,10 +32,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -76,7 +76,7 @@
           "Schedules"
         ],
         "summary": "Read Schedules",
-        "description": "날짜 범위 기반 일정 조회 (반복 일정 포함, 태그 필터링 지원)\n\n조회 범위 (scope):\n- mine: 내 일정만 (기본값)\n- shared: 공유된 타인의 일정만\n- all: 내 일정 + 공유된 일정\n\n날짜 범위:\n- start_date: 조회 시작 날짜/시간 (필수)\n- end_date: 조회 종료 날짜/시간 (필수)\n- 지정된 날짜 범위와 겹치는 모든 일정을 반환 (반복 일정은 가상 인스턴스로 확장)\n\n태그 필터링:\n- tag_ids: AND 방식 (모든 지정 태그를 포함한 일정만 반환)\n- group_ids: 해당 그룹의 태그 중 하나라도 있는 일정 반환\n- 둘 다 지정 시: 그룹 필터링 후 태그 필터링 적용\n\nFastAPI Best Practices:\n- async 라우트 사용",
+        "description": "\ub0a0\uc9dc \ubc94\uc704 \uae30\ubc18 \uc77c\uc815 \uc870\ud68c (\ubc18\ubcf5 \uc77c\uc815 \ud3ec\ud568, \ud0dc\uadf8 \ud544\ud130\ub9c1 \uc9c0\uc6d0)\n\n\uc870\ud68c \ubc94\uc704 (scope):\n- mine: \ub0b4 \uc77c\uc815\ub9cc (\uae30\ubcf8\uac12)\n- shared: \uacf5\uc720\ub41c \ud0c0\uc778\uc758 \uc77c\uc815\ub9cc\n- all: \ub0b4 \uc77c\uc815 + \uacf5\uc720\ub41c \uc77c\uc815\n\n\ub0a0\uc9dc \ubc94\uc704:\n- start_date: \uc870\ud68c \uc2dc\uc791 \ub0a0\uc9dc/\uc2dc\uac04 (\ud544\uc218)\n- end_date: \uc870\ud68c \uc885\ub8cc \ub0a0\uc9dc/\uc2dc\uac04 (\ud544\uc218)\n- \uc9c0\uc815\ub41c \ub0a0\uc9dc \ubc94\uc704\uc640 \uacb9\uce58\ub294 \ubaa8\ub4e0 \uc77c\uc815\uc744 \ubc18\ud658 (\ubc18\ubcf5 \uc77c\uc815\uc740 \uac00\uc0c1 \uc778\uc2a4\ud134\uc2a4\ub85c \ud655\uc7a5)\n\n\ud0dc\uadf8 \ud544\ud130\ub9c1:\n- tag_ids: AND \ubc29\uc2dd (\ubaa8\ub4e0 \uc9c0\uc815 \ud0dc\uadf8\ub97c \ud3ec\ud568\ud55c \uc77c\uc815\ub9cc \ubc18\ud658)\n- group_ids: \ud574\ub2f9 \uadf8\ub8f9\uc758 \ud0dc\uadf8 \uc911 \ud558\ub098\ub77c\ub3c4 \uc788\ub294 \uc77c\uc815 \ubc18\ud658\n- \ub458 \ub2e4 \uc9c0\uc815 \uc2dc: \uadf8\ub8f9 \ud544\ud130\ub9c1 \ud6c4 \ud0dc\uadf8 \ud544\ud130\ub9c1 \uc801\uc6a9\n\nFastAPI Best Practices:\n- async \ub77c\uc6b0\ud2b8 \uc0ac\uc6a9",
         "operationId": "read_schedules_v1_schedules_get",
         "security": [
           {
@@ -91,10 +91,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "조회 시작 날짜/시간 (ISO 8601 형식)",
+              "description": "\uc870\ud68c \uc2dc\uc791 \ub0a0\uc9dc/\uc2dc\uac04 (ISO 8601 \ud615\uc2dd)",
               "title": "Start Date"
             },
-            "description": "조회 시작 날짜/시간 (ISO 8601 형식)"
+            "description": "\uc870\ud68c \uc2dc\uc791 \ub0a0\uc9dc/\uc2dc\uac04 (ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "end_date",
@@ -103,10 +103,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "조회 종료 날짜/시간 (ISO 8601 형식)",
+              "description": "\uc870\ud68c \uc885\ub8cc \ub0a0\uc9dc/\uc2dc\uac04 (ISO 8601 \ud615\uc2dd)",
               "title": "End Date"
             },
-            "description": "조회 종료 날짜/시간 (ISO 8601 형식)"
+            "description": "\uc870\ud68c \uc885\ub8cc \ub0a0\uc9dc/\uc2dc\uac04 (ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "scope",
@@ -114,10 +114,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ResourceScope",
-              "description": "조회 범위: mine(내 일정만), shared(공유된 일정만), all(모두)",
+              "description": "\uc870\ud68c \ubc94\uc704: mine(\ub0b4 \uc77c\uc815\ub9cc), shared(\uacf5\uc720\ub41c \uc77c\uc815\ub9cc), all(\ubaa8\ub450)",
               "default": "mine"
             },
-            "description": "조회 범위: mine(내 일정만), shared(공유된 일정만), all(모두)"
+            "description": "\uc870\ud68c \ubc94\uc704: mine(\ub0b4 \uc77c\uc815\ub9cc), shared(\uacf5\uc720\ub41c \uc77c\uc815\ub9cc), all(\ubaa8\ub450)"
           },
           {
             "name": "tag_ids",
@@ -136,10 +136,10 @@
                   "type": "null"
                 }
               ],
-              "description": "태그 ID 리스트 (AND 방식: 모든 지정 태그를 포함한 일정만 반환)",
+              "description": "\ud0dc\uadf8 ID \ub9ac\uc2a4\ud2b8 (AND \ubc29\uc2dd: \ubaa8\ub4e0 \uc9c0\uc815 \ud0dc\uadf8\ub97c \ud3ec\ud568\ud55c \uc77c\uc815\ub9cc \ubc18\ud658)",
               "title": "Tag Ids"
             },
-            "description": "태그 ID 리스트 (AND 방식: 모든 지정 태그를 포함한 일정만 반환)"
+            "description": "\ud0dc\uadf8 ID \ub9ac\uc2a4\ud2b8 (AND \ubc29\uc2dd: \ubaa8\ub4e0 \uc9c0\uc815 \ud0dc\uadf8\ub97c \ud3ec\ud568\ud55c \uc77c\uc815\ub9cc \ubc18\ud658)"
           },
           {
             "name": "group_ids",
@@ -158,10 +158,10 @@
                   "type": "null"
                 }
               ],
-              "description": "태그 그룹 ID 리스트 (해당 그룹의 태그를 가진 일정 반환)",
+              "description": "\ud0dc\uadf8 \uadf8\ub8f9 ID \ub9ac\uc2a4\ud2b8 (\ud574\ub2f9 \uadf8\ub8f9\uc758 \ud0dc\uadf8\ub97c \uac00\uc9c4 \uc77c\uc815 \ubc18\ud658)",
               "title": "Group Ids"
             },
-            "description": "태그 그룹 ID 리스트 (해당 그룹의 태그를 가진 일정 반환)"
+            "description": "\ud0dc\uadf8 \uadf8\ub8f9 ID \ub9ac\uc2a4\ud2b8 (\ud574\ub2f9 \uadf8\ub8f9\uc758 \ud0dc\uadf8\ub97c \uac00\uc9c4 \uc77c\uc815 \ubc18\ud658)"
           },
           {
             "name": "timezone",
@@ -176,10 +176,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -216,7 +216,7 @@
           "Schedules"
         ],
         "summary": "Read Schedule",
-        "description": "ID로 일정 조회 (공유된 일정 포함)\n\n본인 소유 일정 또는 공유 접근 권한이 있는 일정을 조회합니다.\n접근 권한이 없으면 403 Forbidden을 반환합니다.",
+        "description": "ID\ub85c \uc77c\uc815 \uc870\ud68c (\uacf5\uc720\ub41c \uc77c\uc815 \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 \uc77c\uc815 \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uc77c\uc815\uc744 \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 403 Forbidden\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "read_schedule_v1_schedules__schedule_id__get",
         "security": [
           {
@@ -247,10 +247,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -281,7 +281,7 @@
           "Schedules"
         ],
         "summary": "Update Schedule",
-        "description": "일정 업데이트 (반복 일정 인스턴스 포함)\n\n일반 일정과 가상 인스턴스 모두 지원:\n- 일반 일정: schedule_id로 조회하여 업데이트\n- 가상 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송\n\n### 요청 예시\n```json\n{\n    \"title\": \"업데이트된 제목\"\n}\n```\n\nFastAPI Best Practices:\n- Service는 session을 받아서 CRUD 직접 사용\n- 가상 인스턴스인 경우 instance_start 쿼리 파라미터로 처리",
+        "description": "\uc77c\uc815 \uc5c5\ub370\uc774\ud2b8 (\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \ud3ec\ud568)\n\n\uc77c\ubc18 \uc77c\uc815\uacfc \uac00\uc0c1 \uc778\uc2a4\ud134\uc2a4 \ubaa8\ub450 \uc9c0\uc6d0:\n- \uc77c\ubc18 \uc77c\uc815: schedule_id\ub85c \uc870\ud68c\ud558\uc5ec \uc5c5\ub370\uc774\ud2b8\n- \uac00\uc0c1 \uc778\uc2a4\ud134\uc2a4: schedule_id\ub97c parent_id\ub85c \uc0ac\uc6a9\ud558\uace0 instance_start\ub97c \ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130\ub85c \uc804\uc1a1\n\n### \uc694\uccad \uc608\uc2dc\n```json\n{\n    \"title\": \"\uc5c5\ub370\uc774\ud2b8\ub41c \uc81c\ubaa9\"\n}\n```\n\nFastAPI Best Practices:\n- Service\ub294 session\uc744 \ubc1b\uc544\uc11c CRUD \uc9c1\uc811 \uc0ac\uc6a9\n- \uac00\uc0c1 \uc778\uc2a4\ud134\uc2a4\uc778 \uacbd\uc6b0 instance_start \ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130\ub85c \ucc98\ub9ac",
         "operationId": "update_schedule_v1_schedules__schedule_id__patch",
         "security": [
           {
@@ -313,10 +313,10 @@
                   "type": "null"
                 }
               ],
-              "description": "반복 일정 인스턴스 시작 시간 (ISO 8601 형식)",
+              "description": "\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \uc2dc\uc791 \uc2dc\uac04 (ISO 8601 \ud615\uc2dd)",
               "title": "Instance Start"
             },
-            "description": "반복 일정 인스턴스 시작 시간 (ISO 8601 형식)"
+            "description": "\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \uc2dc\uc791 \uc2dc\uac04 (ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "timezone",
@@ -331,10 +331,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -375,7 +375,7 @@
           "Schedules"
         ],
         "summary": "Delete Schedule",
-        "description": "일정 삭제 (반복 일정 인스턴스 포함)\n\n일반 일정과 가상 인스턴스 모두 지원:\n- 일반 일정: schedule_id로 조회하여 삭제\n- 가상 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송\n\nsource-linked 일정인데 `source_todo_policy`가 누락되거나, 연결 타이머가 있는데\n`linked_timer_policy`가 누락되면 422를 반환합니다.",
+        "description": "\uc77c\uc815 \uc0ad\uc81c (\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \ud3ec\ud568)\n\n\uc77c\ubc18 \uc77c\uc815\uacfc \uac00\uc0c1 \uc778\uc2a4\ud134\uc2a4 \ubaa8\ub450 \uc9c0\uc6d0:\n- \uc77c\ubc18 \uc77c\uc815: schedule_id\ub85c \uc870\ud68c\ud558\uc5ec \uc0ad\uc81c\n- \uac00\uc0c1 \uc778\uc2a4\ud134\uc2a4: schedule_id\ub97c parent_id\ub85c \uc0ac\uc6a9\ud558\uace0 instance_start\ub97c \ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130\ub85c \uc804\uc1a1\n\nsource-linked \uc77c\uc815\uc778\ub370 `source_todo_policy`\uac00 \ub204\ub77d\ub418\uac70\ub098, \uc5f0\uacb0 \ud0c0\uc774\uba38\uac00 \uc788\ub294\ub370\n`linked_timer_policy`\uac00 \ub204\ub77d\ub418\uba74 422\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "delete_schedule_v1_schedules__schedule_id__delete",
         "security": [
           {
@@ -407,10 +407,10 @@
                   "type": "null"
                 }
               ],
-              "description": "반복 일정 인스턴스 시작 시간 (ISO 8601 형식)",
+              "description": "\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \uc2dc\uc791 \uc2dc\uac04 (ISO 8601 \ud615\uc2dd)",
               "title": "Instance Start"
             },
-            "description": "반복 일정 인스턴스 시작 시간 (ISO 8601 형식)"
+            "description": "\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \uc2dc\uc791 \uc2dc\uac04 (ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "source_todo_policy",
@@ -425,10 +425,10 @@
                   "type": "null"
                 }
               ],
-              "description": "source Todo 처리 정책 — 이 일정이 Todo의 마감 투영(source-linked)인 경우 필수, 서버 기본값 없음. clear_deadline: Todo의 마감도 제거 / keep_deadline: 마감 유지",
+              "description": "source Todo \ucc98\ub9ac \uc815\ucc45 \u2014 \uc774 \uc77c\uc815\uc774 Todo\uc758 \ub9c8\uac10 \ud22c\uc601(source-linked)\uc778 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. clear_deadline: Todo\uc758 \ub9c8\uac10\ub3c4 \uc81c\uac70 / keep_deadline: \ub9c8\uac10 \uc720\uc9c0",
               "title": "Source Todo Policy"
             },
-            "description": "source Todo 처리 정책 — 이 일정이 Todo의 마감 투영(source-linked)인 경우 필수, 서버 기본값 없음. clear_deadline: Todo의 마감도 제거 / keep_deadline: 마감 유지"
+            "description": "source Todo \ucc98\ub9ac \uc815\ucc45 \u2014 \uc774 \uc77c\uc815\uc774 Todo\uc758 \ub9c8\uac10 \ud22c\uc601(source-linked)\uc778 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. clear_deadline: Todo\uc758 \ub9c8\uac10\ub3c4 \uc81c\uac70 / keep_deadline: \ub9c8\uac10 \uc720\uc9c0"
           },
           {
             "name": "linked_timer_policy",
@@ -443,10 +443,10 @@
                   "type": "null"
                 }
               ],
-              "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행). 마지막 반복 인스턴스 삭제로 원본이 지워질 때는 생략하면 unlink",
+              "description": "\uc5f0\uacb0 \ud0c0\uc774\uba38 \ucc98\ub9ac \uc815\ucc45 \u2014 \uc5f0\uacb0 \ud0c0\uc774\uba38\uac00 \uc788\ub294 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. delete: \ud0c0\uc774\uba38 \uc0ad\uc81c + \uc811\uadfc\uad8c\ud55c \uc815\ub9ac / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c(\ud0c0\uc774\uba38 \ubcf4\uc874, \uc2e4\ud589 \uc911\uc774\uba74 \uacc4\uc18d \uc2e4\ud589). \ub9c8\uc9c0\ub9c9 \ubc18\ubcf5 \uc778\uc2a4\ud134\uc2a4 \uc0ad\uc81c\ub85c \uc6d0\ubcf8\uc774 \uc9c0\uc6cc\uc9c8 \ub54c\ub294 \uc0dd\ub7b5\ud558\uba74 unlink",
               "title": "Linked Timer Policy"
             },
-            "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행). 마지막 반복 인스턴스 삭제로 원본이 지워질 때는 생략하면 unlink"
+            "description": "\uc5f0\uacb0 \ud0c0\uc774\uba38 \ucc98\ub9ac \uc815\ucc45 \u2014 \uc5f0\uacb0 \ud0c0\uc774\uba38\uac00 \uc788\ub294 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. delete: \ud0c0\uc774\uba38 \uc0ad\uc81c + \uc811\uadfc\uad8c\ud55c \uc815\ub9ac / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c(\ud0c0\uc774\uba38 \ubcf4\uc874, \uc2e4\ud589 \uc911\uc774\uba74 \uacc4\uc18d \uc2e4\ud589). \ub9c8\uc9c0\ub9c9 \ubc18\ubcf5 \uc778\uc2a4\ud134\uc2a4 \uc0ad\uc81c\ub85c \uc6d0\ubcf8\uc774 \uc9c0\uc6cc\uc9c8 \ub54c\ub294 \uc0dd\ub7b5\ud558\uba74 unlink"
           }
         ],
         "responses": {
@@ -477,7 +477,7 @@
           "Schedules"
         ],
         "summary": "Get Schedule Timers",
-        "description": "일정의 모든 타이머 조회 (공유된 일정 포함)",
+        "description": "\uc77c\uc815\uc758 \ubaa8\ub4e0 \ud0c0\uc774\uba38 \uc870\ud68c (\uacf5\uc720\ub41c \uc77c\uc815 \ud3ec\ud568)",
         "operationId": "get_schedule_timers_v1_schedules__schedule_id__timers_get",
         "security": [
           {
@@ -501,11 +501,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "timezone",
@@ -520,10 +520,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -560,7 +560,7 @@
           "Schedules"
         ],
         "summary": "Get Active Timer",
-        "description": "일정의 현재 활성 타이머 조회 (RUNNING 또는 PAUSED, 공유된 일정 포함)\n\n활성 타이머가 없으면 404를 반환합니다.",
+        "description": "\uc77c\uc815\uc758 \ud604\uc7ac \ud65c\uc131 \ud0c0\uc774\uba38 \uc870\ud68c (RUNNING \ub610\ub294 PAUSED, \uacf5\uc720\ub41c \uc77c\uc815 \ud3ec\ud568)\n\n\ud65c\uc131 \ud0c0\uc774\uba38\uac00 \uc5c6\uc73c\uba74 404\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "get_active_timer_v1_schedules__schedule_id__timers_active_get",
         "security": [
           {
@@ -584,11 +584,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "timezone",
@@ -603,10 +603,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -639,7 +639,7 @@
           "Schedules"
         ],
         "summary": "Create Todo From Schedule",
-        "description": "기존 Schedule에서 연관된 Todo 생성\n\nSchedule의 정보를 기반으로 새로운 Todo를 생성합니다:\n- Todo의 title, description은 Schedule에서 복사\n- Todo의 deadline은 Schedule의 start_time으로 설정\n- Schedule의 태그가 Todo에도 복사됨\n- 생성된 Todo와 Schedule이 source_todo_id로 연결됨\n\n제약사항:\n- 이미 Todo와 연결된 Schedule에서는 호출 불가 (400 에러)\n- tag_group_id는 필수 파라미터\n\n:param schedule_id: Schedule ID\n:param tag_group_id: Todo가 속할 TagGroup ID\n:return: 생성된 Todo",
+        "description": "\uae30\uc874 Schedule\uc5d0\uc11c \uc5f0\uad00\ub41c Todo \uc0dd\uc131\n\nSchedule\uc758 \uc815\ubcf4\ub97c \uae30\ubc18\uc73c\ub85c \uc0c8\ub85c\uc6b4 Todo\ub97c \uc0dd\uc131\ud569\ub2c8\ub2e4:\n- Todo\uc758 title, description\uc740 Schedule\uc5d0\uc11c \ubcf5\uc0ac\n- Todo\uc758 deadline\uc740 Schedule\uc758 start_time\uc73c\ub85c \uc124\uc815\n- Schedule\uc758 \ud0dc\uadf8\uac00 Todo\uc5d0\ub3c4 \ubcf5\uc0ac\ub428\n- \uc0dd\uc131\ub41c Todo\uc640 Schedule\uc774 source_todo_id\ub85c \uc5f0\uacb0\ub428\n\n\uc81c\uc57d\uc0ac\ud56d:\n- \uc774\ubbf8 Todo\uc640 \uc5f0\uacb0\ub41c Schedule\uc5d0\uc11c\ub294 \ud638\ucd9c \ubd88\uac00 (400 \uc5d0\ub7ec)\n- tag_group_id\ub294 \ud544\uc218 \ud30c\ub77c\ubbf8\ud130\n\n:param schedule_id: Schedule ID\n:param tag_group_id: Todo\uac00 \uc18d\ud560 TagGroup ID\n:return: \uc0dd\uc131\ub41c Todo",
         "operationId": "create_todo_from_schedule_v1_schedules__schedule_id__todo_post",
         "security": [
           {
@@ -664,10 +664,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "Todo가 속할 TagGroup ID (필수)",
+              "description": "Todo\uac00 \uc18d\ud560 TagGroup ID (\ud544\uc218)",
               "title": "Tag Group Id"
             },
-            "description": "Todo가 속할 TagGroup ID (필수)"
+            "description": "Todo\uac00 \uc18d\ud560 TagGroup ID (\ud544\uc218)"
           }
         ],
         "responses": {
@@ -698,7 +698,7 @@
           "Timers"
         ],
         "summary": "Create Timer",
-        "description": "새 타이머 생성 및 시작\n\nschedule_id, todo_id 모두 Optional:\n- 둘 다 없으면: 독립 타이머\n- schedule_id만: Schedule에 연결된 타이머\n- todo_id만: Todo에 연결된 타이머\n- 둘 다 있으면: Schedule과 Todo 모두에 연결된 타이머",
+        "description": "\uc0c8 \ud0c0\uc774\uba38 \uc0dd\uc131 \ubc0f \uc2dc\uc791\n\nschedule_id, todo_id \ubaa8\ub450 Optional:\n- \ub458 \ub2e4 \uc5c6\uc73c\uba74: \ub3c5\ub9bd \ud0c0\uc774\uba38\n- schedule_id\ub9cc: Schedule\uc5d0 \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38\n- todo_id\ub9cc: Todo\uc5d0 \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38\n- \ub458 \ub2e4 \uc788\uc73c\uba74: Schedule\uacfc Todo \ubaa8\ub450\uc5d0 \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38",
         "operationId": "create_timer_v1_timers_post",
         "security": [
           {
@@ -712,11 +712,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -724,11 +724,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -736,10 +736,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -754,10 +754,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -798,7 +798,7 @@
           "Timers"
         ],
         "summary": "List Timers",
-        "description": "타이머 목록 조회\n\n조회 범위 (scope):\n- mine: 내 타이머만 (기본값)\n- shared: 공유된 타인의 타이머만\n- all: 내 타이머 + 공유된 타이머\n\n필터링 옵션:\n- status: 상태 필터 (RUNNING, PAUSED, COMPLETED, CANCELLED) - 복수 선택 가능\n- type: 타입 필터\n  - independent: 독립 타이머 (schedule_id=null AND todo_id=null)\n  - schedule: Schedule 연결 타이머 (schedule_id != null)\n  - todo: Todo 연결 타이머 (todo_id != null)\n- start_date, end_date: 날짜 범위 필터 (started_at 기준)",
+        "description": "\ud0c0\uc774\uba38 \ubaa9\ub85d \uc870\ud68c\n\n\uc870\ud68c \ubc94\uc704 (scope):\n- mine: \ub0b4 \ud0c0\uc774\uba38\ub9cc (\uae30\ubcf8\uac12)\n- shared: \uacf5\uc720\ub41c \ud0c0\uc778\uc758 \ud0c0\uc774\uba38\ub9cc\n- all: \ub0b4 \ud0c0\uc774\uba38 + \uacf5\uc720\ub41c \ud0c0\uc774\uba38\n\n\ud544\ud130\ub9c1 \uc635\uc158:\n- status: \uc0c1\ud0dc \ud544\ud130 (RUNNING, PAUSED, COMPLETED, CANCELLED) - \ubcf5\uc218 \uc120\ud0dd \uac00\ub2a5\n- type: \ud0c0\uc785 \ud544\ud130\n  - independent: \ub3c5\ub9bd \ud0c0\uc774\uba38 (schedule_id=null AND todo_id=null)\n  - schedule: Schedule \uc5f0\uacb0 \ud0c0\uc774\uba38 (schedule_id != null)\n  - todo: Todo \uc5f0\uacb0 \ud0c0\uc774\uba38 (todo_id != null)\n- start_date, end_date: \ub0a0\uc9dc \ubc94\uc704 \ud544\ud130 (started_at \uae30\uc900)",
         "operationId": "list_timers_v1_timers_get",
         "security": [
           {
@@ -812,10 +812,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ResourceScope",
-              "description": "조회 범위: mine(내 타이머만), shared(공유된 타이머만), all(모두)",
+              "description": "\uc870\ud68c \ubc94\uc704: mine(\ub0b4 \ud0c0\uc774\uba38\ub9cc), shared(\uacf5\uc720\ub41c \ud0c0\uc774\uba38\ub9cc), all(\ubaa8\ub450)",
               "default": "mine"
             },
-            "description": "조회 범위: mine(내 타이머만), shared(공유된 타이머만), all(모두)"
+            "description": "\uc870\ud68c \ubc94\uc704: mine(\ub0b4 \ud0c0\uc774\uba38\ub9cc), shared(\uacf5\uc720\ub41c \ud0c0\uc774\uba38\ub9cc), all(\ubaa8\ub450)"
           },
           {
             "name": "status",
@@ -833,10 +833,10 @@
                   "type": "null"
                 }
               ],
-              "description": "상태 필터 (RUNNING, PAUSED, COMPLETED, CANCELLED) - 복수 선택 가능",
+              "description": "\uc0c1\ud0dc \ud544\ud130 (RUNNING, PAUSED, COMPLETED, CANCELLED) - \ubcf5\uc218 \uc120\ud0dd \uac00\ub2a5",
               "title": "Status"
             },
-            "description": "상태 필터 (RUNNING, PAUSED, COMPLETED, CANCELLED) - 복수 선택 가능"
+            "description": "\uc0c1\ud0dc \ud544\ud130 (RUNNING, PAUSED, COMPLETED, CANCELLED) - \ubcf5\uc218 \uc120\ud0dd \uac00\ub2a5"
           },
           {
             "name": "type",
@@ -851,10 +851,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타입 필터: independent(독립 타이머), schedule(Schedule 연결), todo(Todo 연결)",
+              "description": "\ud0c0\uc785 \ud544\ud130: independent(\ub3c5\ub9bd \ud0c0\uc774\uba38), schedule(Schedule \uc5f0\uacb0), todo(Todo \uc5f0\uacb0)",
               "title": "Type"
             },
-            "description": "타입 필터: independent(독립 타이머), schedule(Schedule 연결), todo(Todo 연결)"
+            "description": "\ud0c0\uc785 \ud544\ud130: independent(\ub3c5\ub9bd \ud0c0\uc774\uba38), schedule(Schedule \uc5f0\uacb0), todo(Todo \uc5f0\uacb0)"
           },
           {
             "name": "start_date",
@@ -870,10 +870,10 @@
                   "type": "null"
                 }
               ],
-              "description": "시작 날짜 필터 (started_at 기준, ISO 8601 형식)",
+              "description": "\uc2dc\uc791 \ub0a0\uc9dc \ud544\ud130 (started_at \uae30\uc900, ISO 8601 \ud615\uc2dd)",
               "title": "Start Date"
             },
-            "description": "시작 날짜 필터 (started_at 기준, ISO 8601 형식)"
+            "description": "\uc2dc\uc791 \ub0a0\uc9dc \ud544\ud130 (started_at \uae30\uc900, ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "end_date",
@@ -889,10 +889,10 @@
                   "type": "null"
                 }
               ],
-              "description": "종료 날짜 필터 (started_at 기준, ISO 8601 형식)",
+              "description": "\uc885\ub8cc \ub0a0\uc9dc \ud544\ud130 (started_at \uae30\uc900, ISO 8601 \ud615\uc2dd)",
               "title": "End Date"
             },
-            "description": "종료 날짜 필터 (started_at 기준, ISO 8601 형식)"
+            "description": "\uc885\ub8cc \ub0a0\uc9dc \ud544\ud130 (started_at \uae30\uc900, ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "include_schedule",
@@ -900,11 +900,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -912,11 +912,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -924,10 +924,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -942,10 +942,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -982,7 +982,7 @@
           "Timers"
         ],
         "summary": "Get User Active Timer",
-        "description": "사용자의 현재 활성 타이머 조회 (RUNNING 또는 PAUSED)\n\n활성 타이머가 없으면 404 반환\n여러 개가 있으면 가장 최근 것 반환",
+        "description": "\uc0ac\uc6a9\uc790\uc758 \ud604\uc7ac \ud65c\uc131 \ud0c0\uc774\uba38 \uc870\ud68c (RUNNING \ub610\ub294 PAUSED)\n\n\ud65c\uc131 \ud0c0\uc774\uba38\uac00 \uc5c6\uc73c\uba74 404 \ubc18\ud658\n\uc5ec\ub7ec \uac1c\uac00 \uc788\uc73c\uba74 \uac00\uc7a5 \ucd5c\uadfc \uac83 \ubc18\ud658",
         "operationId": "get_user_active_timer_v1_timers_active_get",
         "security": [
           {
@@ -996,11 +996,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1008,11 +1008,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1020,10 +1020,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1038,10 +1038,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -1074,7 +1074,7 @@
           "Timers"
         ],
         "summary": "Get Timer",
-        "description": "타이머 조회 (공유된 타이머 포함)\n\n본인 소유 타이머 또는 공유 접근 권한이 있는 타이머를 조회합니다.\n접근 권한이 없으면 403 Forbidden을 반환합니다.",
+        "description": "\ud0c0\uc774\uba38 \uc870\ud68c (\uacf5\uc720\ub41c \ud0c0\uc774\uba38 \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 \ud0c0\uc774\uba38 \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \ud0c0\uc774\uba38\ub97c \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 403 Forbidden\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "get_timer_v1_timers__timer_id__get",
         "security": [
           {
@@ -1098,11 +1098,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1110,11 +1110,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1122,10 +1122,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1140,10 +1140,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -1174,7 +1174,7 @@
           "Timers"
         ],
         "summary": "Update Timer",
-        "description": "타이머 메타데이터 업데이트 (title, description, tags)",
+        "description": "\ud0c0\uc774\uba38 \uba54\ud0c0\ub370\uc774\ud130 \uc5c5\ub370\uc774\ud2b8 (title, description, tags, todo_id, schedule_id, allocated_duration)\n\nallocated_duration\uc740 \ud604\uc7ac \uacbd\uacfc \uc2dc\uac04(\uc2e4\ud589 \uc911\uc774\uba74 \uc9c0\uae08\uae4c\uc9c0 \uc2e4\ud589\ud55c \uad6c\uac04 \ud3ec\ud568)\ubcf4\ub2e4 \ucee4\uc57c \ud55c\ub2e4 (\uc544\ub2c8\uba74 422). \ub9cc\ub8cc\ub41c \ud0c0\uc774\uba38\ub294 \ub298\ub9b0 \ub4a4 \uc7ac\uac1c\ud560 \uc218 \uc788\ub2e4.",
         "operationId": "update_timer_v1_timers__timer_id__patch",
         "security": [
           {
@@ -1198,11 +1198,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1210,11 +1210,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1222,10 +1222,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1240,10 +1240,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -1284,7 +1284,7 @@
           "Timers"
         ],
         "summary": "Delete Timer",
-        "description": "타이머 삭제",
+        "description": "\ud0c0\uc774\uba38 \uc0ad\uc81c",
         "operationId": "delete_timer_v1_timers__timer_id__delete",
         "security": [
           {
@@ -1331,7 +1331,7 @@
           "Timers"
         ],
         "summary": "Pause Timer",
-        "description": "타이머 일시정지 (RUNNING → PAUSED)",
+        "description": "\ud0c0\uc774\uba38 \uc77c\uc2dc\uc815\uc9c0 (RUNNING \u2192 PAUSED)",
         "operationId": "pause_timer_v1_timers__timer_id__pause_patch",
         "security": [
           {
@@ -1355,11 +1355,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1367,11 +1367,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1379,10 +1379,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1397,10 +1397,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -1433,7 +1433,7 @@
           "Timers"
         ],
         "summary": "Resume Timer",
-        "description": "타이머 재개 (PAUSED → RUNNING)",
+        "description": "\ud0c0\uc774\uba38 \uc7ac\uac1c (PAUSED \u2192 RUNNING)",
         "operationId": "resume_timer_v1_timers__timer_id__resume_patch",
         "security": [
           {
@@ -1457,11 +1457,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1469,11 +1469,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1481,10 +1481,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1499,10 +1499,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -1535,7 +1535,7 @@
           "Timers"
         ],
         "summary": "Stop Timer",
-        "description": "타이머 종료 (RUNNING·PAUSED → COMPLETED)",
+        "description": "\ud0c0\uc774\uba38 \uc885\ub8cc (RUNNING\u00b7PAUSED \u2192 COMPLETED)",
         "operationId": "stop_timer_v1_timers__timer_id__stop_post",
         "security": [
           {
@@ -1559,11 +1559,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1571,11 +1571,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1583,10 +1583,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1601,10 +1601,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -1637,7 +1637,7 @@
           "Timers"
         ],
         "summary": "Cancel Timer",
-        "description": "타이머 취소 (RUNNING·PAUSED → CANCELLED)",
+        "description": "\ud0c0\uc774\uba38 \ucde8\uc18c (RUNNING\u00b7PAUSED \u2192 CANCELLED)",
         "operationId": "cancel_timer_v1_timers__timer_id__cancel_post",
         "security": [
           {
@@ -1661,11 +1661,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Schedule 정보 포함 여부 (기본값: false)",
+              "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Schedule"
             },
-            "description": "Schedule 정보 포함 여부 (기본값: false)"
+            "description": "Schedule \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "include_todo",
@@ -1673,11 +1673,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "tag_include_mode",
@@ -1685,10 +1685,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/TagIncludeMode",
-              "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)",
+              "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)",
               "default": "none"
             },
-            "description": "태그 포함 모드: none(포함 안 함), timer_only(타이머 태그만), inherit_from_schedule(스케줄/Todo 태그 상속)"
+            "description": "\ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc: none(\ud3ec\ud568 \uc548 \ud568), timer_only(\ud0c0\uc774\uba38 \ud0dc\uadf8\ub9cc), inherit_from_schedule(\uc2a4\ucf00\uc904/Todo \ud0dc\uadf8 \uc0c1\uc18d)"
           },
           {
             "name": "timezone",
@@ -1703,10 +1703,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -1739,7 +1739,7 @@
           "Tags"
         ],
         "summary": "Read Tag Groups",
-        "description": "모든 태그 그룹 조회 (태그 포함)",
+        "description": "\ubaa8\ub4e0 \ud0dc\uadf8 \uadf8\ub8f9 \uc870\ud68c (\ud0dc\uadf8 \ud3ec\ud568)",
         "operationId": "read_tag_groups_v1_tags_groups_get",
         "responses": {
           "200": {
@@ -1768,7 +1768,7 @@
           "Tags"
         ],
         "summary": "Create Tag Group",
-        "description": "태그 그룹 생성",
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc0dd\uc131",
         "operationId": "create_tag_group_v1_tags_groups_post",
         "requestBody": {
           "content": {
@@ -1815,7 +1815,7 @@
           "Tags"
         ],
         "summary": "Read Tag Group",
-        "description": "태그 그룹 조회 (태그 포함)",
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc870\ud68c (\ud0dc\uadf8 \ud3ec\ud568)",
         "operationId": "read_tag_group_v1_tags_groups__group_id__get",
         "security": [
           {
@@ -1862,7 +1862,7 @@
           "Tags"
         ],
         "summary": "Update Tag Group",
-        "description": "태그 그룹 업데이트",
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc5c5\ub370\uc774\ud2b8",
         "operationId": "update_tag_group_v1_tags_groups__group_id__patch",
         "security": [
           {
@@ -1919,7 +1919,7 @@
           "Tags"
         ],
         "summary": "Delete Tag Group",
-        "description": "태그 그룹 삭제 (CASCADE로 태그도 삭제)",
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc0ad\uc81c (CASCADE\ub85c \ud0dc\uadf8\ub3c4 \uc0ad\uc81c)",
         "operationId": "delete_tag_group_v1_tags_groups__group_id__delete",
         "security": [
           {
@@ -1966,7 +1966,7 @@
           "Tags"
         ],
         "summary": "Read Tags",
-        "description": "모든 태그 조회",
+        "description": "\ubaa8\ub4e0 \ud0dc\uadf8 \uc870\ud68c",
         "operationId": "read_tags_v1_tags_get",
         "responses": {
           "200": {
@@ -1995,7 +1995,7 @@
           "Tags"
         ],
         "summary": "Create Tag",
-        "description": "태그 생성",
+        "description": "\ud0dc\uadf8 \uc0dd\uc131",
         "operationId": "create_tag_v1_tags_post",
         "requestBody": {
           "content": {
@@ -2042,7 +2042,7 @@
           "Tags"
         ],
         "summary": "Read Tag",
-        "description": "태그 조회",
+        "description": "\ud0dc\uadf8 \uc870\ud68c",
         "operationId": "read_tag_v1_tags__tag_id__get",
         "security": [
           {
@@ -2089,7 +2089,7 @@
           "Tags"
         ],
         "summary": "Update Tag",
-        "description": "태그 업데이트",
+        "description": "\ud0dc\uadf8 \uc5c5\ub370\uc774\ud2b8",
         "operationId": "update_tag_v1_tags__tag_id__patch",
         "security": [
           {
@@ -2146,7 +2146,7 @@
           "Tags"
         ],
         "summary": "Delete Tag",
-        "description": "태그 삭제",
+        "description": "\ud0dc\uadf8 \uc0ad\uc81c",
         "operationId": "delete_tag_v1_tags__tag_id__delete",
         "security": [
           {
@@ -2193,7 +2193,7 @@
           "Todos"
         ],
         "summary": "Create Todo",
-        "description": "새 Todo 생성\n\nTodo는 독립적인 엔티티입니다.\ndeadline이 있으면 별도의 Schedule이 자동으로 생성됩니다.",
+        "description": "\uc0c8 Todo \uc0dd\uc131\n\nTodo\ub294 \ub3c5\ub9bd\uc801\uc778 \uc5d4\ud2f0\ud2f0\uc785\ub2c8\ub2e4.\ndeadline\uc774 \uc788\uc73c\uba74 \ubcc4\ub3c4\uc758 Schedule\uc774 \uc790\ub3d9\uc73c\ub85c \uc0dd\uc131\ub429\ub2c8\ub2e4.",
         "operationId": "create_todo_v1_todos_post",
         "security": [
           {
@@ -2214,10 +2214,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -2258,7 +2258,7 @@
           "Todos"
         ],
         "summary": "Read Todos",
-        "description": "Todo 목록 조회 (태그/그룹 필터링 지원)\n\n조회 범위 (scope):\n- mine: 내 Todo만 (기본값)\n- shared: 공유된 타인의 Todo만\n- all: 내 Todo + 공유된 Todo\n\n그룹 필터링:\n- group_ids: 해당 그룹에 속한 Todo 반환\n  - tag_group_id로 직접 연결된 Todo\n  - OR 해당 그룹의 태그를 가진 Todo\n\n태그 필터링:\n- tag_ids: AND 방식 (모든 지정 태그를 포함한 Todo만 반환)\n- 태그 필터 시 조상 노드도 포함 (orphan 방지)\n\n응답의 include_reason 필드:\n- MATCH: 필터 조건에 직접 매칭된 Todo\n- ANCESTOR: 매칭된 Todo의 조상이라 포함된 Todo\n\n둘 다 지정 시: 그룹 필터링 후 태그 필터링 적용",
+        "description": "Todo \ubaa9\ub85d \uc870\ud68c (\ud0dc\uadf8/\uadf8\ub8f9 \ud544\ud130\ub9c1 \uc9c0\uc6d0)\n\n\uc870\ud68c \ubc94\uc704 (scope):\n- mine: \ub0b4 Todo\ub9cc (\uae30\ubcf8\uac12)\n- shared: \uacf5\uc720\ub41c \ud0c0\uc778\uc758 Todo\ub9cc\n- all: \ub0b4 Todo + \uacf5\uc720\ub41c Todo\n\n\uadf8\ub8f9 \ud544\ud130\ub9c1:\n- group_ids: \ud574\ub2f9 \uadf8\ub8f9\uc5d0 \uc18d\ud55c Todo \ubc18\ud658\n  - tag_group_id\ub85c \uc9c1\uc811 \uc5f0\uacb0\ub41c Todo\n  - OR \ud574\ub2f9 \uadf8\ub8f9\uc758 \ud0dc\uadf8\ub97c \uac00\uc9c4 Todo\n\n\ud0dc\uadf8 \ud544\ud130\ub9c1:\n- tag_ids: AND \ubc29\uc2dd (\ubaa8\ub4e0 \uc9c0\uc815 \ud0dc\uadf8\ub97c \ud3ec\ud568\ud55c Todo\ub9cc \ubc18\ud658)\n- \ud0dc\uadf8 \ud544\ud130 \uc2dc \uc870\uc0c1 \ub178\ub4dc\ub3c4 \ud3ec\ud568 (orphan \ubc29\uc9c0)\n\n\uc751\ub2f5\uc758 include_reason \ud544\ub4dc:\n- MATCH: \ud544\ud130 \uc870\uac74\uc5d0 \uc9c1\uc811 \ub9e4\uce6d\ub41c Todo\n- ANCESTOR: \ub9e4\uce6d\ub41c Todo\uc758 \uc870\uc0c1\uc774\ub77c \ud3ec\ud568\ub41c Todo\n\n\ub458 \ub2e4 \uc9c0\uc815 \uc2dc: \uadf8\ub8f9 \ud544\ud130\ub9c1 \ud6c4 \ud0dc\uadf8 \ud544\ud130\ub9c1 \uc801\uc6a9",
         "operationId": "read_todos_v1_todos_get",
         "security": [
           {
@@ -2272,10 +2272,10 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ResourceScope",
-              "description": "조회 범위: mine(내 Todo만), shared(공유된 Todo만), all(모두)",
+              "description": "\uc870\ud68c \ubc94\uc704: mine(\ub0b4 Todo\ub9cc), shared(\uacf5\uc720\ub41c Todo\ub9cc), all(\ubaa8\ub450)",
               "default": "mine"
             },
-            "description": "조회 범위: mine(내 Todo만), shared(공유된 Todo만), all(모두)"
+            "description": "\uc870\ud68c \ubc94\uc704: mine(\ub0b4 Todo\ub9cc), shared(\uacf5\uc720\ub41c Todo\ub9cc), all(\ubaa8\ub450)"
           },
           {
             "name": "tag_ids",
@@ -2294,10 +2294,10 @@
                   "type": "null"
                 }
               ],
-              "description": "태그 ID 리스트 (AND 방식: 모든 지정 태그를 포함한 Todo만 반환)",
+              "description": "\ud0dc\uadf8 ID \ub9ac\uc2a4\ud2b8 (AND \ubc29\uc2dd: \ubaa8\ub4e0 \uc9c0\uc815 \ud0dc\uadf8\ub97c \ud3ec\ud568\ud55c Todo\ub9cc \ubc18\ud658)",
               "title": "Tag Ids"
             },
-            "description": "태그 ID 리스트 (AND 방식: 모든 지정 태그를 포함한 Todo만 반환)"
+            "description": "\ud0dc\uadf8 ID \ub9ac\uc2a4\ud2b8 (AND \ubc29\uc2dd: \ubaa8\ub4e0 \uc9c0\uc815 \ud0dc\uadf8\ub97c \ud3ec\ud568\ud55c Todo\ub9cc \ubc18\ud658)"
           },
           {
             "name": "group_ids",
@@ -2316,10 +2316,10 @@
                   "type": "null"
                 }
               ],
-              "description": "태그 그룹 ID 리스트 (해당 그룹에 속한 Todo 반환 - 직접 연결 또는 태그 기반)",
+              "description": "\ud0dc\uadf8 \uadf8\ub8f9 ID \ub9ac\uc2a4\ud2b8 (\ud574\ub2f9 \uadf8\ub8f9\uc5d0 \uc18d\ud55c Todo \ubc18\ud658 - \uc9c1\uc811 \uc5f0\uacb0 \ub610\ub294 \ud0dc\uadf8 \uae30\ubc18)",
               "title": "Group Ids"
             },
-            "description": "태그 그룹 ID 리스트 (해당 그룹에 속한 Todo 반환 - 직접 연결 또는 태그 기반)"
+            "description": "\ud0dc\uadf8 \uadf8\ub8f9 ID \ub9ac\uc2a4\ud2b8 (\ud574\ub2f9 \uadf8\ub8f9\uc5d0 \uc18d\ud55c Todo \ubc18\ud658 - \uc9c1\uc811 \uc5f0\uacb0 \ub610\ub294 \ud0dc\uadf8 \uae30\ubc18)"
           },
           {
             "name": "timezone",
@@ -2334,10 +2334,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -2374,7 +2374,7 @@
           "Todos"
         ],
         "summary": "Get Todo Stats",
-        "description": "Todo 통계 조회\n\n그룹별 태그 통계를 반환합니다.\ngroup_id가 지정되면 해당 그룹의 태그만 집계합니다.",
+        "description": "Todo \ud1b5\uacc4 \uc870\ud68c\n\n\uadf8\ub8f9\ubcc4 \ud0dc\uadf8 \ud1b5\uacc4\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.\ngroup_id\uac00 \uc9c0\uc815\ub418\uba74 \ud574\ub2f9 \uadf8\ub8f9\uc758 \ud0dc\uadf8\ub9cc \uc9d1\uacc4\ud569\ub2c8\ub2e4.",
         "operationId": "get_todo_stats_v1_todos_stats_get",
         "security": [
           {
@@ -2396,10 +2396,10 @@
                   "type": "null"
                 }
               ],
-              "description": "필터링할 태그 그룹 ID",
+              "description": "\ud544\ud130\ub9c1\ud560 \ud0dc\uadf8 \uadf8\ub8f9 ID",
               "title": "Group Id"
             },
-            "description": "필터링할 태그 그룹 ID"
+            "description": "\ud544\ud130\ub9c1\ud560 \ud0dc\uadf8 \uadf8\ub8f9 ID"
           }
         ],
         "responses": {
@@ -2432,7 +2432,7 @@
           "Todos"
         ],
         "summary": "Read Todo",
-        "description": "ID로 Todo 조회 (공유된 Todo 포함)\n\n본인 소유 Todo 또는 공유 접근 권한이 있는 Todo를 조회합니다.\n접근 권한이 없으면 403 Forbidden을 반환합니다.",
+        "description": "ID\ub85c Todo \uc870\ud68c (\uacf5\uc720\ub41c Todo \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 Todo \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 Todo\ub97c \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 403 Forbidden\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "read_todo_v1_todos__todo_id__get",
         "security": [
           {
@@ -2463,10 +2463,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -2497,7 +2497,7 @@
           "Todos"
         ],
         "summary": "Update Todo",
-        "description": "Todo 업데이트\n\ntitle, description, tag_ids, deadline, parent_id, status를 업데이트할 수 있습니다.\n\ndeadline 변경 시:\n- deadline 추가: 새 Schedule 생성\n- deadline 변경: 기존 Schedule 시작 시간 이동 (길이 보존, 없으면 재생성)\n- deadline 제거(null): 연결 Schedule이 있으면 linked_schedule_policy 필수\n  (delete: 삭제 / unlink: 연결만 해제)",
+        "description": "Todo \uc5c5\ub370\uc774\ud2b8\n\ntitle, description, tag_ids, deadline, parent_id, status\ub97c \uc5c5\ub370\uc774\ud2b8\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\ndeadline \ubcc0\uacbd \uc2dc:\n- deadline \ucd94\uac00: \uc0c8 Schedule \uc0dd\uc131\n- deadline \ubcc0\uacbd: \uae30\uc874 Schedule \uc2dc\uc791 \uc2dc\uac04 \uc774\ub3d9 (\uae38\uc774 \ubcf4\uc874, \uc5c6\uc73c\uba74 \uc7ac\uc0dd\uc131)\n- deadline \uc81c\uac70(null): \uc5f0\uacb0 Schedule\uc774 \uc788\uc73c\uba74 linked_schedule_policy \ud544\uc218\n  (delete: \uc0ad\uc81c / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c)",
         "operationId": "update_todo_v1_todos__todo_id__patch",
         "security": [
           {
@@ -2528,10 +2528,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -2572,7 +2572,7 @@
           "Todos"
         ],
         "summary": "Delete Todo",
-        "description": "Todo 삭제\n\n연결된 투영 Schedule은 `linked_schedule_policy`, 연결된 타이머는\n`linked_timer_policy`에 따라 처리됩니다. 연결 대상이 있는데 해당 정책이\n누락되면 422를 반환합니다.",
+        "description": "Todo \uc0ad\uc81c\n\n\uc5f0\uacb0\ub41c \ud22c\uc601 Schedule\uc740 `linked_schedule_policy`, \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38\ub294\n`linked_timer_policy`\uc5d0 \ub530\ub77c \ucc98\ub9ac\ub429\ub2c8\ub2e4. \uc5f0\uacb0 \ub300\uc0c1\uc774 \uc788\ub294\ub370 \ud574\ub2f9 \uc815\ucc45\uc774\n\ub204\ub77d\ub418\uba74 422\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "delete_todo_v1_todos__todo_id__delete",
         "security": [
           {
@@ -2603,10 +2603,10 @@
                   "type": "null"
                 }
               ],
-              "description": "연결 투영 Schedule 처리 정책 — 연결 투영이 있는 경우 필수, 서버 기본값 없음. delete: 투영 삭제 + 접근권한 정리 / unlink: 연결만 해제(일정 보존)",
+              "description": "\uc5f0\uacb0 \ud22c\uc601 Schedule \ucc98\ub9ac \uc815\ucc45 \u2014 \uc5f0\uacb0 \ud22c\uc601\uc774 \uc788\ub294 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. delete: \ud22c\uc601 \uc0ad\uc81c + \uc811\uadfc\uad8c\ud55c \uc815\ub9ac / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c(\uc77c\uc815 \ubcf4\uc874)",
               "title": "Linked Schedule Policy"
             },
-            "description": "연결 투영 Schedule 처리 정책 — 연결 투영이 있는 경우 필수, 서버 기본값 없음. delete: 투영 삭제 + 접근권한 정리 / unlink: 연결만 해제(일정 보존)"
+            "description": "\uc5f0\uacb0 \ud22c\uc601 Schedule \ucc98\ub9ac \uc815\ucc45 \u2014 \uc5f0\uacb0 \ud22c\uc601\uc774 \uc788\ub294 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. delete: \ud22c\uc601 \uc0ad\uc81c + \uc811\uadfc\uad8c\ud55c \uc815\ub9ac / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c(\uc77c\uc815 \ubcf4\uc874)"
           },
           {
             "name": "linked_timer_policy",
@@ -2621,10 +2621,10 @@
                   "type": "null"
                 }
               ],
-              "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행)",
+              "description": "\uc5f0\uacb0 \ud0c0\uc774\uba38 \ucc98\ub9ac \uc815\ucc45 \u2014 \uc5f0\uacb0 \ud0c0\uc774\uba38\uac00 \uc788\ub294 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. delete: \ud0c0\uc774\uba38 \uc0ad\uc81c + \uc811\uadfc\uad8c\ud55c \uc815\ub9ac / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c(\ud0c0\uc774\uba38 \ubcf4\uc874, \uc2e4\ud589 \uc911\uc774\uba74 \uacc4\uc18d \uc2e4\ud589)",
               "title": "Linked Timer Policy"
             },
-            "description": "연결 타이머 처리 정책 — 연결 타이머가 있는 경우 필수, 서버 기본값 없음. delete: 타이머 삭제 + 접근권한 정리 / unlink: 연결만 해제(타이머 보존, 실행 중이면 계속 실행)"
+            "description": "\uc5f0\uacb0 \ud0c0\uc774\uba38 \ucc98\ub9ac \uc815\ucc45 \u2014 \uc5f0\uacb0 \ud0c0\uc774\uba38\uac00 \uc788\ub294 \uacbd\uc6b0 \ud544\uc218, \uc11c\ubc84 \uae30\ubcf8\uac12 \uc5c6\uc74c. delete: \ud0c0\uc774\uba38 \uc0ad\uc81c + \uc811\uadfc\uad8c\ud55c \uc815\ub9ac / unlink: \uc5f0\uacb0\ub9cc \ud574\uc81c(\ud0c0\uc774\uba38 \ubcf4\uc874, \uc2e4\ud589 \uc911\uc774\uba74 \uacc4\uc18d \uc2e4\ud589)"
           }
         ],
         "responses": {
@@ -2655,7 +2655,7 @@
           "Todos"
         ],
         "summary": "Get Todo Timers",
-        "description": "Todo의 모든 타이머 조회 (공유된 Todo 포함)\n\nSchedule의 /schedules/{schedule_id}/timers 엔드포인트와 동일한 패턴입니다.",
+        "description": "Todo\uc758 \ubaa8\ub4e0 \ud0c0\uc774\uba38 \uc870\ud68c (\uacf5\uc720\ub41c Todo \ud3ec\ud568)\n\nSchedule\uc758 /schedules/{schedule_id}/timers \uc5d4\ub4dc\ud3ec\uc778\ud2b8\uc640 \ub3d9\uc77c\ud55c \ud328\ud134\uc785\ub2c8\ub2e4.",
         "operationId": "get_todo_timers_v1_todos__todo_id__timers_get",
         "security": [
           {
@@ -2679,11 +2679,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "timezone",
@@ -2698,10 +2698,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -2738,7 +2738,7 @@
           "Todos"
         ],
         "summary": "Get Todo Active Timer",
-        "description": "Todo의 현재 활성 타이머 조회 (RUNNING 또는 PAUSED, 공유된 Todo 포함)\n\n활성 타이머가 없으면 404를 반환합니다.\nSchedule의 /schedules/{schedule_id}/timers/active 엔드포인트와 동일한 패턴입니다.",
+        "description": "Todo\uc758 \ud604\uc7ac \ud65c\uc131 \ud0c0\uc774\uba38 \uc870\ud68c (RUNNING \ub610\ub294 PAUSED, \uacf5\uc720\ub41c Todo \ud3ec\ud568)\n\n\ud65c\uc131 \ud0c0\uc774\uba38\uac00 \uc5c6\uc73c\uba74 404\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.\nSchedule\uc758 /schedules/{schedule_id}/timers/active \uc5d4\ub4dc\ud3ec\uc778\ud2b8\uc640 \ub3d9\uc77c\ud55c \ud328\ud134\uc785\ub2c8\ub2e4.",
         "operationId": "get_todo_active_timer_v1_todos__todo_id__timers_active_get",
         "security": [
           {
@@ -2762,11 +2762,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "Todo 정보 포함 여부 (기본값: false)",
+              "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)",
               "default": false,
               "title": "Include Todo"
             },
-            "description": "Todo 정보 포함 여부 (기본값: false)"
+            "description": "Todo \uc815\ubcf4 \ud3ec\ud568 \uc5ec\ubd80 (\uae30\ubcf8\uac12: false)"
           },
           {
             "name": "timezone",
@@ -2781,10 +2781,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -2817,7 +2817,7 @@
           "Meetings"
         ],
         "summary": "Create Meeting",
-        "description": "일정 조율 생성\n\n인증 필수: 일정 조율 생성자는 소유자가 됩니다.",
+        "description": "\uc77c\uc815 \uc870\uc728 \uc0dd\uc131\n\n\uc778\uc99d \ud544\uc218: \uc77c\uc815 \uc870\uc728 \uc0dd\uc131\uc790\ub294 \uc18c\uc720\uc790\uac00 \ub429\ub2c8\ub2e4.",
         "operationId": "create_meeting_v1_meetings_post",
         "security": [
           {
@@ -2838,10 +2838,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -2882,7 +2882,7 @@
           "Meetings"
         ],
         "summary": "Read Meetings",
-        "description": "내가 생성한 일정 조율 목록 조회\n\n인증 필수: 본인이 생성한 일정 조율만 조회됩니다.",
+        "description": "\ub0b4\uac00 \uc0dd\uc131\ud55c \uc77c\uc815 \uc870\uc728 \ubaa9\ub85d \uc870\ud68c\n\n\uc778\uc99d \ud544\uc218: \ubcf8\uc778\uc774 \uc0dd\uc131\ud55c \uc77c\uc815 \uc870\uc728\ub9cc \uc870\ud68c\ub429\ub2c8\ub2e4.",
         "operationId": "read_meetings_v1_meetings_get",
         "security": [
           {
@@ -2903,10 +2903,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -2943,7 +2943,7 @@
           "Meetings"
         ],
         "summary": "Read Meeting",
-        "description": "일정 조율 상세 조회\n\n인증 선택적: 접근 권한이 있는 경우 조회 가능합니다.\n- PUBLIC: 인증 없이도 조회 가능 (현재는 인증 필수로 처리)\n- ALLOWED_EMAILS: 허용된 이메일 사용자만 조회 가능 (인증 필수)\n\nNote: PUBLIC 레벨의 비인증 접근은 추후 구현 예정",
+        "description": "\uc77c\uc815 \uc870\uc728 \uc0c1\uc138 \uc870\ud68c\n\n\uc778\uc99d \uc120\ud0dd\uc801: \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uacbd\uc6b0 \uc870\ud68c \uac00\ub2a5\ud569\ub2c8\ub2e4.\n- PUBLIC: \uc778\uc99d \uc5c6\uc774\ub3c4 \uc870\ud68c \uac00\ub2a5 (\ud604\uc7ac\ub294 \uc778\uc99d \ud544\uc218\ub85c \ucc98\ub9ac)\n- ALLOWED_EMAILS: \ud5c8\uc6a9\ub41c \uc774\uba54\uc77c \uc0ac\uc6a9\uc790\ub9cc \uc870\ud68c \uac00\ub2a5 (\uc778\uc99d \ud544\uc218)\n\nNote: PUBLIC \ub808\ubca8\uc758 \ube44\uc778\uc99d \uc811\uadfc\uc740 \ucd94\ud6c4 \uad6c\ud604 \uc608\uc815",
         "operationId": "read_meeting_v1_meetings__meeting_id__get",
         "security": [
           {
@@ -2974,10 +2974,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -3008,7 +3008,7 @@
           "Meetings"
         ],
         "summary": "Update Meeting",
-        "description": "일정 조율 수정\n\n인증 필수: 소유자만 수정 가능합니다.",
+        "description": "\uc77c\uc815 \uc870\uc728 \uc218\uc815\n\n\uc778\uc99d \ud544\uc218: \uc18c\uc720\uc790\ub9cc \uc218\uc815 \uac00\ub2a5\ud569\ub2c8\ub2e4.",
         "operationId": "update_meeting_v1_meetings__meeting_id__patch",
         "security": [
           {
@@ -3039,10 +3039,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -3083,7 +3083,7 @@
           "Meetings"
         ],
         "summary": "Delete Meeting",
-        "description": "일정 조율 삭제\n\n인증 필수: 소유자만 삭제 가능합니다.",
+        "description": "\uc77c\uc815 \uc870\uc728 \uc0ad\uc81c\n\n\uc778\uc99d \ud544\uc218: \uc18c\uc720\uc790\ub9cc \uc0ad\uc81c \uac00\ub2a5\ud569\ub2c8\ub2e4.",
         "operationId": "delete_meeting_v1_meetings__meeting_id__delete",
         "security": [
           {
@@ -3130,7 +3130,7 @@
           "Meetings"
         ],
         "summary": "Create Participant",
-        "description": "참여자 등록\n\n인증 필수: 접근 권한이 있는 사용자만 참여 가능합니다.",
+        "description": "\ucc38\uc5ec\uc790 \ub4f1\ub85d\n\n\uc778\uc99d \ud544\uc218: \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uc0ac\uc6a9\uc790\ub9cc \ucc38\uc5ec \uac00\ub2a5\ud569\ub2c8\ub2e4.",
         "operationId": "create_participant_v1_meetings__meeting_id__participate_post",
         "security": [
           {
@@ -3161,10 +3161,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "requestBody": {
@@ -3207,7 +3207,7 @@
           "Meetings"
         ],
         "summary": "Set Availability",
-        "description": "참여자의 가능 시간 설정\n\n인증 필수: 본인의 참여 시간만 설정 가능합니다.\n기존 시간 슬롯을 모두 삭제하고 새로운 시간 슬롯을 설정합니다.\n\n:param meeting_id: 일정 조율 ID\n:param participant_id: 참여자 ID (쿼리 파라미터)\n:param time_slots: 시간 슬롯 리스트 (요청 본문)",
+        "description": "\ucc38\uc5ec\uc790\uc758 \uac00\ub2a5 \uc2dc\uac04 \uc124\uc815\n\n\uc778\uc99d \ud544\uc218: \ubcf8\uc778\uc758 \ucc38\uc5ec \uc2dc\uac04\ub9cc \uc124\uc815 \uac00\ub2a5\ud569\ub2c8\ub2e4.\n\uae30\uc874 \uc2dc\uac04 \uc2ac\ub86f\uc744 \ubaa8\ub450 \uc0ad\uc81c\ud558\uace0 \uc0c8\ub85c\uc6b4 \uc2dc\uac04 \uc2ac\ub86f\uc744 \uc124\uc815\ud569\ub2c8\ub2e4.\n\n:param meeting_id: \uc77c\uc815 \uc870\uc728 ID\n:param participant_id: \ucc38\uc5ec\uc790 ID (\ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130)\n:param time_slots: \uc2dc\uac04 \uc2ac\ub86f \ub9ac\uc2a4\ud2b8 (\uc694\uccad \ubcf8\ubb38)",
         "operationId": "set_availability_v1_meetings__meeting_id__availability_put",
         "security": [
           {
@@ -3232,10 +3232,10 @@
             "schema": {
               "type": "string",
               "format": "uuid",
-              "description": "참여자 ID",
+              "description": "\ucc38\uc5ec\uc790 ID",
               "title": "Participant Id"
             },
-            "description": "참여자 ID"
+            "description": "\ucc38\uc5ec\uc790 ID"
           }
         ],
         "requestBody": {
@@ -3284,7 +3284,7 @@
           "Meetings"
         ],
         "summary": "Get Availability",
-        "description": "전체 참여자의 가능 시간 조회\n\n인증 선택적: 접근 권한이 있는 경우 조회 가능합니다.",
+        "description": "\uc804\uccb4 \ucc38\uc5ec\uc790\uc758 \uac00\ub2a5 \uc2dc\uac04 \uc870\ud68c\n\n\uc778\uc99d \uc120\ud0dd\uc801: \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uacbd\uc6b0 \uc870\ud68c \uac00\ub2a5\ud569\ub2c8\ub2e4.",
         "operationId": "get_availability_v1_meetings__meeting_id__availability_get",
         "security": [
           {
@@ -3315,10 +3315,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -3355,7 +3355,7 @@
           "Meetings"
         ],
         "summary": "Get Meeting Result",
-        "description": "공통 가능 시간 분석 결과 조회\n\n인증 선택적: 접근 권한이 있는 경우 조회 가능합니다.\n모든 참여자의 시간 선택을 집계하여 겹치는 시간대와 인원 수를 계산합니다.",
+        "description": "\uacf5\ud1b5 \uac00\ub2a5 \uc2dc\uac04 \ubd84\uc11d \uacb0\uacfc \uc870\ud68c\n\n\uc778\uc99d \uc120\ud0dd\uc801: \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uacbd\uc6b0 \uc870\ud68c \uac00\ub2a5\ud569\ub2c8\ub2e4.\n\ubaa8\ub4e0 \ucc38\uc5ec\uc790\uc758 \uc2dc\uac04 \uc120\ud0dd\uc744 \uc9d1\uacc4\ud558\uc5ec \uacb9\uce58\ub294 \uc2dc\uac04\ub300\uc640 \uc778\uc6d0 \uc218\ub97c \uacc4\uc0b0\ud569\ub2c8\ub2e4.",
         "operationId": "get_meeting_result_v1_meetings__meeting_id__result_get",
         "security": [
           {
@@ -3386,10 +3386,10 @@
                   "type": "null"
                 }
               ],
-              "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환",
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
               "title": "Timezone"
             },
-            "description": "타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환"
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
           }
         ],
         "responses": {
@@ -3422,7 +3422,7 @@
           "Friends"
         ],
         "summary": "List Friends",
-        "description": "친구 목록 조회\n\n현재 사용자의 모든 친구 목록을 반환합니다.",
+        "description": "\uce5c\uad6c \ubaa9\ub85d \uc870\ud68c\n\n\ud604\uc7ac \uc0ac\uc6a9\uc790\uc758 \ubaa8\ub4e0 \uce5c\uad6c \ubaa9\ub85d\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "list_friends_v1_friends_get",
         "responses": {
           "200": {
@@ -3453,7 +3453,7 @@
           "Friends"
         ],
         "summary": "List Friend Ids",
-        "description": "친구 ID 목록만 조회 (효율적인 쿼리)\n\n친구 목록을 빠르게 확인할 때 사용합니다.",
+        "description": "\uce5c\uad6c ID \ubaa9\ub85d\ub9cc \uc870\ud68c (\ud6a8\uc728\uc801\uc778 \ucffc\ub9ac)\n\n\uce5c\uad6c \ubaa9\ub85d\uc744 \ube60\ub974\uac8c \ud655\uc778\ud560 \ub54c \uc0ac\uc6a9\ud569\ub2c8\ub2e4.",
         "operationId": "list_friend_ids_v1_friends_ids_get",
         "responses": {
           "200": {
@@ -3484,7 +3484,7 @@
           "Friends"
         ],
         "summary": "List Received Requests",
-        "description": "받은 친구 요청 목록 조회\n\n대기 중인 친구 요청만 반환합니다.",
+        "description": "\ubc1b\uc740 \uce5c\uad6c \uc694\uccad \ubaa9\ub85d \uc870\ud68c\n\n\ub300\uae30 \uc911\uc778 \uce5c\uad6c \uc694\uccad\ub9cc \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "list_received_requests_v1_friends_requests_received_get",
         "responses": {
           "200": {
@@ -3515,7 +3515,7 @@
           "Friends"
         ],
         "summary": "List Sent Requests",
-        "description": "보낸 친구 요청 목록 조회\n\n대기 중인 친구 요청만 반환합니다.",
+        "description": "\ubcf4\ub0b8 \uce5c\uad6c \uc694\uccad \ubaa9\ub85d \uc870\ud68c\n\n\ub300\uae30 \uc911\uc778 \uce5c\uad6c \uc694\uccad\ub9cc \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "list_sent_requests_v1_friends_requests_sent_get",
         "responses": {
           "200": {
@@ -3546,7 +3546,7 @@
           "Friends"
         ],
         "summary": "Send Friend Request",
-        "description": "친구 요청 보내기 (email 또는 friend_code)\n\n`email` / `friend_code` 중 정확히 하나를 보냅니다(DTO에서 검증):\n- **email**: 검증된 이메일 사용자와 매칭. 계정 열거를 막기 위해 매칭/자기자신/중복/차단/\n  미존재 여부와 무관하게 **항상 202** `{\"ok\": true}`를 반환합니다.\n- **friend_code**: `GET /v1/users/me`로 공유된 코드와 직접 매칭. 코드가 유효하지 않으면\n  404, 매칭되면 정상 피드백(201, 또는 자기자신 400 / 중복·이미친구 409 / 차단 403).",
+        "description": "\uce5c\uad6c \uc694\uccad \ubcf4\ub0b4\uae30 (email \ub610\ub294 friend_code)\n\n`email` / `friend_code` \uc911 \uc815\ud655\ud788 \ud558\ub098\ub97c \ubcf4\ub0c5\ub2c8\ub2e4(DTO\uc5d0\uc11c \uac80\uc99d):\n- **email**: \uac80\uc99d\ub41c \uc774\uba54\uc77c \uc0ac\uc6a9\uc790\uc640 \ub9e4\uce6d. \uacc4\uc815 \uc5f4\uac70\ub97c \ub9c9\uae30 \uc704\ud574 \ub9e4\uce6d/\uc790\uae30\uc790\uc2e0/\uc911\ubcf5/\ucc28\ub2e8/\n  \ubbf8\uc874\uc7ac \uc5ec\ubd80\uc640 \ubb34\uad00\ud558\uac8c **\ud56d\uc0c1 202** `{\"ok\": true}`\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.\n- **friend_code**: `GET /v1/users/me`\ub85c \uacf5\uc720\ub41c \ucf54\ub4dc\uc640 \uc9c1\uc811 \ub9e4\uce6d. \ucf54\ub4dc\uac00 \uc720\ud6a8\ud558\uc9c0 \uc54a\uc73c\uba74\n  404, \ub9e4\uce6d\ub418\uba74 \uc815\uc0c1 \ud53c\ub4dc\ubc31(201, \ub610\ub294 \uc790\uae30\uc790\uc2e0 400 / \uc911\ubcf5\u00b7\uc774\ubbf8\uce5c\uad6c 409 / \ucc28\ub2e8 403).",
         "operationId": "send_friend_request_v1_friends_requests_post",
         "requestBody": {
           "content": {
@@ -3606,7 +3606,7 @@
           "Friends"
         ],
         "summary": "Accept Friend Request",
-        "description": "친구 요청 수락\n\n받은 친구 요청을 수락합니다.\n요청 수신자만 수락할 수 있습니다.",
+        "description": "\uce5c\uad6c \uc694\uccad \uc218\ub77d\n\n\ubc1b\uc740 \uce5c\uad6c \uc694\uccad\uc744 \uc218\ub77d\ud569\ub2c8\ub2e4.\n\uc694\uccad \uc218\uc2e0\uc790\ub9cc \uc218\ub77d\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "accept_friend_request_v1_friends_requests__friendship_id__accept_post",
         "security": [
           {
@@ -3655,7 +3655,7 @@
           "Friends"
         ],
         "summary": "Reject Friend Request",
-        "description": "친구 요청 거절\n\n받은 친구 요청을 거절합니다.\n거절된 요청은 삭제됩니다.",
+        "description": "\uce5c\uad6c \uc694\uccad \uac70\uc808\n\n\ubc1b\uc740 \uce5c\uad6c \uc694\uccad\uc744 \uac70\uc808\ud569\ub2c8\ub2e4.\n\uac70\uc808\ub41c \uc694\uccad\uc740 \uc0ad\uc81c\ub429\ub2c8\ub2e4.",
         "operationId": "reject_friend_request_v1_friends_requests__friendship_id__reject_post",
         "security": [
           {
@@ -3702,7 +3702,7 @@
           "Friends"
         ],
         "summary": "Cancel Friend Request",
-        "description": "보낸 친구 요청 취소\n\n보낸 친구 요청을 취소합니다.\n요청 발신자만 취소할 수 있습니다.",
+        "description": "\ubcf4\ub0b8 \uce5c\uad6c \uc694\uccad \ucde8\uc18c\n\n\ubcf4\ub0b8 \uce5c\uad6c \uc694\uccad\uc744 \ucde8\uc18c\ud569\ub2c8\ub2e4.\n\uc694\uccad \ubc1c\uc2e0\uc790\ub9cc \ucde8\uc18c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "cancel_friend_request_v1_friends_requests__friendship_id__delete",
         "security": [
           {
@@ -3749,7 +3749,7 @@
           "Friends"
         ],
         "summary": "Remove Friend",
-        "description": "친구 삭제\n\n친구 관계를 끊습니다.\n양쪽 모두 삭제할 수 있습니다.",
+        "description": "\uce5c\uad6c \uc0ad\uc81c\n\n\uce5c\uad6c \uad00\uacc4\ub97c \ub04a\uc2b5\ub2c8\ub2e4.\n\uc591\ucabd \ubaa8\ub450 \uc0ad\uc81c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "remove_friend_v1_friends__friendship_id__delete",
         "security": [
           {
@@ -3796,7 +3796,7 @@
           "Friends"
         ],
         "summary": "Check Friendship",
-        "description": "친구 여부 확인\n\n특정 사용자와 친구인지 확인합니다.",
+        "description": "\uce5c\uad6c \uc5ec\ubd80 \ud655\uc778\n\n\ud2b9\uc815 \uc0ac\uc6a9\uc790\uc640 \uce5c\uad6c\uc778\uc9c0 \ud655\uc778\ud569\ub2c8\ub2e4.",
         "operationId": "check_friendship_v1_friends_check__user_id__get",
         "security": [
           {
@@ -3845,7 +3845,7 @@
           "Friends"
         ],
         "summary": "Block User",
-        "description": "사용자 차단\n\n특정 사용자를 차단합니다.\n차단된 사용자는 친구 요청을 보낼 수 없고, 공유된 콘텐츠에 접근할 수 없습니다.",
+        "description": "\uc0ac\uc6a9\uc790 \ucc28\ub2e8\n\n\ud2b9\uc815 \uc0ac\uc6a9\uc790\ub97c \ucc28\ub2e8\ud569\ub2c8\ub2e4.\n\ucc28\ub2e8\ub41c \uc0ac\uc6a9\uc790\ub294 \uce5c\uad6c \uc694\uccad\uc744 \ubcf4\ub0bc \uc218 \uc5c6\uace0, \uacf5\uc720\ub41c \ucf58\ud150\uce20\uc5d0 \uc811\uadfc\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.",
         "operationId": "block_user_v1_friends_block__user_id__post",
         "security": [
           {
@@ -3891,7 +3891,7 @@
           "Friends"
         ],
         "summary": "Unblock User",
-        "description": "사용자 차단 해제\n\n차단을 해제합니다.\n본인이 차단한 경우에만 해제할 수 있습니다.",
+        "description": "\uc0ac\uc6a9\uc790 \ucc28\ub2e8 \ud574\uc81c\n\n\ucc28\ub2e8\uc744 \ud574\uc81c\ud569\ub2c8\ub2e4.\n\ubcf8\uc778\uc774 \ucc28\ub2e8\ud55c \uacbd\uc6b0\uc5d0\ub9cc \ud574\uc81c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "unblock_user_v1_friends_block__user_id__delete",
         "security": [
           {
@@ -3937,7 +3937,7 @@
           "Users"
         ],
         "summary": "Get My Profile",
-        "description": "본인 표시 프로필 조회 (없으면 토큰 클레임으로 생성).\n\n`friend_code`를 공유하면 상대가 그 코드로 친구 요청을 보낼 수 있다.",
+        "description": "\ubcf8\uc778 \ud45c\uc2dc \ud504\ub85c\ud544 \uc870\ud68c (\uc5c6\uc73c\uba74 \ud1a0\ud070 \ud074\ub808\uc784\uc73c\ub85c \uc0dd\uc131).\n\n`friend_code`\ub97c \uacf5\uc720\ud558\uba74 \uc0c1\ub300\uac00 \uadf8 \ucf54\ub4dc\ub85c \uce5c\uad6c \uc694\uccad\uc744 \ubcf4\ub0bc \uc218 \uc788\ub2e4.",
         "operationId": "get_my_profile_v1_users_me_get",
         "responses": {
           "200": {
@@ -3964,7 +3964,7 @@
           "Visibility"
         ],
         "summary": "Set Visibility",
-        "description": "리소스 접근권한 설정/업데이트\n\n소유자만 접근권한을 설정할 수 있습니다.",
+        "description": "\ub9ac\uc18c\uc2a4 \uc811\uadfc\uad8c\ud55c \uc124\uc815/\uc5c5\ub370\uc774\ud2b8\n\n\uc18c\uc720\uc790\ub9cc \uc811\uadfc\uad8c\ud55c\uc744 \uc124\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "set_visibility_v1_visibility__resource_type___resource_id__put",
         "security": [
           {
@@ -4029,7 +4029,7 @@
           "Visibility"
         ],
         "summary": "Get Visibility",
-        "description": "리소스 접근권한 설정 조회\n\n소유자만 접근권한 설정을 조회할 수 있습니다.",
+        "description": "\ub9ac\uc18c\uc2a4 \uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc870\ud68c\n\n\uc18c\uc720\uc790\ub9cc \uc811\uadfc\uad8c\ud55c \uc124\uc815\uc744 \uc870\ud68c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "get_visibility_v1_visibility__resource_type___resource_id__get",
         "security": [
           {
@@ -4084,7 +4084,7 @@
           "Visibility"
         ],
         "summary": "Delete Visibility",
-        "description": "리소스 접근권한 설정 삭제 (PRIVATE으로 복귀)\n\n소유자만 접근권한을 삭제할 수 있습니다.",
+        "description": "\ub9ac\uc18c\uc2a4 \uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc0ad\uc81c (PRIVATE\uc73c\ub85c \ubcf5\uadc0)\n\n\uc18c\uc720\uc790\ub9cc \uc811\uadfc\uad8c\ud55c\uc744 \uc0ad\uc81c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
         "operationId": "delete_visibility_v1_visibility__resource_type___resource_id__delete",
         "security": [
           {
@@ -4139,7 +4139,7 @@
           "Holidays"
         ],
         "summary": "Get Holidays",
-        "description": "공휴일 조회\n\n- year만 지정: 해당 연도 조회\n- start_year/end_year 지정: 범위 조회 (end_year 없으면 start_year로 대체)\n- 미지정: 현재 연도 조회\n- auto_sync=False (기본값): DB에 있는 데이터만 반환\n- auto_sync=True: 데이터가 없으면 자동으로 동기화 수행 후 결과 반환\n- 422 에러: 해당 연도의 공휴일 데이터가 준비되지 않은 경우 (2028년 이후 등)",
+        "description": "\uacf5\ud734\uc77c \uc870\ud68c\n\n- year\ub9cc \uc9c0\uc815: \ud574\ub2f9 \uc5f0\ub3c4 \uc870\ud68c\n- start_year/end_year \uc9c0\uc815: \ubc94\uc704 \uc870\ud68c (end_year \uc5c6\uc73c\uba74 start_year\ub85c \ub300\uccb4)\n- \ubbf8\uc9c0\uc815: \ud604\uc7ac \uc5f0\ub3c4 \uc870\ud68c\n- auto_sync=False (\uae30\ubcf8\uac12): DB\uc5d0 \uc788\ub294 \ub370\uc774\ud130\ub9cc \ubc18\ud658\n- auto_sync=True: \ub370\uc774\ud130\uac00 \uc5c6\uc73c\uba74 \uc790\ub3d9\uc73c\ub85c \ub3d9\uae30\ud654 \uc218\ud589 \ud6c4 \uacb0\uacfc \ubc18\ud658\n- 422 \uc5d0\ub7ec: \ud574\ub2f9 \uc5f0\ub3c4\uc758 \uacf5\ud734\uc77c \ub370\uc774\ud130\uac00 \uc900\ube44\ub418\uc9c0 \uc54a\uc740 \uacbd\uc6b0 (2028\ub144 \uc774\ud6c4 \ub4f1)",
         "operationId": "get_holidays_v1_holidays_get",
         "parameters": [
           {
@@ -4155,10 +4155,10 @@
                   "type": "null"
                 }
               ],
-              "description": "조회 연도 (YYYY)",
+              "description": "\uc870\ud68c \uc5f0\ub3c4 (YYYY)",
               "title": "Year"
             },
-            "description": "조회 연도 (YYYY)"
+            "description": "\uc870\ud68c \uc5f0\ub3c4 (YYYY)"
           },
           {
             "name": "start_year",
@@ -4173,10 +4173,10 @@
                   "type": "null"
                 }
               ],
-              "description": "시작 연도 (YYYY)",
+              "description": "\uc2dc\uc791 \uc5f0\ub3c4 (YYYY)",
               "title": "Start Year"
             },
-            "description": "시작 연도 (YYYY)"
+            "description": "\uc2dc\uc791 \uc5f0\ub3c4 (YYYY)"
           },
           {
             "name": "end_year",
@@ -4191,10 +4191,10 @@
                   "type": "null"
                 }
               ],
-              "description": "종료 연도 (YYYY)",
+              "description": "\uc885\ub8cc \uc5f0\ub3c4 (YYYY)",
               "title": "End Year"
             },
-            "description": "종료 연도 (YYYY)"
+            "description": "\uc885\ub8cc \uc5f0\ub3c4 (YYYY)"
           },
           {
             "name": "auto_sync",
@@ -4202,11 +4202,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "데이터가 없을 경우 자동으로 동기화 실행",
+              "description": "\ub370\uc774\ud130\uac00 \uc5c6\uc744 \uacbd\uc6b0 \uc790\ub3d9\uc73c\ub85c \ub3d9\uae30\ud654 \uc2e4\ud589",
               "default": false,
               "title": "Auto Sync"
             },
-            "description": "데이터가 없을 경우 자동으로 동기화 실행"
+            "description": "\ub370\uc774\ud130\uac00 \uc5c6\uc744 \uacbd\uc6b0 \uc790\ub3d9\uc73c\ub85c \ub3d9\uae30\ud654 \uc2e4\ud589"
           }
         ],
         "responses": {
@@ -4225,14 +4225,14 @@
             }
           },
           "422": {
-            "description": "해당 연도의 공휴일 데이터가 아직 준비되지 않음",
+            "description": "\ud574\ub2f9 \uc5f0\ub3c4\uc758 \uacf5\ud734\uc77c \ub370\uc774\ud130\uac00 \uc544\uc9c1 \uc900\ube44\ub418\uc9c0 \uc54a\uc74c",
             "content": {
               "application/json": {
                 "example": {
                   "error_id": "550e8400-e29b-41d4-a716-446655440000",
                   "status_code": 422,
                   "error_type": "HolidayDataNotAvailable",
-                  "message": "2028년~2028년 공휴일 데이터가 아직 준비되지 않았습니다",
+                  "message": "2028\ub144~2028\ub144 \uacf5\ud734\uc77c \ub370\uc774\ud130\uac00 \uc544\uc9c1 \uc900\ube44\ub418\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4",
                   "timestamp": "2026-01-15T00:00:00Z",
                   "path": "/v1/holidays"
                 }
@@ -4299,6 +4299,105 @@
           }
         }
       }
+    },
+    "/v1/users/me/consent": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Put My Consent",
+        "description": "\ub9cc 14\uc138 \uc774\uc0c1 \ud655\uc778, \uc774\uc6a9\uc57d\uad00, \uac1c\uc778\uc815\ubcf4\ucc98\ub9ac\ubc29\uce68 \ub3d9\uc758 \uae30\ub85d.\n\n`version`\uc740 \uc751\ub2f5 \uc804\uc5d0 \ubc1b\uc740 \ud604\uc7ac \uc57d\uad00 \uc2dc\ud589\uc77c\uc774\uc5b4\uc57c \ud55c\ub2e4(\ub2e4\ub974\uba74 409).",
+        "operationId": "put_my_consent_v1_users_me_consent_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/deletion": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Request My Deletion",
+        "description": "\ud68c\uc6d0 \ud0c8\ud1f4 \uc2e0\uccad. \uacc4\uc815\uc774 \ud734\uba74\uc774 \ub418\uace0 `deletion_scheduled_at` \ub4a4 \ud30c\uae30\ub41c\ub2e4.\n\n\ub2e4\uc2dc \ubcf4\ub0b4\ub3c4 \ucc98\uc74c \uc2e0\uccad \uc2dc\uac01\uc744 \uc720\uc9c0\ud55c\ub2e4. \uc0c8\ub85c \uc2e0\uccad\ud558\uba74 \ucee4\ubc0b \ub4a4 \ubaa8\ub4e0 \uae30\uae30\uc758 \ub85c\uadf8\uc778 \uc138\uc158\uc744 \ub04a\ub294\ub2e4.",
+        "operationId": "request_my_deletion_v1_users_me_deletion_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Cancel My Deletion",
+        "description": "\ud68c\uc6d0 \ud0c8\ud1f4 \uc2e0\uccad \ucde8\uc18c. \uc2e0\uccad\ud558\uc9c0 \uc54a\uc558\uc73c\uba74 \uc544\ubb34\uac83\ub3c4 \ubc14\uafb8\uc9c0 \uc54a\ub294\ub2e4.",
+        "operationId": "cancel_my_deletion_v1_users_me_deletion_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4323,7 +4422,7 @@
           "slots"
         ],
         "title": "AvailabilityDateGroup",
-        "description": "날짜별 가용 시간 그룹 DTO"
+        "description": "\ub0a0\uc9dc\ubcc4 \uac00\uc6a9 \uc2dc\uac04 \uadf8\ub8f9 DTO"
       },
       "AvailabilityRead": {
         "properties": {
@@ -4344,7 +4443,7 @@
           "time_slots"
         ],
         "title": "AvailabilityRead",
-        "description": "참여자별 가능 시간 조회 DTO"
+        "description": "\ucc38\uc5ec\uc790\ubcc4 \uac00\ub2a5 \uc2dc\uac04 \uc870\ud68c DTO"
       },
       "AvailabilityTimeSlot": {
         "properties": {
@@ -4363,7 +4462,7 @@
           "count"
         ],
         "title": "AvailabilityTimeSlot",
-        "description": "시간 슬롯별 가용 인원 DTO"
+        "description": "\uc2dc\uac04 \uc2ac\ub86f\ubcc4 \uac00\uc6a9 \uc778\uc6d0 DTO"
       },
       "CreateTodoOptions": {
         "properties": {
@@ -4378,7 +4477,7 @@
           "tag_group_id"
         ],
         "title": "CreateTodoOptions",
-        "description": "Schedule 생성 시 함께 생성할 Todo 옵션"
+        "description": "Schedule \uc0dd\uc131 \uc2dc \ud568\uaed8 \uc0dd\uc131\ud560 Todo \uc635\uc158"
       },
       "FriendRead": {
         "properties": {
@@ -4426,7 +4525,7 @@
           "since"
         ],
         "title": "FriendRead",
-        "description": "친구 정보 조회 DTO (간략화)"
+        "description": "\uce5c\uad6c \uc815\ubcf4 \uc870\ud68c DTO (\uac04\ub7b5\ud654)"
       },
       "FriendRequest": {
         "properties": {
@@ -4455,7 +4554,7 @@
         },
         "type": "object",
         "title": "FriendRequest",
-        "description": "친구 요청 DTO\n\n친추 대상을 `email` 또는 `friend_code` 중 **정확히 하나**로 지정한다:\n- `email`: 검증된 이메일 사용자와 매칭(항상 균일 202, 존재 비노출).\n- `friend_code`: `GET /v1/users/me`로 공유된 코드와 직접 매칭(미존재 404).\n\n둘 다 비었거나 둘 다 주어지면 422. `null`이라도 필드가 둘 다 있으면 422로 본다.\n`email`은 형식 검증된다. OIDC sub는 외부에서 얻을 수 없으므로 식별자로 받지 않는다."
+        "description": "\uce5c\uad6c \uc694\uccad DTO\n\n\uce5c\ucd94 \ub300\uc0c1\uc744 `email` \ub610\ub294 `friend_code` \uc911 **\uc815\ud655\ud788 \ud558\ub098**\ub85c \uc9c0\uc815\ud55c\ub2e4:\n- `email`: \uac80\uc99d\ub41c \uc774\uba54\uc77c \uc0ac\uc6a9\uc790\uc640 \ub9e4\uce6d(\ud56d\uc0c1 \uade0\uc77c 202, \uc874\uc7ac \ube44\ub178\ucd9c).\n- `friend_code`: `GET /v1/users/me`\ub85c \uacf5\uc720\ub41c \ucf54\ub4dc\uc640 \uc9c1\uc811 \ub9e4\uce6d(\ubbf8\uc874\uc7ac 404).\n\n\ub458 \ub2e4 \ube44\uc5c8\uac70\ub098 \ub458 \ub2e4 \uc8fc\uc5b4\uc9c0\uba74 422. `null`\uc774\ub77c\ub3c4 \ud544\ub4dc\uac00 \ub458 \ub2e4 \uc788\uc73c\uba74 422\ub85c \ubcf8\ub2e4.\n`email`\uc740 \ud615\uc2dd \uac80\uc99d\ub41c\ub2e4. OIDC sub\ub294 \uc678\ubd80\uc5d0\uc11c \uc5bb\uc744 \uc218 \uc5c6\uc73c\ubbc0\ub85c \uc2dd\ubcc4\uc790\ub85c \ubc1b\uc9c0 \uc54a\ub294\ub2e4."
       },
       "FriendRequestAccepted": {
         "properties": {
@@ -4469,7 +4568,7 @@
           "ok"
         ],
         "title": "FriendRequestAccepted",
-        "description": "이메일 기반 친구 요청의 균일 수락 응답."
+        "description": "\uc774\uba54\uc77c \uae30\ubc18 \uce5c\uad6c \uc694\uccad\uc758 \uade0\uc77c \uc218\ub77d \uc751\ub2f5."
       },
       "FriendshipRead": {
         "properties": {
@@ -4521,7 +4620,7 @@
           "updated_at"
         ],
         "title": "FriendshipRead",
-        "description": "친구 관계 조회 DTO"
+        "description": "\uce5c\uad6c \uad00\uacc4 \uc870\ud68c DTO"
       },
       "FriendshipStatus": {
         "type": "string",
@@ -4531,7 +4630,7 @@
           "blocked"
         ],
         "title": "FriendshipStatus",
-        "description": "친구 관계 상태"
+        "description": "\uce5c\uad6c \uad00\uacc4 \uc0c1\ud0dc"
       },
       "HTTPValidationError": {
         "properties": {
@@ -4578,7 +4677,7 @@
           "isHoliday"
         ],
         "title": "HolidayItem",
-        "description": "도메인 국경일 정보 항목 (정제된 데이터)"
+        "description": "\ub3c4\uba54\uc778 \uad6d\uacbd\uc77c \uc815\ubcf4 \ud56d\ubaa9 (\uc815\uc81c\ub41c \ub370\uc774\ud130)"
       },
       "LinkedSchedulePolicy": {
         "type": "string",
@@ -4587,7 +4686,7 @@
           "unlink"
         ],
         "title": "LinkedSchedulePolicy",
-        "description": "마감 취소·Todo 삭제 시 연결 Schedule의 수명주기 처리 정책. 서버 기본값은 없다."
+        "description": "\ub9c8\uac10 \ucde8\uc18c\u00b7Todo \uc0ad\uc81c \uc2dc \uc5f0\uacb0 Schedule\uc758 \uc218\uba85\uc8fc\uae30 \ucc98\ub9ac \uc815\ucc45. \uc11c\ubc84 \uae30\ubcf8\uac12\uc740 \uc5c6\ub2e4."
       },
       "LinkedTimerPolicy": {
         "type": "string",
@@ -4596,7 +4695,7 @@
           "unlink"
         ],
         "title": "LinkedTimerPolicy",
-        "description": "연결된 Todo·Schedule 삭제 시 연결 타이머 처리 정책. 서버 기본값은 없다."
+        "description": "\uc5f0\uacb0\ub41c Todo\u00b7Schedule \uc0ad\uc81c \uc2dc \uc5f0\uacb0 \ud0c0\uc774\uba38 \ucc98\ub9ac \uc815\ucc45. \uc11c\ubc84 \uae30\ubcf8\uac12\uc740 \uc5c6\ub2e4."
       },
       "MeetingCreate": {
         "properties": {
@@ -4658,7 +4757,7 @@
           "end_time"
         ],
         "title": "MeetingCreate",
-        "description": "일정 조율 생성 DTO"
+        "description": "\uc77c\uc815 \uc870\uc728 \uc0dd\uc131 DTO"
       },
       "MeetingRead": {
         "properties": {
@@ -4758,7 +4857,7 @@
           "updated_at"
         ],
         "title": "MeetingRead",
-        "description": "일정 조율 조회 DTO"
+        "description": "\uc77c\uc815 \uc870\uc728 \uc870\ud68c DTO"
       },
       "MeetingResultRead": {
         "properties": {
@@ -4779,7 +4878,7 @@
           "availability_grid"
         ],
         "title": "MeetingResultRead",
-        "description": "공통 가능 시간 분석 결과 DTO"
+        "description": "\uacf5\ud1b5 \uac00\ub2a5 \uc2dc\uac04 \ubd84\uc11d \uacb0\uacfc DTO"
       },
       "MeetingUpdate": {
         "properties": {
@@ -4881,7 +4980,7 @@
         },
         "type": "object",
         "title": "MeetingUpdate",
-        "description": "일정 조율 업데이트 DTO"
+        "description": "\uc77c\uc815 \uc870\uc728 \uc5c5\ub370\uc774\ud2b8 DTO"
       },
       "MyProfileRead": {
         "properties": {
@@ -4914,15 +5013,49 @@
           "friend_code": {
             "type": "string",
             "title": "Friend Code"
+          },
+          "consent_version": {
+            "type": "string",
+            "title": "Consent Version"
+          },
+          "consent_required": {
+            "type": "boolean",
+            "title": "Consent Required"
+          },
+          "deletion_requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletion Requested At"
+          },
+          "deletion_scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletion Scheduled At"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "friend_code"
+          "friend_code",
+          "consent_version",
+          "consent_required"
         ],
         "title": "MyProfileRead",
-        "description": "본인 프로필 (GET /v1/users/me) — 친구코드 공유용"
+        "description": "\ubcf8\uc778 \ud504\ub85c\ud544 (GET /v1/users/me) \u2014 \uce5c\uad6c\ucf54\ub4dc \uacf5\uc720\uc6a9"
       },
       "ParticipantCreate": {
         "properties": {
@@ -4936,7 +5069,7 @@
           "display_name"
         ],
         "title": "ParticipantCreate",
-        "description": "참여자 생성 DTO"
+        "description": "\ucc38\uc5ec\uc790 \uc0dd\uc131 DTO"
       },
       "ParticipantRead": {
         "properties": {
@@ -4979,7 +5112,7 @@
           "created_at"
         ],
         "title": "ParticipantRead",
-        "description": "참여자 조회 DTO"
+        "description": "\ucc38\uc5ec\uc790 \uc870\ud68c DTO"
       },
       "PendingRequestRead": {
         "properties": {
@@ -5032,7 +5165,7 @@
           "created_at"
         ],
         "title": "PendingRequestRead",
-        "description": "대기 중인 친구 요청 DTO\n\n받은 요청에서 requester_* 필드로 \"누가 보냈는지\"를 표시한다.\n(보낸 요청에서는 requester가 본인이므로 본인 정보가 채워진다.)"
+        "description": "\ub300\uae30 \uc911\uc778 \uce5c\uad6c \uc694\uccad DTO\n\n\ubc1b\uc740 \uc694\uccad\uc5d0\uc11c requester_* \ud544\ub4dc\ub85c \"\ub204\uac00 \ubcf4\ub0c8\ub294\uc9c0\"\ub97c \ud45c\uc2dc\ud55c\ub2e4.\n(\ubcf4\ub0b8 \uc694\uccad\uc5d0\uc11c\ub294 requester\uac00 \ubcf8\uc778\uc774\ubbc0\ub85c \ubcf8\uc778 \uc815\ubcf4\uac00 \ucc44\uc6cc\uc9c4\ub2e4.)"
       },
       "ResourceScope": {
         "type": "string",
@@ -5042,7 +5175,7 @@
           "all"
         ],
         "title": "ResourceScope",
-        "description": "리소스 조회 범위 (공유 리소스 포함 여부)"
+        "description": "\ub9ac\uc18c\uc2a4 \uc870\ud68c \ubc94\uc704 (\uacf5\uc720 \ub9ac\uc18c\uc2a4 \ud3ec\ud568 \uc5ec\ubd80)"
       },
       "ResourceType": {
         "type": "string",
@@ -5053,7 +5186,7 @@
           "meeting"
         ],
         "title": "ResourceType",
-        "description": "리소스 타입"
+        "description": "\ub9ac\uc18c\uc2a4 \ud0c0\uc785"
       },
       "ScheduleCreate": {
         "properties": {
@@ -5161,7 +5294,7 @@
           "end_time"
         ],
         "title": "ScheduleCreate",
-        "description": "일정 생성 DTO"
+        "description": "\uc77c\uc815 \uc0dd\uc131 DTO"
       },
       "ScheduleRead": {
         "properties": {
@@ -5307,7 +5440,7 @@
           "created_at"
         ],
         "title": "ScheduleRead",
-        "description": "일정 조회 DTO"
+        "description": "\uc77c\uc815 \uc870\ud68c DTO"
       },
       "ScheduleState": {
         "type": "string",
@@ -5317,7 +5450,7 @@
           "CANCELLED"
         ],
         "title": "ScheduleState",
-        "description": "Schedule 상태"
+        "description": "Schedule \uc0c1\ud0dc"
       },
       "ScheduleUpdate": {
         "properties": {
@@ -5433,7 +5566,7 @@
         },
         "type": "object",
         "title": "ScheduleUpdate",
-        "description": "일정 업데이트 DTO"
+        "description": "\uc77c\uc815 \uc5c5\ub370\uc774\ud2b8 DTO"
       },
       "SourceTodoPolicy": {
         "type": "string",
@@ -5442,7 +5575,7 @@
           "keep_deadline"
         ],
         "title": "SourceTodoPolicy",
-        "description": "투영 일정이 마감 표시이기를 그만둘 때(삭제·반복 전환) source Todo 처리 정책.\n서버 기본값은 없다."
+        "description": "\ud22c\uc601 \uc77c\uc815\uc774 \ub9c8\uac10 \ud45c\uc2dc\uc774\uae30\ub97c \uadf8\ub9cc\ub458 \ub54c(\uc0ad\uc81c\u00b7\ubc18\ubcf5 \uc804\ud658) source Todo \ucc98\ub9ac \uc815\ucc45.\n\uc11c\ubc84 \uae30\ubcf8\uac12\uc740 \uc5c6\ub2e4."
       },
       "TagCreate": {
         "properties": {
@@ -5478,7 +5611,7 @@
           "group_id"
         ],
         "title": "TagCreate",
-        "description": "태그 생성 DTO"
+        "description": "\ud0dc\uadf8 \uc0dd\uc131 DTO"
       },
       "TagGroupCreate": {
         "properties": {
@@ -5522,7 +5655,7 @@
           "color"
         ],
         "title": "TagGroupCreate",
-        "description": "태그 그룹 생성 DTO"
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc0dd\uc131 DTO"
       },
       "TagGroupRead": {
         "properties": {
@@ -5584,7 +5717,7 @@
           "updated_at"
         ],
         "title": "TagGroupRead",
-        "description": "태그 그룹 조회 DTO"
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc870\ud68c DTO"
       },
       "TagGroupReadWithTags": {
         "properties": {
@@ -5654,7 +5787,7 @@
           "updated_at"
         ],
         "title": "TagGroupReadWithTags",
-        "description": "태그 그룹 조회 DTO (태그 포함)"
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc870\ud68c DTO (\ud0dc\uadf8 \ud3ec\ud568)"
       },
       "TagGroupUpdate": {
         "properties": {
@@ -5708,7 +5841,7 @@
         },
         "type": "object",
         "title": "TagGroupUpdate",
-        "description": "태그 그룹 업데이트 DTO"
+        "description": "\ud0dc\uadf8 \uadf8\ub8f9 \uc5c5\ub370\uc774\ud2b8 DTO"
       },
       "TagIncludeMode": {
         "type": "string",
@@ -5718,7 +5851,7 @@
           "inherit_from_schedule"
         ],
         "title": "TagIncludeMode",
-        "description": "타이머 태그 포함 모드"
+        "description": "\ud0c0\uc774\uba38 \ud0dc\uadf8 \ud3ec\ud568 \ubaa8\ub4dc"
       },
       "TagRead": {
         "properties": {
@@ -5772,7 +5905,7 @@
           "updated_at"
         ],
         "title": "TagRead",
-        "description": "태그 조회 DTO"
+        "description": "\ud0dc\uadf8 \uc870\ud68c DTO"
       },
       "TagStat": {
         "properties": {
@@ -5797,7 +5930,7 @@
           "count"
         ],
         "title": "TagStat",
-        "description": "태그별 통계"
+        "description": "\ud0dc\uadf8\ubcc4 \ud1b5\uacc4"
       },
       "TagUpdate": {
         "properties": {
@@ -5837,7 +5970,7 @@
         },
         "type": "object",
         "title": "TagUpdate",
-        "description": "태그 업데이트 DTO"
+        "description": "\ud0dc\uadf8 \uc5c5\ub370\uc774\ud2b8 DTO"
       },
       "TimeSlotCreate": {
         "properties": {
@@ -5864,7 +5997,7 @@
           "end_time"
         ],
         "title": "TimeSlotCreate",
-        "description": "시간 슬롯 생성 DTO"
+        "description": "\uc2dc\uac04 \uc2ac\ub86f \uc0dd\uc131 DTO"
       },
       "TimeSlotRead": {
         "properties": {
@@ -5903,7 +6036,7 @@
           "end_time"
         ],
         "title": "TimeSlotRead",
-        "description": "시간 슬롯 조회 DTO"
+        "description": "\uc2dc\uac04 \uc2ac\ub86f \uc870\ud68c DTO"
       },
       "TimerCreate": {
         "properties": {
@@ -5955,6 +6088,7 @@
           },
           "allocated_duration": {
             "type": "integer",
+            "maximum": 2147483647.0,
             "title": "Allocated Duration"
           },
           "tag_ids": {
@@ -5978,7 +6112,7 @@
           "allocated_duration"
         ],
         "title": "TimerCreate",
-        "description": "타이머 생성 DTO\n\nschedule_id와 todo_id 모두 Optional:\n- 둘 다 없으면: 독립 타이머\n- schedule_id만: Schedule에 연결된 타이머\n- todo_id만: Todo에 연결된 타이머\n- 둘 다 있으면: Schedule과 Todo 모두에 연결된 타이머"
+        "description": "\ud0c0\uc774\uba38 \uc0dd\uc131 DTO\n\nschedule_id\uc640 todo_id \ubaa8\ub450 Optional:\n- \ub458 \ub2e4 \uc5c6\uc73c\uba74: \ub3c5\ub9bd \ud0c0\uc774\uba38\n- schedule_id\ub9cc: Schedule\uc5d0 \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38\n- todo_id\ub9cc: Todo\uc5d0 \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38\n- \ub458 \ub2e4 \uc788\uc73c\uba74: Schedule\uacfc Todo \ubaa8\ub450\uc5d0 \uc5f0\uacb0\ub41c \ud0c0\uc774\uba38"
       },
       "TimerRead": {
         "properties": {
@@ -6164,7 +6298,7 @@
           "updated_at"
         ],
         "title": "TimerRead",
-        "description": "타이머 조회 DTO"
+        "description": "\ud0c0\uc774\uba38 \uc870\ud68c DTO"
       },
       "TimerStatus": {
         "type": "string",
@@ -6176,7 +6310,7 @@
           "CANCELLED"
         ],
         "title": "TimerStatus",
-        "description": "타이머 상태"
+        "description": "\ud0c0\uc774\uba38 \uc0c1\ud0dc"
       },
       "TimerUpdate": {
         "properties": {
@@ -6240,11 +6374,16 @@
               }
             ],
             "title": "Schedule Id"
+          },
+          "allocated_duration": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "title": "Allocated Duration"
           }
         },
         "type": "object",
         "title": "TimerUpdate",
-        "description": "타이머 업데이트 DTO\n\ntodo_id, schedule_id 필드 동작:\n- 필드가 요청에 포함되지 않음 (MISSING): 기존 값 유지\n- 필드가 UUID 값: 해당 ID로 연결 변경\n- 필드가 null: 연결 해제\n\nNote: 자동 연결 기능은 적용되지 않음 (명시적 변경만 수행)"
+        "description": "\ud0c0\uc774\uba38 \uc5c5\ub370\uc774\ud2b8 DTO\n\ntodo_id, schedule_id \ud544\ub4dc \ub3d9\uc791:\n- \ud544\ub4dc\uac00 \uc694\uccad\uc5d0 \ud3ec\ud568\ub418\uc9c0 \uc54a\uc74c (MISSING): \uae30\uc874 \uac12 \uc720\uc9c0\n- \ud544\ub4dc\uac00 UUID \uac12: \ud574\ub2f9 ID\ub85c \uc5f0\uacb0 \ubcc0\uacbd\n- \ud544\ub4dc\uac00 null: \uc5f0\uacb0 \ud574\uc81c\n\nallocated_duration: \ud604\uc7ac \uacbd\uacfc \uc2dc\uac04(\uc2e4\ud589 \uc911\uc774\uba74 \uc9c0\uae08\uae4c\uc9c0 \uc2e4\ud589\ud55c \uad6c\uac04 \ud3ec\ud568)\ubcf4\ub2e4 \ucee4\uc57c \ud568 (\uc544\ub2c8\uba74 422). \ub9cc\ub8cc\ub41c \ud0c0\uc774\uba38\ub294 \ub298\ub9b0 \ub4a4 \uc7ac\uac1c\ud560 \uc218 \uc788\ub2e4\n\nNote: \uc790\ub3d9 \uc5f0\uacb0 \uae30\ub2a5\uc740 \uc801\uc6a9\ub418\uc9c0 \uc54a\uc74c (\uba85\uc2dc\uc801 \ubcc0\uacbd\ub9cc \uc218\ud589)"
       },
       "TodoCreate": {
         "properties": {
@@ -6324,7 +6463,7 @@
           "tag_group_id"
         ],
         "title": "TodoCreate",
-        "description": "Todo 생성 DTO"
+        "description": "Todo \uc0dd\uc131 DTO"
       },
       "TodoIncludeReason": {
         "type": "string",
@@ -6333,7 +6472,7 @@
           "ANCESTOR"
         ],
         "title": "TodoIncludeReason",
-        "description": "Todo가 응답에 포함된 사유"
+        "description": "Todo\uac00 \uc751\ub2f5\uc5d0 \ud3ec\ud568\ub41c \uc0ac\uc720"
       },
       "TodoRead": {
         "properties": {
@@ -6450,7 +6589,7 @@
           "created_at"
         ],
         "title": "TodoRead",
-        "description": "Todo 조회 DTO"
+        "description": "Todo \uc870\ud68c DTO"
       },
       "TodoStats": {
         "properties": {
@@ -6484,7 +6623,7 @@
           "by_tag"
         ],
         "title": "TodoStats",
-        "description": "Todo 통계"
+        "description": "Todo \ud1b5\uacc4"
       },
       "TodoStatus": {
         "type": "string",
@@ -6495,7 +6634,7 @@
           "CANCELLED"
         ],
         "title": "TodoStatus",
-        "description": "Todo 상태"
+        "description": "Todo \uc0c1\ud0dc"
       },
       "TodoUpdate": {
         "properties": {
@@ -6588,7 +6727,7 @@
         },
         "type": "object",
         "title": "TodoUpdate",
-        "description": "Todo 업데이트 DTO"
+        "description": "Todo \uc5c5\ub370\uc774\ud2b8 DTO"
       },
       "ValidationError": {
         "properties": {
@@ -6640,7 +6779,7 @@
           "public"
         ],
         "title": "VisibilityLevel",
-        "description": "접근권한 레벨"
+        "description": "\uc811\uadfc\uad8c\ud55c \ub808\ubca8"
       },
       "VisibilityRead": {
         "properties": {
@@ -6710,7 +6849,7 @@
           "updated_at"
         ],
         "title": "VisibilityRead",
-        "description": "접근권한 설정 조회 DTO"
+        "description": "\uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc870\ud68c DTO"
       },
       "VisibilityUpdate": {
         "properties": {
@@ -6765,7 +6904,39 @@
           "level"
         ],
         "title": "VisibilityUpdate",
-        "description": "접근권한 설정 업데이트 DTO"
+        "description": "\uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc5c5\ub370\uc774\ud2b8 DTO"
+      },
+      "ConsentCreate": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "age_over_14": {
+            "type": "boolean",
+            "const": true,
+            "title": "Age Over 14"
+          },
+          "terms": {
+            "type": "boolean",
+            "const": true,
+            "title": "Terms"
+          },
+          "privacy": {
+            "type": "boolean",
+            "const": true,
+            "title": "Privacy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "age_over_14",
+          "terms",
+          "privacy"
+        ],
+        "title": "ConsentCreate",
+        "description": "\uc57d\uad00 \ub3d9\uc758 (PUT /v1/users/me/consent) \u2014 \uc138 \ud56d\ubaa9 \ubaa8\ub450 true\uc5ec\uc57c \ud55c\ub2e4"
       }
     },
     "securitySchemes": {

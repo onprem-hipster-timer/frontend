@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_color_picker.dart';
 
 /// 태그 생성/수정 폼 시트
 class TagFormSheet extends ConsumerStatefulWidget {
@@ -49,218 +51,250 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isLoading = _isEditMode
         ? ref.watch(updateTagMutation).isPending
         : ref.watch(createTagMutation).isPending;
     final availableGroupsAsync = ref.watch(tagTreeProvider);
 
     return availableGroupsAsync.when(
-      loading: () =>
-          const SafeArea(child: Center(child: CircularProgressIndicator())),
-      error: (error, stack) =>
-          SafeArea(child: Center(child: Text('태그 그룹을 불러올 수 없습니다: $error'))),
-      data: (availableGroups) =>
-          _buildFormSheet(context, theme, isLoading, availableGroups),
-    );
-  }
-
-  Widget _buildFormSheet(
-    BuildContext context,
-    ThemeData theme,
-    bool isLoading,
-    List<TagGroupWithTags> availableGroups,
-  ) {
-    // 첫 로드 시 기본 그룹 ID 설정
-    if (_selectedGroupId.isEmpty && availableGroups.isNotEmpty) {
-      _selectedGroupId = widget.defaultGroupId ?? availableGroups.first.groupId;
-    }
-
-    // [안전한 바텀 시트 레이아웃 구조]
-    // SafeArea로 가장 바깥을 감싸고, padding으로 키보드 높이를 처리합니다.
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // 내부 콘텐츠 크기만큼만 높이 차지
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(theme),
-                  const SizedBox(height: 24),
-                  _buildNameField(),
-                  const SizedBox(height: 20),
-                  _buildGroupSelector(theme, availableGroups),
-                  const SizedBox(height: 24),
-                  _buildColorPicker(theme),
-                  const SizedBox(height: 32),
-                  _buildButtonBar(isLoading),
-                ],
-              ),
-            ),
-          ),
-        ),
+      loading: () => const SafeArea(child: AppLoading()),
+      error: (error, stack) => SafeArea(
+        child: AppErrorState(title: '태그 그룹을 불러올 수 없습니다', error: error),
       ),
-    );
-  }
-
-  Widget _buildHeader(ThemeData theme) {
-    return Center(
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _isEditMode ? '태그 수정' : '새 태그 만들기',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNameField() {
-    return TextFormField(
-      controller: _nameController,
-      autofocus: true,
-      decoration: InputDecoration(
-        labelText: '태그 이름',
-        hintText: '태그 이름을 입력하세요',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(12),
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: _selectedColor,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return '태그 이름을 입력해주세요';
+      data: (availableGroups) {
+        // 첫 로드 시 기본 그룹 ID 설정
+        if (_selectedGroupId.isEmpty && availableGroups.isNotEmpty) {
+          _selectedGroupId =
+              widget.defaultGroupId ?? availableGroups.first.groupId;
         }
-        if (value.trim().length > 50) {
-          return '태그 이름은 50자 이하로 입력해주세요';
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.done,
-    );
-  }
 
-  Widget _buildGroupSelector(
-    ThemeData theme,
-    List<TagGroupWithTags> availableGroups,
-  ) {
-    if (_isEditMode) {
-      final currentGroup = availableGroups.firstWhere(
-        (group) => group.groupId == _selectedGroupId,
-        orElse: () => availableGroups.first,
-      );
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '태그 그룹',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+        return AppFormSheet(
+          title: _isEditMode ? '태그 수정' : '새 태그 만들기',
+          formKey: _formKey,
+          actions: AppFormActionBar(
+            submitLabel: _isEditMode ? '수정' : '생성',
+            onSubmit: _handleSubmit,
+            busy: isLoading,
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.5),
-              ),
-              borderRadius: BorderRadius.circular(12),
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.3,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.folder_outlined,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 12,
-                  height: 12,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: '태그 이름',
+                hintText: '태그 이름을 입력하세요',
+                prefixIcon: Container(
+                  margin: const EdgeInsets.all(12),
+                  width: 16,
+                  height: 16,
                   decoration: BoxDecoration(
-                    color: HexColor.fromHex(currentGroup.groupColor),
+                    color: _selectedColor,
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    currentGroup.groupName,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ),
-                Text(
-                  '(수정 불가)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '태그 이름을 입력해주세요';
+                }
+                if (value.trim().length > 50) {
+                  return '태그 이름은 50자 이하로 입력해주세요';
+                }
+                return null;
+              },
+              textInputAction: TextInputAction.done,
             ),
-          ),
-        ],
-      );
-    }
+            if (_isEditMode)
+              _FixedGroupField(
+                group: availableGroups.firstWhere(
+                  (group) => group.groupId == _selectedGroupId,
+                  orElse: () => availableGroups.first,
+                ),
+              )
+            else
+              _GroupDropdown(
+                groups: availableGroups,
+                selectedId: _selectedGroupId,
+                onChanged: (id) => setState(() => _selectedGroupId = id),
+              ),
+            TagColorPicker(
+              selected: _selectedColor,
+              onChanged: (color) => setState(() => _selectedColor = color),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      if (_isEditMode) {
+        final updateData = TagUpdate(
+          name: _nameController.text.trim(),
+          color: _selectedColor.toHex(),
+        );
+        await updateTagMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(tagGroupsRawProvider.notifier)
+              .updateTag(widget.tag!.id, updateData),
+        );
+        if (mounted) {
+          navigator.pop();
+          scaffoldMessenger.showAppSnackBar(
+            '태그가 수정되었습니다',
+            kind: AppNoticeKind.success,
+          );
+        }
+      } else {
+        final createData = TagCreate(
+          name: _nameController.text.trim(),
+          color: _selectedColor.toHex(),
+          groupId: _selectedGroupId,
+        );
+        await createTagMutation.run(
+          ref,
+          (tsx) => tsx.get(tagGroupsRawProvider.notifier).createTag(createData),
+        );
+        if (mounted) {
+          navigator.pop();
+          scaffoldMessenger.showAppSnackBar(
+            '태그가 생성되었습니다',
+            kind: AppNoticeKind.success,
+          );
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          _isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error',
+          kind: AppNoticeKind.error,
+        );
+      }
+    }
+  }
+}
+
+/// 태그 폼 시트를 표시하는 헬퍼 함수
+///
+/// 사용 예:
+/// ```dart
+/// showTagFormSheet(
+///   context,
+///   defaultGroupId: groupId,
+/// );
+/// ```
+Future<void> showTagFormSheet(
+  BuildContext context, {
+  TagRead? tag,
+  String? defaultGroupId,
+}) {
+  return showAppSheet<void>(
+    context,
+    builder: (context) =>
+        TagFormSheet(tag: tag, defaultGroupId: defaultGroupId),
+  );
+}
+
+/// 수정할 때 바꿀 수 없는 태그 그룹 표시
+class _FixedGroupField extends StatelessWidget {
+  const _FixedGroupField({required this.group});
+
+  final TagGroupWithTags group;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '태그 그룹',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+        const AppSectionHeader('태그 그룹'),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.5),
+            ),
+            borderRadius: AppRadius.lgAll,
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.folder_outlined,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: HexColor.fromHex(group.groupColor),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  group.groupName,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.lock_outline,
+                size: 16,
+                semanticLabel: '수정 불가',
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// 태그를 넣을 그룹 고르기
+class _GroupDropdown extends StatelessWidget {
+  const _GroupDropdown({
+    required this.groups,
+    required this.selectedId,
+    required this.onChanged,
+  });
+
+  final List<TagGroupWithTags> groups;
+  final String selectedId;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const AppSectionHeader('태그 그룹'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           // ⭐️ 핵심 Fix: 드롭다운이 넓이를 안전하게 잡도록 보장
           isExpanded: true,
-          initialValue: _selectedGroupId.isNotEmpty ? _selectedGroupId : null,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: const Icon(Icons.folder_outlined),
+          initialValue: selectedId.isNotEmpty ? selectedId : null,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.folder_outlined),
           ),
-          items: availableGroups.map((group) {
+          items: groups.map((group) {
             return DropdownMenuItem<String>(
               value: group.groupId,
               child: Row(
@@ -290,7 +324,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.mdAll,
                       ),
                       child: Text(
                         '${group.tagCount}',
@@ -307,11 +341,7 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
             );
           }).toList(),
           onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedGroupId = value;
-              });
-            }
+            if (value != null) onChanged(value);
           },
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -323,214 +353,4 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       ],
     );
   }
-
-  Widget _buildColorPicker(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '색상 선택',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: TagColorPalette.colors.map((color) {
-            final isSelected = color.toARGB32() == _selectedColor.toARGB32();
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedColor = color;
-                });
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : Colors.transparent,
-                    width: 3,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.3,
-                            ),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check,
-                        color: theme.colorScheme.primary,
-                        size: 24,
-                      )
-                    : null,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildButtonBar(bool isLoading) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('취소'),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: FilledButton(
-            onPressed: isLoading ? null : _handleSubmit,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  )
-                : Text(_isEditMode ? '수정' : '생성'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final navigator = Navigator.of(context);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final theme = Theme.of(context);
-
-    try {
-      if (_isEditMode) {
-        final updateData = TagUpdate(
-          name: _nameController.text.trim(),
-          color: _selectedColor.toHex(),
-        );
-        await updateTagMutation.run(
-          ref,
-          (tsx) => tsx
-              .get(tagGroupsRawProvider.notifier)
-              .updateTag(widget.tag!.id, updateData),
-        );
-        if (mounted) {
-          navigator.pop();
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: theme.colorScheme.onPrimary),
-                  const SizedBox(width: 12),
-                  const Text('태그가 수정되었습니다'),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } else {
-        final createData = TagCreate(
-          name: _nameController.text.trim(),
-          color: _selectedColor.toHex(),
-          groupId: _selectedGroupId,
-        );
-        await createTagMutation.run(
-          ref,
-          (tsx) => tsx.get(tagGroupsRawProvider.notifier).createTag(createData),
-        );
-        if (mounted) {
-          navigator.pop();
-          _showSuccess(scaffoldMessenger, '태그가 생성되었습니다');
-        }
-      }
-    } catch (error) {
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode ? '태그 수정 실패: $error' : '태그 생성 실패: $error',
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showSuccess(ScaffoldMessengerState messenger, String message) {
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-}
-
-/// 태그 폼 시트를 표시하는 헬퍼 함수
-///
-/// 사용 예:
-/// ```dart
-/// showTagFormSheet(
-///   context,
-///   defaultGroupId: groupId,
-/// );
-/// ```
-Future<void> showTagFormSheet(
-  BuildContext context, {
-  TagRead? tag,
-  String? defaultGroupId,
-}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) =>
-        TagFormSheet(tag: tag, defaultGroupId: defaultGroupId),
-  );
 }

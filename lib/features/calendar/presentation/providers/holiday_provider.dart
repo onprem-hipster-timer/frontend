@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -54,4 +54,16 @@ DateTime? parseHolidayDate(String locdate) {
     debugPrint('휴일 날짜 파싱 실패: $locdate');
     return null;
   }
+}
+
+/// [holidays] 중 [date]에 쉬는 날(isHoliday). 없으면 null
+HolidayItem? holidayOn(Iterable<HolidayItem> holidays, DateTime date) {
+  return holidays.where((h) {
+    final holidayDate = parseHolidayDate(h.locdate);
+    return h.isHoliday &&
+        holidayDate != null &&
+        holidayDate.year == date.year &&
+        holidayDate.month == date.month &&
+        holidayDate.day == date.day;
+  }).firstOrNull;
 }

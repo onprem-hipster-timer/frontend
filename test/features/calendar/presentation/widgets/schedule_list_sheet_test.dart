@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
@@ -59,6 +60,21 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('4월 7일'), findsOneWidget);
+    });
+
+    testWidgets('좁은 화면에 글자가 커도 날짜를 자르지 않고 줄을 바꿔 다 보인다', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(buildSheet());
+      await tester.pumpAndSettle();
+
+      final header = tester.renderObject<RenderParagraph>(
+        find.textContaining('4월 7일'),
+      );
+      expect(header.didExceedMaxLines, isFalse);
     });
 
     testWidgets('일정 개수가 표시된다', (tester) async {

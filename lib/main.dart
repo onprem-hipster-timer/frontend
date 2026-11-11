@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import 'package:flutter/material.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -34,6 +35,7 @@ void main() async {
 
   runApp(
     ProviderScope(
+      retry: appRetry,
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const MoMeetApp(),
     ),

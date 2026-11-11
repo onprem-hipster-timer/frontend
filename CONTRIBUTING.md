@@ -95,6 +95,26 @@ fvm flutter test test/widget_test.dart
 fvm flutter test --coverage
 ```
 
+#### Layout audit
+
+Every widget test is audited after it finishes: overlapping text, RenderFlex overflow, clipped or off-screen text and ellipsized text are reported, never failed. When something is found, the console prints one line per test and the full table goes to `build/layout_audit/<name>.md` and to `<name>.html`, which you open in a browser. On GitHub Actions the same findings appear as annotations on the source line and in the job summary.
+
+```bash
+# See what the audit found for one screen
+fvm flutter test test/features/mypage -r expanded
+
+# Fail on warnings (overlap, overflow, clipped, off-screen)
+fvm flutter test --dart-define=LAYOUT_AUDIT_STRICT=true
+
+# Turn the audit off
+LAYOUT_AUDIT=off fvm flutter test
+
+# Library tests
+cd packages/layout_audit && fvm flutter test
+```
+
+High-risk widgets also have `*_layout_test.dart` files that render them across 16 viewports × text scales × long texts with `pumpAndAuditLayout`. See `packages/layout_audit/README.md` for the finding kinds, how to ignore an intentional overlay, and the known limits.
+
 ### Git Hooks (Lefthook)
 
 This project uses [Lefthook](https://github.com/evilmartians/lefthook) to manage Git Hooks. Quality checks run automatically on commit and push.
@@ -102,8 +122,7 @@ This project uses [Lefthook](https://github.com/evilmartians/lefthook) to manage
 | Hook | Command | Description |
 |------|---------|-------------|
 | `pre-commit` | `dart format` | Format staged files and auto-fix |
-| `pre-commit` | `flutter analyze` | Static analysis |
-| `pre-commit` | `dart run custom_lint` | Architecture lints |
+| `pre-commit` | `dart analyze` | Static analysis (includes architecture lints) |
 | `pre-push` | `flutter test` | Full test suite |
 
 > If FVM is installed, commands run via `fvm` automatically. Otherwise, system Flutter/Dart is used.
@@ -125,9 +144,13 @@ git commit --no-verify -m "hotfix: ..."
 
 ### Running Architecture Lints
 
+The architecture lints (`packages/momeet_lints`) are an analyzer plugin, so they run inside `dart analyze` and the IDE. `flutter analyze` does not wait for plugin results, so use `dart analyze`.
+
 ```bash
-# Run architecture lint checks
-fvm dart run custom_lint
+fvm dart analyze --fatal-infos
+
+# Tests for the rules themselves
+cd packages/momeet_lints && fvm dart test
 ```
 
 Rules enforced:
@@ -137,8 +160,21 @@ Rules enforced:
 | `no_direct_kratos_client` | Disallow using `KratosClient` outside `lib/shared/api/kratos/` and `auth_provider.dart` |
 | `auth_action_no_loading_state` | Disallow `AuthStatus.loading()` in action methods |
 | `auth_catch_require_classify` | Require `AuthErrorType.classify` in catch blocks |
+| `no_manual_route_path` | Disallow building paths from `AppRoute.xxx.path` strings (use `goNamed`/`pushNamed`) |
+| `max_widget_class_lines` | Widget and State classes in `lib/` are at most 200 lines |
+| `max_build_lines` | A widget's or State's `build` is at most 80 lines |
+| `max_file_lines` | Files in `lib/` are at most 400 lines |
+| `no_widget_helper_methods` | Use widget classes instead of methods, getters, or top-level functions that return a Widget (`build`, `@override`, abstract declarations, local functions, and builder callbacks are exempt) |
+| `shared_ui_import_boundary` | `lib/shared/ui/` does not import `features/`, Riverpod, or go_router |
+| `no_raw_flutter_overlays` | Outside `lib/shared/ui/`, do not call Flutter's `show…` functions or methods (sheets, dialogs, snack bars, date and time pickers) directly. Use a `showApp…` function, and add one to `lib/shared/ui/` if none exists |
+| `one_public_widget_per_file` | A file in `lib/` declares at most one public widget class |
+| `duplicate_widget_tree` | When the same widget tree shape (30+ nodes) appears twice in one file, extract one widget class |
+| `no_hardcoded_colors` | No Material named colors (`Colors.blue`, …) outside `lib/shared/ui/theme/` (transparent, white, black, and grey are allowed) |
+| `unused_consumer_ref` | A `ConsumerWidget` or `ConsumerState` that never uses `ref` should be a `StatelessWidget` or `State` |
+| `prefer_media_query_aspect` | Use aspect accessors such as `MediaQuery.sizeOf(context)` instead of `MediaQuery.of(context).size` |
+| `prefer_when_or_null` | A `when` whose `loading` and `error` only return `null` should be `whenOrNull(data: …)` |
 
-> If the `custom_lint` plugin is active in your IDE, warnings will appear in real-time as you write code.
+> To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
 
 ---
 
@@ -260,8 +296,7 @@ Fixes #87
 ### Before Submitting
 
 - [ ] All tests pass (`fvm flutter test`)
-- [ ] Code follows style guidelines (`fvm flutter analyze`)
-- [ ] Architecture lints pass (`fvm dart run custom_lint`)
+- [ ] Analysis and architecture lints pass (`fvm dart analyze --fatal-infos`)
 - [ ] New code has appropriate tests
 - [ ] Code generation runs cleanly (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] Documentation updated if needed

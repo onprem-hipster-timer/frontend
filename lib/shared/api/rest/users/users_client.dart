@@ -5,6 +5,7 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/consent_create.dart';
 import '../models/my_profile_read.dart';
 
 part 'users_client.g.dart';
@@ -20,6 +21,35 @@ abstract class UsersClient {
   /// `friend_code`를 공유하면 상대가 그 코드로 친구 요청을 보낼 수 있다.
   @GET('/v1/users/me')
   Future<MyProfileRead> getMyProfileV1UsersMeGet({
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Put My Consent.
+  ///
+  /// 만 14세 이상 확인, 이용약관, 개인정보처리방침 동의 기록.
+  ///
+  /// `version`은 응답 전에 받은 현재 약관 시행일이어야 한다(다르면 409).
+  @PUT('/v1/users/me/consent')
+  Future<MyProfileRead> putMyConsentV1UsersMeConsentPut({
+    @Body() required ConsentCreate body,
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Request My Deletion.
+  ///
+  /// 회원 탈퇴 신청. 계정이 휴면이 되고 `deletion_scheduled_at` 뒤 파기된다.
+  ///
+  /// 다시 보내도 처음 신청 시각을 유지한다. 새로 신청하면 커밋 뒤 모든 기기의 로그인 세션을 끊는다.
+  @POST('/v1/users/me/deletion')
+  Future<MyProfileRead> requestMyDeletionV1UsersMeDeletionPost({
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Cancel My Deletion.
+  ///
+  /// 회원 탈퇴 신청 취소. 신청하지 않았으면 아무것도 바꾸지 않는다.
+  @DELETE('/v1/users/me/deletion')
+  Future<MyProfileRead> cancelMyDeletionV1UsersMeDeletionDelete({
     @DioOptions() RequestOptions? options,
   });
 }

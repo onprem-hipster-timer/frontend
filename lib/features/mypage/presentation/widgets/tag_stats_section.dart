@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
 
@@ -22,10 +23,6 @@ class TagStatsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -34,23 +31,9 @@ class TagStatsSection extends ConsumerWidget {
                 final topTags = tagStats.getTopTags(8);
 
                 if (topTags.isEmpty) {
-                  return Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.label_off_outlined,
-                          size: 48,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '아직 태그를 사용하지 않았습니다',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  return const AppEmptyState(
+                    icon: Icons.label_off_outlined,
+                    title: '아직 태그를 사용하지 않았습니다',
                   );
                 }
 
@@ -59,11 +42,10 @@ class TagStatsSection extends ConsumerWidget {
                   runSpacing: 12,
                   children: topTags
                       .map(
-                        (tagItem) => _buildTagChip(
-                          context,
-                          tagItem.tagName,
-                          tagItem.count,
-                          _getTagColor(tagItem.tagId),
+                        (tagItem) => _TagChip(
+                          name: tagItem.tagName,
+                          count: tagItem.count,
+                          color: _getTagColor(context, tagItem.tagId),
                         ),
                       )
                       .toList(),
@@ -79,37 +61,14 @@ class TagStatsSection extends ConsumerWidget {
                     height: 36,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: AppRadius.pillAll,
                     ),
                   ),
                 ),
               ),
-              error: (error, stack) => Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: theme.colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '태그 통계를 불러올 수 없습니다',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: () => ref.invalidate(tagUsageStatisticsProvider),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('다시 시도'),
-                  ),
-                ],
+              error: (error, stack) => AppErrorState(
+                title: '태그 통계를 불러올 수 없습니다',
+                onRetry: () => ref.invalidate(tagUsageStatisticsProvider),
               ),
             ),
           ),
@@ -118,29 +77,50 @@ class TagStatsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildTagChip(
-    BuildContext context,
-    String tagName,
-    int count,
-    Color color,
-  ) {
+  Color _getTagColor(BuildContext context, String tagId) {
+    final colors = AppColors.of(context).categorical;
+
+    final index = tagId.hashCode.abs() % colors.length;
+    return colors[index];
+  }
+}
+
+/// 태그 이름과 사용 횟수를 담은 칩
+class _TagChip extends StatelessWidget {
+  const _TagChip({
+    required this.name,
+    required this.count,
+    required this.color,
+  });
+
+  final String name;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.pillAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            tagName,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: color,
+          // 긴 이름은 칩이 줄 폭을 넘지 않게 한 줄로 줄인다
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -148,7 +128,7 @@ class TagStatsSection extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.lgAll,
             ),
             child: Text(
               '$count',
@@ -161,23 +141,5 @@ class TagStatsSection extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Color _getTagColor(String tagId) {
-    final colors = [
-      Colors.blue,
-      Colors.purple,
-      Colors.orange,
-      Colors.green,
-      Colors.red,
-      Colors.teal,
-      Colors.indigo,
-      Colors.pink,
-      Colors.amber,
-      Colors.cyan,
-    ];
-
-    final index = tagId.hashCode.abs() % colors.length;
-    return colors[index];
   }
 }

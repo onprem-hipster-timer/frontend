@@ -89,6 +89,18 @@ void main() {
 
       expect(displayElapsed(timer, now), const Duration(seconds: 30));
     });
+
+    test('RUNNING이 allocated_duration을 넘겨도 allocated_duration에서 멈춘다', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 60,
+        elapsedTime: 50,
+      );
+
+      expect(displayElapsed(timer, now), const Duration(seconds: 60));
+    });
   });
 
   group('displayRemaining', () {
@@ -129,6 +141,57 @@ void main() {
       );
 
       expect(displayRemaining(timer, now), Duration.zero);
+    });
+  });
+
+  group('isTimeUp', () {
+    final startedAt = DateTime.utc(2026, 11, 6, 10, 0, 0);
+    final now = DateTime.utc(2026, 11, 6, 10, 0, 30);
+
+    test('PAUSED이고 경과 시간이 allocated_duration이면 true', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.paused,
+        allocatedDuration: 1500,
+        elapsedTime: 1500,
+      );
+
+      expect(isTimeUp(timer, now), isTrue);
+    });
+
+    test('RUNNING이 allocated_duration을 다 쓰면 true', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 60,
+        elapsedTime: 30,
+      );
+
+      expect(isTimeUp(timer, now), isTrue);
+    });
+
+    test('남은 시간이 있으면 false', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.running,
+        startedAt: startedAt,
+        allocatedDuration: 60,
+        elapsedTime: 29,
+      );
+
+      expect(isTimeUp(timer, now), isFalse);
+    });
+
+    test('COMPLETED면 경과 시간이 allocated_duration이어도 false', () {
+      final timer = makeTimer(
+        id: 't1',
+        status: TimerStatus.completed,
+        allocatedDuration: 1500,
+        elapsedTime: 1500,
+      );
+
+      expect(isTimeUp(timer, now), isFalse);
     });
   });
 }

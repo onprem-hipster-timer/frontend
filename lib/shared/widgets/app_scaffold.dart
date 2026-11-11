@@ -1,5 +1,5 @@
 // 기본 스캐폴드 위젯
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppScaffold extends StatelessWidget {
   final String? title;

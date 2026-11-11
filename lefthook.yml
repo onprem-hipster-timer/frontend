@@ -19,15 +19,6 @@ pre-commit:
           dart analyze {staged_files}
         fi
 
-    custom-lint:
-      glob: "**/*.dart"
-      run: |
-        if command -v fvm &> /dev/null; then
-          fvm dart run custom_lint
-        else
-          dart run custom_lint
-        fi
-
 post-merge:
   commands:
     codegen:
@@ -42,6 +33,15 @@ pre-push:
   commands:
     test:
       run: |
+        if command -v fvm &> /dev/null; then
+          fvm flutter test
+        else
+          flutter test
+        fi
+
+    layout-audit-test:
+      run: |
+        cd packages/layout_audit
         if command -v fvm &> /dev/null; then
           fvm flutter test
         else

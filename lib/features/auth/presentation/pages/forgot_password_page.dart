@@ -6,13 +6,16 @@
 // 로그인한 사용자의 비밀번호 변경도 이 화면에서 한다. 이메일은 고를 수 없고 계정 이메일로 코드를
 // 보낸다. 현재 비밀번호만으로는 바꿀 수 없다(backend가 메일 복구 세션이 아닌 변경을 거절한다).
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_code_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_new_password_fields.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -78,9 +81,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             newPassword: _passwordController.text,
           );
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('비밀번호를 바꿨습니다. 다른 기기의 로그인은 끊겼습니다.')),
-            );
+            showAppSnackBar(context, '비밀번호를 바꿨습니다. 다른 기기의 로그인은 끊겼습니다.');
             context.goNamed(AppRoute.calendar.name);
           }
       }
@@ -99,10 +100,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     if (mounted) setState(() => _step = step);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final accountEmail = ref.watch(currentUserProvider)?.email;
-    final (guide, buttonText) = switch (_step) {
+  /// 단계별 안내 문구와 버튼 이름. [accountEmail]이 있으면 로그인한 계정의 비밀번호 변경이다
+  (String, String) _texts(String? accountEmail) {
+    return switch (_step) {
       _Step.email when accountEmail != null => (
         '$accountEmail(으)로 비밀번호 변경 코드를 보내드립니다.',
         '코드 받기',
@@ -114,6 +114,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       ),
       _Step.newPassword => ('새 비밀번호를 입력해주세요.', '비밀번호 변경'),
     };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accountEmail = ref.watch(currentUserProvider)?.email;
+    final (guide, buttonText) = _texts(accountEmail);
 
     return Scaffold(
       appBar: AppBar(
@@ -139,67 +145,25 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ...switch (_step) {
                 _Step.email when accountEmail != null => const <Widget>[],
                 _Step.email => [
-                  AuthTextField(
+                  AuthEmailField(
                     controller: _emailController,
-                    label: '이메일',
-                    hint: 'example@email.com',
-                    keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.email_outlined,
                     onSubmitted: (_) => _submit(),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '이메일을 입력해주세요';
-                      }
-                      if (!value.contains('@')) {
-                        return '올바른 이메일 형식이 아닙니다';
-                      }
-                      return null;
-                    },
                   ),
                 ],
                 _Step.code => [
-                  AuthTextField(
+                  AuthCodeField(
                     controller: _codeController,
                     label: '재설정 코드',
-                    hint: '6자리 숫자',
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.pin_outlined,
                     onSubmitted: (_) => _submit(),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? '재설정 코드를 입력해주세요'
-                        : null,
                   ),
                 ],
                 _Step.newPassword => [
-                  AuthTextField(
-                    controller: _passwordController,
+                  AuthNewPasswordFields(
+                    password: _passwordController,
+                    confirm: _confirmPasswordController,
                     label: '새 비밀번호',
-                    obscureText: true,
-                    prefixIcon: Icons.lock_outlined,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '새 비밀번호를 입력해주세요';
-                      }
-                      if (value.length < 8) {
-                        return '비밀번호는 8자 이상이어야 합니다';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  AuthTextField(
-                    controller: _confirmPasswordController,
-                    label: '새 비밀번호 확인',
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.lock_outlined,
-                    onSubmitted: (_) => _submit(),
-                    validator: (value) => value != _passwordController.text
-                        ? '비밀번호가 일치하지 않습니다'
-                        : null,
+                    onSubmitted: _submit,
                   ),
                 ],
               },
@@ -208,8 +172,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 text: buttonText,
                 onPressed: _submit,
                 isLoading: _isLoading,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               if (_step == _Step.code)
                 TextButton(

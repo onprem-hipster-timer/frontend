@@ -27,21 +27,15 @@ Future<List<TimerRead>> timers(
 }) async {
   final api = ref.watch(timersApiProvider);
 
-  try {
-    final response = await api.listTimersV1TimersGet(
-      status: status,
-      type: type,
-      startDate: startDate,
-      endDate: endDate,
-      includeTodo: true, // Todo 정보 포함
-      includeSchedule: true, // Schedule 정보 포함
-      options: timerRequest(),
-    );
-
-    return response;
-  } catch (error) {
-    throw Exception('타이머 조회 실패: $error');
-  }
+  return api.listTimersV1TimersGet(
+    status: status,
+    type: type,
+    startDate: startDate,
+    endDate: endDate,
+    includeTodo: true, // Todo 정보 포함
+    includeSchedule: true, // Schedule 정보 포함
+    options: timerRequest(),
+  );
 }
 
 /// 활성 타이머 (RUNNING, PAUSED 상태). 실시간 이벤트가 반영된 [timer_feature.myActiveTimersProvider]를 쓴다
@@ -104,6 +98,7 @@ Stream<Map<String, ActiveTimerState>> activeTimerStream(Ref ref) async* {
           timer.id] = ActiveTimerState(
         timerId: timer.id,
         elapsedSeconds: displayElapsed(timer, now).inSeconds,
+        remainingSeconds: displayRemaining(timer, now).inSeconds,
         status: timer.status,
         startedAt: timer.startedAt,
         pausedAt: timer.pausedAt,
@@ -157,6 +152,9 @@ class TodoTimerAggregation {
 class ActiveTimerState {
   final String timerId;
   final int elapsedSeconds;
+
+  /// 표시 남은 시간 (초, [displayRemaining])
+  final int remainingSeconds;
   final TimerStatus status;
   final DateTime? startedAt;
   final DateTime? pausedAt;
@@ -164,6 +162,7 @@ class ActiveTimerState {
   const ActiveTimerState({
     required this.timerId,
     required this.elapsedSeconds,
+    this.remainingSeconds = 0,
     required this.status,
     this.startedAt,
     this.pausedAt,

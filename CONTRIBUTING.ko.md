@@ -95,6 +95,26 @@ fvm flutter test test/widget_test.dart
 fvm flutter test --coverage
 ```
 
+#### 레이아웃 점검
+
+모든 위젯 테스트는 끝난 뒤 화면을 점검받는다. 겹친 글자, RenderFlex 넘침, 잘리거나 화면 밖으로 나간 글자, 말줄임 처리된 글자를 보고하되 테스트를 실패시키지는 않는다. 발견이 있으면 콘솔에 테스트당 한 줄이 찍히고 전체 표는 `build/layout_audit/<이름>.md`와 브라우저로 여는 `<이름>.html`에 남는다. GitHub Actions에서는 해당 소스 줄 어노테이션과 잡 요약에 같은 내용이 뜬다.
+
+```bash
+# 한 화면의 점검 결과 보기
+fvm flutter test test/features/mypage -r expanded
+
+# warning(겹침·넘침·잘라냄·이탈)에서 실패시키기
+fvm flutter test --dart-define=LAYOUT_AUDIT_STRICT=true
+
+# 점검 끄기
+LAYOUT_AUDIT=off fvm flutter test
+
+# 라이브러리 자체 테스트
+cd packages/layout_audit && fvm flutter test
+```
+
+위험이 큰 위젯은 `*_layout_test.dart`에서 `pumpAndAuditLayout`으로 화면 16종 × 글자 배율 × 긴 텍스트 조합을 돌린다. 발견 종류, 의도된 겹침을 무시하는 법, 한계는 `packages/layout_audit/README.md`에 있다.
+
 ### Git Hooks (Lefthook)
 
 이 프로젝트는 [Lefthook](https://github.com/evilmartians/lefthook)으로 Git Hook을 관리합니다. 커밋/푸시 시 자동으로 품질 검사가 실행됩니다.
@@ -102,8 +122,7 @@ fvm flutter test --coverage
 | Hook | 명령 | 설명 |
 |------|------|------|
 | `pre-commit` | `dart format` | staged 파일 포맷 검사 및 자동 수정 |
-| `pre-commit` | `flutter analyze` | 정적 분석 |
-| `pre-commit` | `dart run custom_lint` | 아키텍처 린트 |
+| `pre-commit` | `dart analyze` | 정적 분석(아키텍처 린트 포함) |
 | `pre-push` | `flutter test` | 전체 테스트 |
 
 > FVM이 설치되어 있으면 자동으로 `fvm` 경유, 없으면 시스템 Flutter/Dart를 사용합니다.
@@ -125,9 +144,13 @@ git commit --no-verify -m "hotfix: ..."
 
 ### 아키텍처 린트 실행
 
+아키텍처 린트(`packages/momeet_lints`)는 analyzer 플러그인이라 `dart analyze`와 IDE에서 함께 돈다. `flutter analyze`는 플러그인 결과를 기다리지 않으므로 `dart analyze`를 쓴다.
+
 ```bash
-# 아키텍처 린트 검사
-fvm dart run custom_lint
+fvm dart analyze --fatal-infos
+
+# 규칙 자체의 테스트
+cd packages/momeet_lints && fvm dart test
 ```
 
 검출되는 규칙:
@@ -137,8 +160,21 @@ fvm dart run custom_lint
 | `no_direct_kratos_client` | `lib/shared/api/kratos/`와 `auth_provider.dart` 밖에서 `KratosClient` 사용 금지 |
 | `auth_action_no_loading_state` | 액션 메서드에서 `AuthStatus.loading()` 사용 금지 |
 | `auth_catch_require_classify` | catch 블록에서 `AuthErrorType.classify` 사용 강제 |
+| `no_manual_route_path` | `AppRoute.xxx.path`를 문자열로 결합하는 것 금지(`goNamed`/`pushNamed` 사용) |
+| `max_widget_class_lines` | `lib/`의 위젯·State 클래스는 200줄 이하 |
+| `max_build_lines` | 위젯·State의 `build`는 80줄 이하 |
+| `max_file_lines` | `lib/` 파일은 400줄 이하 |
+| `no_widget_helper_methods` | Widget을 돌려주는 메서드·getter·최상위 함수 대신 위젯 클래스 사용(`build`, `@override`, 추상 선언, 지역 함수·builder 콜백 제외) |
+| `shared_ui_import_boundary` | `lib/shared/ui/`는 `features/`, Riverpod, go_router를 가져오지 않음 |
+| `no_raw_flutter_overlays` | `lib/shared/ui/` 밖에서 Flutter의 `show…` 함수·메서드(시트·다이얼로그·알림·날짜·시각 고르기) 직접 호출 금지. `showApp…`을 쓰고, 없으면 `lib/shared/ui/`에 만든다 |
+| `one_public_widget_per_file` | `lib/` 파일 하나에 공개 위젯 클래스는 하나 |
+| `duplicate_widget_tree` | 한 파일 안에 같은 모양의 위젯 트리(노드 30개 이상)가 두 번 이상 나오면 위젯 클래스 하나로 모은다 |
+| `no_hardcoded_colors` | `lib/shared/ui/theme/` 밖에서 Material 이름 색(`Colors.blue` 등) 금지(투명·흰·검정·회색 제외) |
+| `unused_consumer_ref` | `ref`를 쓰지 않는 `ConsumerWidget`·`ConsumerState`는 `StatelessWidget`·`State`로 |
+| `prefer_media_query_aspect` | `MediaQuery.of(context).size` 대신 `MediaQuery.sizeOf(context)` 같은 개별 접근자 |
+| `prefer_when_or_null` | `loading`·`error`가 `null`만 돌려주는 `when`은 `whenOrNull(data: …)` |
 
-> IDE에 `custom_lint` 플러그인이 활성화되어 있으면 코드 작성 시 실시간 경고가 표시됩니다.
+> 한 줄만 예외로 둘 때는 `// ignore: momeet_lints/<규칙>`을 쓴다. 플러그인 코드를 바꾸면 IDE의 분석 서버를 재시작해야 반영된다.
 
 ---
 
@@ -231,8 +267,7 @@ Closes #42
 ### 제출 전 체크리스트
 
 - [ ] 모든 테스트 통과 (`fvm flutter test`)
-- [ ] 코드 분석 통과 (`fvm flutter analyze`)
-- [ ] 아키텍처 린트 통과 (`fvm dart run custom_lint`)
+- [ ] 코드 분석·아키텍처 린트 통과 (`fvm dart analyze --fatal-infos`)
 - [ ] 새 코드에 적절한 테스트 작성
 - [ ] 코드 생성 정상 동작 (`fvm dart run build_runner build --delete-conflicting-outputs`)
 - [ ] 필요시 문서 업데이트

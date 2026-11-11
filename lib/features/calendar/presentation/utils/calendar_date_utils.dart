@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 
 // ============================================================
@@ -59,4 +61,66 @@ DateTime startOfWeek(DateTime date, int firstDayOfWeek) {
         DateTime(displayDate.year + 1, 1, 1),
       );
   }
+}
+
+/// [viewType]으로 볼 때 [date]가 든 기간의 첫날(로컬 자정).
+/// 월·아젠다는 그달 1일, 주는 주 시작일, 일은 그날, 연은 1월 1일.
+DateTime periodStart(
+  CalendarViewType viewType,
+  DateTime date,
+  int firstDayOfWeek,
+) => switch (viewType) {
+  CalendarViewType.day => DateTime(date.year, date.month, date.day),
+  CalendarViewType.week => startOfWeek(date, firstDayOfWeek),
+  CalendarViewType.month ||
+  CalendarViewType.agenda => DateTime(date.year, date.month, 1),
+  CalendarViewType.year => DateTime(date.year, 1, 1),
+};
+
+/// [start]에서 시작하는 기간을 [step]만큼(음수면 이전) 옮긴 기간의 첫날.
+DateTime shiftPeriod(CalendarViewType viewType, DateTime start, int step) =>
+    switch (viewType) {
+      CalendarViewType.day => DateTime(
+        start.year,
+        start.month,
+        start.day + step,
+      ),
+      CalendarViewType.week => DateTime(
+        start.year,
+        start.month,
+        start.day + DateTime.daysPerWeek * step,
+      ),
+      CalendarViewType.month ||
+      CalendarViewType.agenda => DateTime(start.year, start.month + step, 1),
+      CalendarViewType.year => DateTime(start.year + step, 1, 1),
+    };
+
+/// [start]에서 시작하는 기간에 [date]가 드는지.
+bool periodContains(
+  CalendarViewType viewType,
+  DateTime start,
+  DateTime date,
+  int firstDayOfWeek,
+) => periodStart(viewType, date, firstDayOfWeek) == start;
+
+/// 폭이 [chipWidth]인 월 보기 일정 칩의 글자 배율 상한(1 이상).
+///
+/// 칸 폭은 글자 배율을 따르지 않으므로, 11pt 제목이 두 글자와 말줄임(세 글자 폭)은 남는 데까지만
+/// 키운다. 10은 칩의 좌우 바깥·안쪽 여백이다.
+double monthChipMaxTextScale(double chipWidth) =>
+    math.max(1, (chipWidth - 10) / (3 * 11));
+
+/// 월 보기 칸 하나에 읽을 수 있게 들어가는 일정 수(0~6). 0이면 한 줄도 들어가지 않는다.
+///
+/// 달력은 칸에서 날짜 숫자 자리를 뺀 높이를 일정 수로 똑같이 나눈다. 날짜 자리는 글자 배율에
+/// 비례하고(1.0에서 약 42), 11pt 일정 한 줄은 18 × 칩 글자 배율([monthChipMaxTextScale])은 돼야
+/// 읽힌다. 이 값은 기기 크기 14종 × 글자 배율 1.0·1.3에서 월 칸을 그려 잰 것이다.
+int autoMonthEventsPerDay({
+  required double cellWidth,
+  required double cellHeight,
+  required double textScale,
+}) {
+  final dateHeader = 20 + 22 * textScale;
+  final minRow = 18 * math.min(textScale, monthChipMaxTextScale(cellWidth));
+  return ((cellHeight - dateHeader) / minRow).floor().clamp(0, 6);
 }

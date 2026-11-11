@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
@@ -12,6 +12,7 @@ import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 import '../../../../helpers/auth_router.dart';
 import '../../../../helpers/kratos_mocks.dart';
 import '../../../../helpers/pump_app.dart';
+import '../../../../helpers/large_text.dart';
 
 void main() {
   late KratosTestHarness harness;
@@ -33,6 +34,14 @@ void main() {
       .widget<EditableText>(find.byType(EditableText).at(index))
       .controller
       .text;
+
+  testWidgets('좁은 화면에 글자가 커도 비밀번호 확인 칸 이름을 자르지 않는다', (tester) async {
+    await tester.pumpWidget(buildSignupPage());
+    await tester.pumpAndSettle();
+    await useLargeTextOnSmallPhone(tester);
+
+    expectWholeText(tester, find.text('비밀번호 확인'));
+  });
 
   // ============================================================
   // 폼 전환 시 이메일 이어받기 (initialEmail)
@@ -153,8 +162,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Google로 계속하기'));
-    await tester.tap(find.text('Google로 계속하기'));
+    await tester.ensureVisible(find.text('Google 계정으로 계속하기'));
+    await tester.tap(find.text('Google 계정으로 계속하기'));
     // 브라우저가 Google로 떠나는 동안 진행 표시가 계속 돌므로 settle을 기다리지 않는다
     await tester.pump();
     await tester.pump();

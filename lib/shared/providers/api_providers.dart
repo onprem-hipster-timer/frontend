@@ -32,10 +32,18 @@ final friendsApiProvider = Provider<FriendsClient>((ref) {
   return ref.watch(moMeetClientProvider).friends;
 });
 
+final visibilityApiProvider = Provider<VisibilityClient>((ref) {
+  return ref.watch(moMeetClientProvider).visibility;
+});
+
 final graphQlApiProvider = Provider<GraphQlClient>((ref) {
   return ref.watch(moMeetClientProvider).graphQl;
 });
 
 final healthApiProvider = Provider<HealthClient>((ref) {
   return ref.watch(moMeetClientProvider).health;
+});
+
+final usersApiProvider = Provider<UsersClient>((ref) {
+  return ref.watch(moMeetClientProvider).users;
 });

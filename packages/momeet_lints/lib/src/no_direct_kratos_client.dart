@@ -1,62 +1,78 @@
-// ignore_for_file: deprecated_member_use
-import 'package:analyzer/error/error.dart' show ErrorSeverity;
-import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
-
-const _authProviderFile = 'auth_provider.dart';
-
-bool _isTestFile(String path) {
-  final normalized = path.replaceAll('\\', '/');
-  return normalized.contains('/test/') || normalized.startsWith('test/');
-}
-
-bool _isAuthLayer(String path) {
-  final normalized = path.replaceAll('\\', '/');
-  return normalized.endsWith(_authProviderFile) ||
-      normalized.contains('/lib/shared/api/kratos/');
-}
-
-const _kratosClientChecker = TypeChecker.fromName(
-  'KratosClient',
-  packageName: 'momeet',
-);
+import 'package:analyzer/analysis_rule/analysis_rule.dart';
+import 'package:analyzer/analysis_rule/rule_context.dart';
+import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/error/error.dart';
+import 'package:momeet_lints/src/paths.dart';
 
 /// 인증 계층(lib/shared/api/kratos/, auth_provider.dart) 밖에서 KratosClient를 쓰는 것을 금지합니다.
 ///
 /// 세션 토큰 보관과 인증 상태 전이를 한 곳에서만 하기 위해,
 /// 모든 인증 로직은 AuthNotifier(authProvider)를 통해서만 수행되어야 합니다.
-class NoDirectKratosClient extends DartLintRule {
-  const NoDirectKratosClient() : super(code: _code);
+class NoDirectKratosClient extends AnalysisRule {
+  NoDirectKratosClient()
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
-  static const _code = LintCode(
-    name: 'no_direct_kratos_client',
-    problemMessage: 'KratosClient를 직접 쓰지 마세요. '
+  static const code = LintCode(
+    'no_direct_kratos_client',
+    'KratosClient를 직접 쓰지 마세요. '
         'AuthNotifier(authProvider)를 통해서만 인증 로직을 수행해야 합니다.',
-    errorSeverity: ErrorSeverity.WARNING,
+    severity: DiagnosticSeverity.WARNING,
   );
 
   @override
-  void run(
-    CustomLintResolver resolver,
-    ErrorReporter reporter,
-    CustomLintContext context,
+  DiagnosticCode get diagnosticCode => code;
+
+  @override
+  void registerNodeProcessors(
+    RuleVisitorRegistry registry,
+    RuleContext context,
   ) {
-    if (_isAuthLayer(resolver.path)) return;
-    if (_isTestFile(resolver.path)) return;
+    final visitor = _Visitor(this, context);
+    registry
+      ..addMethodInvocation(this, visitor)
+      ..addNamedType(this, visitor);
+  }
+}
 
-    context.registry.addMethodInvocation((node) {
-      final targetType = node.realTarget?.staticType;
-      if (targetType != null &&
-          _kratosClientChecker.isAssignableFromType(targetType)) {
-        reporter.atNode(node, _code);
-      }
-    });
+class _Visitor extends SimpleAstVisitor<void> {
+  _Visitor(this.rule, this.context);
 
-    context.registry.addNamedType((node) {
-      final type = node.type;
-      if (type != null && _kratosClientChecker.isExactlyType(type)) {
-        reporter.atNode(node, _code);
-      }
-    });
+  final AnalysisRule rule;
+  final RuleContext context;
+
+  /// 인증 계층과 테스트는 KratosClient를 직접 다룬다.
+  bool get _skipped {
+    final path = packageRelativePath(context);
+    return path.endsWith('auth_provider.dart') ||
+        path.startsWith('lib/shared/api/kratos/') ||
+        isTestFile(context);
+  }
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    if (_skipped) return;
+    final type = node.realTarget?.staticType;
+    if (type is InterfaceType &&
+        (_isKratosClient(type) || type.allSupertypes.any(_isKratosClient))) {
+      rule.reportAtNode(node);
+    }
+  }
+
+  @override
+  void visitNamedType(NamedType node) {
+    if (_skipped) return;
+    final type = node.type;
+    if (type is InterfaceType && _isKratosClient(type)) {
+      rule.reportAtNode(node);
+    }
+  }
+
+  static bool _isKratosClient(InterfaceType type) {
+    final element = type.element;
+    return element.name == 'KratosClient' &&
+        (element.library.uri.toString().startsWith('package:momeet/'));
   }
 }

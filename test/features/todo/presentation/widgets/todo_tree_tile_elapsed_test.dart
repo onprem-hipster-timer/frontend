@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/pump_app.dart';
@@ -26,7 +26,7 @@ void main() {
     await tester.pumpWidget(
       pumpApp(
         Scaffold(
-          body: TodoTreeTile(node: tree.nodeMap['parent']!, tree: tree),
+          body: EditableTodoTreeTile(node: tree.nodeMap['parent']!, tree: tree),
         ),
         overrides: [
           todoTimerAggregationsProvider.overrideWith(

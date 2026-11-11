@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
+    show ShellMenuButton, ShellScope;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 import 'package:momeet/features/mypage/presentation/widgets/profile_section.dart';
 import 'package:momeet/features/mypage/presentation/widgets/activity_stats_section.dart';
@@ -22,6 +24,7 @@ class _MyPageState extends ConsumerState<MyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: ShellScope.compactOf(context) ? const ShellMenuButton() : null,
         title: const Text('마이페이지'),
         elevation: 0,
         centerTitle: true,
@@ -57,7 +60,7 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   Future<void> _confirmSignOut() async {
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '로그아웃',
       content: '정말 로그아웃하시겠습니까?',

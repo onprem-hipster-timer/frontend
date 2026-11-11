@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 /// 휴일 상세 정보를 보여주는 Bottom Sheet
@@ -14,31 +15,14 @@ class HolidayDetailSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
+    // 낮은 화면·큰 글자에서는 시트 안에서 굴린다
+    return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 핸들
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
           // 헤더
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: Column(
               children: [
                 // 휴일 아이콘
@@ -46,12 +30,12 @@ class HolidayDetailSheet extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(30),
+                    color: AppColors.of(context).holiday.withValues(alpha: 0.1),
+                    borderRadius: AppRadius.pillAll,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.calendar_today,
-                    color: Colors.red,
+                    color: AppColors.of(context).holiday,
                     size: 30,
                   ),
                 ),
@@ -63,7 +47,7 @@ class HolidayDetailSheet extends StatelessWidget {
                   holiday.dateName,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                    color: AppColors.of(context).holiday,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -88,7 +72,7 @@ class HolidayDetailSheet extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.lgAll,
                       ),
                     ),
                     child: const Text('닫기'),
@@ -128,11 +112,8 @@ class HolidayDetailSheet extends StatelessWidget {
 /// showHolidayDetailSheet(context, holiday);
 /// ```
 Future<void> showHolidayDetailSheet(BuildContext context, HolidayItem holiday) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showAppSheet<void>(
+    context,
     builder: (context) => HolidayDetailSheet(holiday: holiday),
   );
 }

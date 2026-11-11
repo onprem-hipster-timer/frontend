@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 
 /// 마이페이지 활동 통계 섹션
 class ActivityStatsSection extends ConsumerWidget {
@@ -22,189 +24,14 @@ class ActivityStatsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: statsAsync.when(
-              data: (stats) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 전체 진행률
-                  Text(
-                    '전체 진행률 (${stats.doneCount}개 완료 / ${stats.totalCount}개 전체)',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: stats.completionRate,
-                      minHeight: 10,
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 할 일 목록 통계
-                  Text(
-                    '할 일 상태별 현황',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '전체',
-                          '${stats.totalCount}',
-                          theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '미지정',
-                          '${stats.unscheduledCount}',
-                          theme.colorScheme.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '예정',
-                          '${stats.scheduledCount}',
-                          theme.colorScheme.tertiary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildStatusCard(
-                          context,
-                          '완료',
-                          '${stats.doneCount}',
-                          theme.colorScheme.tertiaryContainer,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              loading: () => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 200,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    width: 150,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              error: (error, stack) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: theme.colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '통계 데이터를 불러올 수 없습니다',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () => ref.invalidate(todoStatisticsProvider),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('다시 시도'),
-                    ),
-                  ),
-                ],
+              data: (stats) => _StatsBody(stats: stats),
+              loading: () => const _StatsSkeleton(),
+              error: (error, stack) => AppErrorState(
+                title: '통계 데이터를 불러올 수 없습니다',
+                onRetry: () => ref.invalidate(todosProvider),
               ),
             ),
           ),
@@ -212,39 +39,161 @@ class ActivityStatsSection extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildStatusCard(
-    BuildContext context,
-    String label,
-    String count,
-    Color color,
-  ) {
+/// 전체 진행률 막대와 상태별 수
+class _StatsBody extends StatelessWidget {
+  const _StatsBody({required this.stats});
+
+  final TodoStatistics stats;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final heading = theme.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+    final counts = [
+      ('전체', stats.totalCount, colorScheme.primary),
+      ('미지정', stats.unscheduledCount, colorScheme.secondary),
+      ('예정', stats.scheduledCount, colorScheme.tertiary),
+      ('완료', stats.doneCount, colorScheme.tertiaryContainer),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '전체 진행률 (${stats.doneCount}개 완료 / ${stats.totalCount}개 전체)',
+          style: heading,
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: AppRadius.mdAll,
+          child: LinearProgressIndicator(
+            value: stats.completionRate,
+            minHeight: 10,
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text('할 일 상태별 현황', style: heading),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (final (i, (label, count, color)) in counts.indexed) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: _StatusCount(
+                  label: label,
+                  count: '$count',
+                  color: color,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
 
+/// 불러오는 동안 [_StatsBody] 자리를 채우는 회색 막대들
+class _StatsSkeleton extends StatelessWidget {
+  const _StatsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Bar(width: 200, height: 20, radius: AppRadius.smAll),
+        const SizedBox(height: 12),
+        _Bar(width: double.infinity, height: 10, radius: AppRadius.mdAll),
+        const SizedBox(height: 24),
+        _Bar(width: 150, height: 20, radius: AppRadius.smAll),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (var i = 0; i < 4; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: _Bar(
+                  width: double.infinity,
+                  height: 60,
+                  radius: AppRadius.lgAll,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Bar extends StatelessWidget {
+  const _Bar({required this.width, required this.height, required this.radius});
+
+  final double width;
+  final double height;
+  final BorderRadius radius;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: width,
+      height: height,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: radius,
       ),
-      child: Column(
-        children: [
-          Text(
-            count,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+    );
+  }
+}
+
+/// 상태 하나의 수. 수와 이름을 한 번에 읽힌다
+class _StatusCount extends StatelessWidget {
+  const _StatusCount({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  final String label;
+  final String count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MergeSemantics(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: AppRadius.lgAll,
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              count,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

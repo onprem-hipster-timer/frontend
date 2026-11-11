@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
@@ -39,12 +40,7 @@ class SecurityWarningPage extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$text 복사됨'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    showAppSnackBar(context, '$text 복사됨');
   }
 
   @override
@@ -88,37 +84,7 @@ class SecurityWarningPage extends StatelessWidget {
                 ),
                 if (displayUrl != null) ...[
                   const SizedBox(height: 24),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer.withAlpha(77),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colorScheme.error.withAlpha(77),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '차단된 리다이렉트 경로',
-                          style: textTheme.labelMedium?.copyWith(
-                            color: colorScheme.error,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          displayUrl,
-                          style: textTheme.bodySmall?.copyWith(
-                            fontFamily: 'monospace',
-                            color: colorScheme.onErrorContainer,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _BlockedUrlBox(url: displayUrl),
                 ],
                 const SizedBox(height: 32),
                 const Divider(),
@@ -157,6 +123,48 @@ class SecurityWarningPage extends StatelessWidget {
   }
 }
 
+/// 막은 리다이렉트 경로를 복사할 수 있게 보이는 칸
+class _BlockedUrlBox extends StatelessWidget {
+  const _BlockedUrlBox({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withAlpha(77),
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: colorScheme.error.withAlpha(77)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '차단된 리다이렉트 경로',
+            style: textTheme.labelMedium?.copyWith(
+              color: colorScheme.error,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            url,
+            style: textTheme.bodySmall?.copyWith(
+              fontFamily: 'monospace',
+              color: colorScheme.onErrorContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ContactTile extends StatelessWidget {
   const _ContactTile({
     required this.icon,
@@ -174,8 +182,7 @@ class _ContactTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: 0,
+    return Card.filled(
       color: colorScheme.surfaceContainerHighest,
       child: ListTile(
         leading: Icon(icon, color: colorScheme.primary),

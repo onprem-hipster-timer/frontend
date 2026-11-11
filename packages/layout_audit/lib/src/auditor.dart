@@ -1,0 +1,453 @@
+import 'dart:math' as math;
+
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart' show DebugCreator;
+import 'package:flutter_test/flutter_test.dart';
+
+import 'format.dart';
+import 'finding.dart';
+import 'audit_support.dart';
+import 'binding.dart';
+import 'leaf_geometry.dart';
+import 'policy.dart';
+import 'rect_math.dart';
+import 'source_location.dart';
+
+class LayoutAuditOptions {
+  const LayoutAuditOptions({
+    this.minOverlap = 2.0,
+    this.coveredWarningRatio = 0.25,
+    this.maxLeaves = 2000,
+    this.edgeTolerance = 2.0,
+  });
+
+  /// 교차 영역의 가로·세로가 모두 이 값(px)을 넘어야 겹침이다.
+  final double minOverlap;
+
+  /// 작은 쪽이 이 비율 이상 가려지면 warning, 아니면 notice.
+  final double coveredWarningRatio;
+
+  /// leaf가 이보다 많으면 검사를 건너뛴다.
+  final int maxLeaves;
+
+  /// 잘라냄·이탈로 보기 전에 허용하는 여유(px).
+  final double edgeTolerance;
+}
+
+/// 현재 화면(또는 [within] 아래)의 겹침·잘라냄·이탈·말줄임을 찾는다.
+///
+/// [previousFrame]은 [snapshotLeafBoxes]로 직전 프레임에 찍어 둔 값이다.
+/// [policy]가 없으면 설치된 [LayoutAuditBinding]의 정책을 쓴다.
+List<LayoutFinding> auditLayout(
+  WidgetTester tester, {
+  Finder? within,
+  LayoutAuditOptions options = const LayoutAuditOptions(),
+  Map<RenderObject, List<Rect>>? previousFrame,
+  LayoutAuditPolicy? policy,
+}) {
+  return auditRenderTree(
+    auditRoots(tester, within),
+    viewRect: auditViewRect(tester),
+    options: options,
+    previousFrame: previousFrame,
+    policy: policy ?? currentLayoutAuditPolicy(),
+  );
+}
+
+/// leaf마다 클립 전 전역 사각형. [auditLayout]의 `previousFrame`으로 넘긴다.
+Map<RenderObject, List<Rect>> snapshotLeafBoxes(
+  WidgetTester tester, {
+  Finder? within,
+}) {
+  try {
+    return {
+      for (final leaf in collectContentLeaves(
+        auditRoots(tester, within),
+        auditViewRect(tester),
+      ))
+        leaf.box: leaf.rawBoxes,
+    };
+  } on Object {
+    // 스냅샷 실패는 감사 실패로 이어지지 않게 빈 값으로 둔다.
+    return const {};
+  }
+}
+
+/// [auditLayout]의 WidgetTester 없는 형태. 예외를 던지지 않고 info 발견으로 돌려준다.
+///
+/// [previousFrame]이 있으면 직전 프레임 뒤로 0.5px 넘게 움직인 문단은 `moving`으로
+/// 보고하고 잘라냄·이탈·말줄임 검사에서 빼며, 움직였거나 새로 나타난 leaf가 낀
+/// 발견은 지속되지 않은 것으로 보고 info로 낮춘다.
+List<LayoutFinding> auditRenderTree(
+  Iterable<RenderObject> roots, {
+  required Rect viewRect,
+  LayoutAuditOptions options = const LayoutAuditOptions(),
+  Map<RenderObject, List<Rect>>? previousFrame,
+  LayoutAuditPolicy policy = const LayoutAuditPolicy(),
+}) {
+  try {
+    return _Audit(viewRect, options, previousFrame, policy).run(roots);
+  } on Object catch (error) {
+    return [LayoutFinding.auditFailed(error)];
+  }
+}
+
+class _Raw {
+  const _Raw(this.finding, this.leaves);
+
+  final LayoutFinding finding;
+  final List<RenderBox> leaves;
+}
+
+class _Audit {
+  _Audit(this.viewRect, this.options, this.previousFrame, this.policy);
+
+  final Rect viewRect;
+  final LayoutAuditOptions options;
+  final LayoutAuditPolicy policy;
+  final Map<RenderObject, List<Rect>>? previousFrame;
+
+  final Set<RenderBox> _moving = {};
+  final Set<RenderBox> _unsettled = {};
+
+  List<LayoutFinding> run(Iterable<RenderObject> roots) {
+    final leaves = collectContentLeaves(roots, viewRect);
+    if (leaves.length > options.maxLeaves) {
+      return [
+        LayoutFinding.auditSkipped(
+          leaves: leaves.length,
+          maxLeaves: options.maxLeaves,
+        ),
+      ];
+    }
+    final raw = <_Raw>[
+      ..._movement(leaves),
+      ..._overlaps([
+        for (final leaf in leaves)
+          if (leaf.isVisible) leaf,
+      ]),
+      for (final leaf in leaves)
+        if (!_moving.contains(leaf.box)) ..._edges(leaf),
+    ];
+    final findings = [
+      for (final r in raw)
+        if (r.leaves.any(_unsettled.contains) &&
+            r.finding.kind != LayoutFindingKind.moving)
+          r.finding.copyWith(severity: LayoutSeverity.info)
+        else
+          r.finding,
+    ];
+    final ignore = policy.ignore;
+    return _group([
+      for (final finding in findings)
+        if (ignore == null || !ignore(finding)) finding,
+    ]);
+  }
+
+  List<_Raw> _movement(List<ContentLeaf> leaves) {
+    final previous = previousFrame;
+    if (previous == null) {
+      return const [];
+    }
+    final found = <_Raw>[];
+    for (final leaf in leaves) {
+      final before = previous[leaf.box];
+      if (before == null || before.isEmpty) {
+        _unsettled.add(leaf.box);
+        continue;
+      }
+      if (leaf.box is! RenderParagraph) {
+        continue;
+      }
+      final shift = _shift(unionRect(before), unionRect(leaf.rawBoxes));
+      if (shift <= 0.5) {
+        continue;
+      }
+      _moving.add(leaf.box);
+      _unsettled.add(leaf.box);
+      found.add(
+        _Raw(
+          LayoutFinding(
+            kind: LayoutFindingKind.moving,
+            severity: LayoutSeverity.notice,
+            message:
+                '[이동] ${describeLeaf(leaf)} 프레임 사이에 ${formatPx(shift)}px 이동했습니다',
+            rects: [unionRect(leaf.rawBoxes)],
+            locations: [sourceLocationOf(leaf.box)],
+            texts: [leaf.text],
+          ),
+          [leaf.box],
+        ),
+      );
+    }
+    return found;
+  }
+
+  List<_Raw> _overlaps(List<ContentLeaf> leaves) {
+    final sorted = [...leaves]
+      ..sort((a, b) => a.bounds.left.compareTo(b.bounds.left));
+    final found = <_Raw>[];
+    for (var i = 0; i < sorted.length; i++) {
+      final a = sorted[i];
+      final boundsA = a.bounds;
+      for (var j = i + 1; j < sorted.length; j++) {
+        final b = sorted[j];
+        final boundsB = b.bounds;
+        if (boundsB.left >= boundsA.right) {
+          break;
+        }
+        if (boundsB.top >= boundsA.bottom || boundsA.top >= boundsB.bottom) {
+          continue;
+        }
+        // WidgetSpan 안의 leaf는 바깥 문단의 자리 표시자 위에 그려지는 것이 정상이다.
+        if (a.ancestors.contains(b.box) || b.ancestors.contains(a.box)) {
+          continue;
+        }
+        final finding = _overlap(a, b);
+        if (finding != null) {
+          found.add(_Raw(finding, [a.box, b.box]));
+        }
+      }
+    }
+    return found;
+  }
+
+  LayoutFinding? _overlap(ContentLeaf a, ContentLeaf b) {
+    if (_insideFloating(a.box) || _insideFloating(b.box)) {
+      return null;
+    }
+    final intersections = <Rect>[
+      for (final boxA in a.visibleBoxes)
+        for (final boxB in b.visibleBoxes) boxA.intersect(boxB),
+    ].where(
+        (i) => i.width > options.minOverlap && i.height > options.minOverlap);
+    final focus = largestRect(intersections);
+    if (focus == null) {
+      return null;
+    }
+
+    final aIsSmaller = a.visibleArea <= b.visibleArea;
+    final fraction = _coveredFraction(
+      aIsSmaller ? a : b,
+      aIsSmaller ? b : a,
+    );
+    final severity = fraction >= options.coveredWarningRatio
+        ? LayoutSeverity.warning
+        : LayoutSeverity.notice;
+
+    final top = _paintedOnTop(a, b);
+    // 순서를 모르면 소스 위치 순으로 두어 같은 쌍이 보고서에서 한 묶음이 되게 한다.
+    final first = top ??
+        ('${sourceLocationOf(a.box)}'.compareTo('${sourceLocationOf(b.box)}') <=
+                0
+            ? a
+            : b);
+    final second = identical(first, a) ? b : a;
+
+    final chainFirst = [first.box, ...first.ancestors];
+    final ancestorsOfSecond = {second.box, ...second.ancestors};
+    final lcaIndex = chainFirst.indexWhere(ancestorsOfSecond.contains);
+    final lca = lcaIndex < 0 ? null : chainFirst[lcaIndex];
+    if (lca != null &&
+        policy.coveringLayers.contains(lca.runtimeType.toString())) {
+      return null;
+    }
+    final insideStack = lca is RenderStack;
+    final coveringRoot = top != null && lcaIndex > 0
+        ? sourceLocationOf(chainFirst[lcaIndex - 1])
+        : null;
+    final where = [
+      if (coveringRoot != null) '가리는 위젯: $coveringRoot',
+      if (insideStack) 'Stack 안',
+    ].join(', ');
+    final body = top != null
+        ? '${describeLeaf(first)}이 ${describeLeaf(second)}을 ${(fraction * 100).round()}% 가립니다'
+        : "${describeLeaf(first)}와 ${describeLeaf(second)}가 ${formatPx(focus.width)}x${formatPx(focus.height)} 겹칩니다 (순서 불명)";
+    return LayoutFinding(
+      kind: LayoutFindingKind.overlap,
+      severity: severity,
+      message:
+          '[겹침] $body${where.isEmpty ? '' : ' ($where)'} | ∩=(${formatLtrb(focus)})',
+      rects: [first.bounds, second.bounds, focus],
+      locations: [sourceLocationOf(first.box), sourceLocationOf(second.box)],
+      texts: [first.text, second.text],
+      insideStack: insideStack,
+      coveredFraction: fraction,
+      coveringRoot: coveringRoot,
+      zOrderKnown: top != null,
+    );
+  }
+
+  double _coveredFraction(ContentLeaf smaller, ContentLeaf larger) {
+    var total = 0.0;
+    var covered = 0.0;
+    for (final box in smaller.visibleBoxes) {
+      final area = rectArea(box);
+      total += area;
+      try {
+        covered += area * coveredFraction(box, larger.visibleBoxes);
+      } on StateError {
+        covered += math.min(
+          area,
+          larger.visibleBoxes.fold(
+            0.0,
+            (sum, other) => sum + overlapArea(box, other),
+          ),
+        );
+      }
+    }
+    return total == 0 ? 0 : covered / total;
+  }
+
+  /// 공통 조상이 자식을 목록 순서대로 그리면 뒤에 오는 쪽이 위다. 그리는 순서를 알 수 없으면 null.
+  ContentLeaf? _paintedOnTop(ContentLeaf a, ContentLeaf b) {
+    final chainA = [a.box, ...a.ancestors];
+    final chainB = [b.box, ...b.ancestors];
+    final lcaIndexA = chainA.indexWhere(chainB.toSet().contains);
+    if (lcaIndexA <= 0) {
+      return null;
+    }
+    final lca = chainA[lcaIndexA];
+    final lcaIndexB = chainB.indexOf(lca);
+    if (lcaIndexB <= 0 || !_paintsChildrenInOrder(lca)) {
+      return null;
+    }
+    final order = <RenderObject>[];
+    lca.visitChildren(order.add);
+    final indexA = order.indexOf(chainA[lcaIndexA - 1]);
+    final indexB = order.indexOf(chainB[lcaIndexB - 1]);
+    if (indexA < 0 || indexB < 0 || indexA == indexB) {
+      return null;
+    }
+    return indexA > indexB ? a : b;
+  }
+
+  List<_Raw> _edges(ContentLeaf leaf) {
+    final box = leaf.box;
+    if (box is! RenderParagraph) {
+      return const [];
+    }
+    final found = <_Raw>[];
+    void add(LayoutFindingKind kind, LayoutSeverity severity, String message) {
+      found.add(
+        _Raw(
+          LayoutFinding(
+            kind: kind,
+            severity: severity,
+            message: message,
+            rects: [unionRect(leaf.rawBoxes)],
+            locations: [sourceLocationOf(box)],
+            texts: [leaf.text],
+          ),
+          [box],
+        ),
+      );
+    }
+
+    final ellipsized = box.overflow == TextOverflow.ellipsis ||
+        box.overflow == TextOverflow.fade;
+    // 화면에 보이지 않는 글자는 화면 이탈만 따진다.
+    if (leaf.isVisible && !ellipsized) {
+      final (_, clipped) = maxOvershoot(leaf.rawBoxes, [
+        if (leaf.contentClipRect != null) leaf.contentClipRect!,
+        // visible이면 제 상자 밖도 그려지므로 잘린 것이 아니다.
+        if (box.overflow != TextOverflow.visible)
+          globalRect(box, Offset.zero & box.size),
+      ]);
+      if (clipped > options.edgeTolerance) {
+        add(
+          LayoutFindingKind.clipped,
+          LayoutSeverity.warning,
+          '[잘라냄] ${describeLeaf(leaf)} 글자가 상자 밖으로 ${formatPx(clipped)}px 잘려 나갑니다',
+        );
+      }
+    }
+
+    if (!leaf.hasClipAncestor) {
+      final (side, outside) = maxOvershoot(leaf.rawBoxes, [viewRect]);
+      if (outside > options.edgeTolerance) {
+        add(
+          LayoutFindingKind.offscreen,
+          LayoutSeverity.warning,
+          '[이탈] ${describeLeaf(leaf)} 화면 $side 밖으로 ${formatPx(outside)}px 나갑니다',
+        );
+      }
+    }
+
+    if (leaf.isVisible && ellipsized && box.didExceedMaxLines) {
+      add(
+        LayoutFindingKind.truncation,
+        LayoutSeverity.notice,
+        '[말줄임] ${describeLeaf(leaf)} 텍스트가 말줄임 처리됐습니다 (maxLines ${box.maxLines})',
+      );
+    }
+    return found;
+  }
+}
+
+double _shift(Rect a, Rect b) => [
+      (a.left - b.left).abs(),
+      (a.top - b.top).abs(),
+      (a.right - b.right).abs(),
+      (a.bottom - b.bottom).abs(),
+    ].reduce(math.max);
+
+List<LayoutFinding> _group(List<LayoutFinding> findings) {
+  final groups = <String, LayoutFinding>{};
+  for (final finding in findings) {
+    // 위치를 모르면 서로 다른 발견이 한데 묶이지 않도록 글자까지 키에 넣는다.
+    final key = [
+      finding.kind.name,
+      ...finding.locations.map((l) => '$l'),
+      if (finding.locations.contains(null)) ...finding.texts,
+    ].join('\u0000');
+    final existing = groups[key];
+    if (existing == null) {
+      groups[key] = finding;
+      continue;
+    }
+    groups[key] = existing.copyWith(
+      count: existing.count + finding.count,
+      severity: finding.severity.index < existing.severity.index
+          ? finding.severity
+          : existing.severity,
+    );
+  }
+  return groups.values.toList();
+}
+
+/// 자식 목록 순서가 곧 그리는 순서인 위젯(Stack·Flex·Wrap·Overlay 등). 뷰포트는 역순으로 그릴 수
+/// 있고 Flow는 delegate가 순서를 정하며, ListTile처럼 칸으로 자식을 두는 위젯은 칸마다 다르다.
+bool _paintsChildrenInOrder(RenderObject object) =>
+    object is ContainerRenderObjectMixin &&
+    object is! RenderViewportBase &&
+    object is! RenderFlow;
+
+/// 정책의 떠 있는 위젯마다, render 객체가 그 안에 있는지 기억해 둔다.
+final Expando<Map<Set<String>, bool>> _floatingCache =
+    Expando<Map<Set<String>, bool>>(
+  'layout_audit floating',
+);
+
+extension on _Audit {
+  /// [box]를 만든 위젯 사슬에 [LayoutAuditPolicy.floatingWidgets] 중 하나가 있는지.
+  ///
+  /// material 패키지가 여럿일 수 있어(Flutter·material_ui) 타입 이름으로 본다.
+  bool _insideFloating(RenderObject box) {
+    final names = policy.floatingWidgets;
+    if (names.isEmpty) return false;
+    final cache = _floatingCache[box] ??= Map.identity();
+    return cache[names] ??= () {
+      final creator = box.debugCreator;
+      if (creator is! DebugCreator) return false;
+      var found = names.contains(creator.element.widget.runtimeType.toString());
+      creator.element.visitAncestorElements((element) {
+        if (names.contains(element.widget.runtimeType.toString())) {
+          found = true;
+        }
+        return !found;
+      });
+      return found;
+    }();
+  }
+}
