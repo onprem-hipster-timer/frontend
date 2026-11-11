@@ -58,6 +58,8 @@ bool isValidAuthLink(String path, Map<String, String> queryParameters) {
 /// 반환값이 null이면 리다이렉트 없음.
 /// [consentRequired]는 로그인한 사용자가 약관에 동의해야 하는지. null이면 아직 모른다
 /// (프로필을 불러오는 중이거나 실패). 모르면 동의가 필요한 것으로 본다.
+/// [deletionPending]은 로그인한 사용자가 탈퇴를 신청해 파기를 기다리는지. null이면 아직 모른다.
+/// 모르면 탈퇴 대기 화면에 머물고, 다른 보호된 페이지는 약관 동의 확인이 막는다.
 String? authRedirect({
   required bool isAuthenticated,
   required bool isAuthLoading,
@@ -65,6 +67,7 @@ String? authRedirect({
   String? redirectAfterLogin,
   Map<String, String> queryParameters = const {},
   bool? consentRequired = false,
+  bool? deletionPending = false,
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
@@ -107,8 +110,28 @@ String? authRedirect({
     return _destination(redirectAfterLogin);
   }
 
-  // 4. 약관 동의 전이면 보호된 페이지 대신 동의 화면으로 (동의 후 원래 경로로 돌아가도록)
+  // 4. 탈퇴 신청한 계정이면 보호된 페이지 대신 탈퇴 대기 화면으로 (원래 경로를 기억한다).
+  //    대기 중에는 약관 동의를 저장할 수 없으므로 동의 화면보다 먼저 본다
   final isConsentRoute = matchedLocation == AppRoute.consent.path;
+  final isDeletionRoute = matchedLocation == AppRoute.accountDeletion.path;
+  if (isAuthenticated && !isPublicRoute) {
+    if (deletionPending == true && !isDeletionRoute) {
+      return _gate(
+        AppRoute.accountDeletion.path,
+        from: isConsentRoute ? redirectAfterLogin : matchedLocation,
+      );
+    }
+    if (isDeletionRoute) {
+      if (deletionPending != false) return null;
+      // 4-1. 탈퇴를 취소했으면 약관 동의 여부에 따라 동의 화면이나 기억한 경로로
+      if (consentRequired != false) {
+        return _gate(AppRoute.consent.path, from: redirectAfterLogin);
+      }
+      return _destination(redirectAfterLogin);
+    }
+  }
+
+  // 5. 약관 동의 전이면 보호된 페이지 대신 동의 화면으로 (동의 후 원래 경로로 돌아가도록)
   if (isAuthenticated && !isPublicRoute) {
     if (consentRequired != false && !isConsentRoute) {
       if (matchedLocation == AppRoute.calendar.path) {
@@ -116,7 +139,7 @@ String? authRedirect({
       }
       return '${AppRoute.consent.path}?redirect=${Uri.encodeComponent(matchedLocation)}';
     }
-    // 4-1. 동의가 필요 없으면 동의 화면에 머물지 않는다
+    // 5-1. 동의가 필요 없으면 동의 화면에 머물지 않는다
     if (consentRequired == false && isConsentRoute) {
       return _destination(redirectAfterLogin);
     }
@@ -124,6 +147,14 @@ String? authRedirect({
 
   // 리다이렉트 없음
   return null;
+}
+
+/// [page]로 보내며 [from]을 돌아갈 곳으로 기억한다. 돌아갈 곳이 없거나 루트(/)면 붙이지 않는다.
+String _gate(String page, {required String? from}) {
+  if (from == null || from.isEmpty || from == AppRoute.calendar.path) {
+    return page;
+  }
+  return '$page?redirect=${Uri.encodeComponent(from)}';
 }
 
 /// 로그인·약관 동의를 마친 뒤 갈 곳. [redirect]가 안전한 내부 경로가 아니면 메인 앱으로,
