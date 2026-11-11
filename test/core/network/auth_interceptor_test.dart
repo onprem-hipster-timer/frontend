@@ -201,7 +201,7 @@ void main() {
     }
 
     test('오류는 그대로 내고 프로필을 다시 받아 탈퇴 대기가 된다', () async {
-      final backend = _FakeBackend([403], body: pendingBody);
+      final backend = _FakeBackend([423], body: pendingBody);
       final (container, dio) = await bootSignedIn(backend);
       expect(container.read(deletionPendingProvider), isFalse);
 
@@ -211,7 +211,7 @@ void main() {
           isA<DioException>().having(
             (e) => e.response?.statusCode,
             'status',
-            403,
+            423,
           ),
         ),
       );
@@ -223,7 +223,7 @@ void main() {
     });
 
     test('여러 요청이 한꺼번에 거절돼도 프로필은 한 번만 다시 받는다', () async {
-      final backend = _FakeBackend([403], body: pendingBody);
+      final backend = _FakeBackend([423], body: pendingBody);
       final (container, dio) = await bootSignedIn(backend);
       final gate = Completer<void>();
       users.readGate = gate.future;
@@ -242,8 +242,8 @@ void main() {
       expect(container.read(deletionPendingProvider), isTrue);
     });
 
-    test('다른 403은 프로필을 다시 받지 않는다', () async {
-      final backend = _FakeBackend([403], body: '{"message": "forbidden"}');
+    test('같은 본문이어도 다른 상태 코드(403)는 프로필을 다시 받지 않는다', () async {
+      final backend = _FakeBackend([403], body: pendingBody);
       final (container, dio) = await bootSignedIn(backend);
 
       await expectLater(
@@ -257,7 +257,7 @@ void main() {
     });
 
     test('프로필을 다시 받지 못하면 모르는 상태가 되어 보호된 페이지를 닫는다', () async {
-      final backend = _FakeBackend([403], body: pendingBody);
+      final backend = _FakeBackend([423], body: pendingBody);
       final (container, dio) = await bootSignedIn(backend);
       users.readError = httpError('/v1/users/me', 500);
 

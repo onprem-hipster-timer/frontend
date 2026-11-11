@@ -405,7 +405,7 @@ final testDeletionRequestedAt = DateTime.utc(2026, 11, 11, 3);
 ///
 /// 동의하면 [profile]의 `consentRequired`가 false가 된다. 탈퇴를 신청하면
 /// [testDeletionRequestedAt]에 신청한 것이 되고(이미 신청했으면 그대로), 취소하면 지워진다.
-/// 탈퇴 대기 중에는 동의 요청을 403으로 거절한다.
+/// 탈퇴 대기 중에는 동의 요청을 423으로 거절한다.
 class FakeUsersClient extends Fake implements UsersClient {
   FakeUsersClient({
     bool consentRequired = true,
@@ -474,7 +474,7 @@ class FakeUsersClient extends Fake implements UsersClient {
     if (profile.deletionRequestedAt != null) {
       throw httpError(
         '/v1/users/me/consent',
-        403,
+        423,
         data: {'message': 'account_deletion_pending'},
       );
     }
