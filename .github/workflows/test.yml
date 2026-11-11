@@ -25,8 +25,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  quality:
-    name: Code Quality & Tests
+  static:
+    name: Format, Analyze & Package Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -44,44 +44,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Restore codegen cache
-        uses: actions/cache/restore@v4
-        id: codegen-cache
-        with:
-          path: |
-            .dart_tool/build
-            lib/**/*.g.dart
-            lib/**/*.freezed.dart
-          # 생성 파일(*.g.dart, *.freezed.dart)은 저장소에 없어 체크아웃 직후 해시에 들어가지 않는다
-          key: codegen-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'build.yaml', 'lib/**/*.dart') }}
-          restore-keys: |
-            codegen-${{ runner.os }}-
-
-      - name: Create .env for analysis
-        run: |
-          mkdir -p assets
-          cat <<EOF > assets/.env
-          API_BASE_URL=${{ vars.API_BASE_URL }}
-          EOF
-
-      - name: Run code generation
-        id: codegen
-        if: steps.codegen-cache.outputs.cache-hit != 'true'
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      # 코드 생성이 끝까지 성공했을 때만 저장한다 (취소·실패한 실행의 빈 결과를 저장하지 않는다)
-      - name: Save codegen cache
-        if: steps.codegen.outcome == 'success'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            .dart_tool/build
-            lib/**/*.g.dart
-            lib/**/*.freezed.dart
-          key: ${{ steps.codegen-cache.outputs.cache-primary-key }}
-
+      # 생성 파일이 없어도 되는 검사라 코드 생성보다 먼저 돌려 빨리 실패한다
       - name: Check formatting
         run: dart format --set-exit-if-changed .
+
+      - uses: ./.github/actions/codegen
+        with:
+          api-base-url: ${{ vars.API_BASE_URL }}
 
       # 루트 analyze가 packages/momeet_lints도 분석하므로 그 의존성을 먼저 받는다
       - name: Install lint plugin dependencies
@@ -91,14 +60,42 @@ jobs:
       - name: Analyze
         run: dart analyze --fatal-infos
 
-      - name: Run tests
-        run: flutter test
-
       - name: Layout audit library tests
         run: cd packages/layout_audit && flutter pub get && flutter test
 
       - name: Lint rule tests
         run: cd packages/momeet_lints && dart test
+
+  test:
+    name: Tests (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    # 샤드마다 셋업·코드 생성 비용이 붙어 2개를 넘기면 이득이 거의 없다
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [0, 1]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - uses: ./.github/actions/codegen
+        with:
+          api-base-url: ${{ vars.API_BASE_URL }}
+
+      - name: Run tests
+        run: flutter test --total-shards=2 --shard-index=${{ matrix.shard }}
 
   arch-guard:
     name: Auth Architecture Guard

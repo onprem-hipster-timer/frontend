@@ -1,0 +1,48 @@
+name: Code generation
+description: Restores build_runner outputs from cache, or runs build_runner and caches the result.
+
+inputs:
+  api-base-url:
+    description: API_BASE_URL written to assets/.env (the generated env class reads it).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Restore codegen cache
+      uses: actions/cache/restore@v4
+      id: codegen-cache
+      with:
+        path: |
+          .dart_tool/build
+          lib/**/*.g.dart
+          lib/**/*.freezed.dart
+        # 생성 파일(*.g.dart, *.freezed.dart)은 저장소에 없어 체크아웃 직후 해시에 들어가지 않는다
+        key: codegen-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'build.yaml', 'lib/**/*.dart') }}
+        restore-keys: |
+          codegen-${{ runner.os }}-
+
+    - name: Create .env for analysis
+      shell: bash
+      env:
+        API_BASE_URL: ${{ inputs.api-base-url }}
+      run: |
+        mkdir -p assets
+        printf 'API_BASE_URL=%s\n' "$API_BASE_URL" > assets/.env
+
+    - name: Run code generation
+      id: codegen
+      if: steps.codegen-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: dart run build_runner build --delete-conflicting-outputs
+
+    # 코드 생성이 끝까지 성공했을 때만 저장한다 (취소·실패한 실행의 빈 결과를 저장하지 않는다)
+    - name: Save codegen cache
+      if: steps.codegen.outcome == 'success'
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          .dart_tool/build
+          lib/**/*.g.dart
+          lib/**/*.freezed.dart
+        key: ${{ steps.codegen-cache.outputs.cache-primary-key }}
