@@ -1,11 +1,24 @@
 name: CI
 
+# 필수 상태 체크로 지정하면 이 경로만 바꾼 PR은 체크가 대기 상태로 남는다
 on:
   pull_request:
     branches: [main, dev]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
   # dev push는 dev 범위 캐시를 만들어 dev로 가는 PR이 복원할 수 있게 한다
   push:
     branches: [main, dev]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
