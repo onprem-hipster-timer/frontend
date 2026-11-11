@@ -337,6 +337,31 @@ void main() {
       expect(request.uri.path, '/auth/self-service/logout/api');
       expect(request.data, {'session_token': 'ory_st_abc'});
     });
+
+    for (final status in [401, 403]) {
+      test('이미 끊긴 세션의 logout($status)도 성공한다', () async {
+        fake.respond = (_) => _json(status, {
+          'error': {
+            'code': status,
+            'reason':
+                'The provided Ory Session Token could not be found, is invalid, or otherwise malformed.',
+          },
+        });
+
+        await client.logout('ory_st_revoked');
+      });
+    }
+
+    test('logout의 다른 오류는 던진다', () async {
+      fake.respond = (_) => _json(500, {
+        'error': {'code': 500, 'id': 'internal_server_error'},
+      });
+
+      expect(
+        () => client.logout('ory_st_abc'),
+        throwsA(isA<KratosException>()),
+      );
+    });
   });
 
   group('Google 로그인 (교환 코드)', () {

@@ -132,11 +132,14 @@ class KratosClient {
   }
 
   /// 세션을 끝낸다. 이미 끝난 세션이어도 성공한다.
+  ///
+  /// 끊긴 세션의 토큰에는 Kratos가 401이나 403을 준다(탈퇴 신청은 모든 세션을 끊는다).
   Future<void> logout(String sessionToken) async {
     final response = await _dio.delete<Object?>(
       '/self-service/logout/api',
       data: {'session_token': sessionToken},
     );
+    if (response.statusCode == 401 || response.statusCode == 403) return;
     _parse(response);
   }
 
