@@ -12,6 +12,7 @@ import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_settings_drawer.dart';
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
+import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/settings/presentation/widgets/timezone_selection_sheet.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
@@ -135,6 +136,18 @@ void main() {
         ),
       ],
     )(const MyPage()),
+  );
+
+  testLayoutAudit(
+    'account_deletion_dialog',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => wrapWithApp(
+      overrides: [
+        ...signedIn.overrides,
+        usersApiProvider.overrideWithValue(FakeUsersClient()),
+      ],
+    )(const AccountDeletionDialog()),
   );
 
   testLayoutAudit(

@@ -5,12 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/my_profile_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/features/auth/presentation/pages/account_deletion_pending_page.dart';
 import 'package:momeet/features/auth/presentation/pages/consent_page.dart';
+import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/router.dart';
+import 'package:momeet/shared/api/kratos/kratos_client.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
 import 'helpers/fake_rest_clients.dart';
@@ -162,6 +166,37 @@ void main() {
     users.readError = null;
     container.invalidate(myProfileProvider);
     await pumpAWhile(tester);
+
+    expect(location(router), gated);
+  });
+
+  testWidgets('탈퇴를 신청하면 로그인 화면으로 가서 신청했다고 알리고, 다시 로그인하면 탈퇴 대기 화면이다', (
+    tester,
+  ) async {
+    when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+    users = FakeUsersClient(consentRequired: false);
+    final (router, container) = await pumpRouter(tester, settle: false);
+    router.go(destination);
+    await pumpAWhile(tester);
+
+    showAccountDeletionDialog(tester.element(find.byType(Scaffold).last));
+    await tester.pumpAndSettle();
+    await tapText(tester, '위 내용을 확인했습니다');
+    await tapText(tester, '탈퇴 신청');
+
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/login');
+    expect(find.byType(AccountDeletionDialog), findsNothing);
+    expect(find.textContaining('탈퇴를 신청했습니다'), findsOneWidget);
+
+    harness.stubCreateFlow(KratosFlowType.login, 'f2');
+    harness.stubSubmit(
+      KratosFlowType.login,
+      const KratosSubmitResult(sessionToken: 'ory_st_next'),
+    );
+    await container
+        .read(authProvider.notifier)
+        .signInWithEmail(email: testUser.email, password: 'pw');
+    await tester.pumpAndSettle();
 
     expect(location(router), gated);
   });

@@ -37,6 +37,22 @@ class MyProfileNotifier extends _$MyProfileNotifier {
     state = AsyncData(profile);
   }
 
+  /// 회원 탈퇴를 신청하고 이 기기에서 로그아웃한다. 신청이 실패하면 오류를 그대로 던진다.
+  ///
+  /// 서버도 모든 기기의 세션을 끊지만, 이 기기는 바로 로그인 화면으로 가도록 직접 로그아웃한다.
+  /// 로그아웃하지 못하면 탈퇴 대기 화면으로 가도록 받은 프로필로 바꾸고 그 오류를 던진다.
+  Future<void> requestDeletion() async {
+    final profile = await ref
+        .read(usersApiProvider)
+        .requestMyDeletionV1UsersMeDeletionPost();
+    try {
+      await ref.read(authProvider.notifier).signOut();
+    } on Exception {
+      state = AsyncData(profile);
+      rethrow;
+    }
+  }
+
   /// 회원 탈퇴 신청을 취소한다. 실패하면 오류를 그대로 던진다.
   Future<void> cancelDeletion() async {
     final profile = await ref
