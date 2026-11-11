@@ -1,0 +1,89 @@
+:root {
+  --legal-ink: #1a1a1a;
+  --legal-ink-light: #555;
+  --legal-surface: #fff;
+  --legal-line: rgba(0, 0, 0, 0.12);
+  --legal-surface-alt: #f5f4f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --legal-ink: #f2f2f2;
+    --legal-ink-light: #c8c8c8;
+    --legal-surface: #161616;
+    --legal-line: rgba(255, 255, 255, 0.16);
+    --legal-surface-alt: #222;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--legal-surface);
+  color: var(--legal-ink);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, 'Helvetica Neue', 'Noto Sans KR', sans-serif;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.legal-nav {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 16px 0;
+}
+
+.legal-nav a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.legal-article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+  box-sizing: border-box;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.legal-article h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 0.6em; }
+.legal-article h2 { font-size: 1.25rem; margin: 2em 0 0.6em; }
+.legal-article h3 { font-size: 1.05rem; margin: 1.6em 0 0.5em; }
+.legal-article p, .legal-article ul, .legal-article ol { margin: 0.6em 0; }
+.legal-article ul, .legal-article ol { padding-left: 1.4em; }
+.legal-article a { color: inherit; text-decoration: underline; text-underline-offset: 0.2em; }
+.legal-article code {
+  font-size: 0.9em;
+  background: var(--legal-surface-alt);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+/* 넓은 표는 페이지가 아니라 표만 가로로 스크롤한다 */
+.legal-article table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+  font-size: 0.9em;
+}
+
+.legal-article th, .legal-article td {
+  border: 1px solid var(--legal-line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+  min-width: 6em;
+}
+
+.legal-article th { background: var(--legal-surface-alt); white-space: nowrap; }
+
+.legal-meta {
+  margin-top: 2.5em;
+  font-size: 0.85em;
+  color: var(--legal-ink-light);
+}
+
+.legal-meta a { color: inherit; text-decoration: underline; text-underline-offset: 0.2em; }
