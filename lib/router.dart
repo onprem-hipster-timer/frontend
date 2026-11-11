@@ -109,11 +109,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.verification.path,
         name: AppRoute.verification.name,
-        // flow: 가입 화면이나 인증 메일 링크가 넘기는 인증 플로우 ID
+        // flow: 가입 화면이나 인증 메일 링크가 넘기는 인증 플로우 ID, code: 인증 메일 링크의 코드
         // extra: 가입 화면이 넘기는 이메일(인메모리)
         builder: (context, state) => VerificationPage(
           flowId: state.uri.queryParameters['flow'],
           email: state.extra is String ? state.extra as String : null,
+          code: state.uri.queryParameters['code'],
         ),
       ),
 

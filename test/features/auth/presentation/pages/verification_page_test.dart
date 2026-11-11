@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,12 +23,15 @@ void main() {
     WidgetTester tester, {
     String? flow,
     String? email,
+    String? code,
   }) async {
+    final query = {'flow': ?flow, 'code': ?code};
     await tester.pumpWidget(
       pumpAuthFlow(
-        initialLocation: flow == null
-            ? '/verification'
-            : '/verification?flow=$flow',
+        initialLocation: Uri(
+          path: '/verification',
+          queryParameters: query.isEmpty ? null : query,
+        ).toString(),
         initialExtra: email,
         overrides: harness.overrides,
       ),
@@ -115,5 +119,129 @@ void main() {
 
     expect(find.text('코드 받기'), findsOneWidget);
     expect(find.text('new@example.com'), findsOneWidget);
+  });
+
+  group('인증 메일 링크(?flow=&code=)로 열면', () {
+    /// 앱이 브라우저 주소창에 알린 주소들 (SystemNavigator.routeInformationUpdated)
+    late List<Map<Object?, Object?>> reported;
+
+    setUp(() => reported = []);
+
+    void recordReportedUrls(WidgetTester tester) {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.navigation,
+        (call) async {
+          if (call.method == 'routeInformationUpdated') {
+            reported.add(call.arguments as Map<Object?, Object?>);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.navigation,
+          null,
+        ),
+      );
+    }
+
+    testWidgets('코드를 채워 두기만 하고 누르기 전에는 제출하지 않는다', (tester) async {
+      await openVerification(tester, flow: 'v1', code: '123456');
+
+      expect(find.widgetWithText(TextFormField, '123456'), findsOneWidget);
+      expect(find.text('메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'), findsOneWidget);
+      verifyNever(() => harness.kratos.submit(any(), any(), any()));
+    });
+
+    testWidgets('인증하기를 누르면 채운 코드로 인증한다', (tester) async {
+      harness.stubSubmit(
+        KratosFlowType.verification,
+        const KratosSubmitResult(
+          flow: KratosFlow(id: 'v1', state: 'passed_challenge'),
+        ),
+      );
+      await openVerification(tester, flow: 'v1', code: '123456');
+
+      await tester.tap(find.text('인증하기'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => harness.kratos.submit(KratosFlowType.verification, 'v1', {
+          'method': 'code',
+          'code': '123456',
+        }),
+      ).called(1);
+      expect(find.byType(LoginPage), findsOneWidget);
+    });
+
+    testWidgets('채운 코드가 틀리면 오류를 보이고 고쳐서 다시 낼 수 있다', (tester) async {
+      harness.stubSubmitError(
+        KratosFlowType.verification,
+        kratosError(4070006),
+      );
+      await openVerification(tester, flow: 'v1', code: '111111');
+
+      await tester.tap(find.text('인증하기'));
+      await tester.pumpAndSettle();
+      expect(find.text(AuthErrorType.invalidCode.localized), findsOneWidget);
+
+      harness.stubSubmit(
+        KratosFlowType.verification,
+        const KratosSubmitResult(
+          flow: KratosFlow(id: 'v1', state: 'passed_challenge'),
+        ),
+      );
+      await tester.enterText(find.byType(TextFormField), '222222');
+      await tester.tap(find.text('인증하기'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => harness.kratos.submit(KratosFlowType.verification, 'v1', {
+          'method': 'code',
+          'code': '222222',
+        }),
+      ).called(1);
+      expect(find.byType(LoginPage), findsOneWidget);
+    });
+
+    testWidgets('주소창에서 code를 지우고 flow만 남긴다', (tester) async {
+      recordReportedUrls(tester);
+      await openVerification(tester, flow: 'v1', code: '123456');
+
+      expect(reported, isNotEmpty);
+      expect(reported.last['uri'], '/verification?flow=v1');
+      expect(reported.last['replace'], isTrue);
+      // 채운 코드는 주소를 바꾼 뒤에도 남는다
+      expect(find.widgetWithText(TextFormField, '123456'), findsOneWidget);
+    });
+
+    testWidgets('code 없이 열면 주소를 건드리지 않는다', (tester) async {
+      recordReportedUrls(tester);
+      await openVerification(tester, flow: 'v1');
+
+      expect(
+        reported.map((r) => r['uri']),
+        everyElement('/verification?flow=v1'),
+      );
+      expect(find.text('메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'), findsNothing);
+    });
+
+    testWidgets('코드 다시 받기를 누르면 채운 코드를 버리고 이메일부터 받는다', (tester) async {
+      harness.stubCreateFlow(KratosFlowType.verification, 'v2');
+      harness.stubSubmit(
+        KratosFlowType.verification,
+        const KratosSubmitResult(),
+      );
+      await openVerification(tester, flow: 'v1', code: '123456');
+
+      await tester.tap(find.text('코드 다시 받기'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), 'user@example.com');
+      await tester.tap(find.text('코드 받기'));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextFormField, '123456'), findsNothing);
+      expect(find.text('메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'), findsNothing);
+    });
   });
 }

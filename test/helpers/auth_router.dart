@@ -64,6 +64,7 @@ Widget pumpAuthFlow({
         builder: (context, state) => VerificationPage(
           flowId: state.uri.queryParameters['flow'],
           email: state.extra is String ? state.extra as String : null,
+          code: state.uri.queryParameters['code'],
         ),
       ),
     ],
