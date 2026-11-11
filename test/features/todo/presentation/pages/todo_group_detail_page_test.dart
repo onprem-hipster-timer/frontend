@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -70,6 +71,7 @@ void main() {
       ProviderScope(
         retry: appRetry,
         overrides: [
+          currentUserProvider.overrideWithValue(null),
           todosApiProvider.overrideWithValue(todos),
           tagsApiProvider.overrideWithValue(tags),
           activeTimersProvider.overrideWith((ref) async => const []),

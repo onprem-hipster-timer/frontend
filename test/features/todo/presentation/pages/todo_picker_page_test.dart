@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -44,6 +45,7 @@ void main() {
   }) => pumpSheetHost(
     tester,
     overrides: [
+      currentUserProvider.overrideWithValue(null),
       todosApiProvider.overrideWithValue(todos),
       tagsApiProvider.overrideWithValue(
         FakeTagsClient([

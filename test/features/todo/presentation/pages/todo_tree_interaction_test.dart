@@ -1,5 +1,6 @@
 import 'dart:ui' show Tristate;
 
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +73,7 @@ void main() {
       ProviderScope(
         retry: appRetry,
         overrides: [
+          currentUserProvider.overrideWithValue(null),
           todosApiProvider.overrideWithValue(todos),
           tagsApiProvider.overrideWithValue(
             FakeTagsClient([makeTagGroup(id: 'group-work', name: '업무')]),
