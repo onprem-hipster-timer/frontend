@@ -422,6 +422,9 @@ class FakeUsersClient extends Fake implements UsersClient {
   /// 설정하면 프로필 조회가 이 오류로 실패한다.
   Object? readError;
 
+  /// 설정하면 프로필 조회가 이것이 끝날 때까지 기다린다.
+  Future<void>? readGate;
+
   /// 설정하면 동의 요청이 이 오류로 실패한다.
   Object? consentError;
 
@@ -433,6 +436,7 @@ class FakeUsersClient extends Fake implements UsersClient {
     RequestOptions? options,
   }) async {
     reads++;
+    await readGate;
     if (readError != null) throw readError!;
     return profile;
   }
@@ -451,11 +455,16 @@ class FakeUsersClient extends Fake implements UsersClient {
 }
 
 /// 서버가 [statusCode]로 거절한 요청의 오류.
-DioException httpError(String path, int statusCode) {
+/// 서버가 [statusCode]로 거절한 요청의 오류. [data]는 응답 본문이다.
+DioException httpError(String path, int statusCode, {Object? data}) {
   final request = RequestOptions(path: path);
   return DioException(
     requestOptions: request,
-    response: Response(requestOptions: request, statusCode: statusCode),
+    response: Response(
+      requestOptions: request,
+      statusCode: statusCode,
+      data: data,
+    ),
     type: DioExceptionType.badResponse,
   );
 }

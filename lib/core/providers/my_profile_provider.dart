@@ -19,6 +19,13 @@ class MyProfileNotifier extends _$MyProfileNotifier {
     return ref.read(usersApiProvider).getMyProfileV1UsersMeGet();
   }
 
+  Future<void>? _reloading;
+
+  /// 프로필을 다시 받는다. 받는 동안 지금 값을 그대로 두고, 동시에 여러 번 불려도 한 번만 받는다.
+  Future<void> reload() => _reloading ??= AsyncValue.guard(
+    () => ref.read(usersApiProvider).getMyProfileV1UsersMeGet(),
+  ).then((profile) => state = profile).whenComplete(() => _reloading = null);
+
   /// 만 14세 이상·이용약관·개인정보 수집·이용에 동의한다.
   ///
   /// [version]은 프로필이 알려 준 현재 약관 버전이다. 그 사이 약관이 바뀌었으면
