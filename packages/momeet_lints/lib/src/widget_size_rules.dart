@@ -6,10 +6,10 @@ import 'package:momeet_lints/src/widget_types.dart';
 
 const _stale = '{0}은(는) 이제 규칙을 지킵니다. lint_baseline.txt에서 이 줄을 지우세요.';
 
-Iterable<ClassDeclaration> _widgetClasses(CompilationUnit unit) =>
-    unit.declarations
-        .whereType<ClassDeclaration>()
-        .where((c) => isWidgetOrStateClass(c.declaredFragment?.element));
+Iterable<ClassDeclaration> _widgetClasses(CompilationUnit unit) => unit
+    .declarations
+    .whereType<ClassDeclaration>()
+    .where((c) => isWidgetOrStateClass(c.declaredFragment?.element));
 
 /// 위젯·State 클래스는 200줄 이하.
 class MaxWidgetClassLines extends BaselinedRule {
@@ -35,8 +35,11 @@ class MaxWidgetClassLines extends BaselinedRule {
         (c) => Finding(
           c.namePart.typeName.lexeme,
           c.namePart.typeName,
-          lines:
-              lineSpan(unit, c.firstTokenAfterCommentAndMetadata, c.endToken),
+          lines: lineSpan(
+            unit,
+            c.firstTokenAfterCommentAndMetadata,
+            c.endToken,
+          ),
         ),
       );
 }
@@ -67,8 +70,11 @@ class MaxBuildLines extends BaselinedRule {
         yield Finding(
           '${c.namePart.typeName.lexeme}.build',
           m.name,
-          lines:
-              lineSpan(unit, m.firstTokenAfterCommentAndMetadata, m.endToken),
+          lines: lineSpan(
+            unit,
+            m.firstTokenAfterCommentAndMetadata,
+            m.endToken,
+          ),
         );
       }
     }

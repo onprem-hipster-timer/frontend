@@ -13,7 +13,7 @@ import 'package:momeet_lints/src/paths.dart';
 /// 모든 인증 로직은 AuthNotifier(authProvider)를 통해서만 수행되어야 합니다.
 class NoDirectKratosClient extends AnalysisRule {
   NoDirectKratosClient()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'no_direct_kratos_client',

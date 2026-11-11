@@ -39,8 +39,9 @@ class UnusedConsumerRefTest extends AnalysisRuleTest {
   @override
   void setUp() {
     rule = UnusedConsumerRef();
-    newPackage('flutter_riverpod')
-        .addFile('lib/flutter_riverpod.dart', _riverpod);
+    newPackage(
+      'flutter_riverpod',
+    ).addFile('lib/flutter_riverpod.dart', _riverpod);
     super.setUp();
   }
 
@@ -70,8 +71,13 @@ class _PageState extends ConsumerState<Page> {
 ''';
     await assertDiagnostics(content, [
       lintAt(this, content, 'Title', messageContainsAll: ['StatelessWidget']),
-      lintAt(this, content, '_PageState',
-          occurrence: 1, messageContainsAll: ['State']),
+      lintAt(
+        this,
+        content,
+        '_PageState',
+        occurrence: 1,
+        messageContainsAll: ['State'],
+      ),
     ]);
   }
 

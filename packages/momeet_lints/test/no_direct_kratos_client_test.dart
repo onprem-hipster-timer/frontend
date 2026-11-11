@@ -48,8 +48,9 @@ import 'package:momeet/shared/api/kratos/kratos_client.dart';
 
 Future<void> logout(FakeKratosClient client) => client.logout();
 ''';
-    await assertDiagnostics(
-        content, [lintAt(this, content, 'client.logout()')]);
+    await assertDiagnostics(content, [
+      lintAt(this, content, 'client.logout()'),
+    ]);
   }
 
   Future<void> test_sameNameOtherPackage_ok() async {

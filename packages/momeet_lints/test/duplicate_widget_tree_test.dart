@@ -41,7 +41,8 @@ class DuplicateWidgetTreeTest extends AnalysisRuleTest {
   }
 
   Future<void> test_sameShapeTwice_reported() async {
-    final content = '''
+    final content =
+        '''
 $_box
 class A extends StatelessWidget {
   const A({super.key});
@@ -58,8 +59,13 @@ class B extends StatelessWidget {
     final path = '$testPackageLibPath/features/todo/boxes.dart';
     newFile(path, content);
     await assertDiagnosticsInFile(path, [
-      lintAt(this, content, "Box(label: 'a'",
-          length: 3, messageContainsAll: ['줄에도']),
+      lintAt(
+        this,
+        content,
+        "Box(label: 'a'",
+        length: 3,
+        messageContainsAll: ['줄에도'],
+      ),
       lintAt(this, content, "Box(label: 'b'", length: 3),
     ]);
   }

@@ -34,8 +34,9 @@ class Foo extends StatelessWidget {
   Widget _row() => const SizedBox();
 }
 ''';
-    await assertDiagnostics(
-        content, [lintAt(this, content, '_row', occurrence: 1)]);
+    await assertDiagnostics(content, [
+      lintAt(this, content, '_row', occurrence: 1),
+    ]);
   }
 
   Future<void> test_overrideAndBuild_ok() async {
@@ -103,13 +104,10 @@ void f() {
   }
 
   Future<void> test_baseline_allowsListed_staleWhenGone() async {
-    newFile(
-      '$testPackageRootPath/lint_baseline.txt',
-      '''
+    newFile('$testPackageRootPath/lint_baseline.txt', '''
 no_widget_helper_methods lib/test.dart Foo._row -
 no_widget_helper_methods lib/test.dart Foo._gone -
-''',
-    );
+''');
     const content = '''
 import 'package:flutter/widgets.dart';
 

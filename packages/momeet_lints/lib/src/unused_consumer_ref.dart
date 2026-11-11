@@ -10,7 +10,7 @@ import 'package:analyzer/error/error.dart';
 /// Riverpod 위젯은 구독 관리 비용이 있고, 읽는 사람이 상태 의존이 있다고 오해한다.
 class UnusedConsumerRef extends AnalysisRule {
   UnusedConsumerRef()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'unused_consumer_ref',

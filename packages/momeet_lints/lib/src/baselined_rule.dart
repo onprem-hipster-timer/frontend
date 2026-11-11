@@ -25,7 +25,7 @@ class Finding {
 /// `lib/` 아래 파일만 보고, [LintBaseline]에 적힌 기존 위반은 허용하는 규칙.
 abstract class BaselinedRule extends MultiAnalysisRule {
   BaselinedRule({required this.code, required this.staleCode})
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   final LintCode code;
 

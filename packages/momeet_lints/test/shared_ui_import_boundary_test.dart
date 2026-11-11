@@ -16,26 +16,33 @@ void main() {
         SharedUiImportBoundary.forbidden('package:momeet/features/todo/a.dart'),
         'features',
       );
-      expect(SharedUiImportBoundary.forbidden('../../features/a.dart'),
-          'features');
+      expect(
+        SharedUiImportBoundary.forbidden('../../features/a.dart'),
+        'features',
+      );
       expect(
         SharedUiImportBoundary.forbidden(
-            'package:flutter_riverpod/flutter_riverpod.dart'),
+          'package:flutter_riverpod/flutter_riverpod.dart',
+        ),
         'flutter_riverpod',
       );
       expect(
-          SharedUiImportBoundary.forbidden('package:go_router/go_router.dart'),
-          'go_router');
+        SharedUiImportBoundary.forbidden('package:go_router/go_router.dart'),
+        'go_router',
+      );
     });
 
     test('나머지는 허용한다', () {
       expect(
-          SharedUiImportBoundary.forbidden('package:momeet/shared/ui/ui.dart'),
-          isNull);
+        SharedUiImportBoundary.forbidden('package:momeet/shared/ui/ui.dart'),
+        isNull,
+      );
       expect(
-          SharedUiImportBoundary.forbidden(
-              'package:material_ui/material_ui.dart'),
-          isNull);
+        SharedUiImportBoundary.forbidden(
+          'package:material_ui/material_ui.dart',
+        ),
+        isNull,
+      );
       expect(SharedUiImportBoundary.forbidden('dart:async'), isNull);
     });
   });
@@ -66,8 +73,12 @@ GoRouter? b;
     await assertDiagnosticsInFile(_uiPath, [
       lintAt(this, content, "'package:test/features/todo/todo.dart'"),
       lintAt(this, content, "'package:go_router/go_router.dart'"),
-      lintAt(this, content, "'package:go_router/go_router.dart'",
-          occurrence: 1),
+      lintAt(
+        this,
+        content,
+        "'package:go_router/go_router.dart'",
+        occurrence: 1,
+      ),
     ]);
   }
 

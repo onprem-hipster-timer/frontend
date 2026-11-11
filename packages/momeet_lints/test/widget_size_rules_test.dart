@@ -13,7 +13,8 @@ void main() {
 }
 
 /// 몸통이 [bodyLines]줄인 StatelessWidget. 클래스 전체는 bodyLines + 5줄.
-String _widget(String name, int bodyLines) => '''
+String _widget(String name, int bodyLines) =>
+    '''
 class $name extends StatelessWidget {
   const $name({super.key});
   @override
@@ -23,7 +24,8 @@ ${List.filled(bodyLines, '  // .').join('\n')}
 ''';
 
 /// build가 [lines]줄인 위젯.
-String _buildOf(String name, int lines) => '''
+String _buildOf(String name, int lines) =>
+    '''
 class $name extends StatelessWidget {
   const $name({super.key});
   @override
@@ -62,7 +64,8 @@ class MaxWidgetClassLinesTest extends AnalysisRuleTest {
   }
 
   Future<void> test_stateClass_counted() async {
-    final content = '''${_import}class Foo extends StatefulWidget {
+    final content =
+        '''${_import}class Foo extends StatefulWidget {
   const Foo({super.key});
   @override
   State<Foo> createState() => _FooState();
@@ -74,8 +77,9 @@ class _FooState extends State<Foo> {
 ${List.filled(198, '  // .').join('\n')}
 }
 ''';
-    await assertDiagnostics(
-        content, [lintAt(this, content, '_FooState', occurrence: 1)]);
+    await assertDiagnostics(content, [
+      lintAt(this, content, '_FooState', occurrence: 1),
+    ]);
   }
 
   Future<void> test_plainClass_ignored() async {
@@ -134,7 +138,8 @@ ${List.filled(300, '  // .').join('\n')}
 
   Future<void> test_baseline_commentsAndBlankLinesIgnored() async {
     _baseline(
-        '# 규칙 경로 대상 줄수\n\nmax_widget_class_lines lib/test.dart Foo 305\n');
+      '# 규칙 경로 대상 줄수\n\nmax_widget_class_lines lib/test.dart Foo 305\n',
+    );
     await assertNoDiagnostics(_import + _widget('Foo', 300));
   }
 }
