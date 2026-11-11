@@ -233,8 +233,11 @@
 
   <script>
     (function() {
+      // 세션 토큰은 암호화돼 있어 읽지 않고, 앱이 함께 두는 표시(hasSessionKey)를 본다.
+      // flutter.momeet.session_token은 이전 버전의 평문 토큰으로, 앱이 첫 실행에 옮기고 지운다.
       function hasSession() {
-        return localStorage.getItem('flutter.momeet.session_token') !== null;
+        return localStorage.getItem('flutter.momeet.has_session') !== null
+            || localStorage.getItem('flutter.momeet.session_token') !== null;
       }
       function isExplicitLandingHash(hash) {
         return hash === '#/landing' || hash === '#/landing/';

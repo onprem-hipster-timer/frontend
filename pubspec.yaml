@@ -41,6 +41,7 @@ dependencies:
   hive_flutter: ^1.1.0
 
   # Authorization
+  flutter_secure_storage: ^11.2.0
 
   # Design widgets
   material_ui: ^1.10.0

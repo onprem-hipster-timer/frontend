@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
@@ -9,9 +11,12 @@ import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 import '../../helpers/kratos_mocks.dart';
+
+class _MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
   late KratosTestHarness harness;
@@ -74,7 +79,7 @@ void main() {
       final container = await boot();
 
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
     });
 
     test('네트워크 오류면 error 상태가 되고 세션 토큰은 남긴다', () async {
@@ -85,9 +90,74 @@ void main() {
 
       expect(container.read(authProvider), isA<AuthStatusError>());
       expect(
-        harness.prefs.getString(sessionTokenKey),
+        await harness.storedSessionToken(),
         KratosTestHarness.sessionToken,
       );
+    });
+  });
+
+  group('앱 다시 시작', () {
+    test('로그인한 뒤 다시 시작해도 로그인 상태다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubCreateFlow(KratosFlowType.login, 'f1');
+      harness.stubSubmit(
+        KratosFlowType.login,
+        const KratosSubmitResult(sessionToken: 'ory_st_new'),
+      );
+      final first = await boot();
+      await first
+          .read(authProvider.notifier)
+          .signInWithEmail(email: 'user@example.com', password: 'pw');
+      first.dispose();
+
+      await harness.restart();
+      final restarted = await boot();
+
+      expect(restarted.read(authProvider), isA<AuthAuthenticated>());
+      verify(() => harness.kratos.whoami('ory_st_new')).called(2);
+    });
+
+    test('이전 버전이 SharedPreferences에 둔 토큰으로 로그인 상태가 되고 이전 키를 지운다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(sessionTokenKey, 'ory_st_old');
+
+      await harness.restart();
+      final container = await boot();
+
+      expect(container.read(authProvider), isA<AuthAuthenticated>());
+      verify(() => harness.kratos.whoami('ory_st_old')).called(1);
+      expect(await harness.storedSessionToken(), 'ory_st_old');
+      expect(harness.prefs.getString(sessionTokenKey), isNull);
+    });
+
+    test('옮긴 뒤 한 번 더 시작해도 같은 세션으로 로그인 상태다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      await harness.prefs.setString(sessionTokenKey, 'ory_st_old');
+      await harness.restart();
+      (await boot()).dispose();
+
+      await harness.restart();
+      final container = await boot();
+
+      expect(container.read(authProvider), isA<AuthAuthenticated>());
+      verify(() => harness.kratos.whoami('ory_st_old')).called(2);
+      expect(await harness.storedSessionToken(), 'ory_st_old');
+    });
+
+    test('보안 저장소를 읽지 못하면 미인증으로 시작한다', () async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      final storage = _MockSecureStorage();
+      when(
+        () => storage.read(key: sessionTokenKey),
+      ).thenThrow(PlatformException(code: 'read_failed'));
+      harness.tokenStore = SessionTokenStore(storage, harness.prefs);
+      await harness.tokenStore.load();
+
+      final container = ProviderContainer(overrides: harness.overrides);
+      addTearDown(container.dispose);
+
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      verifyNever(() => harness.kratos.whoami(any()));
     });
   });
 
@@ -180,7 +250,7 @@ void main() {
 
       expect(await refreshing, isNull);
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
     });
 
     test('세션이 끝났으면 null을 주고 미인증이 된다', () async {
@@ -231,7 +301,7 @@ void main() {
         }),
       ).called(1);
       verify(() => harness.kratos.whoami('ory_st_new')).called(1);
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_new');
+      expect(await harness.storedSessionToken(), 'ory_st_new');
       expect(container.read(authProvider), isA<AuthAuthenticated>());
     });
 
@@ -278,7 +348,7 @@ void main() {
           .signUpWithEmail(email: 'new@example.com', password: 'pw-12345678');
 
       expect(flowId, 'v1');
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
       verifyNever(() => harness.kratos.whoami(any()));
     });
@@ -397,7 +467,8 @@ void main() {
       verify(
         () => harness.kratos.logout(KratosTestHarness.sessionToken),
       ).called(1);
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
+      expect(harness.prefs.getBool(hasSessionKey), isNull);
       expect(container.read(accessTokenProvider), isNull);
       expect(container.read(currentUserProvider), isNull);
       expect(container.read(isAuthenticatedProvider), isFalse);
@@ -414,7 +485,7 @@ void main() {
       );
       expect(container.read(isAuthenticatedProvider), isTrue);
       expect(
-        harness.prefs.getString(sessionTokenKey),
+        await harness.storedSessionToken(),
         KratosTestHarness.sessionToken,
       );
     });
@@ -450,7 +521,7 @@ void main() {
           .verifyRecoveryCode(flowId: 'rec1', code: '123456');
 
       expect(settingsFlowId, 's1');
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
     });
 
@@ -473,7 +544,7 @@ void main() {
           'password': 'new-pw-123',
         }, sessionToken: 'ory_st_rec'),
       ).called(1);
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_rec');
+      expect(await harness.storedSessionToken(), 'ory_st_rec');
       expect(container.read(authProvider), isA<AuthAuthenticated>());
     });
 
@@ -585,7 +656,7 @@ void main() {
           .completeGoogleSignIn('return-code');
 
       expect(container.read(authProvider), isA<AuthAuthenticated>());
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_google');
+      expect(await harness.storedSessionToken(), 'ory_st_google');
       expect(harness.prefs.getString(googleSignInCodeKey), isNull);
     });
 
@@ -606,7 +677,7 @@ void main() {
         throwsA(isA<AuthException>()),
       );
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
       expect(auth.hasPendingGoogleSignIn, isFalse);
     });
 
@@ -753,7 +824,7 @@ void main() {
       ).called(1);
       verifyNever(() => harness.kratos.createFlow(KratosFlowType.login));
       expect(container.read(authProvider), isA<AuthAuthenticated>());
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_linked');
+      expect(await harness.storedSessionToken(), 'ory_st_linked');
       expect(harness.prefs.getString(googleSignInCodeKey), isNull);
     });
 
