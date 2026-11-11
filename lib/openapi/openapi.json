@@ -4346,6 +4346,58 @@
           }
         ]
       }
+    },
+    "/v1/users/me/deletion": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Request My Deletion",
+        "description": "\ud68c\uc6d0 \ud0c8\ud1f4 \uc2e0\uccad. \uacc4\uc815\uc774 \ud734\uba74\uc774 \ub418\uace0 `deletion_scheduled_at` \ub4a4 \ud30c\uae30\ub41c\ub2e4.\n\n\ub2e4\uc2dc \ubcf4\ub0b4\ub3c4 \ucc98\uc74c \uc2e0\uccad \uc2dc\uac01\uc744 \uc720\uc9c0\ud55c\ub2e4. \uc0c8\ub85c \uc2e0\uccad\ud558\uba74 \ucee4\ubc0b \ub4a4 \ubaa8\ub4e0 \uae30\uae30\uc758 \ub85c\uadf8\uc778 \uc138\uc158\uc744 \ub04a\ub294\ub2e4.",
+        "operationId": "request_my_deletion_v1_users_me_deletion_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Cancel My Deletion",
+        "description": "\ud68c\uc6d0 \ud0c8\ud1f4 \uc2e0\uccad \ucde8\uc18c. \uc2e0\uccad\ud558\uc9c0 \uc54a\uc558\uc73c\uba74 \uc544\ubb34\uac83\ub3c4 \ubc14\uafb8\uc9c0 \uc54a\ub294\ub2e4.",
+        "operationId": "cancel_my_deletion_v1_users_me_deletion_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyProfileRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4969,6 +5021,30 @@
           "consent_required": {
             "type": "boolean",
             "title": "Consent Required"
+          },
+          "deletion_requested_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletion Requested At"
+          },
+          "deletion_scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletion Scheduled At"
           }
         },
         "type": "object",
