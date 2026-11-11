@@ -4,13 +4,15 @@
 // 앱은 API 플로우를 쓰므로 메일 링크를 열어도 인증이 끝나지 않는다. 메일의 6자리 코드를 입력받는다.
 // 이메일 인증 전에는 세션이 없으므로, 인증을 마치면 로그인 화면으로 보낸다.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_code_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -103,9 +105,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
       context.goNamed(AppRoute.calendar.name);
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('이메일이 인증되었습니다. 로그인해주세요.')));
+    showAppSnackBar(context, '이메일이 인증되었습니다. 로그인해주세요.');
     context.goNamed(AppRoute.login.name, extra: _emailController.text.trim());
   }
 
@@ -138,52 +138,28 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
               ),
               const SizedBox(height: 32),
               if (!hasFlow) ...[
-                AuthTextField(
+                AuthEmailField(
                   controller: _emailController,
-                  label: '이메일',
-                  hint: 'example@email.com',
-                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,
-                  prefixIcon: Icons.email_outlined,
                   onSubmitted: (_) => _sendCode(),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '이메일을 입력해주세요';
-                    }
-                    if (!value.contains('@')) {
-                      return '올바른 이메일 형식이 아닙니다';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 32),
                 AuthButton(
                   text: '코드 받기',
                   onPressed: _sendCode,
                   isLoading: _isLoading,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
               ] else ...[
-                AuthTextField(
+                AuthCodeField(
                   controller: _codeController,
                   label: '인증 코드',
-                  hint: '6자리 숫자',
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  prefixIcon: Icons.pin_outlined,
                   onSubmitted: (_) => _verify(),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? '인증 코드를 입력해주세요'
-                      : null,
                 ),
                 const SizedBox(height: 32),
                 AuthButton(
                   text: '인증하기',
                   onPressed: _verify,
                   isLoading: _isLoading,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
                 TextButton(
                   onPressed: _isLoading

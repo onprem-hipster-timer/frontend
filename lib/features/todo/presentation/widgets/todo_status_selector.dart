@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import '../providers/todo_provider.dart';
@@ -12,13 +13,15 @@ extension TodoStatusUI on TodoStatus {
     TodoStatus.$unknown => Icons.help_outline,
   };
 
-  Color color(BuildContext context) => switch (this) {
-    TodoStatus.unscheduled => Colors.grey,
-    TodoStatus.scheduled => Colors.blue,
-    TodoStatus.done => Colors.green,
-    TodoStatus.cancelled => Colors.red,
-    TodoStatus.$unknown => Colors.grey,
-  };
+  Color color(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (this) {
+      TodoStatus.unscheduled || TodoStatus.$unknown => scheme.onSurfaceVariant,
+      TodoStatus.scheduled => scheme.primary,
+      TodoStatus.done => AppColors.of(context).success,
+      TodoStatus.cancelled => scheme.error,
+    };
+  }
 
   String get label => switch (this) {
     TodoStatus.unscheduled => '미예정',

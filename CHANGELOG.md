@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Calendar
+- 달력 위쪽을 화면 이름 줄(왼쪽 '달력', 오른쪽 필터)과 도구 줄(왼쪽 ‹ 오늘 › 와 보는 기간, 오른쪽 보기 고르기)로 나눈다. 보는 기간(월·주·일)은 화살표·넘기기·날짜 고르기에 따라 바로 바뀌고, 누르면 날짜를 골라 그날로 간다. 달력 위의 빈 머리글 자리를 없앤다
+- 화살표·넘기기는 보는 기간만 옮기고 고른 날은 둔다. 일·주 보기로 바꾸면 고른 날이 든 기간을 보인다
+- '오늘' 버튼은 이전·다음 사이에 두고, 보는 기간에 오늘이 없으면 채워 그린다. 폭 600 미만에서는 주·일 기간을 줄여 쓴다(예: '11.29 – 12.5', '11월 9일 (월)')
+- 폭 600 미만에서는 보기(일간·주간·월간·목록)를 지금 보기 아이콘의 메뉴로 고른다. 360 폭에서 달력 앱바가 넘치지 않는다
+- 달력 보기 설정(공휴일 표시, 주말 강조, 24시간제, 주 시작 요일, 월 보기 칸의 일정 수)을 기기에 저장한다. 공휴일 표시를 끄면 공휴일 이름·색을 보이지 않는다
+- 월 보기 칸의 일정 수는 기본이 '자동'이다. 칸 높이와 글자 배율로 11pt 일정 줄(18 × 배율)이 들어가는 만큼 1~6개를 보이고 나머지는 '+N'으로 보인다
+- 달력 앱바의 메뉴 버튼이 달력 보기 설정 서랍을 연다
+
+#### Network
+- 불러오기가 실패하면 연결 실패·시간 초과·502·503·504일 때만 0.5·1·1.5초 뒤 세 번(합 3초) 다시 받고, 그 밖의 실패는 바로 오류와 '다시 시도'를 보인다. 이전에는 모든 실패를 1~2분 동안 다시 받는 사이 불러오는 중만 보였다
+- 태그 그룹·타이머 목록·타이머 기록 조회가 실패를 감싸지 않고 그대로 넘긴다
+
 #### Timer
 - 타이머 시작·일시정지·재개·정지를 REST(`POST /v1/timers`, `PATCH /v1/timers/{id}/pause`·`resume`, `POST /v1/timers/{id}/stop`)로 보낸다
 - 타이머 REST 요청에 `timezone=UTC`를 붙인다
@@ -62,7 +75,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### API
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
 
+#### UI
+- 할 일·태그·태그 그룹·일정 폼 시트도 `AppFormSheet` 틀(제목, 칸 사이 20, 버튼 줄)을 쓴다
+- 스크린리더가 할 일 줄·타임존의 선택 상태, 활동 요약의 수와 이름을 함께, 태그 관리 버튼의 대상(예: '업무 그룹에 태그 추가')을 읽는다
+- 새 작업 시작을 다이얼로그에서 하단 시트(`AppFormSheet`)로 바꾼다. 칸은 '작업 제목', '할 일', '집중 시간'(칩 + '직접 입력' 또는 '정한 시간')이고, 할 일은 할 일 고르기 화면에서 고른다
+- 할 일 트리 한 줄을 표시만 하는 `TodoTreeTileView`와 고칠 수 있는 `EditableTodoTreeTile`(끌어 옮기기·선택·펼침·상태·수정·삭제·타이머)로 나눈다
+- 모서리 반지름은 `AppRadius` 토큰으로, 상태·공휴일·토요일·경고·차트 색은 `ColorScheme` 역할과 `AppColors`로 그린다. 어두운 테마에서도 같은 역할 색을 쓴다
+- 카드 모서리·높이를 테마로 맞춘다(마이페이지 카드도 모서리 12). 할 일 대시보드와 그룹 고르기는 같은 `TodoGroupCard`를, 화면 위 안내는 `AppHintCard`를 쓴다
+- 알림을 `showAppSnackBar`로 띄운다. 이전 알림은 닫고, 오류는 error 색·성공은 success 색으로 칠한다. 시트가 열린 채 실패하면 알림을 시트 위에 띄워 가려지지 않는다
+- 빈 화면·오류·불러오는 중 표시를 `AppEmptyState`·`AppErrorState`·`AppLoading`으로 맞춘다. 오류에는 화면마다 '다시 시도'와 다른 길(돌아가기 등)을 같은 자리에 두고, 낮은 칸에서는 안내를 굴려 본다
+- 확인·선택 다이얼로그를 `lib/shared/ui`로 옮기고 `showAppConfirmDialog`·`showAppChoiceDialog`로 부른다
+- 누르면 날짜·시간 선택 창을 여는 줄(할 일 마감일, 일정 시작·종료)을 입력 칸 모양의 `AppPickerField`로 그린다. 이름표는 칸 안에 두고, 일정 시간 오류는 종료 칸 아래에 보인다
+- 폼 아래 버튼 줄을 `AppFormActionBar`(취소 + 넓은 저장)로 맞춘다. 공유 설정과 시간 정하기에도 취소가 생기고, 저장 중 진행 표시는 막힌 버튼 위에서도 보이는 색으로 그린다
+- 폼의 소제목을 `AppSectionHeader`로 그린다. 일정 폼의 '시작'·'종료'도 다른 폼과 같은 크기로 맞춘다
+- 입력 칸은 화면마다 테두리를 정하지 않고 테마의 외곽선(모서리 12)을 따른다. 로그인·가입 입력 칸도 같은 모서리로 맞춘다
+- 하단 시트를 `showAppSheet`·`showAppScrollableSheet`로 연다. 모든 시트가 하단 내비게이션까지 덮고, 손잡이·배경·모서리·키보드 여백을 한 곳에서 정한다
+- 앱 테마를 `lib/shared/ui/theme`(`AppTheme`, `AppColors`, `AppRadius`)로 모은다. 입력 칸은 모서리 12의 외곽선, 하단 시트는 표면색과 윗모서리 20, SnackBar는 떠 있는 모양이 기본이다
+
+#### Tooling
+- Material·Cupertino 위젯을 `material_ui`·`cupertino_ui` 패키지에서 가져온다
+- 아키텍처 린트(`packages/momeet_lints`)를 새 analyzer 플러그인(`analysis_server_plugin`)으로 옮긴다. `dart analyze`와 IDE에서 함께 돌고, CI 분석 단계는 `dart analyze --fatal-infos`가 맡는다. `dart run custom_lint` 단계는 없앤다
+- 위젯 크기·구조 린트: 위젯·State 클래스 200줄, `build` 80줄, `lib/` 파일 400줄 상한, Widget을 돌려주는 helper 금지, `lib/shared/ui/`의 기능·Riverpod·go_router import 금지. 기존 코드도 모두 이 규칙을 지킨다
+- 구조 린트를 더한다: Flutter의 시트·다이얼로그·알림·날짜 고르기는 `lib/shared/ui/`의 `showApp…` 함수로만 연다, 파일당 공개 위젯 하나, 한 파일 안의 같은 모양 위젯 트리 금지, 테마 밖 Material 이름 색 금지, `ref`를 쓰지 않는 Consumer 위젯 금지, `MediaQuery` 개별 접근자, `whenOrNull`
+
 ### Added
+
+#### Todo
+- 할 일 고르기 화면(`showTodoPicker`): 그룹별 트리로 보이고 제목으로 찾으며, 한 줄을 눌러 하나를 고르거나 체크해 여럿을 고른다
 
 #### Timer
 - 타이머 화면의 작업 제목 옆에 연결된 Todo의 상태 아이콘. 일시정지 중에는 그 자리에서 상태를 바꾼다
@@ -126,6 +165,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+#### UI
+- 화면에 연결되지 않은 위젯을 지운다: `TodoTreeTileWithTimer`·`TimerControlButtons`·`TodoTreeWithTimerListView`, `TodoListPage`, `ScheduleCreateDialog`
+
 #### Timer WebSocket
 - WebSocket 명령(`timer.create`·`pause`·`resume`·`stop`·`sync`)과 `timer.sync_result`·`timer.friend_activity` 처리
 - 소켓 연결의 `timezone` 쿼리
@@ -147,7 +189,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 관계 필드를 채우는 `GET /v1/timers/{id}`가 실패하면 2·4·8초 뒤 다시 받는다. 그 사이 다른 REST 응답으로 채워졌거나 지워진 타이머는 다시 받지 않는다
 
 #### Todo
+- 할 일 대시보드가 그룹을 불러오지 못했을 때 '다시 시도'를 누르면 그룹을 다시 받는다
+- 할 일 그룹 화면이 할 일을 불러오지 못했을 때 '다시 시도'를 누르면 그 그룹의 할 일을 다시 받는다
 - 누적 집중 시간의 타이머 목록 조회(`GET /v1/timers`)도 타이머 REST 요청으로 보내 `timezone=UTC`를 붙이고 응답의 `Date` 헤더로 서버 시각을 맞춘다
+
+#### Calendar
+- 00:00에 시작해 23:59에 끝나는 일정(일정 폼의 종일)을 종일로 본다. 폼에서 종일로 만든 일정을 수정하려고 열면 종일이 켜져 있다
+- 달력이 일정을 불러오지 못했을 때 '다시 시도'를 누르면 일정을 다시 받는다
+- 일정 만들기·수정 시트가 디버그 빌드에서 종일 스위치 때문에 오류로 그려지지 않던 문제를 고친다. 시트 배경을 시트 자체에 칠한다
+
+#### MyPage
+- 활동 요약이 통계를 불러오지 못했을 때 '다시 시도'를 누르면 할 일 목록을 다시 받는다
+
+#### Settings
+- 타임존 선택 시트가 디버그 빌드에서 목록 항목 때문에 오류로 그려지지 않던 문제를 고친다. 시트 배경을 시트 자체에 칠한다
+
+#### Tag
+- 태그 관리 화면이 태그를 불러오지 못했을 때 '다시 시도'를 누르면 태그 그룹을 다시 받는다
 
 #### Auth
 - 기존 계정에 Google을 연결하는 로그인(`/login?flow=`)도 계정이 이메일 인증 전이면 서버가 다시 보낸 코드로 인증 화면을 연다. 인증 화면에는 연결할 계정 이메일을 넘긴다

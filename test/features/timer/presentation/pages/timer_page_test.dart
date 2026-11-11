@@ -1,19 +1,27 @@
 import 'dart:async';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dashboard.dart';
+import 'package:momeet/features/timer/presentation/widgets/digital_clock.dart';
+import 'package:momeet/features/timer/presentation/widgets/current_task_display.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_history_list.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_history_item.dart';
+import 'package:momeet/features/timer/presentation/widgets/shared_timer_item.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
@@ -31,6 +39,7 @@ import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
 import '../../../../helpers/timer_gallery_finders.dart';
+import '../../../../helpers/start_timer_sheet_driver.dart';
 
 const _confirmTitle = '작업 완료';
 const _confirmContent =
@@ -310,7 +319,7 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.pause));
       await tester.pump();
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(_popups, findsNothing);
       expect(controller.paused, isTrue);
     });
 
@@ -325,7 +334,7 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pump();
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(_popups, findsNothing);
       expect(controller.resumed, isTrue);
     });
 
@@ -480,7 +489,7 @@ void main() {
 
       expect(_clockText(tester), '00:00:00');
       expect(find.text('시간 종료'), findsOneWidget);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(_popups, findsNothing);
       final clock = tester.widget<Text>(
         find.descendant(
           of: find.byType(DigitalClock),
@@ -800,7 +809,7 @@ void main() {
               as TodoUpdate;
       expect(body.status, TodoStatus.done);
       expect(controller.stopCalled, isFalse);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(_popups, findsNothing);
     });
 
     testWidgets('예정됨을 고르면 타이머 이벤트 없이 바로 예정됨으로 보여 주고 Todo 목록을 다시 읽는다', (
@@ -916,13 +925,10 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
 
-      final chip = tester.widget<ChoiceChip>(
-        find.widgetWithText(ChoiceChip, '25분'),
-      );
+      final chip = tester.widget<ChoiceChip>(StartSheet.presetChip(25));
       expect(chip.selected, isTrue);
 
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(controller.startedAllocatedDurationSeconds, 25 * 60);
     });
@@ -935,13 +941,11 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final minutes in [15, 25, 45, 60]) {
-        expect(find.widgetWithText(ChoiceChip, '$minutes분'), findsOneWidget);
+        expect(StartSheet.presetChip(minutes), findsOneWidget);
       }
 
-      await tester.tap(find.widgetWithText(ChoiceChip, '45분'));
-      await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.choosePreset(45);
+      await tester.startFromSheet();
 
       expect(controller.startedAllocatedDurationSeconds, 45 * 60);
     });
@@ -953,14 +957,13 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextFormField), '50');
+      await tester.enterText(StartSheet.minutesField, '50');
       await tester.pump();
 
       final chips = tester.widgetList<ChoiceChip>(find.byType(ChoiceChip));
       expect(chips.where((chip) => chip.selected), isEmpty);
 
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(controller.startedAllocatedDurationSeconds, 50 * 60);
     });
@@ -973,10 +976,9 @@ void main() {
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byType(TextFormField), text);
+        await tester.enterText(StartSheet.minutesField, text);
         await tester.pump();
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        await tester.startFromSheet();
 
         expect(controller.startedAllocatedDurationSeconds, seconds);
       });
@@ -989,20 +991,15 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ChoiceChip, '45분'));
-      await tester.pump();
+      await tester.choosePreset(45);
       expect(
-        tester
-            .widget<TextFormField>(find.byType(TextFormField))
-            .controller
-            ?.text,
+        tester.widget<TextField>(StartSheet.minutesField).controller?.text,
         '45',
       );
 
-      await tester.enterText(find.byType(TextFormField), '50');
+      await tester.enterText(StartSheet.minutesField, '50');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(controller.startedAllocatedDurationSeconds, 50 * 60);
     });
@@ -1015,21 +1012,17 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final text in ['', '0', '601']) {
-        await tester.enterText(find.byType(TextFormField), text);
+        await tester.enterText(StartSheet.minutesField, text);
         await tester.pump();
 
-        final start = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, '시작'),
-        );
-        expect(start.onPressed, isNull, reason: text);
+        expect(tester.canStartFromSheet(), isFalse, reason: text);
         expect(find.text('1~600분'), findsOneWidget, reason: text);
       }
 
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(controller.startedAllocatedDurationSeconds, isNull);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(StartSheet.sheet, findsOneWidget);
     });
   });
 
@@ -1046,12 +1039,10 @@ void main() {
       );
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+      await tester.tap(StartSheet.todoField);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, '보고서 쓰기'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.tapPickerItem('보고서 쓰기');
+      await tester.startFromSheet();
 
       expect(controller.startedTodoId, todo.id);
       expect(controller.startedTitle, '보고서 쓰기');
@@ -1072,14 +1063,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.descendant(
-          of: find.widgetWithText(InputDecorator, '할 일 연결 (선택)'),
+          of: StartSheet.todoField,
           matching: find.text('연결 안 함'),
         ),
         findsOneWidget,
       );
-      await tester.enterText(find.widgetWithText(TextField, '작업명'), '집중');
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.enterText(StartSheet.titleField, '집중');
+      await tester.startFromSheet();
 
       expect(controller.started, isTrue);
       expect(controller.startedTodoId, isNull);
@@ -1099,25 +1089,17 @@ void main() {
       }) async {
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(InputDecorator, '할 일 연결 (선택)'));
+        await tester.tap(StartSheet.todoField);
         await tester.pumpAndSettle();
         for (final label in labels) {
-          await tester.tap(
-            find.descendant(
-              of: find.widgetWithText(ListTile, label),
-              matching: find.byType(Checkbox),
-            ),
-          );
+          await tester.tap(StartSheet.checkbox(label));
           await tester.pump();
         }
-        await tester.tap(
-          find.widgetWithText(FilledButton, '${labels.length}개 선택 완료'),
-        );
+        await tester.tap(StartSheet.confirmPicks);
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(ChoiceChip, '$minutes분'));
+        await tester.tap(StartSheet.presetChip(minutes));
         await tester.pump();
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        await tester.startFromSheet();
       }
 
       testWidgets('둘 이상 고르면 할 일마다 같은 시간으로 한꺼번에 시작하고 알린다', (tester) async {
@@ -1158,7 +1140,7 @@ void main() {
 
   group('새 작업 시작 할 일 연결 경계', () {
     final report = makeTodo().copyWith(title: '보고서 쓰기');
-    final todoField = find.widgetWithText(InputDecorator, '할 일 연결 (선택)');
+    final todoField = StartSheet.todoField;
 
     Future<void> openStart(WidgetTester tester) async {
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
@@ -1170,12 +1152,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(todoField);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, '보고서 쓰기'));
-      await tester.pumpAndSettle();
+      await tester.tapPickerItem('보고서 쓰기');
     }
 
     Future<void> confirm(WidgetTester tester) async {
-      final start = find.widgetWithText(FilledButton, '시작');
+      final start = StartSheet.startButton;
       await tester.ensureVisible(start);
       await tester.pumpAndSettle();
       await tester.tap(start);
@@ -1195,16 +1176,11 @@ void main() {
       await openStart(tester);
       await chooseReport(tester);
 
-      await tester.enterText(find.byType(TextFormField), '0');
+      await tester.enterText(StartSheet.minutesField, '0');
       await tester.pump();
-      expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, '시작'))
-            .onPressed,
-        isNull,
-      );
+      expect(tester.canStartFromSheet(), isFalse);
 
-      await tester.enterText(find.byType(TextFormField), '30');
+      await tester.enterText(StartSheet.minutesField, '30');
       await tester.pump();
       await confirm(tester);
 
@@ -1223,8 +1199,7 @@ void main() {
       );
       await openStart(tester);
       await chooseReport(tester);
-      await tester.tap(find.widgetWithText(TextButton, '취소'));
-      await tester.pumpAndSettle();
+      await tester.cancelStartSheet();
 
       await openStart(tester);
 
@@ -1233,10 +1208,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester
-            .widget<TextField>(find.widgetWithText(TextField, '작업명'))
-            .controller
-            ?.text,
+        tester.widget<TextField>(StartSheet.titleField).controller?.text,
         isEmpty,
       );
       expect(controller.started, isFalse);
@@ -1377,13 +1349,9 @@ void main() {
 
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('start-timer-exact-duration')),
-        findsOneWidget,
-      );
+      expect(StartSheet.exactField, findsOneWidget);
       expect(find.text('00:12:30'), findsWidgets);
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(controller.startedAllocatedDurationSeconds, 750);
     });
@@ -1418,7 +1386,7 @@ void main() {
         expect(picker.mode, CupertinoTimerPickerMode.hms);
         expect(picker.initialTimerDuration, const Duration(minutes: 25));
         expect(find.text('시간 정하기'), findsOneWidget);
-        expect(find.widgetWithText(TextButton, '취소'), findsOneWidget);
+        expect(find.widgetWithText(OutlinedButton, '취소'), findsOneWidget);
       });
 
       testWidgets('마우스로 분 바퀴를 끌어 올리면 분이 늘어난다', (tester) async {
@@ -1456,18 +1424,10 @@ void main() {
 
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
-        expect(
-          tester
-              .widget<Text>(
-                find.byKey(const ValueKey('start-timer-exact-duration')),
-              )
-              .data,
-          '00:12:34',
-        );
+        expect(StartSheet.exactShows('00:12:34'), findsOneWidget);
         // 집중 시간 칩은 그대로 쓸 수 있다
-        expect(find.widgetWithText(ChoiceChip, '25분'), findsOneWidget);
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        expect(StartSheet.presetChip(25), findsOneWidget);
+        await tester.startFromSheet();
 
         expect(controller.startedAllocatedDurationSeconds, 754);
       });
@@ -1482,14 +1442,9 @@ void main() {
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(ChoiceChip, '15분'));
-        await tester.pump();
-        expect(
-          find.byKey(const ValueKey('start-timer-exact-duration')),
-          findsNothing,
-        );
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        await tester.choosePreset(15);
+        expect(StartSheet.exactField, findsNothing);
+        await tester.startFromSheet();
 
         expect(controller.startedAllocatedDurationSeconds, 15 * 60);
       });
@@ -1504,7 +1459,7 @@ void main() {
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(TextButton, '변경'));
+        await tester.tap(StartSheet.exactField);
         await tester.pumpAndSettle();
         expect(
           tester
@@ -1515,8 +1470,7 @@ void main() {
         await pick(tester, const Duration(minutes: 1, seconds: 5));
         await tester.tap(confirm());
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        await tester.startFromSheet();
 
         expect(controller.startedAllocatedDurationSeconds, 65);
       });
@@ -1530,7 +1484,7 @@ void main() {
 
         await openPicker(tester);
         await pick(tester, const Duration(minutes: 12, seconds: 34));
-        await tester.tap(find.widgetWithText(TextButton, '취소'));
+        await tester.tap(find.widgetWithText(OutlinedButton, '취소'));
         await tester.pumpAndSettle();
 
         expect(find.byType(CupertinoTimerPicker), findsNothing);
@@ -1632,15 +1586,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester
-            .widget<TextFormField>(find.byType(TextFormField))
-            .controller
-            ?.text,
+        tester.widget<TextField>(StartSheet.minutesField).controller?.text,
         '45',
       );
-      final chip = tester.widget<ChoiceChip>(
-        find.widgetWithText(ChoiceChip, '45분'),
-      );
+      final chip = tester.widget<ChoiceChip>(StartSheet.presetChip(45));
       expect(chip.selected, isTrue);
     });
 
@@ -1728,8 +1677,7 @@ void main() {
       await dragDialTo9(tester);
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, '취소'));
-      await tester.pumpAndSettle();
+      await tester.cancelStartSheet();
 
       expect(_clockText(tester), '00:45:00');
     });
@@ -1874,7 +1822,7 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.coffee));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(_popups, findsNothing);
       expect(controller.started, isFalse);
       expect(inDashboard(find.text('휴식')), findsOneWidget);
       expect(_modeSwitch(), findsNothing);
@@ -2320,13 +2268,10 @@ void main() {
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
 
-        final chip = tester.widget<ChoiceChip>(
-          find.widgetWithText(ChoiceChip, '25분'),
-        );
+        final chip = tester.widget<ChoiceChip>(StartSheet.presetChip(25));
         expect(chip.selected, isTrue);
 
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        await tester.startFromSheet();
 
         expect(controller.startedAllocatedDurationSeconds, 25 * 60);
       });
@@ -2561,7 +2506,7 @@ void main() {
         await tester.tap(_dashboardFabByIcon(Icons.check));
         await tester.pumpAndSettle();
 
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(_popups, findsNothing);
         expect(controller.stopCalled, isFalse);
         expect(inDashboard(find.text('일시정지')), findsOneWidget);
         expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
@@ -2750,7 +2695,7 @@ void main() {
           await tester.tap(_dashboardFabByIcon(finish));
           await tester.pumpAndSettle();
 
-          expect(find.byType(AlertDialog), findsNothing);
+          expect(_popups, findsNothing);
           expect(_dashboardFabByIcon(Icons.stop), findsNothing);
           expect(inDashboard(find.text('휴식 종료')), findsNothing);
           expect(repository.calls, ['list']);
@@ -3121,8 +3066,8 @@ void main() {
       await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.widgetWithText(ChoiceChip, '45분'), findsOneWidget);
+      expect(StartSheet.sheet, findsOneWidget);
+      expect(StartSheet.presetChip(45), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -3324,8 +3269,7 @@ void main() {
         expect(tester.takeException(), isNull);
         final dial = tester.getRect(dialFace());
         final clock = tester.getRect(find.byType(DigitalClock));
-        // 셸은 아래 100을 내비 바 자리로 비워 둔다
-        final pageBottom = size.height - 100;
+        final pageBottom = _shellPageBottom(size);
 
         expect(dial.shortestSide, greaterThanOrEqualTo(120));
         expect(dial.right, lessThanOrEqualTo(clock.left));
@@ -3393,6 +3337,10 @@ void main() {
       for (final (size, textScale) in const [
         (Size(667, 375), 1.0),
         (Size(844, 390), 2.0),
+        // 접는 폰 덮개 화면처럼 낮고 좁으면 다이얼을 절반 높이로 두고 굴린다
+        (Size(360, 374), 2.0),
+        // 접는 폰 덮개 화면처럼 낮고 좁으면 다이얼을 절반 높이로 두고 굴린다
+        (Size(360, 374), 2.0),
         (Size(1024, 600), 1.0),
         (Size(1280, 720), 1.0),
       ]) {
@@ -3418,13 +3366,44 @@ void main() {
             await tester.pumpAndSettle();
             expect(
               tester.getRect(fab).bottom,
-              lessThanOrEqualTo(size.height - 100),
+              lessThanOrEqualTo(_shellPageBottom(size)),
               reason: '$icon',
             );
             expect(fab.hitTestable(), findsOneWidget, reason: '$icon');
           }
         });
       }
+
+      testWidgets('아주 작은 화면은 내비 없이 시계를 다이얼 가운데에 두고 새 타이머를 제목 옆 아이콘으로 둔다', (
+        tester,
+      ) async {
+        await pumpInShell(
+          tester,
+          size: const Size(360, 374),
+          textScale: 1,
+          timer: running,
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(NavigationRail), findsNothing);
+        final dial = tester.getRect(dialFace());
+        final clock = tester.getRect(find.byType(DigitalClock));
+        expect(dial.contains(clock.center), isTrue);
+        expect(clock.width, lessThan(dial.width));
+        expect(find.byTooltip('새 타이머'), findsOneWidget);
+        expect(find.widgetWithText(ActionChip, '새 타이머'), findsNothing);
+        // 앱바 없이 작업명 줄이 화면 이동·목록 버튼을 맡는다
+        expect(find.byType(AppBar), findsNothing);
+        expect(find.byTooltip('화면 이동'), findsOneWidget);
+        expect(find.byTooltip('타이머 목록'), findsOneWidget);
+        final title = tester.getRect(find.byType(CurrentTaskDisplay));
+        expect(title.bottom, lessThanOrEqualTo(dial.top));
+        for (final icon in [Icons.check, Icons.pause]) {
+          final fab = _dashboardFabByIcon(icon);
+          expect(tester.getRect(fab).top, greaterThan(dial.bottom));
+          expect(fab.hitTestable(), findsOneWidget, reason: '$icon');
+        }
+      });
 
       testWidgets('세로 휴대폰 화면은 다이얼 아래에 제목·시계·버튼을 둔다', (tester) async {
         await pumpInShell(
@@ -3472,8 +3451,10 @@ void main() {
               friendsProvider.overrideWith((ref) async => const <FriendRead>[]),
             ],
           );
-          // 셸은 아래 100을 내비 바 자리로 비워 둔다
-          final pageBottom = size.height - 100;
+          // 좁은 화면의 목록은 내비 바까지 덮는 시트로 열린다
+          final pageBottom = size.width < 600
+              ? size.height
+              : _shellPageBottom(size);
 
           /// [text]가 넘침 없이 굴려서라도 셸 위 화면 안에 보인다
           Future<void> expectShown(String text) async {
@@ -3667,11 +3648,17 @@ void main() {
                 reason: which,
               );
               expect(overlaps(button, time), isFalse, reason: which);
-              // 한 줄에 다 들어가지 않으면 버튼을 시간 아래 줄로 내린다
+              // 한 줄에 다 들어가지 않으면 시간과 버튼을 제목 아래 줄로 내린다
               if (width < oneRowWidth) {
+                final title = tester.getRect(find.text(longTitle));
                 expect(
                   button.top,
-                  greaterThanOrEqualTo(time.bottom),
+                  greaterThanOrEqualTo(title.bottom),
+                  reason: which,
+                );
+                expect(
+                  time.top,
+                  greaterThanOrEqualTo(title.bottom),
                   reason: which,
                 );
               } else {
@@ -3688,7 +3675,7 @@ void main() {
 
     for (final (textScale, widths) in const [
       (1.5, [240.0, 328.0, 424.0, 600.0]),
-      (2.0, [328.0, 424.0, 600.0]),
+      (2.0, [240.0, 273.0, 328.0, 424.0, 600.0]),
     ]) {
       testWidgets('글자 $textScale배에서도 일시정지 항목이 넘치지 않고 48 버튼이 겹치지 않는다', (
         tester,
@@ -4141,10 +4128,6 @@ void main() {
 
       await pump(tester);
       await tester.tap(friendsTab());
-      // 자동 재시도가 끝날 때까지 기다린다
-      for (var i = 0; i < 12; i++) {
-        await tester.pump(const Duration(seconds: 7));
-      }
       await tester.pumpAndSettle();
 
       expect(find.text('공유받은 타이머를 불러올 수 없습니다'), findsOneWidget);
@@ -4863,9 +4846,8 @@ void main() {
         await tester.tap(addChip());
         await tester.pumpAndSettle();
         expect(find.text('새 작업 시작'), findsOneWidget);
-        await tester.enterText(find.widgetWithText(TextField, '작업명'), '새 작업');
-        await tester.tap(find.widgetWithText(FilledButton, '시작'));
-        await tester.pumpAndSettle();
+        await tester.enterText(StartSheet.titleField, '새 작업');
+        await tester.startFromSheet();
 
         expect(repository.calls, ['list', 'create']);
         expect(shown(tester), 'new');
@@ -5014,6 +4996,11 @@ Future<void> _pumpTimerPage(
 }
 
 /// 앱처럼 하단 내비 바 셸([ScaffoldWithNavBar]) 안에 타이머 화면을 [size] 화면, 글자 [textScale]배로 그린다
+/// 내비 셸 안 화면의 아래 끝. 높은 화면은 아래 100을 하단 바 자리로 비우고,
+/// 낮은 화면(높이 500 미만)은 내비를 왼쪽에 두어 아래를 비우지 않는다
+double _shellPageBottom(Size size) =>
+    size.height < 500 ? size.height : size.height - 100;
+
 Future<void> _pumpInNavShell(
   WidgetTester tester, {
   required Size size,
@@ -5046,6 +5033,7 @@ Future<void> _pumpInNavShell(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
+      retry: appRetry,
       overrides: overrides,
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -5086,6 +5074,11 @@ List<Override> _timerOverrides({
     ),
   ];
 }
+
+/// 확인 다이얼로그나 폼 시트
+final _popups = find.byWidgetPredicate(
+  (widget) => widget is AlertDialog || widget is AppFormSheet,
+);
 
 Finder _dashboardFabByIcon(IconData icon) {
   final iconInFab = find.descendant(

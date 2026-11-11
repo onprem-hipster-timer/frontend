@@ -6,7 +6,7 @@
 // 모양·색·로고·글꼴은 Google 브랜딩 가이드라인을 따르므로 앱 테마로 바꾸지 않는다.
 // https://developers.google.com/identity/branding-guidelines
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/providers/auth_provider.dart';

@@ -8,14 +8,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   LayoutAuditBinding.ensureInitialized(
     config: LayoutAuditConfig(
       environment: const {},
-      options: LayoutAuditOptions(
-        ignore: (_) {
-          if (throwInIgnore) {
-            throw StateError('ignore 실패');
-          }
-          return false;
-        },
-      ),
+      policy: testPolicy,
       // 파일·콘솔 없이 메모리에만 남긴다.
       sink: LayoutReportSink(
         environment: const {},

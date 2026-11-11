@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -15,6 +16,7 @@ import '../../../../helpers/kratos_mocks.dart';
 
 Widget buildMyPage(KratosTestHarness harness) {
   return ProviderScope(
+    retry: appRetry,
     overrides: harness.overrides,
     child: const MaterialApp(home: MyPage()),
   );

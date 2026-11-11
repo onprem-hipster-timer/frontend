@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dashboard.dart';
+import 'package:momeet/features/timer/presentation/widgets/digital_clock.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_history_item.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
@@ -56,6 +60,7 @@ void main() {
     ServerClock? clock,
     List<TimerRead> history = const [],
   }) => ProviderScope(
+    retry: appRetry,
     overrides: [
       allTodosProvider.overrideWith((ref) async => const <TodoRead>[]),
       timerFriendActivityProvider.overrideWith(

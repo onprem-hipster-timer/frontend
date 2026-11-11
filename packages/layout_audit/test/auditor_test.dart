@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:layout_audit/layout_audit.dart';
 
@@ -258,6 +258,34 @@ void main() {
     expect(auditLayout(tester), isEmpty);
   });
 
+  testWidgets('스크롤 영역 바깥 조상의 잘라내기로 잘린 글자도 잘라냄으로 보지 않는다', (tester) async {
+    await pumpInApp(
+      tester,
+      Align(
+        alignment: Alignment.topLeft,
+        child: ClipRect(
+          child: SizedBox(
+            width: 200,
+            height: 50,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (var i = 0; i < 6; i++) squareText('LINE$i'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final clipped = auditLayout(
+      tester,
+    ).where((f) => f.kind == LayoutFindingKind.clipped);
+
+    expect(clipped, isEmpty);
+  });
+
   testWidgets('WidgetSpan 안의 Text는 바깥 Text와 겹침으로 보지 않는다', (tester) async {
     await pumpInApp(
       tester,
@@ -304,6 +332,65 @@ void main() {
     expect(overlap.message, contains('겹칩니다 (순서 불명)'));
   });
 
+  testWidgets('정책의 떠 있는 위젯(버튼)이 목록 글자를 덮는 것은 겹침으로 보지 않고, 정책이 없으면 본다',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ListView(
+            children: [
+              for (var i = 0; i < 40; i++)
+                Text('항목 $i ' * 20, maxLines: 1, softWrap: false),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {},
+            label: const Text('새 항목 만들기'),
+          ),
+        ),
+      ),
+    );
+
+    final findings = auditLayout(tester)
+        .where((f) => f.kind == LayoutFindingKind.overlap)
+        .toList();
+
+    expect(findings, isEmpty);
+    expect(
+      ofKind(
+        auditLayout(tester, policy: const LayoutAuditPolicy()),
+        LayoutFindingKind.overlap,
+      ),
+      isNotEmpty,
+    );
+  });
+
+  testWidgets('정책의 떠 있는 위젯(서랍)이 뒤 화면 글자를 덮는 것은 겹침으로 보지 않는다', (tester) async {
+    final scaffold = GlobalKey<ScaffoldState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          key: scaffold,
+          drawer: const Drawer(child: Text('서랍 안의 긴 설정 항목 이름')),
+          body: ListView(
+            children: [
+              for (var i = 0; i < 20; i++)
+                Text('본문 $i ' * 20, maxLines: 1, softWrap: false),
+            ],
+          ),
+        ),
+      ),
+    );
+    scaffold.currentState!.openDrawer();
+    await tester.pumpAndSettle();
+
+    final findings = auditLayout(
+      tester,
+    ).where((f) => f.kind == LayoutFindingKind.overlap);
+
+    expect(findings, isEmpty);
+  });
+
   testWidgets('within 밖의 겹침은 보고하지 않는다', (tester) async {
     const inside = Key('inside');
     await pumpInApp(
@@ -324,12 +411,12 @@ void main() {
     );
   });
 
-  testWidgets('ignore로 의도한 겹침을 뺄 수 있다', (tester) async {
+  testWidgets('정책의 ignore로 의도한 겹침을 뺄 수 있다', (tester) async {
     await pumpInApp(tester, const OverlappingPair());
 
     final findings = auditLayout(
       tester,
-      options: LayoutAuditOptions(ignore: (f) => f.texts.contains('BBBB')),
+      policy: LayoutAuditPolicy(ignore: (f) => f.texts.contains('BBBB')),
     );
 
     expect(findings, isEmpty);

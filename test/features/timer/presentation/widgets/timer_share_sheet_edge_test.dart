@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
@@ -190,9 +190,6 @@ void main() {
 
       repository.error = null;
       await save(tester);
-      // 앞서 띄운 실패 알림이 사라질 때까지 기다린다
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
 
       expect(saves(), ['setVisibility:timer-1', 'setVisibility:timer-1']);
       expect(

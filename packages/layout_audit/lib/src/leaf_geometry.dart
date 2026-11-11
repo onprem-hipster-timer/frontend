@@ -72,7 +72,10 @@ List<ContentLeaf> collectContentLeaves(
 }
 
 ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
-  if (!box.attached || !box.hasSize || box.debugNeedsLayout) {
+  if (!box.attached ||
+      !box.hasSize ||
+      box.debugNeedsLayout ||
+      _unpainted(box)) {
     return null;
   }
   final ancestors = <RenderObject>[];
@@ -80,6 +83,8 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
   Rect? contentClipRect;
   RenderObject child = box;
   var parent = box.parent;
+  // 스크롤 영역 안의 글자는 그 바깥(시트 등)의 잘라내기도 굴리면 보이는 경계다.
+  var insideScroll = false;
   while (parent != null) {
     if (!parent.paintsChild(child)) {
       return null;
@@ -92,9 +97,12 @@ ContentLeaf? _leafOf(RenderBox box, Rect viewRect) {
       final clip = globalRect(parent, localClip);
       clipRect = clipRect?.intersect(clip) ?? clip;
       // SingleChildScrollView의 뷰포트는 RenderViewportBase가 아니라 인터페이스로 가른다.
-      if (parent is! RenderAbstractViewport) {
+      if (parent is! RenderAbstractViewport && !insideScroll) {
         contentClipRect = contentClipRect?.intersect(clip) ?? clip;
       }
+    }
+    if (parent is RenderAbstractViewport) {
+      insideScroll = true;
     }
     ancestors.add(parent);
     child = parent;
@@ -155,4 +163,18 @@ List<Rect> _localBoxes(RenderBox box) {
         textBox.toRect(),
   ];
   return words.isEmpty ? [box.paintBounds] : words;
+}
+
+/// [box]를 품은 가장 가까운 그리기 경계의 층이 그리기 트리에서 떨어져 있다.
+///
+/// 불투명한 화면에 덮인 아래 화면은 그리지 않고, 화면 크기가 바뀌어도 다시 보일 때까지 옛 자리에
+/// 남는다. 그런 글자는 화면에 없으므로 점검하지 않는다.
+bool _unpainted(RenderBox box) {
+  for (RenderObject? node = box; node != null; node = node.parent) {
+    if (node.isRepaintBoundary) {
+      final layer = node.debugLayer;
+      return layer != null && !layer.attached;
+    }
+  }
+  return false;
 }

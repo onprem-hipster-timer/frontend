@@ -8,7 +8,13 @@ enum LayoutFindingKind {
   clipped,
   offscreen,
   truncation,
-  moving
+  moving,
+
+  /// 아래는 배율 비교(`scale_audit.dart`)가 낸다.
+  scaleTruncation,
+  scaleVanished,
+  scaleUnreachable,
+  scaleInversion,
 }
 
 enum LayoutSeverity { warning, notice, info }

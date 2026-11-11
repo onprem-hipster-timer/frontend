@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
@@ -6,7 +6,7 @@ import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_d
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/widgets/confirm_dialog.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 할 일 관련 공통 액션 유틸리티
 class TodoActions {
@@ -29,7 +29,7 @@ class TodoActions {
         ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.'
         : '';
 
-    final confirmed = await showConfirmDialog(
+    final confirmed = await showAppConfirmDialog(
       context,
       title: '할 일 삭제',
       content:
@@ -66,21 +66,14 @@ class TodoActions {
         );
 
         if (deleted && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${todo.title}이(가) 삭제되었습니다'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showAppSnackBar(context, '${todo.title}이(가) 삭제되었습니다');
         }
       } catch (error) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('할 일 삭제에 실패했습니다: $error'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
+          showAppSnackBar(
+            context,
+            '할 일 삭제에 실패했습니다: $error',
+            kind: AppNoticeKind.error,
           );
         }
       }

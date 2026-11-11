@@ -16,7 +16,7 @@ export 'presentation/pages/calendar_page.dart';
 // Widgets
 export 'presentation/widgets/calendar_view.dart';
 export 'presentation/widgets/calendar_data_source.dart';
-export 'presentation/widgets/calendar_appointment_builder.dart';
+export 'presentation/widgets/schedule_appointment_block.dart';
 
 // Providers
 export 'presentation/providers/calendar_providers.dart';

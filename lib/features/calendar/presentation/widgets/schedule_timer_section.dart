@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -30,12 +31,16 @@ class ScheduleTimerSection extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.timer, size: 20, color: Colors.grey[600]),
+                Icon(
+                  Icons.timer,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   '타이머',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -47,7 +52,7 @@ class ScheduleTimerSection extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.mdAll,
                   ),
                   child: Text(
                     '${timers.length}',
@@ -69,7 +74,9 @@ class ScheduleTimerSection extends ConsumerWidget {
         padding: const EdgeInsets.only(left: 32),
         child: Text(
           '타이머를 불러올 수 없습니다',
-          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
@@ -84,45 +91,56 @@ class _TimerRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final statusColor = getTimerStatusColor(timer.status);
+    final statusColor = getTimerStatusColor(context, timer.status);
     final statusText = getTimerStatusText(timer.status);
 
     return Padding(
       padding: const EdgeInsets.only(left: 32, bottom: 8),
+      // 좁으면 시간과 상태를 제목 다음 줄로 꺾는다
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(getTimerStatusIcon(timer.status), size: 16, color: statusColor),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              timer.title ?? '제목 없음',
-              style: theme.textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            formatDuration(
-              displayElapsed(timer, ref.watch(serverClockProvider).now()),
-            ),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              statusText,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: statusColor,
-                fontSize: 10,
-              ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  timer.title ?? '제목 없음',
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  formatDuration(
+                    displayElapsed(timer, ref.watch(serverClockProvider).now()),
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: AppRadius.mdAll,
+                  ),
+                  child: Text(
+                    statusText,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: statusColor,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

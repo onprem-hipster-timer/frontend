@@ -1,10 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/widgets/scaffold_with_nav.dart' show ShellScope;
+import 'package:momeet/shared/widgets/shell_tab_list.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_settings_drawer.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view_selector.dart';
 
 import '../widgets/schedule_form_sheet.dart';
@@ -12,17 +16,51 @@ import '../widgets/schedule_form_sheet.dart';
 /// 캘린더 메인 페이지
 ///
 /// 캘린더 뷰와 네비게이션 컨트롤을 포함합니다.
-class CalendarPage extends ConsumerWidget {
+class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context, ref),
-      body: const CalendarViewWidget(
-        // TODO: 라우팅 연결
-        // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
-        // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
+      appBar: AppBar(
+        title: const Text('달력'),
+        centerTitle: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: ShellScope.compactOf(context) ? '화면 이동과 보기 설정' : '보기 설정',
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: '필터',
+            onPressed: () => _showFilterSheet(context),
+          ),
+        ],
+      ),
+      drawer: CalendarSettingsDrawer(
+        header: switch (ShellScope.maybeOf(context)) {
+          final scope? when scope.compact => ShellTabList(
+            current: scope.current,
+            onSelect: scope.onSelect,
+          ),
+          _ => null,
+        },
+      ),
+      // 이동 줄은 글자가 커지면 두 줄이 되므로 높이가 고정된 앱바 아래가 아니라 본문 위에 둔다
+      body: const Column(
+        children: [
+          _CalendarToolbar(),
+          Expanded(
+            child: CalendarViewWidget(
+              // TODO: 라우팅 연결
+              // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
+              // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -33,161 +71,14 @@ class CalendarPage extends ConsumerWidget {
     );
   }
 
-  /// AppBar 빌드
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(calendarSettingsProvider);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AppBar(
-      title: _buildTitle(context, ref, settings),
-      centerTitle: true,
-      leading: IconButton(
-        icon: const Icon(Icons.menu),
-        onPressed: () {
-          // TODO: 드로어 열기 또는 네비게이션
-          Scaffold.of(context).openDrawer();
-        },
-      ),
-      actions: [
-        // 오늘 버튼
-        IconButton(
-          icon: const Icon(Icons.today),
-          tooltip: '오늘',
-          onPressed: () {
-            ref.read(calendarSettingsProvider.notifier).goToToday();
-          },
-        ),
-        // 뷰 선택기 (컴팩트)
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: CalendarViewSelector(isCompact: true),
-        ),
-        // 필터 버튼
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          tooltip: '필터',
-          onPressed: () {
-            _showFilterSheet(context, ref);
-          },
-        ),
-      ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: _buildNavigationBar(context, ref, settings, colorScheme),
-      ),
-    );
-  }
-
-  /// 타이틀 빌드
-  Widget _buildTitle(
-    BuildContext context,
-    WidgetRef ref,
-    CalendarSettingsState settings,
-  ) {
-    final displayDate = settings.displayDate;
-    String titleText;
-
-    switch (settings.viewType) {
-      case CalendarViewType.day:
-        titleText = DateFormat('yyyy년 M월 d일 (E)', 'ko').format(displayDate);
-        break;
-      case CalendarViewType.week:
-        final weekStart = startOfWeek(displayDate, settings.firstDayOfWeek);
-        final endOfWeek = weekStart.add(const Duration(days: 6));
-        titleText =
-            '${DateFormat('M/d', 'ko').format(weekStart)} - ${DateFormat('M/d', 'ko').format(endOfWeek)}';
-        break;
-      case CalendarViewType.month:
-      case CalendarViewType.year:
-      case CalendarViewType.agenda:
-        titleText = DateFormat('yyyy년 M월', 'ko').format(displayDate);
-        break;
-    }
-
-    return GestureDetector(
-      onTap: () => _showDatePicker(context, ref),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(titleText),
-          const SizedBox(width: 4),
-          const Icon(Icons.arrow_drop_down, size: 20),
-        ],
-      ),
-    );
-  }
-
-  /// 네비게이션 바 빌드
-  Widget _buildNavigationBar(
-    BuildContext context,
-    WidgetRef ref,
-    CalendarSettingsState settings,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // 이전 버튼
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () {
-              ref.read(calendarSettingsProvider.notifier).goToPrevious();
-            },
-          ),
-          // 선택된 날짜 표시
-          Text(
-            DateFormat('M월 d일 (E)', 'ko').format(settings.selectedDate),
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          // 다음 버튼
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () {
-              ref.read(calendarSettingsProvider.notifier).goToNext();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 날짜 선택기 표시
-  Future<void> _showDatePicker(BuildContext context, WidgetRef ref) async {
-    final settings = ref.read(calendarSettingsProvider);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: settings.selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      locale: const Locale('ko', 'KR'),
-    );
-
-    if (picked != null) {
-      ref.read(calendarSettingsProvider.notifier).setSelectedDate(picked);
-      ref.read(calendarSettingsProvider.notifier).setDisplayDate(picked);
-    }
-  }
-
   /// 필터 시트 표시
-  void _showFilterSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.25,
-        maxChildSize: 0.75,
-        expand: false,
-        builder: (context, scrollController) {
-          return _FilterSheetContent(scrollController: scrollController);
-        },
-      ),
+  void _showFilterSheet(BuildContext context) {
+    showAppScrollableSheet<void>(
+      context,
+      initialSize: 0.5,
+      maxSize: 0.75,
+      builder: (context, scrollController) =>
+          _FilterSheetContent(scrollController: scrollController),
     );
   }
 }
@@ -201,23 +92,12 @@ class _FilterSheetContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(calendarFilterProvider);
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       children: [
-        // 핸들
-        Container(
-          margin: const EdgeInsets.only(top: 12),
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: colorScheme.outline.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
         // 헤더
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -267,5 +147,138 @@ class _FilterSheetContent extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+/// 지금 보는 기간의 이름. [compact]면 좁은 화면에 맞게 줄여 쓴다
+/// (주: '11월 8일 – 14일' / '11.8 – 14', 일: '2026년 11월 9일 (월)' / '11월 9일 (월)')
+String periodLabel(CalendarSettingsState settings, {bool compact = false}) {
+  final start = settings.displayDate;
+  switch (settings.viewType) {
+    case CalendarViewType.day:
+      return DateFormat(
+        compact ? 'M월 d일 (E)' : 'yyyy년 M월 d일 (E)',
+        'ko',
+      ).format(start);
+    case CalendarViewType.week:
+      final end = start.add(const Duration(days: DateTime.daysPerWeek - 1));
+      final sameMonth = end.month == start.month;
+      final (from, to) = compact
+          ? ('M.d', sameMonth ? 'd' : 'M.d')
+          : ('M월 d일', sameMonth ? 'd일' : 'M월 d일');
+      return '${DateFormat(from, 'ko').format(start)} – '
+          '${DateFormat(to, 'ko').format(end)}';
+    case CalendarViewType.month:
+    case CalendarViewType.agenda:
+      return DateFormat('yyyy년 M월', 'ko').format(start);
+    case CalendarViewType.year:
+      return DateFormat('yyyy년', 'ko').format(start);
+  }
+}
+
+/// 달력 도구 줄. 왼쪽은 기간 옮기기(오늘·이전·보는 기간·다음), 오른쪽은 보기 고르기.
+/// 보는 기간을 누르면 날짜를 골라 그날로 간다
+class _CalendarToolbar extends ConsumerWidget {
+  const _CalendarToolbar();
+
+  Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
+    final settings = ref.read(calendarSettingsProvider);
+    final picked = await showAppDatePicker(
+      context,
+      initial: settings.selectedDate,
+      first: DateTime(2000),
+      last: DateTime(2100),
+    );
+    if (picked != null) {
+      ref.read(calendarSettingsProvider.notifier).goToDate(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(calendarSettingsProvider);
+    final notifier = ref.read(calendarSettingsProvider.notifier);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 12, 8),
+      // 한 줄에 다 들어가지 않으면 보는 기간을 윗줄에 다 보이고 이동·보기 버튼을 아랫줄에 둔다
+      child: OverflowBar(
+        alignment: MainAxisAlignment.spaceBetween,
+        overflowAlignment: OverflowBarAlignment.start,
+        children: [
+          TextButton.icon(
+            onPressed: () => _pickDate(context, ref),
+            iconAlignment: IconAlignment.end,
+            icon: const Icon(Icons.arrow_drop_down),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            label: Text(
+              periodLabel(
+                settings,
+                compact: MediaQuery.sizeOf(context).width < 600,
+              ),
+              // 윗줄로 내려도 다 들어가지 않는 아주 좁은 화면은 줄을 바꾼다
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                tooltip: '이전',
+                visualDensity: VisualDensity.compact,
+                onPressed: notifier.goToPrevious,
+              ),
+              const _TodayButton(),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                tooltip: '다음',
+                visualDensity: VisualDensity.compact,
+                onPressed: notifier.goToNext,
+              ),
+              const CalendarViewSelector(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 오늘을 고르고 그 기간으로 가는 버튼. 지금 보는 기간에 오늘이 없으면 채워 눈에 띄게
+/// 그리고 '오늘로 가기'로 읽힌다
+class _TodayButton extends ConsumerWidget {
+  const _TodayButton();
+
+  static final _style = ButtonStyle(
+    visualDensity: VisualDensity.compact,
+    padding: WidgetStateProperty.all(
+      const EdgeInsets.symmetric(horizontal: 12),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(calendarSettingsProvider);
+    final todayInView = periodContains(
+      settings.viewType,
+      settings.displayDate,
+      DateTime.now(),
+      settings.firstDayOfWeek,
+    );
+    final goToToday = ref.read(calendarSettingsProvider.notifier).goToToday;
+    const label = Text('오늘', semanticsLabel: '오늘');
+    return todayInView
+        ? OutlinedButton(onPressed: goToToday, style: _style, child: label)
+        : FilledButton.tonal(
+            onPressed: goToToday,
+            style: _style,
+            child: const Text('오늘', semanticsLabel: '오늘로 가기'),
+          );
   }
 }

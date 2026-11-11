@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -8,12 +9,16 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dashboard.dart';
+import 'package:momeet/features/timer/presentation/widgets/digital_clock.dart';
+import 'package:momeet/features/timer/presentation/widgets/current_task_display.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_history_item.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -119,6 +124,7 @@ void main() {
     repository = serve(timers);
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: overrides(),
         child: const MaterialApp(home: TimerPage()),
       ),
@@ -381,7 +387,7 @@ void main() {
         Widget todoScreen() => Scaffold(
           body: ListView(
             children: [
-              TodoTreeTile(
+              EditableTodoTreeTile(
                 node: tree.nodeMap[todo.id]!,
                 tree: tree,
                 initiallyExpanded: true,
@@ -417,6 +423,7 @@ void main() {
         addTearDown(router.dispose);
         await tester.pumpWidget(
           ProviderScope(
+            retry: appRetry,
             overrides: [
               ...overrides(todos: [todo]),
               todoTimerAggregationsProvider.overrideWith((ref) async => {}),

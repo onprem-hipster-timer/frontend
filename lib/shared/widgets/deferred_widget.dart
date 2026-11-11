@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// Deferred import 라이브러리를 로드한 뒤 위젯을 빌드하는 헬퍼
 ///
@@ -76,7 +77,7 @@ class _DeferredWidgetState extends State<DeferredWidget> {
           }
           return widget.builder(context);
         }
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(body: AppLoading());
       },
     );
   }

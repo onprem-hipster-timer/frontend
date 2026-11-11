@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 
 /// 태그에 사용할 16가지 파스텔 색상 팔레트

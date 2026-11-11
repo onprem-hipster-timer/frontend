@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -9,11 +10,12 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_tree_tile.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/timer_fixtures.dart';
+import '../../../../helpers/start_timer_sheet_driver.dart';
 
 void main() {
   late DateTime now;
@@ -65,7 +67,10 @@ void main() {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: TodoTreeTile(node: tree.nodeMap[root.id]!, tree: tree),
+                  child: EditableTodoTreeTile(
+                    node: tree.nodeMap[root.id]!,
+                    tree: tree,
+                  ),
                 ),
               ],
             ),
@@ -79,6 +84,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
+        retry: appRetry,
         overrides: [
           timerControllerProvider.overrideWith(() => controller),
           activeTimersProvider.overrideWith((ref) async => active),
@@ -122,8 +128,7 @@ void main() {
   }
 
   Future<void> confirm(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(FilledButton, '시작'));
-    await tester.pumpAndSettle();
+    await tester.startFromSheet();
   }
 
   group('타이머 시작 버튼', () {
@@ -163,22 +168,17 @@ void main() {
       expect(find.text('새 작업 시작'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.widgetWithText(InputDecorator, '할 일 연결 (선택)'),
+          of: StartSheet.todoField,
           matching: find.text('보고서 쓰기'),
         ),
         findsOneWidget,
       );
       expect(
-        tester
-            .widget<TextField>(find.widgetWithText(TextField, '작업명'))
-            .controller
-            ?.text,
+        tester.widget<TextField>(StartSheet.titleField).controller?.text,
         '보고서 쓰기',
       );
       expect(
-        tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '25분'))
-            .selected,
+        tester.widget<ChoiceChip>(StartSheet.presetChip(25)).selected,
         isTrue,
       );
       await unmount(tester);
@@ -231,8 +231,7 @@ void main() {
       await pumpTile(tester, todo());
 
       await openDialog(tester);
-      await tester.tap(find.widgetWithText(TextButton, '취소'));
-      await tester.pumpAndSettle();
+      await tester.cancelStartSheet();
 
       expect(controller.starts, isEmpty);
       expect(location(), AppRoute.todo.path);
@@ -245,8 +244,7 @@ void main() {
       await pumpTile(tester, todo());
 
       await openDialog(tester);
-      await tester.tap(find.widgetWithText(FilledButton, '시작'));
-      await tester.pumpAndSettle();
+      await tester.startFromSheet();
 
       expect(
         tester

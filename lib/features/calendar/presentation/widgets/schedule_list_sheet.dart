@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/core/utils/color_utils.dart';
@@ -14,7 +15,6 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 일정을 선택하면 상세 페이지로 이동합니다.
 class ScheduleListSheet extends StatelessWidget {
   static final _headerDateFormat = DateFormat('M월 d일 (E)', 'ko');
-  static final _timeFormat = DateFormat('HH:mm');
 
   final DateTime date;
   final List<ScheduleRead> schedules;
@@ -30,84 +30,83 @@ class ScheduleListSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Material(
-      color: colorScheme.surface,
-      clipBehavior: Clip.antiAlias,
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(20),
-        topRight: Radius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 핸들
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // 날짜 헤더
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  _headerDateFormat.format(date),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 날짜 헤더
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+          // 한 줄에 다 들어가지 않으면 일정 개수를 날짜 아래로 내린다
+          child: OverflowBar(
+            spacing: 8,
+            overflowSpacing: 4,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 20,
+                    color: colorScheme.primary,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${schedules.length}개 일정',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      _headerDateFormat.format(date),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              Text(
+                '${schedules.length}개 일정',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
 
-          const Divider(height: 1),
+        const Divider(height: 1),
 
-          // 일정 목록
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: schedules.length,
-              separatorBuilder: (context, index) =>
-                  const Divider(height: 1, indent: 56),
-              itemBuilder: (context, index) {
-                final schedule = schedules[index];
-                return _buildScheduleTile(context, theme, schedule);
-              },
-            ),
+        // 일정 목록
+        Flexible(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: schedules.length,
+            separatorBuilder: (context, index) =>
+                const Divider(height: 1, indent: 56),
+            itemBuilder: (context, index) {
+              final schedule = schedules[index];
+              return _ScheduleTile(schedule: schedule);
+            },
           ),
+        ),
 
-          // 안전 영역
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-        ],
-      ),
+        // 안전 영역
+        SizedBox(height: MediaQuery.paddingOf(context).bottom + 16),
+      ],
     );
   }
+}
 
-  Widget _buildScheduleTile(
-    BuildContext context,
-    ThemeData theme,
-    ScheduleRead schedule,
-  ) {
+/// 일정 한 줄. 누르면 시트를 닫고 상세로 간다.
+class _ScheduleTile extends StatelessWidget {
+  static final _timeFormat = DateFormat('HH:mm');
+
+  const _ScheduleTile({required this.schedule});
+
+  final ScheduleRead schedule;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final hasTag = schedule.tags.isNotEmpty;
     final tagColor = hasTag
         ? HexColor.fromHex(schedule.tags.first.color)
@@ -127,7 +126,7 @@ class ScheduleListSheet extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           color: tagColor,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: AppRadius.xsAll,
         ),
       ),
       title: Text(
@@ -162,14 +161,13 @@ Future<void> showScheduleListSheet(
   DateTime date,
   List<ScheduleRead> schedules,
 ) {
-  return showModalBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    constraints: BoxConstraints(
-      maxHeight: MediaQuery.of(context).size.height * 0.5,
+  return showAppSheet<void>(
+    context,
+    builder: (context) => ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.5,
+      ),
+      child: ScheduleListSheet(date: date, schedules: schedules),
     ),
-    builder: (context) => ScheduleListSheet(date: date, schedules: schedules),
   );
 }

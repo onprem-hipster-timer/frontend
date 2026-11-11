@@ -1,11 +1,15 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
-import 'package:momeet/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_heading.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_switch_prompt.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_email_field.dart';
+import 'package:momeet/features/auth/presentation/widgets/auth_password_field.dart';
 import 'package:momeet/features/auth/presentation/widgets/google_sign_in_button.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -43,7 +47,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
   String? _errorMessage;
 
   /// Google을 연결할 기존 계정 이메일. 있으면 계정 연결 화면이다.
@@ -189,88 +192,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Logo or App Name
-              Text(
-                'momeet',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '일상을 계획하고 기록하세요',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              const AuthHeading(
+                title: 'momeet',
+                subtitle: '일상을 계획하고 기록하세요',
+                brand: true,
               ),
               const SizedBox(height: 48),
 
               Form(
                 key: _formKey,
-                child: Column(
-                  children: [
-                    if (_linkEmail case final linkEmail?)
-                      _AccountLinkNotice(email: linkEmail)
-                    else
-                      AuthTextField(
-                        controller: _emailController,
-                        label: '이메일',
-                        hint: 'example@email.com',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icons.email_outlined,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '이메일을 입력해주세요';
-                          }
-                          if (!value.contains('@')) {
-                            return '올바른 이메일 형식이 아닙니다';
-                          }
-                          return null;
-                        },
-                      ),
-                    const SizedBox(height: 16),
-                    AuthTextField(
-                      controller: _passwordController,
-                      label: '비밀번호',
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      prefixIcon: Icons.lock_outlined,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                      onSubmitted: (_) => _handleLogin(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return '비밀번호를 입력해주세요';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
+                child: _LoginFields(
+                  linkEmail: _linkEmail,
+                  email: _emailController,
+                  password: _passwordController,
+                  onSubmit: _handleLogin,
                 ),
               ),
               const SizedBox(height: 12),
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => context.push(AppRoute.forgotPassword.path),
-                  child: const Text('비밀번호를 잊으셨나요?'),
-                ),
-              ),
+              const _ForgotPasswordLink(),
               const SizedBox(height: 8),
 
               ErrorBanner(message: _errorMessage, onDismiss: _clearError),
@@ -279,8 +219,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 text: _linkEmail == null ? '로그인' : '로그인하고 Google 연결',
                 onPressed: _handleLogin,
                 isLoading: _isLoading,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
 
               if (_linkEmail == null)
@@ -289,23 +227,71 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
 
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('계정이 없으신가요?'),
-                  TextButton(
-                    onPressed: () => context.push(
-                      AppRoute.signup.path,
-                      extra: _emailController.text.trim(),
-                    ),
-                    child: const Text('회원가입'),
-                  ),
-                ],
+              AuthSwitchPrompt(
+                question: '계정이 없으신가요?',
+                actionLabel: '회원가입',
+                onPressed: () => context.push(
+                  AppRoute.signup.path,
+                  extra: _emailController.text.trim(),
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 비밀번호 재설정으로 가는 오른쪽 정렬 링크
+class _ForgotPasswordLink extends StatelessWidget {
+  const _ForgotPasswordLink();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: TextButton(
+        onPressed: () => context.push(AppRoute.forgotPassword.path),
+        child: const Text('비밀번호를 잊으셨나요?'),
+      ),
+    );
+  }
+}
+
+/// 이메일·비밀번호 칸. Google 계정 연결 중이면 이메일 칸 대신 연결 안내를 둔다
+class _LoginFields extends StatelessWidget {
+  const _LoginFields({
+    required this.linkEmail,
+    required this.email,
+    required this.password,
+    required this.onSubmit,
+  });
+
+  final String? linkEmail;
+  final TextEditingController email;
+  final TextEditingController password;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final linkEmail = this.linkEmail;
+    return Column(
+      children: [
+        if (linkEmail != null)
+          _AccountLinkNotice(email: linkEmail)
+        else
+          AuthEmailField(controller: email),
+        const SizedBox(height: 16),
+        AuthPasswordField(
+          controller: password,
+          label: '비밀번호',
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => onSubmit(),
+          validator: (value) =>
+              (value == null || value.isEmpty) ? '비밀번호를 입력해주세요' : null,
+        ),
+      ],
     );
   }
 }
@@ -324,7 +310,7 @@ class _AccountLinkNotice extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withAlpha(77),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.lgAll,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

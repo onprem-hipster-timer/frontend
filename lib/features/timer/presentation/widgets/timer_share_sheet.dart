@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -48,11 +49,8 @@ Future<void> showTimerShareSheet(
   BuildContext context, {
   required TimerRead timer,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (_) => _TimerShareSheet(timer: timer),
   );
 }
@@ -157,14 +155,14 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
       }
     } catch (error) {
       if (mounted) setState(() => _saving = false);
-      messenger.showSnackBar(SnackBar(content: Text('공유 설정 저장 실패: $error')));
+      messenger.showAppSnackBar('공유 설정 저장 실패: $error');
       return;
     }
     // 저장하는 사이 시트를 닫았으면 그 아래 화면은 닫지 않는다
     if (mounted && (ModalRoute.isCurrentOf(context) ?? false)) {
       Navigator.of(context).pop();
     }
-    messenger.showSnackBar(const SnackBar(content: Text('공유 설정을 저장했습니다')));
+    messenger.showAppSnackBar('공유 설정을 저장했습니다');
     await _reloadTimer(container, timerId);
   }
 
@@ -173,96 +171,100 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
     final theme = Theme.of(context);
 
     if (_loading) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(heightFactor: 1, child: CircularProgressIndicator()),
-      );
+      return const Padding(padding: EdgeInsets.all(32), child: AppLoading());
     }
 
     if (_loadError != null) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('공유 설정을 불러오지 못했습니다', style: theme.textTheme.bodyLarge),
-            const SizedBox(height: 16),
-            FilledButton.tonal(onPressed: _retry, child: const Text('다시 시도')),
-          ],
-        ),
-      );
+      return AppErrorState(title: '공유 설정을 불러오지 못했습니다', onRetry: _retry);
     }
 
     final friends = _level == VisibilityLevel.selected
         ? ref.watch(friendsProvider)
         : null;
 
-    // 키보드가 올라오면 시트를 그만큼 올려 굴리는 영역이 키보드 위에 남게 한다
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '공유 설정',
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '공유 설정',
+            style: theme.textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          RadioGroup<VisibilityLevel>(
+            groupValue: _level,
+            onChanged: (level) {
+              if (level != null) setState(() => _level = level);
+            },
+            child: Column(
+              children: [
+                for (final option in _options)
+                  RadioListTile<VisibilityLevel>(
+                    value: option.level,
+                    enabled: !_saving,
+                    title: Text(option.label),
+                    subtitle: Text(option.description),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            RadioGroup<VisibilityLevel>(
-              groupValue: _level,
-              onChanged: (level) {
-                if (level != null) setState(() => _level = level);
-              },
-              child: Column(
-                children: [
-                  for (final option in _options)
-                    RadioListTile<VisibilityLevel>(
-                      value: option.level,
-                      enabled: !_saving,
-                      title: Text(option.label),
-                      subtitle: Text(option.description),
-                    ),
-                ],
-              ),
+          ),
+          if (friends != null)
+            _FriendChecklist(
+              friends: friends,
+              selected: _friendIds,
+              enabled: !_saving,
+              onChanged: (id, checked) => setState(() {
+                if (checked) {
+                  _friendIds.add(id);
+                } else {
+                  _friendIds.remove(id);
+                }
+              }),
+              onRetry: () => ref.invalidate(friendsProvider),
             ),
-            if (friends != null) _friendList(friends),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: !_saving && _canSave(friends?.value)
-                  ? () => _save(friends?.value)
-                  : null,
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('저장'),
-            ),
-          ],
-        ),
+          const SizedBox(height: 16),
+          AppFormActionBar(
+            submitLabel: '저장',
+            onSubmit: _canSave(friends?.value)
+                ? () => _save(friends?.value)
+                : null,
+            busy: _saving,
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _friendList(AsyncValue<List<FriendRead>> friends) {
+/// 공유할 친구를 고르는 체크 목록
+class _FriendChecklist extends StatelessWidget {
+  const _FriendChecklist({
+    required this.friends,
+    required this.selected,
+    required this.enabled,
+    required this.onChanged,
+    required this.onRetry,
+  });
+
+  final AsyncValue<List<FriendRead>> friends;
+  final Set<String> selected;
+  final bool enabled;
+  final void Function(String userId, bool checked) onChanged;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: friends.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(child: CircularProgressIndicator()),
-        ),
+        loading: () =>
+            const Padding(padding: EdgeInsets.all(16), child: AppLoading()),
         error: (error, _) => ListTile(
           title: const Text('친구 목록을 불러오지 못했습니다'),
-          trailing: TextButton(
-            onPressed: () => ref.invalidate(friendsProvider),
-            child: const Text('다시 시도'),
-          ),
+          trailing: TextButton(onPressed: onRetry, child: const Text('다시 시도')),
         ),
         data: (friends) => friends.isEmpty
             ? const ListTile(title: Text('친구가 없습니다'))
@@ -270,15 +272,10 @@ class _TimerShareSheetState extends ConsumerState<_TimerShareSheet> {
                 children: [
                   for (final friend in friends)
                     CheckboxListTile(
-                      value: _friendIds.contains(friend.userId),
-                      enabled: !_saving,
-                      onChanged: (checked) => setState(() {
-                        if (checked ?? false) {
-                          _friendIds.add(friend.userId);
-                        } else {
-                          _friendIds.remove(friend.userId);
-                        }
-                      }),
+                      value: selected.contains(friend.userId),
+                      enabled: enabled,
+                      onChanged: (checked) =>
+                          onChanged(friend.userId, checked ?? false),
                       title: Text(
                         friend.displayName ?? '이름 없는 친구',
                         maxLines: 1,

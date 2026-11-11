@@ -1,5 +1,5 @@
 // 홈 화면
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/widgets/app_scaffold.dart';
 
 class HomePage extends StatelessWidget {
@@ -7,12 +7,12 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
+    return const AppScaffold(
       title: 'MoMeet',
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Text(
               'MoMeet 프로젝트 구조 설정 완료! 🎉',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),

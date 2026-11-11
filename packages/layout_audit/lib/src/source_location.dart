@@ -27,9 +27,12 @@ class SourceLocation {
 }
 
 class _Creator {
-  const _Creator(this.location);
+  const _Creator(this.location, [this.widget]);
 
   final SourceLocation? location;
+
+  /// 위치를 구할 때 렌더 객체를 만든 위젯. 다시 그려 바뀌면 위치를 다시 구한다.
+  final Widget? widget;
 }
 
 final Expando<_Creator> _cache = Expando<_Creator>('layout_audit creator');
@@ -40,8 +43,16 @@ final Expando<_Creator> _cache = Expando<_Creator>('layout_audit creator');
 SourceLocation? sourceLocationOf(RenderObject object) =>
     _creatorOf(object).location;
 
-_Creator _creatorOf(RenderObject object) =>
-    _cache[object] ??= _resolveCreator(object);
+_Creator _creatorOf(RenderObject object) {
+  final cached = _cache[object];
+  final creator = object.debugCreator;
+  if (cached != null &&
+      (creator is! DebugCreator ||
+          identical(cached.widget, creator.element.widget))) {
+    return cached;
+  }
+  return _cache[object] = _resolveCreator(object);
+}
 
 _Creator _resolveCreator(RenderObject object) {
   final creator = object.debugCreator;
@@ -52,20 +63,21 @@ _Creator _resolveCreator(RenderObject object) {
   final delegate = InspectorSerializationDelegate(
     service: WidgetInspectorService.instance,
   );
-  _Creator? firstTest;
+  final widget = creator.element.widget;
+  SourceLocation? firstTest;
   for (final element in creator.element.debugGetDiagnosticChain()) {
     final location = _localLocation(element, delegate);
     if (location == null) {
       continue;
     }
     if (location.file.startsWith('lib/')) {
-      return _Creator(location);
+      return _Creator(location, widget);
     }
     if (firstTest == null && location.file.startsWith('test/')) {
-      firstTest = _Creator(location);
+      firstTest = location;
     }
   }
-  return firstTest ?? const _Creator(null);
+  return _Creator(firstTest, widget);
 }
 
 SourceLocation? _localLocation(

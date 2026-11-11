@@ -51,6 +51,9 @@ abstract class CalendarSettingsState with _$CalendarSettingsState {
 
     /// 주말 색상 강조 여부
     @Default(true) bool highlightWeekends,
+
+    /// 월 보기 칸 하나에 보일 일정 수. null이면 칸 높이에 맞춰 정한다
+    int? monthEventsPerDay,
   }) = _CalendarSettingsState;
 
   /// 기본 초기 상태 팩토리

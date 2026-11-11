@@ -1,8 +1,10 @@
-// ignore_for_file: deprecated_member_use
+import 'package:analyzer/analysis_rule/analysis_rule.dart';
+import 'package:analyzer/analysis_rule/rule_context.dart';
+import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/error/error.dart' show ErrorSeverity;
-import 'package:analyzer/error/listener.dart';
-import 'package:custom_lint_builder/custom_lint_builder.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/error/error.dart';
+import 'package:momeet_lints/src/paths.dart';
 
 /// `AppRoute.xxx.path`를 문자열 보간/결합으로 경로를 조립하는 것을 금지합니다.
 ///
@@ -18,19 +20,20 @@ import 'package:custom_lint_builder/custom_lint_builder.dart';
 /// // GOOD
 /// context.goNamed(AppRoute.todoGroupDetail.name, pathParameters: {'groupId': id});
 /// ```
-class NoManualRoutePath extends DartLintRule {
-  const NoManualRoutePath() : super(code: _code);
+class NoManualRoutePath extends AnalysisRule {
+  NoManualRoutePath()
+      : super(name: code.lowerCaseName, description: code.problemMessage);
 
-  static const _code = LintCode(
-    name: 'no_manual_route_path',
-    problemMessage: 'AppRoute.path를 직접 결합하지 마세요. '
+  static const code = LintCode(
+    'no_manual_route_path',
+    'AppRoute.path를 직접 결합하지 마세요. '
         'context.goNamed() / pushNamed()를 사용하세요. '
         '경로 직접 결합은 이중 슬래시(//) 버그의 원인이 됩니다.',
-    errorSeverity: ErrorSeverity.WARNING,
+    severity: DiagnosticSeverity.WARNING,
   );
 
-  /// router.dart 자체(리다이렉트 로직)는 예외 처리
-  static final _routerFilePattern = RegExp(r'[/\\]router\.dart$');
+  /// 라우터(router.dart)와 리다이렉트 로직(auth_redirect.dart)은 예외 처리
+  static final _routerFilePattern = RegExp(r'/(router|auth_redirect)\.dart$');
 
   /// 테스트 파일은 예외 처리
   ///
@@ -39,54 +42,65 @@ class NoManualRoutePath extends DartLintRule {
   static final _testFilePattern = RegExp(r'_test\.dart$');
 
   @override
-  void run(
-    CustomLintResolver resolver,
-    ErrorReporter reporter,
-    CustomLintContext context,
+  DiagnosticCode get diagnosticCode => code;
+
+  @override
+  void registerNodeProcessors(
+    RuleVisitorRegistry registry,
+    RuleContext context,
   ) {
-    // router.dart 내부의 리다이렉트 로직은 허용
-    if (_routerFilePattern.hasMatch(resolver.path)) return;
+    final visitor = _Visitor(this, context);
+    registry
+      ..addStringInterpolation(this, visitor)
+      ..addBinaryExpression(this, visitor);
+  }
+}
 
-    // 테스트 파일은 허용 (expected value 문자열 등)
-    if (_testFilePattern.hasMatch(resolver.path)) return;
+class _Visitor extends SimpleAstVisitor<void> {
+  _Visitor(this.rule, this.context);
 
-    // 문자열 보간 내 AppRoute.xxx.path 사용 감지
-    // 예: '${AppRoute.todo.path}/something'
-    context.registry.addStringInterpolation((node) {
-      for (final element in node.elements) {
-        if (element is InterpolationExpression) {
-          if (_isAppRoutePathAccess(element.expression)) {
-            reporter.atNode(node, _code);
-            return;
-          }
-        }
+  final AnalysisRule rule;
+  final RuleContext context;
+
+  bool get _skipped {
+    final path = currentPath(context);
+    return NoManualRoutePath._routerFilePattern.hasMatch(path) ||
+        NoManualRoutePath._testFilePattern.hasMatch(path);
+  }
+
+  /// 문자열 보간 내 AppRoute.xxx.path 사용. 예: '${AppRoute.todo.path}/something'
+  @override
+  void visitStringInterpolation(StringInterpolation node) {
+    if (_skipped) return;
+    for (final element in node.elements) {
+      if (element is InterpolationExpression &&
+          _isAppRoutePathAccess(element.expression)) {
+        rule.reportAtNode(node);
+        return;
       }
-    });
+    }
+  }
 
-    // 문자열 + 연산자로 결합하는 경우 감지
-    // 예: AppRoute.todo.path + '/something'
-    context.registry.addBinaryExpression((node) {
-      if (node.operator.lexeme != '+') return;
-
-      if (_isAppRoutePathAccess(node.leftOperand) ||
-          _isAppRoutePathAccess(node.rightOperand)) {
-        reporter.atNode(node, _code);
-      }
-    });
+  /// + 연산자 결합. 예: AppRoute.todo.path + '/something'
+  @override
+  void visitBinaryExpression(BinaryExpression node) {
+    if (_skipped) return;
+    if (node.operator.lexeme != '+') return;
+    if (_isAppRoutePathAccess(node.leftOperand) ||
+        _isAppRoutePathAccess(node.rightOperand)) {
+      rule.reportAtNode(node);
+    }
   }
 
   /// 표현식이 `AppRoute.xxx.path` 패턴인지 확인
   bool _isAppRoutePathAccess(Expression expr) {
-    // PropertyAccess: AppRoute.todo.path
     if (expr is PropertyAccess &&
         expr.propertyName.name == 'path' &&
         expr.target != null) {
       final target = expr.target!;
-      // PrefixedIdentifier: AppRoute.todo
       if (target is PrefixedIdentifier && target.prefix.name == 'AppRoute') {
         return true;
       }
-      // PropertyAccess chain
       if (target is PropertyAccess) {
         final deepTarget = target.target;
         if (deepTarget is SimpleIdentifier && deepTarget.name == 'AppRoute') {
@@ -94,13 +108,9 @@ class NoManualRoutePath extends DartLintRule {
         }
       }
     }
-
-    // PrefixedIdentifier 직접 케이스 (드물지만)
     if (expr is PrefixedIdentifier && expr.identifier.name == 'path') {
-      final prefix = expr.prefix;
-      if (prefix.name == 'AppRoute') return true;
+      return expr.prefix.name == 'AppRoute';
     }
-
     return false;
   }
 }
