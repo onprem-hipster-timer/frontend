@@ -15,7 +15,7 @@ import 'package:momeet_lints/src/widget_types.dart';
 /// 작은 조각까지 잡지 않도록 노드 [minNodes]개 이상인 트리만 본다.
 class DuplicateWidgetTree extends AnalysisRule {
   DuplicateWidgetTree()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'duplicate_widget_tree',
@@ -113,10 +113,7 @@ class _Visitor extends SimpleAstVisitor<void> {
       for (final member in members) {
         final other = members.firstWhere((m) => m != member);
         final line = lineInfo.getLocation(other.offset).lineNumber;
-        rule.reportAtNode(
-          member.constructorName,
-          arguments: ['$line'],
-        );
+        rule.reportAtNode(member.constructorName, arguments: ['$line']);
       }
       reported.addAll(members);
     }

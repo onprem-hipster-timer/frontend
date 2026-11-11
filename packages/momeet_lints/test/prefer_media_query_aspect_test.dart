@@ -53,12 +53,24 @@ double b(BuildContext c) => MediaQuery.of(c).padding.bottom;
 Size? d(BuildContext c) => MediaQuery.maybeOf(c)?.size;
 ''';
     await assertDiagnostics(content, [
-      lintAt(this, content, 'MediaQuery.of(c).size',
-          messageContainsAll: ['sizeOf']),
-      lintAt(this, content, 'MediaQuery.of(c).padding',
-          messageContainsAll: ['paddingOf']),
-      lintAt(this, content, 'MediaQuery.maybeOf(c)?.size',
-          messageContainsAll: ['maybeSizeOf']),
+      lintAt(
+        this,
+        content,
+        'MediaQuery.of(c).size',
+        messageContainsAll: ['sizeOf'],
+      ),
+      lintAt(
+        this,
+        content,
+        'MediaQuery.of(c).padding',
+        messageContainsAll: ['paddingOf'],
+      ),
+      lintAt(
+        this,
+        content,
+        'MediaQuery.maybeOf(c)?.size',
+        messageContainsAll: ['maybeSizeOf'],
+      ),
     ]);
   }
 

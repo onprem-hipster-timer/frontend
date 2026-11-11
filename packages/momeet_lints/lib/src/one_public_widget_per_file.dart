@@ -13,7 +13,7 @@ import 'package:momeet_lints/src/widget_types.dart';
 /// 함께 쓰는 조각은 비공개(`_Foo`)로 두거나 자기 파일로 옮긴다.
 class OnePublicWidgetPerFile extends AnalysisRule {
   OnePublicWidgetPerFile()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'one_public_widget_per_file',

@@ -9,7 +9,7 @@ import 'package:momeet_lints/src/paths.dart';
 /// `lib/shared/ui/`(디자인 시스템)는 기능 코드·상태 관리·라우팅에 기대지 않는다.
 class SharedUiImportBoundary extends AnalysisRule {
   SharedUiImportBoundary()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'shared_ui_import_boundary',
@@ -58,16 +58,12 @@ class _Visitor extends SimpleAstVisitor<void> {
   final RuleContext context;
 
   @override
-  void visitImportDirective(ImportDirective node) => _check(
-        node,
-        node.libraryImport?.importedLibrary?.uri.toString(),
-      );
+  void visitImportDirective(ImportDirective node) =>
+      _check(node, node.libraryImport?.importedLibrary?.uri.toString());
 
   @override
-  void visitExportDirective(ExportDirective node) => _check(
-        node,
-        node.libraryExport?.exportedLibrary?.uri.toString(),
-      );
+  void visitExportDirective(ExportDirective node) =>
+      _check(node, node.libraryExport?.exportedLibrary?.uri.toString());
 
   void _check(NamespaceDirective node, String? resolved) {
     if (!packageRelativePath(context).startsWith('lib/shared/ui/')) return;

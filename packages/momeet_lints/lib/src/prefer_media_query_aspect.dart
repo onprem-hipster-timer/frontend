@@ -10,7 +10,7 @@ import 'package:analyzer/error/error.dart';
 /// `of`는 MediaQueryData 전체를 구독해 키보드가 뜨는 것만으로도 위젯을 다시 그린다.
 class PreferMediaQueryAspect extends AnalysisRule {
   PreferMediaQueryAspect()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'prefer_media_query_aspect',

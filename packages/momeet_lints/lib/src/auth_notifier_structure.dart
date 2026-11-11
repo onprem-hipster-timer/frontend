@@ -30,7 +30,7 @@ const _actionMethodNames = {
 /// AuthNotifier의 액션 메서드에서 AuthStatus.loading()을 사용하는 것을 금지합니다.
 class AuthActionNoLoadingState extends AnalysisRule {
   AuthActionNoLoadingState()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'auth_action_no_loading_state',
@@ -76,7 +76,7 @@ class _LoadingVisitor extends SimpleAstVisitor<void> {
 /// AuthErrorType.classify를 사용하도록 강제합니다.
 class AuthCatchRequireClassify extends AnalysisRule {
   AuthCatchRequireClassify()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'auth_catch_require_classify',

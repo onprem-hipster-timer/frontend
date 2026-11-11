@@ -13,7 +13,7 @@ import 'package:momeet_lints/src/paths.dart';
 /// 새 종류가 필요하면 `lib/shared/ui/`에 `showApp…` 함수를 두고 그것을 부른다.
 class NoRawFlutterOverlays extends AnalysisRule {
   NoRawFlutterOverlays()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'no_raw_flutter_overlays',

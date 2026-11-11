@@ -13,7 +13,7 @@ import 'package:momeet_lints/src/paths.dart';
 /// 투명과 흰·검정·회색은 임의의 배경 위 대비나 중립 표시처럼 테마와 무관하게 쓰이므로 허용한다.
 class NoHardcodedColors extends AnalysisRule {
   NoHardcodedColors()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'no_hardcoded_colors',
@@ -23,13 +23,7 @@ class NoHardcodedColors extends AnalysisRule {
   );
 
   /// 테마와 무관하게 써도 되는 이름
-  static const allowed = {
-    'transparent',
-    'white',
-    'black',
-    'black87',
-    'grey',
-  };
+  static const allowed = {'transparent', 'white', 'black', 'black87', 'grey'};
 
   @override
   DiagnosticCode get diagnosticCode => code;

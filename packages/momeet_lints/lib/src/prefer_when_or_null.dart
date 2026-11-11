@@ -8,7 +8,7 @@ import 'package:analyzer/error/error.dart';
 /// `loading`과 `error`가 null만 돌려주는 `when`은 `whenOrNull(data: …)`로 쓴다.
 class PreferWhenOrNull extends AnalysisRule {
   PreferWhenOrNull()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'prefer_when_or_null',

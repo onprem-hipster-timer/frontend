@@ -22,7 +22,7 @@ import 'package:momeet_lints/src/paths.dart';
 /// ```
 class NoManualRoutePath extends AnalysisRule {
   NoManualRoutePath()
-      : super(name: code.lowerCaseName, description: code.problemMessage);
+    : super(name: code.lowerCaseName, description: code.problemMessage);
 
   static const code = LintCode(
     'no_manual_route_path',
