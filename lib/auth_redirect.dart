@@ -31,9 +31,12 @@ final _kratosFlowId = RegExp(
 /// Google 로그인에서 돌아올 때 Kratos가 붙이는 code 모양
 final _kratosReturnCode = RegExp(r'^[A-Za-z0-9_-]{16,256}$');
 
+/// 메일로 보내는 인증 코드 모양 (6자리 숫자)
+final _emailCode = RegExp(r'^[0-9]{6}$');
+
 /// Kratos가 보내는 링크(메일 인증, Google 로그인 복귀)의 값이 올바른 모양인지 (위조 링크 차단)
 ///
-/// - 메일 인증 링크는 Kratos를 거쳐 `/verification?flow=<플로우 ID>`로 들어온다.
+/// - 메일 인증 링크는 `/verification?flow=<플로우 ID>&code=<6자리 코드>`로 들어온다.
 /// - Google 로그인은 `/login?code=<코드>`로 돌아온다.
 /// - Google 이메일로 이미 가입된 계정이 있으면 `/login?flow=<플로우 ID>`로 돌아온다(계정 연결).
 ///
@@ -42,7 +45,10 @@ final _kratosReturnCode = RegExp(r'^[A-Za-z0-9_-]{16,256}$');
 bool isValidAuthLink(String path, Map<String, String> queryParameters) {
   if (path == AppRoute.verification.path) {
     final flow = queryParameters['flow'];
-    return flow == null || _kratosFlowId.hasMatch(flow);
+    final code = queryParameters['code'];
+    if (flow == null) return code == null;
+    return _kratosFlowId.hasMatch(flow) &&
+        (code == null || _emailCode.hasMatch(code));
   }
   if (path == AppRoute.login.path) {
     final code = queryParameters['code'];
