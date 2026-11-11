@@ -98,6 +98,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 위젯 크기·구조 린트: 위젯·State 클래스 200줄, `build` 80줄, `lib/` 파일 400줄 상한, Widget을 돌려주는 helper 금지, `lib/shared/ui/`의 기능·Riverpod·go_router import 금지. 기존 코드도 모두 이 규칙을 지킨다
 - 구조 린트를 더한다: Flutter의 시트·다이얼로그·알림·날짜 고르기는 `lib/shared/ui/`의 `showApp…` 함수로만 연다, 파일당 공개 위젯 하나, 한 파일 안의 같은 모양 위젯 트리 금지, 테마 밖 Material 이름 색 금지, `ref`를 쓰지 않는 Consumer 위젯 금지, `MediaQuery` 개별 접근자, `whenOrNull`
 
+#### Auth
+- Kratos 세션 토큰을 `flutter_secure_storage`(Android Keystore, iOS Keychain, 웹 WebCrypto 암호화)에 둔다. 앱 시작 때 한 번 읽어 두고 로그아웃하면 지운다. 백엔드 JWT는 지금처럼 메모리에만 둔다
+  - 이전 버전이 SharedPreferences에 둔 토큰은 첫 실행에 보안 저장소로 옮기고 지운다. 업데이트 뒤에도 로그인이 유지된다
+  - 보안 저장소를 읽지 못하면 미인증으로 시작한다
+  - `web/index.html`은 토큰 대신 앱이 함께 두는 세션 표시(`flutter.momeet.has_session`)로 첫 화면을 정한다
+- Android 자동 백업·기기 이전에서 보안 저장소를 뺀다(`res/xml/backup_rules.xml`, `res/xml/data_extraction_rules.xml`)
+
 ### Added
 
 #### Todo
