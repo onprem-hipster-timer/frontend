@@ -1,4 +1,6 @@
 // Dio HTTP 클라이언트 프로바이더 with AuthInterceptor, TimezoneInterceptor, ServerClockInterceptor
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/network/timezone_interceptor.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/my_profile_provider.dart';
 
 /// 요청에 백엔드용 JWT를 붙이고, 401이면 JWT를 한 번 새로 받아 재시도하는 Interceptor
 ///
@@ -15,6 +18,8 @@ import 'package:momeet/core/providers/auth_provider.dart';
 ///   세션이 끝났으면 AuthNotifier가 미인증으로 바꾸고 요청은 401로 끝난다.
 /// - 동시 갱신은 AuthNotifier가 한 번으로 합치므로 대기열(Queued) 방식을 쓰지 않는다.
 ///   대기열 방식에서 onError 안의 재시도가 다시 실패하면 onError끼리 기다리며 멈춘다.
+/// - 탈퇴 대기 중이라 거절(403 `account_deletion_pending`)되면 프로필을 다시 받아
+///   라우터가 탈퇴 대기 화면으로 보내게 한다.
 class AuthInterceptor extends Interceptor {
   final Ref ref;
 
@@ -78,6 +83,11 @@ class AuthInterceptor extends Interceptor {
       debugPrint('   Status: ${err.response?.statusCode}');
     }
 
+    if (_isDeletionPending(err.response)) {
+      unawaited(ref.read(myProfileProvider.notifier).reload());
+      return handler.next(err);
+    }
+
     final options = err.requestOptions;
     if (err.response?.statusCode != 401 || options.extra[_retriedKey] == true) {
       return handler.next(err);
@@ -94,6 +104,13 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
   }
+}
+
+bool _isDeletionPending(Response<dynamic>? response) {
+  final data = response?.data;
+  return response?.statusCode == 403 &&
+      data is Map &&
+      data['detail'] == 'account_deletion_pending';
 }
 
 /// Dio 클라이언트 프로바이더
