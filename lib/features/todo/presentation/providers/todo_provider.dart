@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod/experimental/mutation.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -16,12 +15,10 @@ import '../utils/todo_tree_builder.dart';
 /// Todo 목록 조회 Provider
 ///
 /// 선택적으로 그룹 ID로 필터링할 수 있습니다.
-/// 로그인한 사용자 ID가 바뀌면 다시 받아, 이 목록에서 파생한 provider도 새 계정 것이 된다.
 final todosProvider = FutureProvider.family<List<TodoRead>, String?>((
   ref,
   groupId,
 ) async {
-  ref.watch(currentUserProvider.select((user) => user?.id));
   final api = ref.watch(todosApiProvider);
 
   final response = await api.readTodosV1TodosGet(

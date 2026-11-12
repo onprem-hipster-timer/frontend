@@ -157,11 +157,9 @@ Future<TodoStatistics> _calculateTodoStatisticsFromList(Ref ref) async {
 ///
 /// 백엔드 통계 API에서 태그별 사용 통계를 가져옵니다.
 /// API 실패 시 [AsyncValue.error]로 전파됩니다.
-/// 로그인한 사용자 ID가 바뀌면 다시 받습니다.
 final tagUsageStatisticsProvider = FutureProvider<TagUsageStatistics>((
   ref,
 ) async {
-  ref.watch(currentUserProvider.select((user) => user?.id));
   final api = ref.watch(todosApiProvider);
   final stats = await api.getTodoStatsV1TodosStatsGet();
 

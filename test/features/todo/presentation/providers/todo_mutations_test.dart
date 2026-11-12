@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -34,10 +33,7 @@ void main() {
 
   ProviderContainer makeContainer() {
     final container = ProviderContainer(
-      overrides: [
-        currentUserProvider.overrideWithValue(null),
-        todosApiProvider.overrideWithValue(api),
-      ],
+      overrides: [todosApiProvider.overrideWithValue(api)],
     );
     addTearDown(container.dispose);
     return container;

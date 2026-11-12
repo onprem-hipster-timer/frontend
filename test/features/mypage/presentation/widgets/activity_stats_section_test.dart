@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -35,10 +34,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         retry: appRetry,
-        overrides: [
-          currentUserProvider.overrideWithValue(null),
-          todosApiProvider.overrideWithValue(todos),
-        ],
+        overrides: [todosApiProvider.overrideWithValue(todos)],
         child: const MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(child: ActivityStatsSection()),
