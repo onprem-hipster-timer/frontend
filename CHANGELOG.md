@@ -158,6 +158,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Config
 - `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
 
+#### Web
+- 웹 응답 헤더(`vercel.json`): `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`
+  - `index.html`의 인라인 스크립트와 `onclick`을 `web/landing/*.js`, `web/flutter_bootstrap.js`로 옮긴다
+
 #### Tests
 - 레이아웃 점검 테스트 라이브러리(`packages/layout_audit`): 모든 위젯 테스트 끝에 화면에 남은 글자·이미지의 겹침(가린 비율·가리는 위젯 포함), RenderFlex 넘침, 잘라냄, 화면 이탈, 말줄임을 찾아 보고한다
   - 기본은 경고만 남기고 통과한다. `--dart-define=LAYOUT_AUDIT_STRICT=true`면 warning이 있을 때 실패한다
