@@ -323,7 +323,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_google');
+      expect(await harness.storedSessionToken(), 'ory_st_google');
       expect(harness.prefs.getString(googleSignInCodeKey), isNull);
     });
 
@@ -362,7 +362,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
-      expect(harness.prefs.getString(sessionTokenKey), isNull);
+      expect(await harness.storedSessionToken(), isNull);
     });
   });
 
@@ -411,7 +411,7 @@ void main() {
           'password': 'Owner-Pass-123',
         }),
       ).called(1);
-      expect(harness.prefs.getString(sessionTokenKey), 'ory_st_linked');
+      expect(await harness.storedSessionToken(), 'ory_st_linked');
     });
 
     testWidgets('인증 전 계정이면 서버가 준 플로우와 연결할 계정 이메일로 인증 화면을 연다', (tester) async {

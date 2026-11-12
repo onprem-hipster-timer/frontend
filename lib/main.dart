@@ -6,10 +6,12 @@ import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:momeet/app.dart';
+import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
 void main() async {
@@ -29,6 +31,15 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
 
   // ============================================================
+  // 세션 토큰 프리로드 (보안 저장소는 비동기라 먼저 읽어 둔다)
+  // ============================================================
+  final sessionTokenStore = SessionTokenStore(
+    const FlutterSecureStorage(),
+    prefs,
+  );
+  await sessionTokenStore.load();
+
+  // ============================================================
   // IANA Timezone DB 초기화
   // ============================================================
   tz.initializeTimeZones();
@@ -36,7 +47,10 @@ void main() async {
   runApp(
     ProviderScope(
       retry: appRetry,
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        sessionTokenStoreProvider.overrideWithValue(sessionTokenStore),
+      ],
       child: const MoMeetApp(),
     ),
   );
