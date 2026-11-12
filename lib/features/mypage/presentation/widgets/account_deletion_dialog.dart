@@ -64,7 +64,7 @@ class _AccountDeletionDialogState extends ConsumerState<AccountDeletionDialog> {
             const _Notice('신청하면 바로 로그아웃되고, 다른 사람에게 내 정보가 보이지 않습니다.'),
             const _Notice('3일 안에 다시 로그인하면 탈퇴를 취소할 수 있습니다.'),
             const _Notice(
-              '3일이 지나면 계정과 모든 데이터(일정·${Terms.todo}·타이머·태그·친구·약속)가 '
+              '3일이 지나면 계정과 모든 데이터(일정·${Terms.todo}·${Terms.timer}·태그·친구·약속)가 '
               '지워지며 되돌릴 수 없습니다.',
             ),
             const _Notice('지워진 데이터는 백업에 최대 70일 동안 남을 수 있습니다.'),

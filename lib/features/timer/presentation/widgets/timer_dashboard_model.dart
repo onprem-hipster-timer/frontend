@@ -5,6 +5,7 @@ import 'package:momeet/features/timer/presentation/providers/break_timer_provide
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 대시보드가 그릴 값. 활성 타이머·휴식·내 타이머 목록과 서버 시각에서 한 번에 구한다
 class TimerDashboardModel {
@@ -90,7 +91,7 @@ class TimerDashboardModel {
 
   /// 다이얼 아래 상태 문구
   String? get caption => onBreak
-      ? (breakOver ? '휴식 종료' : null)
+      ? (breakOver ? '${Terms.rest} 종료' : null)
       : timeUp
       ? '시간 종료'
       : activeTimer?.status == TimerStatus.paused

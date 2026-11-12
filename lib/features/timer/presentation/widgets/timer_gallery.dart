@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// [timers]를 갤러리의 쪽 순서로. 만든 순(오래된 것부터)이라 재개·일시정지로 쪽이 옮겨 가지 않는다
 List<TimerRead> galleryOrder(List<TimerRead> timers) =>
@@ -162,14 +163,14 @@ class _TimerGalleryState extends State<TimerGallery> {
                 if (widget.arrows)
                   IconButton(
                     icon: const Icon(Icons.chevron_left),
-                    tooltip: '이전 타이머',
+                    tooltip: '이전 ${Terms.timer}',
                     onPressed: index > 0 ? () => _go(index - 1) : null,
                   ),
                 _PageDots(count: timers.length, current: index),
                 if (widget.arrows)
                   IconButton(
                     icon: const Icon(Icons.chevron_right),
-                    tooltip: '다음 타이머',
+                    tooltip: '다음 ${Terms.timer}',
                     onPressed: index < timers.length - 1
                         ? () => _go(index + 1)
                         : null,
@@ -196,7 +197,7 @@ class _PageDots extends StatelessWidget {
     return Semantics(
       key: const ValueKey('timer-gallery-indicator'),
       container: true,
-      label: '타이머 ${current + 1}/$count',
+      label: '${Terms.timer} ${current + 1}/$count',
       child: ExcludeSemantics(
         child: Row(
           mainAxisSize: MainAxisSize.min,

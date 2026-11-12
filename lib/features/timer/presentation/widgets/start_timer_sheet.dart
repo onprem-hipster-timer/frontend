@@ -55,7 +55,7 @@ class StartTimerInput {
 
 /// 타이머를 시작하지 못한 [failed] 할 일을 알리는 문구
 String startFailureMessage(List<TodoRead> failed) =>
-    '타이머 시작 실패: ${failed.map((todo) => todo.title).join(', ')}';
+    '${Terms.timer} 시작 실패: ${failed.map((todo) => todo.title).join(', ')}';
 
 /// 새 작업 시작 시트. 집중 시간을 [initialDuration]으로, 할 일을 [initialTodo]로 채워 연다. 닫으면 null
 ///
@@ -155,7 +155,7 @@ class _StartTimerSheetState extends ConsumerState<_StartTimerSheet> {
         : _todos.firstOrNull?.title.trim() ?? '';
     Navigator.of(context).pop(
       StartTimerInput(
-        title: title.isEmpty ? '새 작업' : title,
+        title: title.isEmpty ? '새 ${Terms.timer}' : title,
         todos: _todos,
         duration: duration,
       ),
@@ -174,7 +174,7 @@ class _StartTimerSheetState extends ConsumerState<_StartTimerSheet> {
         final duration =
             exact ?? (minutes == null ? null : Duration(minutes: minutes));
         return AppFormSheet(
-          title: '새 작업 시작',
+          title: '새 ${Terms.timer}',
           actions: AppFormActionBar(
             submitLabel: '시작',
             onSubmit: duration == null ? null : () => _submit(duration),
@@ -184,10 +184,10 @@ class _StartTimerSheetState extends ConsumerState<_StartTimerSheet> {
               controller: _title,
               enabled: !several,
               decoration: InputDecoration(
-                labelText: '작업 제목',
-                hintText: '어떤 작업을 시작할까요?',
+                labelText: '${Terms.timer} 제목',
+                hintText: '무엇에 ${Terms.focus}할까요?',
                 helperText: several
-                    ? '${Terms.todo}마다 그 제목으로 타이머를 하나씩 시작합니다'
+                    ? '${Terms.todo}마다 그 제목으로 ${Terms.timer.withJosa('을', '를')} 하나씩 시작합니다'
                     : null,
                 helperMaxLines: 2,
               ),
@@ -246,7 +246,7 @@ class _FocusDurationField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppSectionHeader('집중 시간'),
+        const AppSectionHeader('${Terms.focus} 시간'),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,

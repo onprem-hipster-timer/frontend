@@ -8,6 +8,7 @@ import 'package:momeet/features/todo/presentation/providers/timer_providers.dart
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// [todo]를 연결해 새 타이머를 시작하는 버튼. Todo에 활성 타이머가 있으면 표시하지 않는다
 ///
@@ -52,7 +53,9 @@ class TodoTimerStartButton extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     if (error != null || failed.isNotEmpty) {
       messenger.showAppSnackBar(
-        error != null ? '타이머 시작 실패: $error' : startFailureMessage(failed),
+        error != null
+            ? '${Terms.timer} 시작 실패: $error'
+            : startFailureMessage(failed),
         kind: AppNoticeKind.error,
       );
       return;
@@ -60,8 +63,8 @@ class TodoTimerStartButton extends ConsumerWidget {
     // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
     final router = GoRouter.of(context);
     messenger.showAppSnackBar(
-      '타이머를 시작했습니다',
-      actionLabel: '타이머 보기',
+      '${Terms.timer.withJosa('을', '를')} 시작했습니다',
+      actionLabel: '${Terms.timer} 보기',
       onAction: () => router.go(AppRoute.timer.path),
     );
   }
@@ -81,7 +84,7 @@ class TodoTimerStartButton extends ConsumerWidget {
 
     return IconButton(
       icon: const Icon(Icons.play_circle_outline),
-      tooltip: '타이머 시작',
+      tooltip: '${Terms.timer} 시작',
       visualDensity: VisualDensity.compact,
       onPressed: starting ? null : () => _start(context, ref),
     );

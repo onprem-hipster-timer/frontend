@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 타이머 제어 버튼
 ///
@@ -44,7 +45,7 @@ class TimerControlButton extends StatelessWidget {
     if (activeTimer == null && breakSelected) {
       return FloatingActionButton(
         onPressed: onStartBreak,
-        tooltip: '휴식 시작',
+        tooltip: '${Terms.rest} 시작',
         backgroundColor: theme.colorScheme.tertiary,
         child: Icon(
           Icons.coffee,
@@ -86,11 +87,12 @@ class TimerControlButton extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        FloatingActionButton.small(
+        _SmallButton(
           onPressed: onStop,
-          tooltip: '완료',
-          backgroundColor: theme.colorScheme.error,
-          child: Icon(Icons.check, color: theme.colorScheme.onError),
+          tooltip: Terms.complete,
+          icon: Icons.check,
+          background: theme.colorScheme.error,
+          foreground: theme.colorScheme.onError,
         ),
         _gap,
         FloatingActionButton(
@@ -101,14 +103,42 @@ class TimerControlButton extends StatelessWidget {
         ),
         if (onBreak != null) ...[
           _gap,
-          FloatingActionButton.small(
+          _SmallButton(
             onPressed: onBreak,
-            tooltip: '휴식',
-            backgroundColor: theme.colorScheme.tertiary,
-            child: Icon(Icons.coffee, color: theme.colorScheme.onTertiary),
+            tooltip: Terms.rest,
+            icon: Icons.coffee,
+            background: theme.colorScheme.tertiary,
+            foreground: theme.colorScheme.onTertiary,
           ),
         ],
       ],
+    );
+  }
+}
+
+/// 주 버튼 양옆의 작은 버튼(완료·휴식)
+class _SmallButton extends StatelessWidget {
+  const _SmallButton({
+    required this.onPressed,
+    required this.tooltip,
+    required this.icon,
+    required this.background,
+    required this.foreground,
+  });
+
+  final VoidCallback onPressed;
+  final String tooltip;
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.small(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      backgroundColor: background,
+      child: Icon(icon, color: foreground),
     );
   }
 }

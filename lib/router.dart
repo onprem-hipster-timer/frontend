@@ -27,6 +27,7 @@ import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/auth_redirect.dart';
 import 'package:momeet/core/landing/static_landing_page.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 export 'package:momeet/app_route.dart';
 
@@ -253,8 +254,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final timerId = state.uri.queryParameters['id'];
                       return Scaffold(
-                        appBar: AppBar(title: const Text('타이머 상세')),
-                        body: Center(child: Text('타이머 상세 페이지 (ID: $timerId)')),
+                        appBar: AppBar(title: const Text('${Terms.timer} 상세')),
+                        body: Center(
+                          child: Text('${Terms.timer} 상세 페이지 (ID: $timerId)'),
+                        ),
                       );
                     },
                   ),

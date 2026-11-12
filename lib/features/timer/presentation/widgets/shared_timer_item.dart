@@ -6,6 +6,7 @@ import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_status_chip.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 친구가 공유한 타이머 항목. 보기만 하고 버튼을 두지 않습니다
 ///
@@ -44,7 +45,7 @@ class SharedTimerItem extends ConsumerWidget {
           child: Icon(style.icon, color: style.fg),
         ),
         title: Text(
-          timer.title ?? timer.todo?.title ?? '알 수 없는 작업',
+          timer.title ?? timer.todo?.title ?? '제목 없는 ${Terms.timer}',
           style: const TextStyle(fontWeight: FontWeight.w500),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,

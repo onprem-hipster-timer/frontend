@@ -8,6 +8,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 part 'timer_controller.g.dart';
 
@@ -54,7 +55,7 @@ class TimerController extends _$TimerController {
         TimerCreate(
           todoId: relatedTodoId,
           scheduleId: scheduleId,
-          title: title ?? '새 작업',
+          title: title ?? '새 ${Terms.timer}',
           allocatedDuration:
               allocatedDurationSeconds ?? defaultFocusDuration.inSeconds,
         ),
@@ -110,7 +111,9 @@ class TimerController extends _$TimerController {
   Future<void> stopTimer({String? timerId}) async {
     final id = timerId ?? _active()?.id;
     if (id == null) {
-      final error = Exception('정지할 활성 타이머가 없습니다');
+      final error = Exception(
+        '${Terms.complete}할 활성 ${Terms.timer.withJosa('이', '가')} 없습니다',
+      );
       state = AsyncValue.error(error, StackTrace.current);
       throw error;
     }
@@ -138,7 +141,9 @@ class TimerController extends _$TimerController {
     final id = timerId ?? active?.id;
     if (id == null ||
         (timerId == null && active?.status != TimerStatus.running)) {
-      final error = Exception('일시정지할 실행 중인 타이머가 없습니다');
+      final error = Exception(
+        '일시정지할 실행 중인 ${Terms.timer.withJosa('이', '가')} 없습니다',
+      );
       state = AsyncValue.error(error, StackTrace.current);
       throw error;
     }
@@ -162,7 +167,9 @@ class TimerController extends _$TimerController {
     final id = timerId ?? active?.id;
     if (id == null ||
         (timerId == null && active?.status != TimerStatus.paused)) {
-      final error = Exception('재개할 일시정지된 타이머가 없습니다');
+      final error = Exception(
+        '재개할 일시정지된 ${Terms.timer.withJosa('이', '가')} 없습니다',
+      );
       state = AsyncValue.error(error, StackTrace.current);
       throw error;
     }
@@ -186,7 +193,7 @@ class TimerController extends _$TimerController {
         ? ref.read(myActiveTimersProvider.notifier).timer(timerId)
         : null;
     if (timer == null) {
-      final error = Exception('연장할 타이머가 없습니다');
+      final error = Exception('연장할 ${Terms.timer.withJosa('이', '가')} 없습니다');
       state = AsyncValue.error(error, StackTrace.current);
       throw error;
     }
