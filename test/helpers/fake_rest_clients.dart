@@ -170,6 +170,9 @@ class FakeTagsClient extends Fake implements TagsClient {
   }
 }
 
+/// 할 일 그룹 없이 만든 할 일이 들어가는 가짜 기본 그룹 id
+const defaultTodoGroupId = 'group-default';
+
 /// 메모리에 할 일을 들고 있는 [TodosClient]. 받은 요청을 기록한다.
 class FakeTodosClient extends Fake implements TodosClient {
   FakeTodosClient([List<TodoRead> todos = const []]) : todos = [...todos];
@@ -199,12 +202,12 @@ class FakeTodosClient extends Fake implements TodosClient {
   @override
   Future<List<TodoRead>> readTodosV1TodosGet({
     List<String>? tagIds,
-    List<String>? groupIds,
+    List<String>? todoGroupIds,
     String? timezone,
     ResourceScope? scope = ResourceScope.mine,
     RequestOptions? options,
   }) async {
-    readGroupIds.add(groupIds);
+    readGroupIds.add(todoGroupIds);
     final failures = readFailures;
     if (readError != null && (failures == null || failures > 0)) {
       if (failures != null) readFailures = failures - 1;
@@ -212,7 +215,8 @@ class FakeTodosClient extends Fake implements TodosClient {
     }
     return [
       for (final todo in todos)
-        if (groupIds == null || groupIds.contains(todo.tagGroupId)) todo,
+        if (todoGroupIds == null || todoGroupIds.contains(todo.todoGroupId))
+          todo,
     ];
   }
 
@@ -227,7 +231,7 @@ class FakeTodosClient extends Fake implements TodosClient {
     final todo = TodoRead(
       id: 'todo-new-${created.length}',
       title: body.title,
-      tagGroupId: body.tagGroupId,
+      todoGroupId: body.todoGroupId ?? defaultTodoGroupId,
       parentId: body.parentId,
       description: body.description,
       deadline: body.deadline,
@@ -253,7 +257,7 @@ class FakeTodosClient extends Fake implements TodosClient {
         : TodoRead(
             id: todoId,
             title: '',
-            tagGroupId: '',
+            todoGroupId: '',
             status: TodoStatus.unscheduled,
             createdAt: _at,
           );
@@ -293,7 +297,7 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   final created = <ScheduleCreate>[];
   final updated = <(String, ScheduleUpdate, RequestOptions?)>[];
   final deleted = <(String, SourceTodoPolicy?, LinkedTimerPolicy?)>[];
-  final convertedToTodo = <(String, String)>[];
+  final convertedToTodo = <(String, String?)>[];
 
   /// 설정하면 조회가 이 오류로 실패한다.
   Object? readError;
@@ -387,11 +391,11 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   @override
   Future<void> createTodoFromScheduleV1SchedulesScheduleIdTodoPost({
     required String scheduleId,
-    required String tagGroupId,
+    String? todoGroupId,
     RequestOptions? options,
   }) async {
     _failWrite();
-    convertedToTodo.add((scheduleId, tagGroupId));
+    convertedToTodo.add((scheduleId, todoGroupId));
   }
 }
 

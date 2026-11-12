@@ -10,7 +10,6 @@ ScheduleRead makeSchedule({
   DateTime? createdAt,
   List<TagRead> tags = const [],
   String? description,
-  String? tagGroupId,
   String? sourceTodoId,
   String? recurrenceRule,
 }) {
@@ -24,7 +23,6 @@ ScheduleRead makeSchedule({
     createdAt: createdAt ?? now,
     tags: tags,
     description: description,
-    tagGroupId: tagGroupId,
     sourceTodoId: sourceTodoId,
     recurrenceRule: recurrenceRule,
   );

@@ -141,8 +141,8 @@ List<_Section> _sections(
   );
   return [
     for (final group in groups)
-      section(group.name, (todo) => todo.tagGroupId == group.id),
-    section('기타', (todo) => !known.contains(todo.tagGroupId)),
+      section(group.name, (todo) => todo.todoGroupId == group.id),
+    section('기타', (todo) => !known.contains(todo.todoGroupId)),
   ].where((section) => section.rows.isNotEmpty).toList();
 }
 

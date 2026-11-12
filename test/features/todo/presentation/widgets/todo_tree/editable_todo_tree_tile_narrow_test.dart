@@ -23,7 +23,7 @@ Future<void> _pump(
     TodoRead(
       id: 'todo-1',
       title: _title,
-      tagGroupId: 'group-1',
+      todoGroupId: 'group-1',
       status: TodoStatus.unscheduled,
       createdAt: DateTime.utc(2026, 1, 1),
     ),

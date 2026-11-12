@@ -35,16 +35,14 @@ void main() {
   late FakeTagsClient tags;
   late GoRouter router;
 
-  ScheduleRead schedule({String? tagGroupId, String? sourceTodoId}) =>
-      makeSchedule(
-        id: 'schedule-1',
-        title: '팀 회의',
-        description: '주간 회의',
-        tagGroupId: tagGroupId,
-        sourceTodoId: sourceTodoId,
-        startTime: DateTime.now().toUtc(),
-        endTime: DateTime.now().add(const Duration(hours: 1)).toUtc(),
-      );
+  ScheduleRead schedule({String? sourceTodoId}) => makeSchedule(
+    id: 'schedule-1',
+    title: '팀 회의',
+    description: '주간 회의',
+    sourceTodoId: sourceTodoId,
+    startTime: DateTime.now().toUtc(),
+    endTime: DateTime.now().add(const Duration(hours: 1)).toUtc(),
+  );
 
   setUp(() {
     tags = FakeTagsClient([
@@ -126,34 +124,16 @@ void main() {
   });
 
   group('할 일로 바꾸기', () {
-    testWidgets('그룹이 있으면 그 그룹으로 바로 바꾸고 알린다', (tester) async {
-      await pumpDetail(tester, schedule(tagGroupId: 'group-work'));
+    testWidgets('그룹을 묻지 않고 바로 바꾸고(기본 할 일 그룹) 알린다', (tester) async {
+      await pumpDetail(tester, schedule());
       await tapVisible(tester, find.text(_convertLabel));
 
-      expect(schedules.convertedToTodo, [('schedule-1', 'group-work')]);
+      expect(schedules.convertedToTodo, [('schedule-1', null)]);
       expect(find.text('$_convertLabel되었습니다'), findsOneWidget);
     });
 
-    testWidgets('그룹이 없으면 그룹을 고르게 하고 고른 그룹으로 바꾼다', (tester) async {
-      await pumpDetail(tester, schedule());
-      await tapVisible(tester, find.text(_convertLabel));
-
-      expect(find.text('그룹 고르기'), findsOneWidget);
-      await tapVisible(tester, find.text('학습'));
-      expect(schedules.convertedToTodo, [('schedule-1', 'group-study')]);
-    });
-
-    testWidgets('그룹 고르기를 그만두면 바꾸지 않는다', (tester) async {
-      await pumpDetail(tester, schedule());
-      await tapVisible(tester, find.text(_convertLabel));
-      await tapVisible(tester, find.byType(BackButton));
-
-      expect(schedules.convertedToTodo, isEmpty);
-      expect(find.text('일정 상세'), findsOneWidget);
-    });
-
     testWidgets('실패하면 알린다', (tester) async {
-      await pumpDetail(tester, schedule(tagGroupId: 'group-work'));
+      await pumpDetail(tester, schedule());
       schedules.writeError = Exception('서버 오류');
       await tapVisible(tester, find.text(_convertLabel));
 
@@ -203,13 +183,10 @@ void main() {
     });
   });
 
-  testWidgets('연결된 할 일 보기는 그 할 일 그룹 화면으로 간다', (tester) async {
-    await pumpDetail(
-      tester,
-      schedule(tagGroupId: 'group-work', sourceTodoId: 'todo-1'),
-    );
+  testWidgets('연결된 할 일 보기는 할 일 탭으로 간다', (tester) async {
+    await pumpDetail(tester, schedule(sourceTodoId: 'todo-1'));
     await tapVisible(tester, find.text(_linkedTodoLabel));
 
-    expect(location(), '/todo/group-work');
+    expect(location(), '/todo');
   });
 }

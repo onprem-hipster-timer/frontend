@@ -30,7 +30,7 @@ class _TodosClient extends FakeTodosClient {
 
   @override
   Future<TodoStats> getTodoStatsV1TodosStatsGet({
-    String? groupId,
+    String? todoGroupId,
     RequestOptions? options,
   }) async {
     statsReads++;
@@ -49,7 +49,7 @@ TodoRead _todo(String id, {TodoStatus status = TodoStatus.unscheduled}) =>
     TodoRead(
       id: id,
       title: id,
-      tagGroupId: 'g1',
+      todoGroupId: 'g1',
       status: status,
       createdAt: DateTime.utc(2024, 1, 1),
     );

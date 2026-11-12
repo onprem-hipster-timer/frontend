@@ -86,7 +86,7 @@ Future<void> createTodoFromForm(
         .create(
           TodoCreate(
             title: values.title,
-            tagGroupId: tagGroupId,
+            todoGroupId: tagGroupId,
             status: todoStatusForRequest(values.status),
             description: values.description.isEmpty ? null : values.description,
             tagIds: values.tagIds,

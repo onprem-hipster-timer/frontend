@@ -29,7 +29,7 @@ void main() {
     id: id,
     title: title,
     description: title,
-    tagGroupId: 'group-work',
+    todoGroupId: 'group-work',
     parentId: parentId,
     status: TodoStatus.unscheduled,
     createdAt: DateTime.utc(2026, 1, 1),

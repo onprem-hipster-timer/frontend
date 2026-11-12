@@ -21,7 +21,7 @@ void main() {
   }) => TodoRead(
     id: id,
     title: title,
-    tagGroupId: group,
+    todoGroupId: group,
     parentId: parentId,
     status: status,
     createdAt: DateTime.utc(2026, 1, 1),

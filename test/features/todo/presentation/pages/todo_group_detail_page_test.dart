@@ -21,7 +21,7 @@ void main() {
       TodoRead(
         id: id,
         title: title,
-        tagGroupId: group ?? 'group-work',
+        todoGroupId: group ?? 'group-work',
         parentId: parentId,
         status: TodoStatus.unscheduled,
         createdAt: DateTime.utc(2026, 1, 1),
@@ -116,7 +116,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
 
-    expect(todos.created.single.tagGroupId, 'group-work');
+    expect(todos.created.single.todoGroupId, 'group-work');
     expect(find.text('정리'), findsOneWidget);
   });
 
@@ -129,7 +129,7 @@ void main() {
   });
 
   testWidgets('할 일이 없으면 안내를 보이고 첫 할 일 추가하기는 이 그룹으로 만든다', (tester) async {
-    todos.todos.removeWhere((t) => t.tagGroupId == 'group-work');
+    todos.todos.removeWhere((t) => t.todoGroupId == 'group-work');
     await pumpPage(tester);
 
     expect(find.text('이 그룹에는 할 일이 없습니다'), findsOneWidget);
@@ -137,7 +137,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
 
-    expect(todos.created.single.tagGroupId, 'group-work');
+    expect(todos.created.single.todoGroupId, 'group-work');
   });
 
   testWidgets('할 일을 불러오지 못하면 오류를 보이고 대시보드로 갈 수 있다', (tester) async {

@@ -42,7 +42,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   );
   late var _selectedStatus = widget.todo?.status ?? TodoStatus.unscheduled;
   late var _selectedTagGroupId =
-      widget.todo?.tagGroupId ?? widget.defaultTagGroupId ?? '';
+      widget.todo?.todoGroupId ?? widget.defaultTagGroupId ?? '';
   late final _selectedTagIds = {...?widget.todo?.tags.map((tag) => tag.id)};
   late var _selectedDeadline = widget.todo?.deadline;
 

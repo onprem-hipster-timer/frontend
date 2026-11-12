@@ -87,7 +87,7 @@ void main() {
       final body = todos.created.single;
       expect(body.title, '보고서 쓰기');
       expect(body.description, '초안');
-      expect(body.tagGroupId, 'group-study');
+      expect(body.todoGroupId, 'group-study');
       expect(body.tagIds, ['tag-study']);
       expect(body.parentId, 'parent-1');
       expect(body.status, isNull);
@@ -102,7 +102,7 @@ void main() {
       await tester.enterText(field('할 일 제목'), '회의');
       await tapVisible(tester, find.text('생성'));
 
-      expect(todos.created.single.tagGroupId, 'group-work');
+      expect(todos.created.single.todoGroupId, 'group-work');
     });
 
     testWidgets('완료를 고르면 완료 상태로 보낸다', (tester) async {
@@ -134,7 +134,7 @@ void main() {
       await tapVisible(tester, find.text('생성'));
 
       expect(tags.createdGroups.single.name, '기본 그룹');
-      expect(todos.created.single.tagGroupId, 'group-new-1');
+      expect(todos.created.single.todoGroupId, 'group-new-1');
     });
 
     testWidgets('보내기에 실패하면 시트를 두고 오류를 알린다', (tester) async {
@@ -173,7 +173,7 @@ void main() {
       id: 'todo-1',
       title: '보고서',
       description: description,
-      tagGroupId: 'group-study',
+      todoGroupId: 'group-study',
       status: status,
       deadline: deadline,
       tags: [study],

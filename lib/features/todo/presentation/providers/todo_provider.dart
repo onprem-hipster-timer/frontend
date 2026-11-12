@@ -22,7 +22,7 @@ final todosProvider = FutureProvider.family<List<TodoRead>, String?>((
   final api = ref.watch(todosApiProvider);
 
   final response = await api.readTodosV1TodosGet(
-    groupIds: groupId != null ? [groupId] : null,
+    todoGroupIds: groupId != null ? [groupId] : null,
     tagIds: null,
   );
 

@@ -30,7 +30,7 @@ void main() {
   }) => TodoRead(
     id: id,
     title: title,
-    tagGroupId: 'group-work',
+    todoGroupId: 'group-work',
     parentId: parentId,
     status: status,
     tags: tags,

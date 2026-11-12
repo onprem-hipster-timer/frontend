@@ -10,7 +10,6 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_in
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
-import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -89,32 +88,19 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     );
   }
 
-  /// tagGroupId가 없으면 사용자에게 선택하게 한 뒤 TODO로 변환
+  /// 일정을 할 일로 바꾼다. 할 일은 기본 할 일 그룹에 들어간다
   Future<void> _handleConvertToTodo(
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
   ) async {
-    String? tagGroupId = schedule.tagGroupId;
-
-    if (tagGroupId == null) {
-      final selected = await Navigator.of(context).push<TagGroupRead>(
-        MaterialPageRoute(builder: (_) => const TagGroupSelectorPage()),
-      );
-      if (selected == null || !context.mounted) return;
-      tagGroupId = selected.id;
-    }
-
-    // 클로저 내부에선 재할당 가능한 지역변수의 null 승격이 풀리므로, 승격된 값을
-    // final 지역변수로 캡처해 전달한다.
-    final resolvedGroupId = tagGroupId;
     setState(() => _pendingAction = _PendingAction.convert);
     try {
       await convertToTodoMutation.run(
         ref,
         (tsx) => tsx
             .get(scheduleMutationsProvider.notifier)
-            .convertToTodo(schedule.id, resolvedGroupId),
+            .convertToTodo(schedule.id),
       );
 
       if (context.mounted) {
@@ -138,15 +124,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   }
 
   void _navigateToLinkedTodo(BuildContext context, ScheduleRead schedule) {
-    final tagGroupId = schedule.tagGroupId;
-    if (tagGroupId != null) {
-      context.goNamed(
-        AppRoute.todoGroupDetail.name,
-        pathParameters: {'groupId': tagGroupId},
-      );
-    } else {
-      context.goNamed(AppRoute.todo.name);
-    }
+    context.goNamed(AppRoute.todo.name);
   }
 
   Future<void> _handleDelete(
