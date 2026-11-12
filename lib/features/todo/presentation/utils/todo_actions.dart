@@ -7,6 +7,7 @@ import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 할 일 관련 공통 액션 유틸리티
 class TodoActions {
@@ -26,12 +27,12 @@ class TodoActions {
   ) async {
     final hasChildren = node.children.isNotEmpty;
     final childWarning = hasChildren
-        ? '\n하위 할 일 ${node.children.length}개도 함께 삭제됩니다.'
+        ? '\n하위 ${Terms.todo} ${node.children.length}개도 함께 삭제됩니다.'
         : '';
 
     final confirmed = await showAppConfirmDialog(
       context,
-      title: '할 일 삭제',
+      title: '${Terms.todo} 삭제',
       content:
           '${todo.title}을(를) 삭제하시겠습니까?$childWarning\n'
           '이 작업은 되돌릴 수 없습니다.',
@@ -72,7 +73,7 @@ class TodoActions {
         if (context.mounted) {
           showAppSnackBar(
             context,
-            '할 일 삭제에 실패했습니다: $error',
+            '${Terms.todo} 삭제에 실패했습니다: $error',
             kind: AppNoticeKind.error,
           );
         }

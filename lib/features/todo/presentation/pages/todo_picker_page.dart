@@ -6,6 +6,7 @@ import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_ti
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 할 일을 고르는 화면을 연다. 고르지 않고 닫으면 null.
 ///
@@ -69,7 +70,7 @@ class _TodoPickerPageState extends ConsumerState<TodoPickerPage> {
     final todos = ref.watch(allTodosProvider);
     final groups = ref.watch(tagGroupsProvider).value ?? const [];
     return Scaffold(
-      appBar: AppBar(title: const Text('할 일 고르기')),
+      appBar: AppBar(title: const Text('${Terms.todo} 고르기')),
       body: Column(
         children: [
           Padding(
@@ -88,7 +89,7 @@ class _TodoPickerPageState extends ConsumerState<TodoPickerPage> {
             child: todos.when(
               loading: () => const AppLoading(),
               error: (error, _) => AppErrorState(
-                title: '할 일을 불러오지 못했습니다',
+                title: '${Terms.todo.withJosa('을', '를')} 불러오지 못했습니다',
                 error: error,
                 onRetry: () => ref.invalidate(todosProvider),
               ),

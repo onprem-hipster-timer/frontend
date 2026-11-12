@@ -12,6 +12,7 @@ import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_root_dr
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// Todo 그룹 상세 페이지
 ///
@@ -45,7 +46,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
                 loading: () => const SliverFillRemaining(child: AppLoading()),
                 error: (error, stack) => SliverFillRemaining(
                   child: AppErrorState(
-                    title: '할 일을 불러오지 못했습니다',
+                    title: '${Terms.todo.withJosa('을', '를')} 불러오지 못했습니다',
                     error: error,
                     secondaryLabel: '대시보드로',
                     onSecondary: () => context.go(AppRoute.todo.path),
@@ -68,7 +69,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateTodoDialog(context),
-        tooltip: '이 그룹에 할 일 추가',
+        tooltip: '이 그룹에 ${Terms.todo} 추가',
         child: const Icon(Icons.add_task),
       ),
     );
@@ -109,7 +110,7 @@ class _GroupAppBar extends ConsumerWidget {
               foregroundColor: groupColor,
               leading: const _BackToDashboard(),
               title: Text(
-                group?.name ?? '할 일 그룹',
+                group?.name ?? '${Terms.todo} 그룹',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -262,9 +263,9 @@ class _TodoList extends StatelessWidget {
       return SliverFillRemaining(
         child: AppEmptyState(
           icon: Icons.task_alt_rounded,
-          title: '이 그룹에는 할 일이 없습니다',
-          message: '첫 번째 할 일을 추가해서\n체계적으로 작업을 관리해보세요!',
-          actionLabel: '첫 할 일 추가하기',
+          title: '이 그룹에는 ${Terms.todo.withJosa('이', '가')} 없습니다',
+          message: '첫 번째 ${Terms.todo.withJosa('을', '를')} 추가해서\n체계적으로 관리해보세요!',
+          actionLabel: '첫 ${Terms.todo} 추가하기',
           actionIcon: Icons.add_task,
           onAction: () =>
               showTodoFormSheet(context, defaultTagGroupId: groupId),
@@ -280,7 +281,7 @@ class _TodoList extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.all(16),
               child: const AppHintCard(
-                message: '이 그룹의 할 일들입니다. 드래그로 순서를 바꿀 수 있습니다.',
+                message: '이 그룹의 ${Terms.todo}들입니다. 드래그로 순서를 바꿀 수 있습니다.',
               ),
             );
           }

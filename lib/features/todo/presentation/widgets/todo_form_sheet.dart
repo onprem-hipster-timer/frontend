@@ -7,6 +7,7 @@ import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_st
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_picker.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tag_group.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_form_submit.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// Todo 생성/수정 폼 시트
 ///
@@ -59,7 +60,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         : ref.watch(createTodoMutation).isPending;
 
     return AppFormSheet(
-      title: _isEditMode ? '할 일 수정' : '새 할 일 만들기',
+      title: _isEditMode ? '${Terms.todo} 수정' : '새 ${Terms.todo} 만들기',
       formKey: _formKey,
       actions: AppFormActionBar(
         submitLabel: _isEditMode ? '수정' : '생성',
@@ -70,14 +71,14 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         TextFormField(
           controller: _titleController,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '할 일 제목',
-            hintText: '할 일을 입력하세요',
-            prefixIcon: Icon(Icons.task_alt),
+          decoration: InputDecoration(
+            labelText: '${Terms.todo} 제목',
+            hintText: '${Terms.todo.withJosa('을', '를')} 입력하세요',
+            prefixIcon: const Icon(Icons.task_alt),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return '할 일 제목을 입력해주세요';
+              return '${Terms.todo} 제목을 입력해주세요';
             }
             if (value.trim().length > 200) {
               return '제목은 200자 이하로 입력해주세요';
@@ -206,7 +207,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       if (mounted) {
         navigator.pop();
         scaffoldMessenger.showAppSnackBar(
-          _isEditMode ? '할 일이 수정되었습니다' : '할 일이 생성되었습니다',
+          _isEditMode
+              ? '${Terms.todo.withJosa('이', '가')} 수정되었습니다'
+              : '${Terms.todo.withJosa('이', '가')} 생성되었습니다',
           kind: AppNoticeKind.success,
         );
       }
@@ -214,7 +217,9 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       if (mounted) {
         showAppSnackBar(
           context,
-          _isEditMode ? '할 일 수정에 실패했습니다: $error' : '할 일 생성에 실패했습니다: $error',
+          _isEditMode
+              ? '${Terms.todo} 수정에 실패했습니다: $error'
+              : '${Terms.todo} 생성에 실패했습니다: $error',
           kind: AppNoticeKind.error,
         );
       }

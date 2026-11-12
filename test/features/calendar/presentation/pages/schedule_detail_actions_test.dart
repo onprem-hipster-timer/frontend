@@ -17,6 +17,13 @@ import 'package:momeet/shared/providers/api_providers.dart';
 import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/schedule_fixtures.dart';
 import '../../../../helpers/sheet_host.dart';
+import 'package:momeet/shared/domain/terms.dart';
+
+/// '할 일로 변환' 버튼
+final _convertLabel = '${Terms.todo.withJosa('으로', '로')} 변환';
+
+/// '연결된 할 일 보기' 버튼
+final _linkedTodoLabel = '연결된 ${Terms.todo} 보기';
 
 /// 일정 상세의 수정·할 일로 바꾸기·삭제·연결된 할 일로 가기
 void main() {
@@ -121,15 +128,15 @@ void main() {
   group('할 일로 바꾸기', () {
     testWidgets('그룹이 있으면 그 그룹으로 바로 바꾸고 알린다', (tester) async {
       await pumpDetail(tester, schedule(tagGroupId: 'group-work'));
-      await tapVisible(tester, find.text('TODO로 변환'));
+      await tapVisible(tester, find.text(_convertLabel));
 
       expect(schedules.convertedToTodo, [('schedule-1', 'group-work')]);
-      expect(find.text('TODO로 변환되었습니다'), findsOneWidget);
+      expect(find.text('$_convertLabel되었습니다'), findsOneWidget);
     });
 
     testWidgets('그룹이 없으면 그룹을 고르게 하고 고른 그룹으로 바꾼다', (tester) async {
       await pumpDetail(tester, schedule());
-      await tapVisible(tester, find.text('TODO로 변환'));
+      await tapVisible(tester, find.text(_convertLabel));
 
       expect(find.text('그룹 고르기'), findsOneWidget);
       await tapVisible(tester, find.text('학습'));
@@ -138,7 +145,7 @@ void main() {
 
     testWidgets('그룹 고르기를 그만두면 바꾸지 않는다', (tester) async {
       await pumpDetail(tester, schedule());
-      await tapVisible(tester, find.text('TODO로 변환'));
+      await tapVisible(tester, find.text(_convertLabel));
       await tapVisible(tester, find.byType(BackButton));
 
       expect(schedules.convertedToTodo, isEmpty);
@@ -148,7 +155,7 @@ void main() {
     testWidgets('실패하면 알린다', (tester) async {
       await pumpDetail(tester, schedule(tagGroupId: 'group-work'));
       schedules.writeError = Exception('서버 오류');
-      await tapVisible(tester, find.text('TODO로 변환'));
+      await tapVisible(tester, find.text(_convertLabel));
 
       expect(find.textContaining('변환에 실패했습니다'), findsOneWidget);
     });
@@ -201,7 +208,7 @@ void main() {
       tester,
       schedule(tagGroupId: 'group-work', sourceTodoId: 'todo-1'),
     );
-    await tapVisible(tester, find.text('연결된 TODO 보기'));
+    await tapVisible(tester, find.text(_linkedTodoLabel));
 
     expect(location(), '/todo/group-work');
   });

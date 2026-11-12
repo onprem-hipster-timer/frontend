@@ -5,6 +5,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_card.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 태그 그룹 선택 페이지
 ///
@@ -31,7 +32,8 @@ class TagGroupSelectorPage extends ConsumerWidget {
             return AppEmptyState(
               icon: Icons.folder_off_outlined,
               title: '태그 그룹이 없습니다',
-              message: '먼저 태그 그룹을 만들어주세요.\n그룹을 만든 후 할 일을 정리할 수 있습니다.',
+              message:
+                  '먼저 태그 그룹을 만들어주세요.\n그룹을 만든 후 ${Terms.todo.withJosa('을', '를')} 정리할 수 있습니다.',
               actionLabel: '새 그룹 만들기',
               onAction: () => showTagGroupFormSheet(context),
             );
@@ -98,7 +100,7 @@ class _TagGroupGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 설명 텍스트
-          const AppHintCard(message: '새로 만들 투두들이 속할 그룹을 선택해주세요.'),
+          const AppHintCard(message: '새로 만들 ${Terms.todo}들이 속할 그룹을 선택해주세요.'),
 
           const SizedBox(height: 24),
 

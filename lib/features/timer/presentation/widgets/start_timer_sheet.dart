@@ -7,6 +7,7 @@ import 'package:momeet/features/timer/presentation/widgets/duration_picker_sheet
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 새 작업 시작에서 고를 수 있는 집중 시간
 const _focusDurationPresets = [
@@ -185,12 +186,14 @@ class _StartTimerSheetState extends ConsumerState<_StartTimerSheet> {
               decoration: InputDecoration(
                 labelText: '작업 제목',
                 hintText: '어떤 작업을 시작할까요?',
-                helperText: several ? '할 일마다 그 제목으로 타이머를 하나씩 시작합니다' : null,
+                helperText: several
+                    ? '${Terms.todo}마다 그 제목으로 타이머를 하나씩 시작합니다'
+                    : null,
                 helperMaxLines: 2,
               ),
             ),
             AppPickerField(
-              label: '할 일',
+              label: Terms.todo,
               icon: Icons.task_alt,
               value: switch (_todos) {
                 [] => null,
@@ -199,7 +202,9 @@ class _StartTimerSheetState extends ConsumerState<_StartTimerSheet> {
                   '${first.title} 외 ${rest.length}개',
               },
               placeholder: '연결 안 함',
-              errorText: todos.hasError ? '할 일을 불러오지 못했습니다' : null,
+              errorText: todos.hasError
+                  ? '${Terms.todo.withJosa('을', '를')} 불러오지 못했습니다'
+                  : null,
               onTap: todos.hasValue ? _pickTodos : null,
               onClear: () => setState(() => _todos = []),
             ),

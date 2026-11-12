@@ -9,6 +9,7 @@ import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_card.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// Todo 대시보드 페이지
 ///
@@ -24,7 +25,7 @@ class TodoDashboardPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: ShellScope.compactOf(context) ? const ShellMenuButton() : null,
-        title: const Text('할 일 관리'),
+        title: const Text('${Terms.todo} 관리'),
         elevation: 0,
         centerTitle: true,
       ),
@@ -34,7 +35,8 @@ class TodoDashboardPage extends ConsumerWidget {
             return AppEmptyState(
               icon: Icons.folder_open_rounded,
               title: '그룹이 없습니다',
-              message: '첫 번째 그룹을 만들어\n체계적으로 할 일을 관리해보세요!',
+              message:
+                  '첫 번째 그룹을 만들어\n체계적으로 ${Terms.todo.withJosa('을', '를')} 관리해보세요!',
               actionLabel: '첫 그룹 만들기',
               onAction: () => _showCreateGroupDialog(context),
             );
@@ -80,7 +82,7 @@ class _GroupGrid extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: const AppHintCard(
               title: '그룹 관리',
-              message: '그룹을 선택해서 할 일들을 관리하세요.',
+              message: '그룹을 선택해서 ${Terms.todo}들을 관리하세요.',
               icon: Icons.dashboard_rounded,
             ),
           ),
