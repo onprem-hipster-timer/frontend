@@ -101,7 +101,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - codegen 캐시는 코드 생성이 성공했을 때만 저장하고, 키에 `build.yaml`을 넣는다. 다른 캐시를 지우는 단계는 없앤다(오래된 캐시는 GitHub가 정리한다)
 - CI는 dev push에도 돌아 dev로 가는 PR이 쓸 캐시를 만든다. 실행 중 취소는 PR만 하고, 문서만 바뀐 push·PR에서는 돌지 않는다
 
+#### Auth
+- Kratos 세션 토큰을 `flutter_secure_storage`(Android Keystore, iOS Keychain, 웹 WebCrypto 암호화)에 둔다. 앱 시작 때 한 번 읽어 두고 로그아웃하면 지운다. 백엔드 JWT는 지금처럼 메모리에만 둔다
+  - 이전 버전이 SharedPreferences에 둔 토큰은 첫 실행에 보안 저장소로 옮기고 지운다. 업데이트 뒤에도 로그인이 유지된다
+  - 보안 저장소를 읽지 못하면 미인증으로 시작한다
+  - `web/landing/state.js`는 보안 저장소의 웹 키(`FlutterSecureStorage.momeet.session_token`)가 있는지로 첫 화면을 정한다. 값은 암호화돼 있어 읽지 않는다
+- Android 자동 백업·기기 이전에서 보안 저장소를 뺀다(`res/xml/backup_rules.xml`, `res/xml/data_extraction_rules.xml`)
+
 ### Added
+
+#### Auth
+- 인증 메일 링크(`/verification?flow=&code=`)로 열면 코드를 채워 두고, 인증하기를 눌러야 제출한다. 코드는 주소창에서 지운다. `code`가 flow 없이 오거나 6자리 숫자가 아니면 보안 경고 화면으로 보낸다
 
 #### Todo
 - 할 일 고르기 화면(`showTodoPicker`): 그룹별 트리로 보이고 제목으로 찾으며, 한 줄을 눌러 하나를 고르거나 체크해 여럿을 고른다
@@ -215,6 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 태그 관리 화면이 태그를 불러오지 못했을 때 '다시 시도'를 누르면 태그 그룹을 다시 받는다
 
 #### Auth
+- 저장된 세션이 끝났거나 확인하지 못해 앱이 랜딩으로 보낼 때 빈 화면 대신 웹 랜딩을 보인다. `/landing` 화면이 뜰 때 `web/landing/script.js`의 `__momeet.showLanding`을 부른다(`lib/core/landing/static_landing_page.dart`)
 - 기존 계정에 Google을 연결하는 로그인(`/login?flow=`)도 계정이 이메일 인증 전이면 서버가 다시 보낸 코드로 인증 화면을 연다. 인증 화면에는 연결할 계정 이메일을 넘긴다
 - 로그아웃하면(세션 만료 포함) 앱의 provider 상태를 모두 버린다(`lib/core/providers/account_scope.dart`). 다른 계정으로 로그인해도 앞 계정의 할 일·통계·일정·태그·타이머·친구 목록이 남지 않는다. 이전에는 앞 계정에서 불러온 값을 그대로 보이는 화면이 있었다
 - JWT만 새로 받을 때는 현재 사용자가 바뀌지 않은 것으로 보아, 사용자 정보를 쓰는 화면·데이터를 다시 계산하지 않는다

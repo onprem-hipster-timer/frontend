@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
 import '../../../../helpers/auth_router.dart';
@@ -74,7 +73,7 @@ void main() {
         'password': 'new-pw-123',
       }, sessionToken: 'ory_st_rec'),
     ]);
-    expect(harness.prefs.getString(sessionTokenKey), 'ory_st_rec');
+    expect(await harness.storedSessionToken(), 'ory_st_rec');
     expect(find.text('home'), findsOneWidget);
   });
 
@@ -103,7 +102,7 @@ void main() {
         'email': testUser.email,
       }),
     ).called(1);
-    expect(harness.prefs.getString(sessionTokenKey), 'ory_st_rec');
+    expect(await harness.storedSessionToken(), 'ory_st_rec');
     expect(find.text('home'), findsOneWidget);
   });
 

@@ -1,11 +1,12 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
-import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
 // ============================================================
@@ -61,6 +62,7 @@ class KratosTestHarness {
 
   late MockKratosClient kratos;
   late SharedPreferences prefs;
+  late SessionTokenStore tokenStore;
 
   /// whoami가 돌려주는 JWT
   late String accessToken;
@@ -70,13 +72,15 @@ class KratosTestHarness {
     bool authenticated = true,
     Duration accessTokenExpiresIn = const Duration(minutes: 10),
   }) async {
-    SharedPreferences.setMockInitialValues(
+    FlutterSecureStorage.setMockInitialValues(
       authenticated ? {sessionTokenKey: sessionToken} : {},
     );
+    SharedPreferences.setMockInitialValues({});
     final harness = KratosTestHarness()
       ..prefs = await SharedPreferences.getInstance()
       ..kratos = MockKratosClient()
       ..accessToken = testJwt(expiresIn: accessTokenExpiresIn);
+    await harness.restart();
     when(() => harness.kratos.whoami(any())).thenAnswer(
       (_) async =>
           KratosSession(user: testUser, accessToken: harness.accessToken),
@@ -87,7 +91,18 @@ class KratosTestHarness {
   List<Override> get overrides => [
     kratosClientProvider.overrideWithValue(kratos),
     sharedPreferencesProvider.overrideWithValue(prefs),
+    sessionTokenStoreProvider.overrideWithValue(tokenStore),
   ];
+
+  /// 앱을 다시 시작한 것처럼 저장소에서 세션 토큰을 새로 읽는다. 이후 [overrides]가 새 store를 쓴다.
+  Future<void> restart() async {
+    tokenStore = SessionTokenStore(const FlutterSecureStorage(), prefs);
+    await tokenStore.load();
+  }
+
+  /// 보안 저장소에 저장된 세션 토큰
+  Future<String?> storedSessionToken() =>
+      const FlutterSecureStorage().read(key: sessionTokenKey);
 
   /// [type] 플로우를 만들면 [flowId]를 돌려주게 한다.
   void stubCreateFlow(KratosFlowType type, String flowId) {

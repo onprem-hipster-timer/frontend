@@ -6,6 +6,7 @@ import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -14,6 +15,7 @@ import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/analytics/analytics_consent_bridge.dart'
     if (dart.library.js_interop) 'package:momeet/core/analytics/analytics_consent_bridge_web.dart';
 import 'package:momeet/core/providers/account_scope.dart';
+import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 
 void main() async {
@@ -33,6 +35,15 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
 
   // ============================================================
+  // 세션 토큰 프리로드 (보안 저장소는 비동기라 먼저 읽어 둔다)
+  // ============================================================
+  final sessionTokenStore = SessionTokenStore(
+    const FlutterSecureStorage(),
+    prefs,
+  );
+  await sessionTokenStore.load();
+
+  // ============================================================
   // IANA Timezone DB 초기화
   // ============================================================
   tz.initializeTimeZones();
@@ -42,10 +53,12 @@ void main() async {
 
   runApp(
     AccountScope(
+      // 세션 토큰 저장소도 같은 인스턴스를 넘긴다. 로그아웃이 지운 토큰을 새 컨테이너가 그대로 이어받는다
       createContainer: () => ProviderContainer(
         retry: appRetry,
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          sessionTokenStoreProvider.overrideWithValue(sessionTokenStore),
           analyticsConsentBridgeProvider.overrideWithValue(
             analyticsConsentBridge,
           ),
