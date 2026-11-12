@@ -227,6 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Auth
 - 저장된 세션이 끝났거나 확인하지 못해 앱이 랜딩으로 보낼 때 빈 화면 대신 웹 랜딩을 보인다. `/landing` 화면이 뜰 때 `web/landing/script.js`의 `__momeet.showLanding`을 부른다(`lib/core/landing/static_landing_page.dart`)
 - 기존 계정에 Google을 연결하는 로그인(`/login?flow=`)도 계정이 이메일 인증 전이면 서버가 다시 보낸 코드로 인증 화면을 연다. 인증 화면에는 연결할 계정 이메일을 넘긴다
+- 로그아웃하면(세션 만료 포함) 앱의 provider 상태를 모두 버린다(`lib/core/providers/account_scope.dart`). 다른 계정으로 로그인해도 앞 계정의 할 일·통계·일정·태그·타이머·친구 목록이 남지 않는다. 이전에는 앞 계정에서 불러온 값을 그대로 보이는 화면이 있었다
+- JWT만 새로 받을 때는 현재 사용자가 바뀌지 않은 것으로 보아, 사용자 정보를 쓰는 화면·데이터를 다시 계산하지 않는다
 
 ---
 
