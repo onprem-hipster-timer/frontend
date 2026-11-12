@@ -1,0 +1,3 @@
+tags:
+  # test/layout_audit의 화면 전수 점검. CI는 main으로 가는 PR에서만 돌린다(.github/workflows/test.yml)
+  layout_audit:

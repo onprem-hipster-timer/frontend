@@ -1,3 +1,6 @@
+@Tags(['layout_audit'])
+library;
+
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';

@@ -1,4 +1,7 @@
-import 'package:flutter_test/flutter_test.dart' show setUpAll;
+@Tags(['layout_audit'])
+library;
+
+import 'package:flutter_test/flutter_test.dart' show Tags, setUpAll;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
