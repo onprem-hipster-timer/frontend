@@ -100,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI(`.github/workflows/test.yml`)를 정적 검사 잡(format → 코드 생성 → `dart analyze` → 패키지 테스트)과 2개 샤드 테스트 잡으로 나눈다. 코드 생성은 `.github/actions/codegen`이 맡는다
 - codegen 캐시는 코드 생성이 성공했을 때만 저장하고, 키에 `build.yaml`을 넣는다. 다른 캐시를 지우는 단계는 없앤다(오래된 캐시는 GitHub가 정리한다)
 - CI는 dev push에도 돌아 dev로 가는 PR이 쓸 캐시를 만든다. 실행 중 취소는 PR만 하고, 문서만 바뀐 push·PR에서는 돌지 않는다
+- 레이아웃 점검(`test/layout_audit`의 화면 전수 점검과 위젯 테스트마다의 점검)은 CI에서 main으로 가는 PR에서만 한다. 그 밖에는 `--exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false`로 돌린다
 
 ### Added
 
