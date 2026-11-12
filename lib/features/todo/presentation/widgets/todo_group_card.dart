@@ -5,7 +5,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 /// 할 일 그룹 카드. 대시보드와 그룹 고르기에서 쓴다.
 class TodoGroupCard extends StatelessWidget {
-  final TagGroupRead group;
+  final TodoGroupRead group;
   final VoidCallback onTap;
 
   const TodoGroupCard({super.key, required this.group, required this.onTap});

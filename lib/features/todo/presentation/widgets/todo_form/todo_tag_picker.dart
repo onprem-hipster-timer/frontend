@@ -8,23 +8,17 @@ import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_group_row.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 그룹별로 태그 칩을 늘어놓는다.
+/// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 태그 그룹별로 태그 칩을 늘어놓는다.
+/// 할 일에는 어느 태그 그룹의 태그든 붙일 수 있다.
 class TodoTagPicker extends ConsumerWidget {
   const TodoTagPicker({
     super.key,
-    required this.lockedGroupId,
     required this.selectedTagIds,
     required this.onToggle,
-    this.onFirstGroup,
   });
 
-  /// 새 할 일이 들어갈 그룹. 주면 바꿀 수 없다는 표시와 함께 보인다
-  final String? lockedGroupId;
   final Set<String> selectedTagIds;
   final void Function(String tagId, bool selected) onToggle;
-
-  /// 태그 그룹을 불러온 뒤 첫 그룹 id로 한 번 불린다(새 할 일의 기본 그룹)
-  final ValueChanged<String>? onFirstGroup;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,20 +26,6 @@ class TodoTagPicker extends ConsumerWidget {
         .watch(tag_providers.tagTreeProvider)
         .when(
           data: (tagGroups) {
-            final onFirstGroup = this.onFirstGroup;
-            if (onFirstGroup != null && tagGroups.isNotEmpty) {
-              final first = tagGroups.first.group.id;
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => onFirstGroup(first),
-              );
-            }
-            // 목록에 없는 그룹이면 보낼 때처럼 첫 그룹으로 본다
-            final locked = lockedGroupId == null || tagGroups.isEmpty
-                ? null
-                : tagGroups
-                          .where((g) => g.group.id == lockedGroupId)
-                          .firstOrNull ??
-                      tagGroups.first;
             final selectedTags = [
               for (final group in tagGroups)
                 for (final tag in group.tags)
@@ -54,10 +34,6 @@ class TodoTagPicker extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (locked != null) ...[
-                  _GroupBadge(group: locked.group),
-                  const SizedBox(height: 12),
-                ],
                 if (selectedTags.isNotEmpty) ...[
                   _SelectedTags(
                     tags: selectedTags,
@@ -144,46 +120,6 @@ class _TagHeader extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         ),
-      ),
-    );
-  }
-}
-
-/// 새 할 일이 들어갈 그룹. 폼에서는 바꿀 수 없다
-class _GroupBadge extends StatelessWidget {
-  const _GroupBadge({required this.group});
-
-  final TagGroupRead group;
-
-  @override
-  Widget build(BuildContext context) {
-    final groupColor = HexColor.fromHex(group.color);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: groupColor.withValues(alpha: 0.1),
-        borderRadius: AppRadius.pillAll,
-        border: Border.all(color: groupColor.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.folder_rounded, size: 16, color: groupColor),
-          const SizedBox(width: 6),
-          Text(
-            '${group.name} 그룹',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: groupColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.lock_outline,
-            size: 12,
-            color: groupColor.withValues(alpha: 0.7),
-          ),
-        ],
       ),
     );
   }

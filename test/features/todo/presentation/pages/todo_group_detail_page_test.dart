@@ -28,16 +28,19 @@ void main() {
       );
 
   setUp(() {
-    todos = FakeTodosClient([
-      todo('todo-1', '보고서'),
-      todo('todo-2', '자료 조사', parentId: 'todo-1'),
-      todo('todo-3', '회의 준비'),
-      todo('todo-9', '다른 그룹 일', group: 'group-study'),
-    ]);
-    tags = FakeTagsClient([
-      makeTagGroup(id: 'group-work', name: '업무', description: '회사 일'),
-      makeTagGroup(id: 'group-study', name: '학습'),
-    ]);
+    todos = FakeTodosClient(
+      [
+        todo('todo-1', '보고서'),
+        todo('todo-2', '자료 조사', parentId: 'todo-1'),
+        todo('todo-3', '회의 준비'),
+        todo('todo-9', '다른 그룹 일', group: 'group-study'),
+      ],
+      [
+        makeTodoGroup(id: 'group-work', name: '업무', description: '회사 일'),
+        makeTodoGroup(id: 'group-study', name: '학습'),
+      ],
+    );
+    tags = FakeTagsClient();
   });
 
   Future<void> pumpPage(
@@ -99,7 +102,7 @@ void main() {
     await pumpPage(tester, groupId: 'group-gone');
 
     expect(find.text('할 일 그룹'), findsOneWidget);
-    expect(find.byTooltip('그룹 설정'), findsNothing);
+    expect(find.byTooltip('할 일 그룹 설정'), findsNothing);
   });
 
   testWidgets('뒤로 가기는 대시보드로 간다', (tester) async {
@@ -111,8 +114,7 @@ void main() {
 
   testWidgets('추가 버튼은 이 그룹에 할 일을 만들고 목록에 넣는다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.byTooltip('이 그룹에 할 일 추가'));
-    expect(find.text('업무 그룹'), findsOneWidget);
+    await tapVisible(tester, find.byTooltip('이 할 일 그룹에 할 일 추가'));
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
 
@@ -132,7 +134,7 @@ void main() {
     todos.todos.removeWhere((t) => t.todoGroupId == 'group-work');
     await pumpPage(tester);
 
-    expect(find.text('이 그룹에는 할 일이 없습니다'), findsOneWidget);
+    expect(find.text('이 할 일 그룹에는 할 일이 없습니다'), findsOneWidget);
     await tapVisible(tester, find.text('첫 할 일 추가하기'));
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
@@ -158,46 +160,65 @@ void main() {
     expect(find.text('보고서'), findsOneWidget);
   });
 
-  group('그룹 설정', () {
-    testWidgets('그룹 수정은 그룹 값으로 채운 시트를 연다', (tester) async {
-      await pumpPage(tester);
-      await tapVisible(tester, find.byTooltip('그룹 설정'));
-      await tapVisible(tester, find.text('그룹 수정'));
+  group('할 일 그룹 설정', () {
+    Future<void> openSettings(WidgetTester tester) =>
+        tapVisible(tester, find.byTooltip('할 일 그룹 설정'));
 
-      expect(find.widgetWithText(TextFormField, '업무'), findsOneWidget);
+    testWidgets('수정은 그룹 값으로 채운 시트를 열고, 바꾼 이름이 제목에 보인다', (tester) async {
+      await pumpPage(tester);
+      await openSettings(tester);
+      await tapVisible(tester, find.text('할 일 그룹 수정'));
+
       expect(find.widgetWithText(TextFormField, '회사 일'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextFormField, '업무'), '회사');
+      await tapVisible(tester, find.widgetWithText(FilledButton, '수정'));
+
+      expect(todos.updatedGroups.single.$1, 'group-work');
+      expect(find.text('회사'), findsOneWidget);
     });
 
-    testWidgets('그룹 삭제를 확인하면 지우고 알린 뒤 대시보드로 간다', (tester) async {
+    testWidgets('삭제 확인창은 할 일이 기본 그룹으로 옮겨진다고 알리고, 확인하면 지운 뒤 대시보드로 간다', (
+      tester,
+    ) async {
       await pumpPage(tester);
-      await tapVisible(tester, find.byTooltip('그룹 설정'));
-      await tapVisible(tester, find.text('그룹 삭제'));
+      await openSettings(tester);
+      await tapVisible(tester, find.text('할 일 그룹 삭제'));
+
+      expect(find.textContaining('기본 할 일 그룹으로 옮겨집니다'), findsOneWidget);
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
-      expect(tags.deletedGroups, ['group-work']);
+      expect(todos.deletedGroups, ['group-work']);
       expect(location(), AppRoute.todo.path);
-      expect(find.text('업무 그룹이 삭제되었습니다'), findsOneWidget);
+      expect(find.text('업무 할 일 그룹이 삭제되었습니다'), findsOneWidget);
     });
 
-    testWidgets('그룹 삭제를 취소하면 지우지 않고 머문다', (tester) async {
+    testWidgets('삭제를 취소하면 지우지 않고 머문다', (tester) async {
       await pumpPage(tester);
-      await tapVisible(tester, find.byTooltip('그룹 설정'));
-      await tapVisible(tester, find.text('그룹 삭제'));
+      await openSettings(tester);
+      await tapVisible(tester, find.text('할 일 그룹 삭제'));
       await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
 
-      expect(tags.deletedGroups, isEmpty);
+      expect(todos.deletedGroups, isEmpty);
       expect(location(), '/todo/group-work');
     });
 
-    testWidgets('그룹 삭제에 실패하면 알리고 머문다', (tester) async {
-      tags.writeError = Exception('서버 오류');
+    testWidgets('삭제에 실패하면 알리고 머문다', (tester) async {
+      todos.writeError = Exception('서버 오류');
       await pumpPage(tester);
-      await tapVisible(tester, find.byTooltip('그룹 설정'));
-      await tapVisible(tester, find.text('그룹 삭제'));
+      await openSettings(tester);
+      await tapVisible(tester, find.text('할 일 그룹 삭제'));
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
-      expect(find.textContaining('그룹 삭제에 실패했습니다'), findsOneWidget);
+      expect(find.textContaining('할 일 그룹 삭제에 실패했습니다'), findsOneWidget);
       expect(location(), '/todo/group-work');
+    });
+
+    testWidgets('기본 그룹은 수정만 있고 삭제가 없다', (tester) async {
+      await pumpPage(tester, groupId: defaultTodoGroupId);
+      await openSettings(tester);
+
+      expect(find.text('할 일 그룹 수정'), findsOneWidget);
+      expect(find.text('할 일 그룹 삭제'), findsNothing);
     });
   });
 }

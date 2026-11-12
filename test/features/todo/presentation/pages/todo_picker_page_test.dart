@@ -29,13 +29,19 @@ void main() {
 
   setUp(() {
     results = [];
-    todos = FakeTodosClient([
-      todo('a', '보고서'),
-      todo('b', '자료 조사', parentId: 'a'),
-      todo('c', '끝난 일', status: TodoStatus.done),
-      todo('d', '영단어', group: 'group-study'),
-      todo('e', '어디에도 없는 그룹 일', group: 'group-gone'),
-    ]);
+    todos = FakeTodosClient(
+      [
+        todo('a', '보고서'),
+        todo('b', '자료 조사', parentId: 'a'),
+        todo('c', '끝난 일', status: TodoStatus.done),
+        todo('d', '영단어', group: 'group-study'),
+        todo('e', '어디에도 없는 그룹 일', group: 'group-gone'),
+      ],
+      [
+        makeTodoGroup(id: 'group-study', name: '학습'),
+        makeTodoGroup(id: 'group-work', name: '업무'),
+      ],
+    );
   });
 
   Future<void> open(
@@ -43,15 +49,7 @@ void main() {
     List<TodoRead> selected = const [],
   }) => pumpSheetHost(
     tester,
-    overrides: [
-      todosApiProvider.overrideWithValue(todos),
-      tagsApiProvider.overrideWithValue(
-        FakeTagsClient([
-          makeTagGroup(id: 'group-work', name: '업무'),
-          makeTagGroup(id: 'group-study', name: '학습'),
-        ]),
-      ),
-    ],
+    overrides: [todosApiProvider.overrideWithValue(todos)],
     open: (context) async => results.add(
       await showTodoPicker(
         context,

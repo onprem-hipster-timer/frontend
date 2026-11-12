@@ -5,7 +5,6 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_status_chips.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_picker.dart';
-import 'package:momeet/features/todo/presentation/utils/todo_tag_group.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_form_submit.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -19,14 +18,14 @@ class TodoFormSheet extends ConsumerStatefulWidget {
   /// 기본 상위 Todo ID (생성 시 사용)
   final String? defaultParentId;
 
-  /// 기본 태그 그룹 ID (생성 시 사용)
-  final String? defaultTagGroupId;
+  /// 새 할 일이 들어갈 할 일 그룹 ID. 없으면 서버가 기본 그룹에 넣는다
+  final String? defaultTodoGroupId;
 
   const TodoFormSheet({
     super.key,
     this.todo,
     this.defaultParentId,
-    this.defaultTagGroupId,
+    this.defaultTodoGroupId,
   });
 
   @override
@@ -41,8 +40,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     text: widget.todo?.description,
   );
   late var _selectedStatus = widget.todo?.status ?? TodoStatus.unscheduled;
-  late var _selectedTagGroupId =
-      widget.todo?.todoGroupId ?? widget.defaultTagGroupId ?? '';
   late final _selectedTagIds = {...?widget.todo?.tags.map((tag) => tag.id)};
   late var _selectedDeadline = widget.todo?.deadline;
 
@@ -121,16 +118,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           },
           onClear: () => setState(() => _selectedDeadline = null),
         ),
-        TodoTagPicker(
-          lockedGroupId: _isEditMode || _selectedTagGroupId.isEmpty
-              ? null
-              : _selectedTagGroupId,
-          selectedTagIds: _selectedTagIds,
-          onToggle: _toggleTag,
-          onFirstGroup: _isEditMode || _selectedTagGroupId.isNotEmpty
-              ? null
-              : _useFirstGroup,
-        ),
+        TodoTagPicker(selectedTagIds: _selectedTagIds, onToggle: _toggleTag),
       ],
     );
   }
@@ -145,11 +133,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
     });
   }
 
-  /// 새 할 일의 그룹을 정하지 않았으면 첫 그룹으로 한다
-  void _useFirstGroup(String groupId) {
-    if (mounted) setState(() => _selectedTagGroupId = groupId);
-  }
-
   /// 마감일 선택
 
   /// 폼 제출 처리
@@ -160,24 +143,6 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    if (!_isEditMode) {
-      try {
-        _selectedTagGroupId = await ensureTodoTagGroup(
-          ref,
-          _selectedTagGroupId,
-        );
-      } catch (error) {
-        if (mounted) {
-          showAppSnackBar(
-            context,
-            '기본 태그 그룹 생성에 실패했습니다: $error',
-            kind: AppNoticeKind.error,
-          );
-        }
-        return;
-      }
-    }
 
     final values = (
       title: _titleController.text.trim(),
@@ -200,7 +165,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         await createTodoFromForm(
           ref,
           values,
-          tagGroupId: _selectedTagGroupId,
+          todoGroupId: widget.defaultTodoGroupId,
           parentId: widget.defaultParentId,
         );
       }
@@ -233,21 +198,21 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
 /// ```dart
 /// showTodoFormSheet(
 ///   context,
-///   defaultTagGroupId: groupId,
+///   defaultTodoGroupId: groupId,
 /// );
 /// ```
 Future<void> showTodoFormSheet(
   BuildContext context, {
   TodoRead? todo,
   String? defaultParentId,
-  String? defaultTagGroupId,
+  String? defaultTodoGroupId,
 }) {
   return showAppSheet<void>(
     context,
     builder: (context) => TodoFormSheet(
       todo: todo,
       defaultParentId: defaultParentId,
-      defaultTagGroupId: defaultTagGroupId,
+      defaultTodoGroupId: defaultTodoGroupId,
     ),
   );
 }

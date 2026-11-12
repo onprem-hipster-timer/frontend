@@ -72,11 +72,11 @@ Future<bool> updateTodoFromForm(
   return true;
 }
 
-/// [values]로 [tagGroupId] 그룹에 할 일을 만든다. [parentId]를 주면 그 할 일의 하위로 만든다
+/// [values]로 [todoGroupId] 할 일 그룹에 할 일을 만든다(없으면 서버가 기본 그룹에 넣는다). [parentId]를 주면 그 할 일의 하위로 만든다
 Future<void> createTodoFromForm(
   WidgetRef ref,
   TodoFormValues values, {
-  required String tagGroupId,
+  String? todoGroupId,
   String? parentId,
 }) {
   return createTodoMutation.run(
@@ -86,7 +86,7 @@ Future<void> createTodoFromForm(
         .create(
           TodoCreate(
             title: values.title,
-            todoGroupId: tagGroupId,
+            todoGroupId: todoGroupId,
             status: todoStatusForRequest(values.status),
             description: values.description.isEmpty ? null : values.description,
             tagIds: values.tagIds,

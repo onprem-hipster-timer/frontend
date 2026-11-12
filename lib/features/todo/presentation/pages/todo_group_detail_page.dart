@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/shared/providers/tag_providers.dart';
-import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_root_drop_target.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
@@ -14,9 +14,9 @@ import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// Todo 그룹 상세 페이지
+/// 할 일 그룹 상세 페이지
 ///
-/// 특정 그룹에 속한 할 일들을 계층형 구조로 표시합니다.
+/// 할 일 그룹에 속한 할 일들을 계층형 구조로 표시합니다.
 /// 해당 그룹의 할 일만 서버에서 필터링하여 가져옵니다.
 class TodoGroupDetailPage extends ConsumerWidget {
   final String groupId;
@@ -69,7 +69,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateTodoDialog(context),
-        tooltip: '이 그룹에 ${Terms.todo} 추가',
+        tooltip: '이 ${Terms.todoGroup}에 ${Terms.todo} 추가',
         child: const Icon(Icons.add_task),
       ),
     );
@@ -79,12 +79,12 @@ class TodoGroupDetailPage extends ConsumerWidget {
   void _showCreateTodoDialog(BuildContext context) {
     showTodoFormSheet(
       context,
-      defaultTagGroupId: groupId, // 현재 그룹 ID 전달
+      defaultTodoGroupId: groupId, // 현재 그룹 ID 전달
     );
   }
 }
 
-/// 그룹 이름·색·설명을 보이는 앱바. 설정 메뉴에서 그룹을 고치거나 지운다.
+/// 할 일 그룹 이름·색·설명을 보이는 앱바. 설정 메뉴에서 그룹을 고치거나 지운다(기본 그룹은 못 지운다).
 class _GroupAppBar extends ConsumerWidget {
   const _GroupAppBar({required this.groupId});
 
@@ -93,7 +93,7 @@ class _GroupAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final groupAsync = ref.watch(tagGroupsProvider);
+    final groupAsync = ref.watch(todoGroupsProvider);
     return groupAsync.when(
       data: (groups) {
         final group = groups.where((g) => g.id == groupId).firstOrNull;
@@ -110,7 +110,7 @@ class _GroupAppBar extends ConsumerWidget {
               foregroundColor: groupColor,
               leading: const _BackToDashboard(),
               title: Text(
-                group?.name ?? '${Terms.todo} 그룹',
+                group?.name ?? Terms.todoGroup,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -122,7 +122,7 @@ class _GroupAppBar extends ConsumerWidget {
                 if (group != null)
                   IconButton(
                     icon: const Icon(Icons.settings),
-                    tooltip: '그룹 설정',
+                    tooltip: '${Terms.todoGroup} 설정',
                     onPressed: () => _showGroupSettings(context, ref, group),
                   ),
               ],
@@ -157,11 +157,11 @@ class _GroupAppBar extends ConsumerWidget {
     );
   }
 
-  /// 그룹 설정 다이얼로그
+  /// 그룹 설정 시트. 기본 그룹에는 삭제가 없다
   void _showGroupSettings(
     BuildContext context,
     WidgetRef ref,
-    TagGroupRead group,
+    TodoGroupRead group,
   ) {
     showAppSheet<void>(
       context,
@@ -172,76 +172,69 @@ class _GroupAppBar extends ConsumerWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.edit),
-              title: const Text('그룹 수정'),
+              title: const Text('${Terms.todoGroup} 수정'),
               onTap: () {
                 Navigator.pop(sheetContext);
-                showTagGroupFormSheet(
-                  context,
-                  tagGroup: TagGroupReadWithTags(
-                    id: group.id,
-                    name: group.name,
-                    color: group.color,
-                    createdAt: group.createdAt,
-                    updatedAt: group.updatedAt,
-                    description: group.description,
-                    goalRatios: group.goalRatios,
-                  ),
-                );
+                showTodoGroupFormSheet(context, group: group);
               },
             ),
-            ListTile(
-              leading: Icon(
-                Icons.delete,
-                color: Theme.of(context).colorScheme.error,
+            if (!group.isDefault)
+              ListTile(
+                leading: Icon(
+                  Icons.delete,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
+                  '${Terms.todoGroup} 삭제',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showDeleteGroupDialog(context, ref, group);
+                },
               ),
-              title: Text(
-                '그룹 삭제',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _showDeleteGroupDialog(context, ref, group);
-              },
-            ),
           ],
         ),
       ),
     );
   }
 
-  /// 그룹 삭제 확인 다이얼로그
+  /// 그룹 삭제 확인. 그룹의 할 일은 서버가 기본 그룹으로 옮긴다
   Future<void> _showDeleteGroupDialog(
     BuildContext context,
     WidgetRef ref,
-    TagGroupRead group,
+    TodoGroupRead group,
   ) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: '그룹 삭제',
+      title: '${Terms.todoGroup} 삭제',
       content:
-          '${group.name} 그룹을 삭제하시겠습니까?\n'
-          '되돌릴 수 없습니다.\n'
-          '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
+          '${group.name} ${Terms.todoGroup.withJosa('을', '를')} 삭제하시겠습니까?\n'
+          '이 ${Terms.todoGroup}의 ${Terms.todo.withJosa('은', '는')} '
+          '기본 ${Terms.todoGroup.withJosa('으로', '로')} 옮겨집니다.',
       confirmText: '삭제',
       destructive: true,
     );
 
     if (confirmed && context.mounted) {
       try {
-        await deleteTagGroupMutation.run(
+        await deleteTodoGroupMutation.run(
           ref,
-          (tsx) => tsx.get(tagGroupsRawProvider.notifier).deleteGroup(group.id),
+          (tsx) => tsx.get(todoGroupsProvider.notifier).deleteGroup(group.id),
         );
 
         if (context.mounted) {
-          showAppSnackBar(context, '${group.name} 그룹이 삭제되었습니다');
+          showAppSnackBar(
+            context,
+            '${group.name} ${Terms.todoGroup.withJosa('이', '가')} 삭제되었습니다',
+          );
           context.go(AppRoute.todo.path);
         }
       } catch (error) {
         if (context.mounted) {
           showAppSnackBar(
             context,
-            '그룹 삭제에 실패했습니다: $error',
+            '${Terms.todoGroup} 삭제에 실패했습니다: $error',
             kind: AppNoticeKind.error,
           );
         }
@@ -263,12 +256,12 @@ class _TodoList extends StatelessWidget {
       return SliverFillRemaining(
         child: AppEmptyState(
           icon: Icons.task_alt_rounded,
-          title: '이 그룹에는 ${Terms.todo.withJosa('이', '가')} 없습니다',
+          title: '이 ${Terms.todoGroup}에는 ${Terms.todo.withJosa('이', '가')} 없습니다',
           message: '첫 번째 ${Terms.todo.withJosa('을', '를')} 추가해서\n체계적으로 관리해보세요!',
           actionLabel: '첫 ${Terms.todo} 추가하기',
           actionIcon: Icons.add_task,
           onAction: () =>
-              showTodoFormSheet(context, defaultTagGroupId: groupId),
+              showTodoFormSheet(context, defaultTodoGroupId: groupId),
         ),
       );
     }
@@ -281,7 +274,8 @@ class _TodoList extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.all(16),
               child: const AppHintCard(
-                message: '이 그룹의 ${Terms.todo}들입니다. 드래그로 순서를 바꿀 수 있습니다.',
+                message:
+                    '이 ${Terms.todoGroup}의 ${Terms.todo}들입니다. 드래그로 순서를 바꿀 수 있습니다.',
               ),
             );
           }

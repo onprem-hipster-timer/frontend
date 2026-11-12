@@ -4,6 +4,13 @@
 /// 그래야 이름을 바꿀 때 이 파일만 고치면 된다.
 abstract final class Terms {
   static const todo = '할 일';
+
+  /// 할 일을 담는 묶음. 할 일은 반드시 하나에 속한다
+  static const todoGroup = '할 일 그룹';
+
+  /// 태그를 묶는 묶음
+  static const tagGroup = '태그 그룹';
+
   static const timer = '타이머';
 
   /// 타이머의 집중 시간. [rest]의 짝

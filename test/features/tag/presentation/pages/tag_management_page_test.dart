@@ -65,7 +65,7 @@ void main() {
 
     expect(find.text('아직 태그가 없습니다'), findsOneWidget);
     await tapVisible(tester, find.text('첫 태그 그룹 만들기'));
-    expect(find.text('새 그룹 만들기'), findsOneWidget);
+    expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
   });
 
   testWidgets('불러오지 못하면 오류를 보이고 다시 시도하면 목록을 그린다', (tester) async {
@@ -81,9 +81,12 @@ void main() {
   testWidgets('새 그룹 버튼은 그룹 생성 시트를 열고, 만든 그룹이 목록에 나타난다', (tester) async {
     await pumpPage(tester);
     await tapVisible(tester, find.text('새 그룹'));
-    expect(find.text('새 그룹 만들기'), findsOneWidget);
+    expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextFormField, '그룹 이름'), '운동');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '태그 그룹 이름'),
+      '운동',
+    );
     await tapVisible(tester, find.text('생성'));
     expect(find.text('운동'), findsOneWidget);
   });

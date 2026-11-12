@@ -8,12 +8,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/tag/presentation/pages/tag_management_page.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
-import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_dashboard_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
@@ -48,11 +48,17 @@ void main() {
 
   List<Override> overrides(String text) => [
     todosApiProvider.overrideWithValue(
-      FakeTodosClient([
-        todo('todo-1', text),
-        todo('todo-2', text, parentId: 'todo-1'),
-        todo('todo-3', '짧은 할 일'),
-      ]),
+      FakeTodosClient(
+        [
+          todo('todo-1', text),
+          todo('todo-2', text, parentId: 'todo-1'),
+          todo('todo-3', '짧은 할 일'),
+        ],
+        [
+          makeTodoGroup(id: 'group-work', name: text, description: text),
+          makeTodoGroup(id: 'group-study', name: '학습'),
+        ],
+      ),
     ),
     tagsApiProvider.overrideWithValue(
       FakeTagsClient([group('group-work', text), group('group-study', '학습')]),
@@ -75,12 +81,6 @@ void main() {
     subject: '그룹·할 일 제목',
     build: (text) =>
         app(text, const TodoGroupDetailPage(groupId: 'group-work')),
-  );
-
-  testLayoutAudit(
-    'tag_group_selector_page',
-    subject: '그룹 이름',
-    build: (text) => app(text, const TagGroupSelectorPage()),
   );
 
   testLayoutAudit(
@@ -114,6 +114,23 @@ void main() {
       SingleChildScrollView(
         child: TagFormSheet(
           tag: makeTag(id: 'group-work-tag-1', name: text.value),
+        ),
+      ),
+    ),
+  );
+
+  testLayoutAudit(
+    'todo_group_form_sheet',
+    subject: '그룹 이름·설명',
+    build: (text) => app(
+      text,
+      SingleChildScrollView(
+        child: TodoGroupFormSheet(
+          group: makeTodoGroup(
+            id: 'group-work',
+            name: text.value,
+            description: text.value,
+          ),
         ),
       ),
     ),
