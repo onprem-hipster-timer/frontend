@@ -153,7 +153,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                 !hasFlow
                     ? '인증 코드를 받을 이메일을 입력해주세요.'
                     : _codeFromLink
-                    ? '메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'
+                    ? '메일 링크의 코드를 채웠습니다. 본인이 발급한 코드가 맞다면 인증하기를 눌러주세요.'
                     : email.isEmpty
                     ? '메일로 받은 6자리 코드를 입력해주세요.'
                     : '$email(으)로 보낸 6자리 코드를 입력해주세요.',

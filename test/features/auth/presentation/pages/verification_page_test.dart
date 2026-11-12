@@ -149,7 +149,10 @@ void main() {
       await openVerification(tester, flow: 'v1', code: '123456');
 
       expect(find.widgetWithText(TextFormField, '123456'), findsOneWidget);
-      expect(find.text('메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'), findsOneWidget);
+      expect(
+        find.text('메일 링크의 코드를 채웠습니다. 본인이 발급한 코드가 맞다면 인증하기를 눌러주세요.'),
+        findsOneWidget,
+      );
       verifyNever(() => harness.kratos.submit(any(), any(), any()));
     });
 
@@ -223,7 +226,10 @@ void main() {
         reported.map((r) => r['uri']),
         everyElement('/verification?flow=v1'),
       );
-      expect(find.text('메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'), findsNothing);
+      expect(
+        find.text('메일 링크의 코드를 채웠습니다. 본인이 발급한 코드가 맞다면 인증하기를 눌러주세요.'),
+        findsNothing,
+      );
     });
 
     testWidgets('코드 다시 받기를 누르면 채운 코드를 버리고 이메일부터 받는다', (tester) async {
@@ -241,7 +247,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(TextFormField, '123456'), findsNothing);
-      expect(find.text('메일 링크의 코드를 채웠습니다. 인증하기를 눌러주세요.'), findsNothing);
+      expect(
+        find.text('메일 링크의 코드를 채웠습니다. 본인이 발급한 코드가 맞다면 인증하기를 눌러주세요.'),
+        findsNothing,
+      );
     });
   });
 }
