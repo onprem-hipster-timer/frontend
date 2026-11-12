@@ -30,59 +30,9 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="/landing/style.css">
 
-  <script>
-    (function() {
-      var KEY = 'momeet.analytics_consent';
-      var loaded = false;
+  <script src="/landing/analytics.js"></script>
 
-      function read() {
-        try {
-          var v = localStorage.getItem(KEY);
-          return v === 'granted' || v === 'denied' ? v : null;
-        } catch (e) {
-          return null;
-        }
-      }
-
-      function load() {
-        if (loaded) return;
-        loaded = true;
-        (function(c,l,a,r,i,t,y){
-          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "zblwwssbeu");
-        window.clarity('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' });
-      }
-
-      function set(value) {
-        if (value !== 'granted' && value !== 'denied') return;
-        try { localStorage.setItem(KEY, value); } catch (e) {}
-        if (value === 'granted') {
-          load();
-        } else if (loaded) {
-          window.clarity('consent', false);
-        }
-        document.dispatchEvent(new CustomEvent('analytics-consent', { detail: value }));
-      }
-
-      window.__momeetAnalytics = { get: read, set: set };
-      if (read() === 'granted') load();
-    })();
-  </script>
-
-  <script>
-    fetch('assets/FontManifest.json')
-      .then(function(r) { return r.json(); })
-      .then(function(manifest) {
-        manifest.forEach(function(entry) {
-          entry.fonts.forEach(function(font) {
-            var face = new FontFace(entry.family, 'url(assets/' + font.asset + ')');
-            face.load().then(function(loaded) { document.fonts.add(loaded); });
-          });
-        });
-      });
-  </script>
+  <script src="/landing/fonts.js"></script>
 
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -110,7 +60,7 @@
       </p>
       <div class="hero-actions">
         <a href="/#/signup" class="btn-primary btn-enter-app disabled" data-ready-text="시작하기">모모밋을 가져오는 중...</a>
-        <a href="javascript:void(0)" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})" class="btn-ghost">어떻게 다른가요? ↓</a>
+        <a href="#features" class="btn-ghost">어떻게 다른가요? ↓</a>
       </div>
     </section>
 
@@ -222,37 +172,9 @@
     </div>
   </div>
 
-  <script>
-    (function() {
-      var kratosUiPaths = ['/login', '/signup', '/verification', '/forgot-password', '/mypage', '/auth-error'];
-      if (!window.location.hash && kratosUiPaths.indexOf(window.location.pathname) >= 0) {
-        history.replaceState(null, '', '/#' + window.location.pathname + window.location.search);
-      }
-    })();
-  </script>
+  <script src="/landing/kratos-paths.js"></script>
 
-  <script>
-    (function() {
-      function hasSession() {
-        return localStorage.getItem('flutter.momeet.session_token') !== null;
-      }
-      function isExplicitLandingHash(hash) {
-        return hash === '#/landing' || hash === '#/landing/';
-      }
-      function isRootHash(hash) {
-        return hash === '' || hash === '#/';
-      }
-      function isLandingHash(hash) {
-        return isExplicitLandingHash(hash)
-            || (isRootHash(hash) && !hasSession());
-      }
-      window.__momeet = {
-        isLanding: isLandingHash(window.location.hash),
-        isLandingHash: isLandingHash,
-        flutterReady: false
-      };
-    })();
-  </script>
+  <script src="/landing/state.js"></script>
 
   <script src="/landing/script.js"></script>
 
@@ -271,44 +193,8 @@
     </div>
   </div>
 
-  <script>
-    (function() {
-      var banner = document.getElementById('consent-banner');
-      var analytics = window.__momeetAnalytics;
-      if (analytics.get() !== null) return;
-      banner.hidden = false;
-      banner.addEventListener('click', function(e) {
-        var value = e.target.getAttribute && e.target.getAttribute('data-consent');
-        if (!value) return;
-        analytics.set(value);
-      });
-      document.addEventListener('analytics-consent', function() {
-        banner.hidden = true;
-      });
-    })();
-  </script>
+  <script src="/landing/consent-banner.js"></script>
 
-  <script>
-    {{flutter_js}}
-    {{flutter_build_config}}
-
-    (function() {
-      var m = window.__momeet;
-      var flutterHost = document.getElementById('flutter-host');
-
-      _flutter.loader.load({
-        config: { hostElement: flutterHost },
-        onEntrypointLoaded: async function(engineInitializer) {
-          var appRunner = await engineInitializer.initializeEngine({
-            hostElement: flutterHost
-          });
-          await appRunner.runApp();
-
-          m.flutterReady = true;
-          document.dispatchEvent(new CustomEvent('flutter-ready'));
-        }
-      });
-    })();
-  </script>
+  <script src="flutter_bootstrap.js"></script>
 </body>
 </html>

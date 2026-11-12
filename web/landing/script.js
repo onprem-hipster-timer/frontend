@@ -38,6 +38,14 @@
     }
   }
 
+  // ── "어떻게 다른가요?" → 기능 소개로 부드럽게 스크롤 (해시를 바꾸면 앱 라우트가 바뀌므로 막는다) ──
+  document.querySelectorAll('a[href="#features"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      document.getElementById('features').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
   // ── Initial route ──
   if (m.isLanding) {
     showLanding();
