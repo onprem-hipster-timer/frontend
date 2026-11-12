@@ -137,9 +137,7 @@ void main() {
     expect(containers, hasLength(1));
   });
 
-  testWidgets('버린 컨테이너는 다음 프레임에 정리하고, 새 컨테이너도 다시 로그아웃하면 바꾼다', (
-    tester,
-  ) async {
+  testWidgets('버린 컨테이너는 다음 프레임에 정리하고, 새 컨테이너도 다시 로그아웃하면 바꾼다', (tester) async {
     await pumpScope(tester);
     auth().signIn('a');
     await tester.pumpAndSettle();
