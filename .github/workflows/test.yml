@@ -94,8 +94,11 @@ jobs:
         with:
           api-base-url: ${{ vars.API_BASE_URL }}
 
+      # 레이아웃 점검(test/layout_audit의 화면 전수 점검, 위젯 테스트마다의 점검)은 main으로 가는 PR에서만 한다
       - name: Run tests
-        run: flutter test --total-shards=2 --shard-index=${{ matrix.shard }}
+        env:
+          LAYOUT_AUDIT_ARGS: ${{ github.base_ref != 'main' && '--exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false' || '' }}
+        run: flutter test --total-shards=2 --shard-index=${{ matrix.shard }} $LAYOUT_AUDIT_ARGS
 
   arch-guard:
     name: Auth Architecture Guard
