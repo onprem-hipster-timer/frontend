@@ -26,6 +26,7 @@ import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/auth_redirect.dart';
+import 'package:momeet/core/landing/static_landing_page.dart';
 
 export 'package:momeet/app_route.dart';
 
@@ -141,7 +142,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.landing.path,
         name: AppRoute.landing.name,
-        builder: (context, state) => const SizedBox.shrink(),
+        builder: (context, state) => const StaticLandingPage(),
       ),
 
       // ============================================================

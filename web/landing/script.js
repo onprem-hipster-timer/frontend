@@ -38,6 +38,14 @@
     }
   }
 
+  // ── Flutter 라우터가 /landing으로 보낼 때 부른다 (lib/core/landing/static_landing_page.dart).
+  //    라우터는 history API로 주소를 바꿔 hashchange가 일어나지 않는다. ──
+  m.showLanding = function () {
+    if (m.isLanding) return;
+    m.isLanding = true;
+    showLanding();
+  };
+
   // ── "어떻게 다른가요?" → 기능 소개로 부드럽게 스크롤 (해시를 바꾸면 앱 라우트가 바뀌므로 막는다) ──
   document.querySelectorAll('a[href="#features"]').forEach(function (a) {
     a.addEventListener('click', function (e) {
