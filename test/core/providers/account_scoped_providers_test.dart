@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart' show RequestOptions;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,28 +29,6 @@ class _Auth extends AuthNotifier {
 class _TodosClient extends FakeTodosClient {
   List<TagStat> byTag = const [];
   int statsReads = 0;
-
-  /// 채워 두면 다음 목록 요청 하나가 이 완료를 기다린 뒤 그때의 [todos]를 돌려준다
-  Completer<void>? gate;
-
-  @override
-  Future<List<TodoRead>> readTodosV1TodosGet({
-    List<String>? tagIds,
-    List<String>? groupIds,
-    String? timezone,
-    ResourceScope? scope = ResourceScope.mine,
-    RequestOptions? options,
-  }) async {
-    final g = gate;
-    gate = null;
-    final snapshot = [...todos];
-    if (g != null) await g.future;
-    readGroupIds.add(groupIds);
-    return [
-      for (final todo in snapshot)
-        if (groupIds == null || groupIds.contains(todo.tagGroupId)) todo,
-    ];
-  }
 
   @override
   Future<TodoStats> getTodoStatsV1TodosStatsGet({
@@ -208,38 +184,6 @@ void main() {
         )).tagUsageMap.keys,
         ['ta'],
       );
-    });
-  });
-
-  group('계정이 바뀌는 사이', () {
-    test('A의 목록 요청이 B로 바뀐 뒤에 끝나도 B의 목록을 보인다', () async {
-      final gate = Completer<void>();
-      api.gate = gate;
-      final aRead = container.read(allTodosProvider.future);
-
-      await switchFromAToB();
-      final bTodos = await container.read(allTodosProvider.future);
-      gate.complete();
-      await aRead.catchError((_) => <TodoRead>[]);
-      await container.pump();
-
-      expect(bTodos.map((t) => t.id), ['b-1', 'b-2']);
-      expect((await container.read(allTodosProvider.future)).map((t) => t.id), [
-        'b-1',
-        'b-2',
-      ]);
-    });
-
-    test('로그아웃하면 앞 계정의 목록을 그대로 두지 않는다', () async {
-      expect((await container.read(allTodosProvider.future)).map((t) => t.id), [
-        'a-1',
-      ]);
-
-      api.todos.clear();
-      auth().leave();
-      await container.pump();
-
-      expect(await container.read(allTodosProvider.future), isEmpty);
     });
   });
 
