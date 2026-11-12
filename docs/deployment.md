@@ -122,28 +122,11 @@ SPA(Single Page Application) 라우팅을 위해 모든 경로를 `index.html`�
 
 | 헤더 | 값 |
 |------|----|
-| `Content-Security-Policy-Report-Only` | 앱이 쓰는 출처만 허용하는 정책. 위반은 막지 않고 브라우저 콘솔에만 남는다. 강제하려면 헤더 이름만 `Content-Security-Policy`로 바꾼다 |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin`. 다른 출처로는 origin만 보내므로 경로·쿼리(일회용 코드 등)가 나가지 않는다 |
-| `X-Frame-Options` | `DENY`. CSP의 `frame-ancestors 'none'`은 Report-Only에서는 적용되지 않는다 |
+| `X-Frame-Options` | `DENY` |
 
-정책의 출처와 근거:
-
-| 지시어 | 출처 | 쓰는 곳 |
-|--------|------|---------|
-| `script-src` | `'wasm-unsafe-eval'` | `flutter build web --wasm`의 `main.dart.wasm`, skwasm·CanvasKit |
-| `script-src`, `connect-src` | `https://www.gstatic.com/flutter-canvaskit/` | Flutter 엔진 렌더러(`flutter.js`가 엔진 리비전 경로에서 받는다) |
-| `connect-src` | `https://fonts.gstatic.com/s/` | Flutter 엔진의 대체 글꼴(Noto 등) |
-| `connect-src` | `https://api.momeet.date`, `wss://api.momeet.date` | `API_BASE_URL`(REST, Kratos `/auth`), 타이머 실시간 소켓 |
-| `script-src`, `connect-src`, `img-src` | `https://*.clarity.ms`, `https://c.bing.com`(img) | 사용성 분석 동의 뒤 `web/landing/analytics.js`가 불러오는 Clarity |
-| `style-src`, `font-src` | `https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/` | `index.html`, `privacy.html`, `terms.html`의 Pretendard |
-| `script-src` | `https://cdn.jsdelivr.net/npm/marked@…`, `…/dompurify@…` | `privacy.html`, `terms.html`의 마크다운 렌더링 |
-| `connect-src` | `https://api.github.com/gists/` | `web/legal/legal.js`가 읽는 약관·방침 Gist |
-| `style-src` | `'unsafe-inline'` | Flutter 엔진이 넣는 `<style>`, `index.html`의 `style` 속성 |
-| `img-src` | `blob:` | Flutter 엔진의 이미지 디코딩 |
-
-`API_BASE_URL`, Pretendard·marked·DOMPurify 버전, Clarity 같은 외부 출처를 바꾸면 이 정책도 함께 바꿉니다.
-`web/index.html`에는 인라인 `<script>`와 `on*` 속성을 두지 않고 `web/` 아래 파일로 둡니다(`script-src`에 `'unsafe-inline'`이 없다). Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
+Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 
 ---
 

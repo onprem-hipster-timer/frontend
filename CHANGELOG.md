@@ -156,8 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `REALTIME_BACKEND` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달)
 
 #### Web
-- 웹 응답 헤더(`vercel.json`): `Content-Security-Policy-Report-Only`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`
-  - CSP는 앱이 쓰는 출처(Flutter 엔진·글꼴, API·실시간 소켓, Pretendard, 약관 Gist, 동의 뒤 Clarity)만 허용하고 `script-src`에 `'unsafe-inline'`을 두지 않는다. 출처 목록은 `docs/deployment.md`
+- 웹 응답 헤더(`vercel.json`): `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`
   - `index.html`의 인라인 스크립트와 `onclick`을 `web/landing/*.js`, `web/flutter_bootstrap.js`로 옮긴다
 
 #### Tests
