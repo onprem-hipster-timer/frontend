@@ -1,4 +1,8 @@
+@Tags(['layout_audit'])
+library;
+
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart' show Tags;
 import 'package:layout_audit/layout_audit.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';

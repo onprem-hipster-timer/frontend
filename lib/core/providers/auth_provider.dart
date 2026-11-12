@@ -1,6 +1,6 @@
 // 인증 상태 관리 프로바이더 (Ory Kratos)
 //
-// - 세션: Kratos 세션 토큰. SharedPreferences에 둔다(웹은 localStorage). 상태에는 넣지 않는다.
+// - 세션: Kratos 세션 토큰. SessionTokenStore(보안 저장소)에 둔다. 상태에는 넣지 않는다.
 // - 백엔드 인증: 세션 토큰으로 받은 JWT(유효 10분). 상태에는 이 JWT와 사용자만 둔다.
 // - JWT 갱신: 타이머 없이, 요청 직전에 만료가 가까운지 보고 다시 받는다(freshAccessToken).
 //   백그라운드 탭에서는 타이머가 멈추므로 타이머 방식은 쓰지 않는다.
@@ -15,6 +15,7 @@ import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
@@ -24,12 +25,6 @@ export 'package:momeet/core/providers/auth_selectors.dart';
 export 'package:momeet/core/providers/auth_status.dart';
 
 part 'auth_provider.g.dart';
-
-/// 세션 토큰을 보관하는 SharedPreferences 키.
-///
-/// 웹에서는 localStorage의 `flutter.momeet.session_token`이 되며,
-/// web/index.html이 Flutter 부팅 전에 첫 화면(랜딩 여부)을 정할 때 읽는다.
-const sessionTokenKey = 'momeet.session_token';
 
 /// Google 로그인을 시작할 때 받은 교환 코드를 보관하는 키.
 ///
@@ -54,7 +49,8 @@ class AuthNotifier extends _$AuthNotifier {
 
   KratosClient get _kratos => ref.read(kratosClientProvider);
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
-  String? get _sessionToken => _prefs.getString(sessionTokenKey);
+  SessionTokenStore get _tokenStore => ref.read(sessionTokenStoreProvider);
+  String? get _sessionToken => _tokenStore.token;
 
   @override
   AuthStatus build() {
@@ -84,11 +80,11 @@ class AuthNotifier extends _$AuthNotifier {
     // 기다리는 사이 로그아웃했으면 끝난 세션을 되살리지 않는다
     if (_signOuts != signOutsBefore) return null;
     if (session == null) {
-      await _prefs.remove(sessionTokenKey);
+      await _tokenStore.clear();
       state = const AuthStatus.unauthenticated();
       return null;
     }
-    await _prefs.setString(sessionTokenKey, sessionToken);
+    await _tokenStore.save(sessionToken);
     state = AuthStatus.authenticated(
       user: session.user,
       accessToken: session.accessToken,
@@ -307,7 +303,7 @@ class AuthNotifier extends _$AuthNotifier {
     return _guard(() async {
       final sessionToken = _sessionToken;
       if (sessionToken != null) await _kratos.logout(sessionToken);
-      await _prefs.remove(sessionTokenKey);
+      await _tokenStore.clear();
       _signOuts++;
       state = const AuthStatus.unauthenticated();
     });

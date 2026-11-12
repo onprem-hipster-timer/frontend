@@ -116,6 +116,18 @@ checkout
 SPA(Single Page Application) 라우팅을 위해 모든 경로를 `index.html`로 폴백합니다.
 `flutter_service_worker.js`는 캐시 무효화를 위해 `Cache-Control: no-cache`로 설정합니다.
 
+### 보안 헤더
+
+`routes`의 첫 항목(`"src": "/(.*)"`, `"continue": true`)이 모든 응답에 다음 헤더를 붙입니다.
+
+| 헤더 | 값 |
+|------|----|
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin`. 다른 출처로는 origin만 보내므로 경로·쿼리(일회용 코드 등)가 나가지 않는다 |
+| `X-Frame-Options` | `DENY` |
+
+Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
+
 ---
 
 ## GitHub 설정

@@ -1,9 +1,10 @@
 // 이메일 인증
 //
-// 가입 직후, 인증 전 로그인 시도(서버가 새 플로우를 줌), 인증 메일 링크(?flow=)로 들어온다.
-// 앱은 API 플로우를 쓰므로 메일 링크를 열어도 인증이 끝나지 않는다. 메일의 6자리 코드를 입력받는다.
+// 가입 직후, 인증 전 로그인 시도(서버가 새 플로우를 줌), 인증 메일 링크(?flow=&code=)로 들어온다.
+// 메일 링크로 오면 코드를 채워 두기만 하고, 사용자가 인증하기를 눌러야 제출한다.
 // 이메일 인증 전에는 세션이 없으므로, 인증을 마치면 로그인 화면으로 보낸다.
 
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,13 +18,16 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
 class VerificationPage extends ConsumerStatefulWidget {
-  const VerificationPage({super.key, this.flowId, this.email});
+  const VerificationPage({super.key, this.flowId, this.email, this.code});
 
   /// 코드를 보낸 인증 플로우. 없으면 이메일부터 받는다.
   final String? flowId;
 
   /// 코드를 보낸 이메일 (가입 화면에서 넘어올 때)
   final String? email;
+
+  /// 인증 메일 링크에 담긴 코드. [flowId]가 있을 때만 칸에 채운다.
+  final String? code;
 
   @override
   ConsumerState<VerificationPage> createState() => _VerificationPageState();
@@ -36,6 +40,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
   String? _flowId;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _codeFromLink = false;
 
   @override
   void initState() {
@@ -43,6 +48,22 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
     _flowId = widget.flowId;
     _emailController.text =
         widget.email ?? ref.read(currentUserProvider)?.email ?? '';
+    final code = widget.code;
+    final flowId = _flowId;
+    if (code != null && flowId != null) {
+      _codeController.text = code;
+      _codeFromLink = true;
+      // 코드가 주소창·방문 기록에 남지 않게 현재 항목의 주소를 flow만 남긴 주소로 바꾼다
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => SystemNavigator.routeInformationUpdated(
+          uri: Uri(
+            path: AppRoute.verification.path,
+            queryParameters: {'flow': flowId},
+          ),
+          replace: true,
+        ),
+      );
+    }
   }
 
   @override
@@ -84,6 +105,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
     if (sent && mounted) {
       setState(() {
         _flowId = flowId;
+        _codeFromLink = false;
         _codeController.clear();
       });
     }
@@ -130,6 +152,8 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
               Text(
                 !hasFlow
                     ? '인증 코드를 받을 이메일을 입력해주세요.'
+                    : _codeFromLink
+                    ? '메일 링크의 코드를 채웠습니다. 본인이 발급한 코드가 맞다면 인증하기를 눌러주세요.'
                     : email.isEmpty
                     ? '메일로 받은 6자리 코드를 입력해주세요.'
                     : '$email(으)로 보낸 6자리 코드를 입력해주세요.',
@@ -166,6 +190,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                       ? null
                       : () => setState(() {
                           _flowId = null;
+                          _codeFromLink = false;
                           _errorMessage = null;
                         }),
                   child: const Text('코드 다시 받기'),

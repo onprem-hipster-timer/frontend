@@ -768,6 +768,54 @@ void main() {
         }
       });
 
+      test('인증 메일 링크(flow와 6자리 code)는 그대로 연다', () {
+        for (final isAuthenticated in [false, true]) {
+          final result = authRedirect(
+            isAuthenticated: isAuthenticated,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.verification.path,
+            queryParameters: {'flow': flowId, 'code': '012345'},
+          );
+          expect(result, isNull);
+        }
+      });
+
+      test('인증 화면의 code가 6자리 숫자가 아니면 보안 경고로 보낸다', () {
+        for (final code in [
+          '',
+          '12345',
+          '1234567',
+          '12345a',
+          ' 123456',
+          '１２３４５６',
+          '<script>x</script>',
+        ]) {
+          final params = {'flow': flowId, 'code': code};
+          final result = authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.verification.path,
+            queryParameters: params,
+          );
+          expect(
+            result,
+            blocked(AppRoute.verification.path, params),
+            reason: code,
+          );
+        }
+      });
+
+      test('인증 화면에 flow 없이 code만 오면 보안 경고로 보낸다', () {
+        final params = {'code': '123456'};
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.verification.path,
+          queryParameters: params,
+        );
+        expect(result, blocked(AppRoute.verification.path, params));
+      });
+
       test('로그인한 사용자도 위조된 인증 링크면 보안 경고로 보낸다', () {
         final params = {'flow': 'not-a-flow'};
         final result = authRedirect(

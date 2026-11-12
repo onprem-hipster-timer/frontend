@@ -14,6 +14,10 @@ import 'package:cupertino_ui/cupertino_ui.dart'
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 
+/// 앱의 [ScaffoldMessenger]. 로그아웃해 [AccountScope] 아래 트리가 다시 만들어져도 같은 상태를
+/// 이어 써서, 로그아웃 직전에 잡아 둔 messenger로 띄운 스낵바가 사라지지 않는다.
+final appScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 class MoMeetApp extends ConsumerWidget {
   const MoMeetApp({super.key});
 
@@ -26,6 +30,7 @@ class MoMeetApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: AppConfig.appName,
+      scaffoldMessengerKey: appScaffoldMessengerKey,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate, // Material 위젯 내부 텍스트 번역
         GlobalWidgetsLocalizations.delegate, // 기본 위젯의 텍스트 방향 등 설정

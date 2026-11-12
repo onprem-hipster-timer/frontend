@@ -1,3 +1,7 @@
+@Tags(['layout_audit'])
+library;
+
+import 'package:flutter_test/flutter_test.dart' show Tags;
 import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
