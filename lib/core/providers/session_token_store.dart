@@ -3,13 +3,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 세션 토큰의 보안 저장소 키. 이전 버전이 SharedPreferences에 둔 키와 같다.
-const sessionTokenKey = 'momeet.session_token';
-
-/// 세션 토큰이 저장돼 있는지 나타내는 SharedPreferences 키. 토큰 값은 담지 않는다.
 ///
-/// 웹에서는 localStorage의 `flutter.momeet.has_session`이 되며, web/index.html이
-/// Flutter 부팅 전에 첫 화면(랜딩 여부)을 정할 때 읽는다. 암호화된 토큰은 JS에서 읽을 수 없어서 따로 둔다.
-const hasSessionKey = 'momeet.has_session';
+/// 웹에서는 암호화된 값이 localStorage의 `FlutterSecureStorage.momeet.session_token`에 들어간다
+/// (flutter_secure_storage_web의 기본 `publicKey` 접두사). web/landing/state.js가 Flutter 부팅 전에
+/// 이 키가 있는지로 첫 화면(랜딩 여부)을 정하므로, 키나 [WebOptions.publicKey]를 바꾸면 함께 바꾼다.
+const sessionTokenKey = 'momeet.session_token';
 
 /// Kratos 세션 토큰 저장소.
 ///
@@ -45,14 +43,12 @@ class SessionTokenStore {
         _token = null;
       }
     }
-    await _syncHasSession();
   }
 
   /// 토큰을 저장한다.
   Future<void> save(String token) async {
     await _storage.write(key: sessionTokenKey, value: token);
     _token = token;
-    await _syncHasSession();
   }
 
   /// 토큰을 지운다. 보안 저장소에서 지우지 못해도 이 앱 실행에서는 토큰 없음이 된다.
@@ -63,15 +59,6 @@ class SessionTokenStore {
     try {
       await _storage.delete(key: sessionTokenKey);
     } catch (_) {}
-    await _syncHasSession();
-  }
-
-  Future<void> _syncHasSession() async {
-    if (_token != null) {
-      await _prefs.setBool(hasSessionKey, true);
-    } else {
-      await _prefs.remove(hasSessionKey);
-    }
   }
 }
 

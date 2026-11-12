@@ -34,7 +34,6 @@ void main() {
       final store = await start(prefs);
 
       expect(store.token, isNull);
-      expect(prefs.getBool(hasSessionKey), isNull);
     });
 
     test('저장한 토큰은 다시 시작해도 남는다', () async {
@@ -47,7 +46,7 @@ void main() {
     });
 
     test('보안 저장소를 읽지 못하면 토큰 없음으로 시작한다', () async {
-      final prefs = await setUpDevice(prefs: {hasSessionKey: true});
+      final prefs = await setUpDevice();
       final storage = _MockSecureStorage();
       when(
         () => storage.read(key: sessionTokenKey),
@@ -57,7 +56,6 @@ void main() {
       await store.load();
 
       expect(store.token, isNull);
-      expect(prefs.getBool(hasSessionKey), isNull);
     });
   });
 
@@ -70,7 +68,6 @@ void main() {
       expect(store.token, 'ory_st_old');
       expect(await secureStorage.read(key: sessionTokenKey), 'ory_st_old');
       expect(prefs.getString(sessionTokenKey), isNull);
-      expect(prefs.getBool(hasSessionKey), isTrue);
     });
 
     test('옮긴 뒤 다시 시작해도 같은 토큰 하나만 남는다', () async {
@@ -82,7 +79,6 @@ void main() {
       expect(restarted.token, 'ory_st_old');
       expect(await secureStorage.readAll(), {sessionTokenKey: 'ory_st_old'});
       expect(prefs.getString(sessionTokenKey), isNull);
-      expect(prefs.getBool(hasSessionKey), isTrue);
     });
 
     test('이전 키의 토큰이 보안 저장소의 토큰보다 앞선다', () async {
@@ -118,8 +114,8 @@ void main() {
   });
 
   group('저장소 오류', () {
-    test('보안 저장소에서 지우지 못해도 메모리 토큰과 세션 표시는 지운다', () async {
-      final prefs = await setUpDevice(prefs: {hasSessionKey: true});
+    test('보안 저장소에서 지우지 못해도 메모리 토큰은 지운다', () async {
+      final prefs = await setUpDevice();
       final storage = _MockSecureStorage();
       when(
         () => storage.read(key: sessionTokenKey),
@@ -133,7 +129,6 @@ void main() {
       await store.clear();
 
       expect(store.token, isNull);
-      expect(prefs.getBool(hasSessionKey), isNull);
     });
 
     test('이전 키의 빈 토큰은 세션으로 보지 않는다', () async {
@@ -142,39 +137,7 @@ void main() {
       final store = await start(prefs);
 
       expect(store.token, isNull);
-      expect(prefs.getBool(hasSessionKey), isNull);
       expect(prefs.getString(sessionTokenKey), isNull);
-    });
-  });
-
-  group('세션 표시', () {
-    test('저장하면 세션 표시를 남기고 지우면 함께 지운다', () async {
-      final prefs = await setUpDevice();
-      final store = await start(prefs);
-
-      await store.save('ory_st_a');
-      expect(prefs.getBool(hasSessionKey), isTrue);
-
-      await store.clear();
-      expect(store.token, isNull);
-      expect(await secureStorage.read(key: sessionTokenKey), isNull);
-      expect(prefs.getBool(hasSessionKey), isNull);
-    });
-
-    test('토큰 없이 남은 세션 표시는 시작할 때 지운다', () async {
-      final prefs = await setUpDevice(prefs: {hasSessionKey: true});
-
-      await start(prefs);
-
-      expect(prefs.getBool(hasSessionKey), isNull);
-    });
-
-    test('토큰이 있는데 세션 표시가 없으면 시작할 때 남긴다', () async {
-      final prefs = await setUpDevice(secure: {sessionTokenKey: 'ory_st_a'});
-
-      await start(prefs);
-
-      expect(prefs.getBool(hasSessionKey), isTrue);
     });
   });
 }

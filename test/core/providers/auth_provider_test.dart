@@ -468,7 +468,6 @@ void main() {
         () => harness.kratos.logout(KratosTestHarness.sessionToken),
       ).called(1);
       expect(await harness.storedSessionToken(), isNull);
-      expect(harness.prefs.getBool(hasSessionKey), isNull);
       expect(container.read(accessTokenProvider), isNull);
       expect(container.read(currentUserProvider), isNull);
       expect(container.read(isAuthenticatedProvider), isFalse);
