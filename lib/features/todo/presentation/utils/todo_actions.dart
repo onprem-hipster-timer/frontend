@@ -35,7 +35,7 @@ class TodoActions {
       title: '${Terms.todo} 삭제',
       content:
           '${todo.title}을(를) 삭제하시겠습니까?$childWarning\n'
-          '이 작업은 되돌릴 수 없습니다.',
+          '되돌릴 수 없습니다.',
       confirmText: '삭제',
       destructive: true,
     );

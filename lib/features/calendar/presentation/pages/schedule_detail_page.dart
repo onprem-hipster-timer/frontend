@@ -157,7 +157,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: '일정 삭제',
-      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n되돌릴 수 없습니다.',
       confirmText: '삭제',
       destructive: true,
     );

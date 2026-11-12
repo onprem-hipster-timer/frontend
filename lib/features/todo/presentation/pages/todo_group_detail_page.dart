@@ -220,7 +220,7 @@ class _GroupAppBar extends ConsumerWidget {
       title: '그룹 삭제',
       content:
           '${group.name} 그룹을 삭제하시겠습니까?\n'
-          '이 작업은 되돌릴 수 없습니다.\n'
+          '되돌릴 수 없습니다.\n'
           '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
       confirmText: '삭제',
       destructive: true,

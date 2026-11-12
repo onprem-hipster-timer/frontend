@@ -210,7 +210,7 @@ class _GroupActions extends ConsumerWidget {
       title: '그룹 삭제',
       content:
           '${tagGroup.groupName} 그룹을 삭제하시겠습니까?\n'
-          '이 작업은 되돌릴 수 없습니다.\n'
+          '되돌릴 수 없습니다.\n'
           '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
       confirmText: '삭제',
       destructive: true,
@@ -312,7 +312,7 @@ class _TagTile extends ConsumerWidget {
       title: '태그 삭제',
       content:
           '${tag.name} 태그를 삭제하시겠습니까?\n'
-          '이 작업은 되돌릴 수 없습니다.',
+          '되돌릴 수 없습니다.',
       confirmText: '삭제',
       destructive: true,
     );

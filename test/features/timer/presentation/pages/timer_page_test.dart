@@ -3398,7 +3398,7 @@ void main() {
         expect(clock.width, lessThan(dial.width));
         expect(find.byTooltip('새 타이머'), findsOneWidget);
         expect(find.widgetWithText(ActionChip, '새 타이머'), findsNothing);
-        // 앱바 없이 작업명 줄이 화면 이동·목록 버튼을 맡는다
+        // 앱바 없이 타이머 제목 줄이 화면 이동·목록 버튼을 맡는다
         expect(find.byType(AppBar), findsNothing);
         expect(find.byTooltip('화면 이동'), findsOneWidget);
         expect(find.byTooltip('타이머 목록'), findsOneWidget);
