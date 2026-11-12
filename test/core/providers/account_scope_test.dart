@@ -158,22 +158,25 @@ void main() {
   });
 
   testWidgets('로그아웃 전에 보낸 요청이 나중에 끝나도 새 화면에 앞 계정 값이 나오지 않는다', (tester) async {
-    _server.gate = Completer<void>();
+    final aRequest = Completer<void>();
+    _server.gate = aRequest;
     await pumpScope(tester);
     auth().signIn('a');
     await tester.pump();
     expect(find.text('0 받는 중'), findsOneWidget);
-    final pending = _server.gate == null;
-    expect(pending, isTrue, reason: 'a의 요청이 대기 중이어야 한다');
+    expect(_server.gate, isNull, reason: 'a의 요청이 대기 중이어야 한다');
 
     _server.value = 'b의 데이터';
     auth().leave();
     await tester.pumpAndSettle();
     expect(find.text('0 b의 데이터'), findsOneWidget);
 
-    // 대기 중이던 a의 요청은 버린 컨테이너에서 끝나 화면에 닿지 않는다
+    // 대기 중이던 a의 요청을 이제 끝낸다. 버린 컨테이너에서 끝나 화면에 닿지 않는다
+    aRequest.complete();
     await tester.pumpAndSettle();
+    expect(find.text('0 b의 데이터'), findsOneWidget);
     expect(find.textContaining('a의 데이터'), findsNothing);
+    expect(_server.fetches, 2);
   });
 
   testWidgets('로그아웃 직전에 잡아 둔 앱 ScaffoldMessenger로 띄운 스낵바가 보인다', (tester) async {
@@ -199,6 +202,7 @@ void main() {
     before.showSnackBar(const SnackBar(content: Text('탈퇴를 신청했습니다')));
     await tester.pumpAndSettle();
 
+    expect(containers, hasLength(2), reason: '컨테이너가 바뀌어 아래 트리가 다시 만들어졌어야 한다');
     expect(before.mounted, isTrue);
     expect(find.text('탈퇴를 신청했습니다'), findsOneWidget);
   });
