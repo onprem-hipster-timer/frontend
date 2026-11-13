@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 할 일·일정을 삭제할 때 연결된 타이머를 어떻게 할지 묻는다. 닫으면 null.
 Future<LinkedTimerPolicy?> showLinkedTimerPolicyDialog(
@@ -10,18 +11,19 @@ Future<LinkedTimerPolicy?> showLinkedTimerPolicyDialog(
 }) {
   return showAppChoiceDialog<LinkedTimerPolicy>(
     context,
-    title: '연결된 타이머 처리',
-    content: '"$itemTitle"에 연결된 타이머가 있습니다.\n그 타이머를 어떻게 할까요?',
+    title: '연결된 ${Terms.timer} 처리',
+    content:
+        '"$itemTitle"에 연결된 ${Terms.timer.withJosa('이', '가')} 있습니다.\n그 ${Terms.timer.withJosa('을', '를')} 어떻게 할까요?',
     choices: const [
       AppDialogChoice(
         value: LinkedTimerPolicy.unlink,
         label: '연결만 해제',
-        description: '타이머 기록은 남기고, 실행 중이면 계속 실행합니다',
+        description: '${Terms.timer} 기록은 남기고, 실행 중이면 계속 실행합니다',
       ),
       AppDialogChoice(
         value: LinkedTimerPolicy.delete,
-        label: '타이머 삭제',
-        description: '타이머 기록도 함께 지웁니다',
+        label: '${Terms.timer} 삭제',
+        description: '${Terms.timer} 기록도 함께 지웁니다',
       ),
     ],
   );

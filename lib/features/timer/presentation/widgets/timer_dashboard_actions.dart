@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 다이얼 아래 묶음: 상태 문구, 대기 중이면 작업·휴식 고르기, 조작 버튼
 ///
@@ -91,12 +92,12 @@ class _ModeToggle extends StatelessWidget {
       segments: const [
         ButtonSegment(
           value: false,
-          label: Text('작업'),
+          label: Text(Terms.focus),
           icon: Icon(Icons.timer_outlined),
         ),
         ButtonSegment(
           value: true,
-          label: Text('휴식'),
+          label: Text(Terms.rest),
           icon: Icon(Icons.coffee_outlined),
         ),
       ],

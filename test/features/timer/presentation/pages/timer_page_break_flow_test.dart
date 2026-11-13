@@ -149,7 +149,7 @@ void main() {
     matching: find.byType(FloatingActionButton),
   );
 
-  /// 대시보드의 작업 제목
+  /// 대시보드의 타이머 제목
   Finder title(String text) => find.descendant(
     of: find.byType(CurrentTaskDisplay),
     matching: find.text(text),
@@ -349,7 +349,7 @@ void main() {
       expect(repository.calls, ['list']);
     });
 
-    testWidgets('대기 상태에서 시작한 휴식 중에는 새 작업 시작 버튼이 없다', (tester) async {
+    testWidgets('대기 상태에서 시작한 휴식 중에는 새 타이머 버튼이 없다', (tester) async {
       await pumpPage(tester, []);
       await tester.tap(
         find

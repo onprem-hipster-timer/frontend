@@ -99,7 +99,7 @@ void main() {
 
   testLayoutAudit(
     'start_timer_sheet',
-    subject: '작업 제목',
+    subject: '타이머 제목',
     build: (text) => wrapWithApp(overrides: overrides(text.value))(
       OpenOnStart(
         open: (context) => showStartTimerSheet(

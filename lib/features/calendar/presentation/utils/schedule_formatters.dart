@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 // ============================================================
 // 날짜 유틸리티
@@ -118,7 +119,7 @@ String getTimerStatusText(TimerStatus status) => switch (status) {
   TimerStatus.notStarted => '시작 전',
   TimerStatus.running => '진행중',
   TimerStatus.paused => '일시정지',
-  TimerStatus.completed => '완료',
+  TimerStatus.completed => Terms.complete,
   TimerStatus.cancelled => '취소',
   TimerStatus.$unknown => '알 수 없음',
 };

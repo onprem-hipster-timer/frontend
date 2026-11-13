@@ -6,6 +6,7 @@ import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_group_row.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 그룹별로 태그 칩을 늘어놓는다.
 class TodoTagPicker extends ConsumerWidget {
@@ -68,7 +69,8 @@ class TodoTagPicker extends ConsumerWidget {
                   AppEmptyState(
                     icon: Icons.label_outline,
                     title: '아직 태그가 없습니다',
-                    message: '새 태그를 만들어 할 일을 분류해보세요',
+                    message:
+                        '새 태그를 만들어 ${Terms.todo.withJosa('을', '를')} 분류해보세요',
                     actionLabel: '첫 태그 만들기',
                     onAction: () => _createTag(context, ref),
                   ),

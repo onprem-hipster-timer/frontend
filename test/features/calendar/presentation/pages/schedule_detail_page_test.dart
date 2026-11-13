@@ -15,6 +15,13 @@ import '../../../../helpers/linked_timer_policy_backend.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/schedule_fixtures.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import 'package:momeet/shared/domain/terms.dart';
+
+/// '할 일로 변환' 버튼
+final _convertLabel = '${Terms.todo.withJosa('으로', '로')} 변환';
+
+/// '연결된 할 일 보기' 버튼
+final _linkedTodoLabel = '연결된 ${Terms.todo} 보기';
 
 void main() {
   setUpAll(() async {
@@ -149,15 +156,15 @@ void main() {
   // ============================================================
   // TODO 변환
   // ============================================================
-  group('TODO 변환', () {
-    testWidgets('연결된 TODO가 없으면 변환 버튼이 표시된다', (tester) async {
+  group('할 일로 변환', () {
+    testWidgets('연결된 할 일이 없으면 변환 버튼이 표시된다', (tester) async {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      expect(find.text('TODO로 변환'), findsOneWidget);
+      expect(find.text(_convertLabel), findsOneWidget);
     });
 
-    testWidgets('연결된 TODO가 있으면 "연결된 TODO 보기" 버튼이 표시된다', (tester) async {
+    testWidgets('연결된 할 일이 있으면 "연결된 할 일 보기" 버튼이 표시된다', (tester) async {
       final linkedSchedule = makeSchedule(
         id: testScheduleId,
         title: '연결된 일정',
@@ -168,8 +175,8 @@ void main() {
       await tester.pumpWidget(buildPage(schedule: linkedSchedule));
       await tester.pumpAndSettle();
 
-      expect(find.text('연결된 TODO 보기'), findsOneWidget);
-      expect(find.text('TODO로 변환'), findsNothing);
+      expect(find.text(_linkedTodoLabel), findsOneWidget);
+      expect(find.text(_convertLabel), findsNothing);
     });
   });
 

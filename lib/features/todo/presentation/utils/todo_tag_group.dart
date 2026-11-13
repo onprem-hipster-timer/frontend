@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
 import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 새 할 일이 들어갈 태그 그룹 id
 ///
@@ -21,10 +22,10 @@ Future<String> ensureTodoTagGroup(WidgetRef ref, String selected) async {
       (tsx) => tsx
           .get(tag_providers.tagGroupsRawProvider.notifier)
           .createGroup(
-            const TagGroupCreate(
+            TagGroupCreate(
               name: '기본 그룹',
               color: '#2196F3',
-              description: '할 일을 위한 기본 태그 그룹입니다.',
+              description: '${Terms.todo.withJosa('을', '를')} 위한 기본 태그 그룹입니다.',
             ),
           ),
     );

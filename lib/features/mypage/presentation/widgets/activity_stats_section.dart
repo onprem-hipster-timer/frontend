@@ -3,6 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 마이페이지 활동 통계 섹션
 class ActivityStatsSection extends ConsumerWidget {
@@ -78,7 +79,7 @@ class _StatsBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        Text('할 일 상태별 현황', style: heading),
+        Text('${Terms.todo} 상태별 현황', style: heading),
         const SizedBox(height: 12),
         Row(
           children: [

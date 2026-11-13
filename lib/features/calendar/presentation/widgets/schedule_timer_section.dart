@@ -7,6 +7,7 @@ import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart';
 import 'package:momeet/core/utils/time_formatters.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 일정에 연결된 타이머 목록을 표시하는 섹션.
 ///
@@ -38,7 +39,7 @@ class ScheduleTimerSection extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '타이머',
+                  Terms.timer,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
@@ -73,7 +74,7 @@ class ScheduleTimerSection extends ConsumerWidget {
       error: (e, s) => Padding(
         padding: const EdgeInsets.only(left: 32),
         child: Text(
-          '타이머를 불러올 수 없습니다',
+          '${Terms.timer.withJosa('을', '를')} 불러올 수 없습니다',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

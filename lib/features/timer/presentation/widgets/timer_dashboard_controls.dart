@@ -6,6 +6,7 @@ import 'package:momeet/features/timer/presentation/utils/timer_actions.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_control_button.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 대시보드 맨 아래의 조작 버튼
 ///
@@ -44,7 +45,7 @@ class TimerDashboardControls extends ConsumerWidget {
     if (onBreak) {
       return FloatingActionButton(
         onPressed: () => ref.read(breakTimerProvider.notifier).end(),
-        tooltip: breakOver ? '확인' : '휴식 끝내기',
+        tooltip: breakOver ? '확인' : '${Terms.rest} 끝내기',
         backgroundColor: colorScheme.tertiary,
         child: Icon(
           breakOver ? Icons.check : Icons.stop,
@@ -106,7 +107,10 @@ class TimerDashboardControls extends ConsumerWidget {
     if (activeTimer == null || activeTimer.status == TimerStatus.completed) {
       ref.invalidate(myActiveTimersProvider);
       if (context.mounted) {
-        showAppSnackBar(context, '진행 중인 작업이 없습니다.');
+        showAppSnackBar(
+          context,
+          '진행 중인 ${Terms.timer.withJosa('이', '가')} 없습니다',
+        );
       }
       return;
     }
@@ -123,8 +127,8 @@ class TimerDashboardControls extends ConsumerWidget {
       if (context.mounted) {
         showAppSnackBar(
           context,
-          '작업을 완료했습니다',
-          actionLabel: '새 타이머 시작',
+          '${Terms.timer.withJosa('을', '를')} ${Terms.complete}했습니다',
+          actionLabel: '새 ${Terms.timer} 시작',
           onAction: () {
             if (!context.mounted) return;
             startTimerFromSheet(context, ref, initialDuration: pendingDuration);
@@ -135,7 +139,7 @@ class TimerDashboardControls extends ConsumerWidget {
       if (context.mounted) {
         showAppSnackBar(
           context,
-          '완료 실패: ${error.toString()}',
+          '${Terms.complete} 실패: ${error.toString()}',
           kind: AppNoticeKind.error,
         );
       }

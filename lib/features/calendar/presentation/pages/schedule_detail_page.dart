@@ -12,6 +12,7 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_sec
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
@@ -117,7 +118,11 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       );
 
       if (context.mounted) {
-        showAppSnackBar(context, 'TODO로 변환되었습니다', kind: AppNoticeKind.success);
+        showAppSnackBar(
+          context,
+          '${Terms.todo.withJosa('으로', '로')} 변환되었습니다',
+          kind: AppNoticeKind.success,
+        );
       }
     } catch (error) {
       if (context.mounted) {
@@ -152,7 +157,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: '일정 삭제',
-      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n되돌릴 수 없습니다.',
       confirmText: '삭제',
       destructive: true,
     );
@@ -263,7 +268,7 @@ class _TodoConversionButton extends StatelessWidget {
         child: OutlinedButton.icon(
           onPressed: onOpenLinked,
           icon: const Icon(Icons.link),
-          label: const Text('연결된 TODO 보기'),
+          label: const Text('연결된 ${Terms.todo} 보기'),
           style: _actionButtonStyle,
         ),
       );
@@ -280,12 +285,12 @@ class _TodoConversionButton extends StatelessWidget {
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Row(
+            : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.transform, size: 18),
-                  SizedBox(width: 8),
-                  Text('TODO로 변환'),
+                  const Icon(Icons.transform, size: 18),
+                  const SizedBox(width: 8),
+                  Text('${Terms.todo.withJosa('으로', '로')} 변환'),
                 ],
               ),
       ),

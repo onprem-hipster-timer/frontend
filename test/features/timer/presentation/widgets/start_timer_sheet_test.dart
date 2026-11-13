@@ -9,6 +9,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/start_timer_sheet_driver.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 void main() {
   TodoRead todo(
@@ -195,12 +196,12 @@ void main() {
     expect(result?.todos, [report]);
   });
 
-  testWidgets('작업명도 할 일도 없으면 새 작업으로 시작한다', (tester) async {
+  testWidgets('타이머 제목도 할 일도 없으면 새 타이머로 시작한다', (tester) async {
     await open(tester);
 
     await tester.startFromSheet();
 
-    expect(result?.title, '새 작업');
+    expect(result?.title, '새 ${Terms.timer}');
     expect(result?.todos, isEmpty);
     expect(result?.duration, const Duration(minutes: 25));
   });
@@ -239,7 +240,7 @@ void main() {
     await tester.startFromSheet();
 
     expect(result?.todos, isEmpty);
-    expect(result?.title, '새 작업');
+    expect(result?.title, '새 ${Terms.timer}');
   });
 
   testWidgets('할 일을 읽는 동안에도 처음 연결할 할 일은 남는다', (tester) async {
@@ -269,7 +270,7 @@ void main() {
     await tester.startFromSheet();
 
     expect(result?.todos, isEmpty);
-    expect(result?.title, '새 작업');
+    expect(result?.title, '새 ${Terms.timer}');
   });
 
   testWidgets('360 폭에서 긴 제목의 할 일을 골라도 넘치지 않는다', (tester) async {
@@ -426,7 +427,7 @@ void main() {
       expect(tester.startSheetTitleEnabled(), isTrue);
       await tester.startFromSheet();
       expect(result?.todos, isEmpty);
-      expect(result?.title, '새 작업');
+      expect(result?.title, '새 ${Terms.timer}');
     });
 
     testWidgets('체크한 채 목록을 그냥 닫으면 앞서 고른 할 일을 그대로 둔다', (tester) async {
