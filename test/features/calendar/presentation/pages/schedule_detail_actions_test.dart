@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart' show RequestOptions;
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
 import 'package:momeet/core/providers/retry_policy.dart';
@@ -24,6 +27,25 @@ final _convertLabel = '${Terms.todo.withJosa('으로', '로')} 변환';
 
 /// '연결된 할 일 보기' 버튼
 final _linkedTodoLabel = '연결된 ${Terms.todo} 보기';
+
+/// 할 일 하나 읽기를 [gate]가 끝날 때까지 붙잡는 가짜 클라이언트. 읽은 횟수를 센다
+class _GatedTodosClient extends FakeTodosClient {
+  _GatedTodosClient(super.todos);
+
+  final gate = Completer<void>();
+  var reads = 0;
+
+  @override
+  Future<TodoRead> readTodoV1TodosTodoIdGet({
+    required String todoId,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    reads++;
+    await gate.future;
+    return super.readTodoV1TodosTodoIdGet(todoId: todoId);
+  }
+}
 
 /// 일정 상세의 수정·할 일로 바꾸기·삭제·연결된 할 일로 가기
 void main() {
@@ -200,6 +222,38 @@ void main() {
 
     expect(location(), '/todo/group-study');
     expect(find.text('그룹 화면 group-study'), findsOneWidget);
+  });
+
+  testWidgets('연결된 할 일을 받는 동안 버튼을 막고 진행을 보이며, 다시 눌러도 한 번만 간다', (tester) async {
+    final gated = _GatedTodosClient(todos.todos);
+    todos = gated;
+    await pumpDetail(tester, schedule(sourceTodoId: 'todo-1'));
+    Finder buttonOf(String label) => find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+    );
+    final button = buttonOf(_linkedTodoLabel);
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pump();
+
+    expect(tester.widget<ButtonStyleButton>(button).onPressed, isNull);
+    expect(
+      find.descendant(
+        of: button,
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<ButtonStyleButton>(buttonOf('삭제')).onPressed, isNull);
+    await tester.tap(button, warnIfMissed: false);
+    await tester.pump();
+    expect(gated.reads, 1);
+
+    gated.gate.complete();
+    await tester.pumpAndSettle();
+    expect(location(), '/todo/group-study');
+    expect(gated.reads, 1);
   });
 
   testWidgets('연결된 할 일을 받지 못하면 할 일 탭으로 간다', (tester) async {

@@ -26,7 +26,7 @@ class ScheduleDetailPage extends ConsumerStatefulWidget {
 }
 
 /// 상세 페이지에서 진행 중인 mutation 종류 — 버튼별 로딩 표시를 구분하기 위함.
-enum _PendingAction { convert, delete }
+enum _PendingAction { convert, openLinked, delete }
 
 class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   _PendingAction? _pendingAction;
@@ -34,9 +34,10 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   @override
   Widget build(BuildContext context) {
     final scheduleAsync = ref.watch(scheduleDetailProvider(widget.scheduleId));
-    final isMutating =
+    final isBusy =
         ref.watch(deleteScheduleMutation).isPending ||
-        ref.watch(convertToTodoMutation).isPending;
+        ref.watch(convertToTodoMutation).isPending ||
+        _pendingAction != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -60,20 +61,26 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
               const SizedBox(height: 16),
               _TodoConversionButton(
                 linked: schedule.sourceTodoId != null,
-                converting: _pendingAction == _PendingAction.convert,
-                onOpenLinked: () =>
-                    _navigateToLinkedTodo(context, schedule.sourceTodoId!),
-                onConvert: isMutating
+                busy:
+                    _pendingAction == _PendingAction.convert ||
+                    _pendingAction == _PendingAction.openLinked,
+                onOpenLinked: isBusy
+                    ? null
+                    : () => _navigateToLinkedTodo(
+                        context,
+                        schedule.sourceTodoId!,
+                      ),
+                onConvert: isBusy
                     ? null
                     : () => _handleConvertToTodo(context, ref, schedule),
               ),
               const SizedBox(height: 16),
               _EditDeleteButtons(
                 deleting: _pendingAction == _PendingAction.delete,
-                onEdit: isMutating
+                onEdit: isBusy
                     ? null
                     : () => showScheduleEditSheet(context, schedule),
-                onDelete: isMutating
+                onDelete: isBusy
                     ? null
                     : () => _handleDelete(context, ref, schedule),
               ),
@@ -131,6 +138,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     String todoId,
   ) async {
     final provider = todoByIdProvider(todoId);
+    setState(() => _pendingAction = _PendingAction.openLinked);
     // 받는 동안 autoDispose 프로바이더를 붙잡아 둔다
     final keepAlive = ref.listenManual(provider, (_, _) {});
     String? groupId;
@@ -140,6 +148,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       groupId = null;
     } finally {
       keepAlive.close();
+      if (mounted) setState(() => _pendingAction = null);
     }
     if (!context.mounted) return;
     if (groupId == null) {
@@ -251,14 +260,18 @@ class _ScheduleTitle extends StatelessWidget {
 class _TodoConversionButton extends StatelessWidget {
   const _TodoConversionButton({
     required this.linked,
-    required this.converting,
+    required this.busy,
     required this.onOpenLinked,
     required this.onConvert,
   });
 
   final bool linked;
-  final bool converting;
-  final VoidCallback onOpenLinked;
+
+  /// 할 일로 바꾸는 중이거나 연결된 할 일을 받는 중이다
+  final bool busy;
+
+  /// null이면 다른 작업이 진행 중이라 누를 수 없다
+  final VoidCallback? onOpenLinked;
 
   /// null이면 다른 작업이 진행 중이라 누를 수 없다
   final VoidCallback? onConvert;
@@ -270,7 +283,13 @@ class _TodoConversionButton extends StatelessWidget {
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: onOpenLinked,
-          icon: const Icon(Icons.link),
+          icon: busy
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.link),
           label: const Text('연결된 ${Terms.todo} 보기'),
           style: _actionButtonStyle,
         ),
@@ -282,7 +301,7 @@ class _TodoConversionButton extends StatelessWidget {
       child: FilledButton.tonal(
         onPressed: onConvert,
         style: _actionButtonStyle,
-        child: converting
+        child: busy
             ? const SizedBox(
                 width: 16,
                 height: 16,
