@@ -321,6 +321,8 @@ void main() {
       await tapVisible(tester, find.text('수정'));
 
       expect(todos.updated.single.$2.todoGroupId, isNull);
+      expect(find.text('할 일이 수정되었습니다'), findsOneWidget);
+      expect(find.textContaining('옮겼습니다'), findsNothing);
     });
 
     testWidgets('같은 할 일 그룹을 다시 고르면 그룹을 보내지 않는다', (tester) async {
@@ -345,6 +347,8 @@ void main() {
       await tapVisible(tester, find.text('수정'));
 
       expect(todos.updated.single.$2.todoGroupId, 'group-work');
+      expect(find.text("'업무' 할 일 그룹으로 옮겼습니다"), findsOneWidget);
+      expect(find.text('할 일이 수정되었습니다'), findsNothing);
     });
 
     testWidgets('상위 할 일이 있으면 옮길 때 상위 연결이 풀린다고 알린다', (tester) async {

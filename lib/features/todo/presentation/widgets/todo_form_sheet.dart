@@ -3,6 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_status_chips.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_picker.dart';
@@ -180,7 +181,11 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         navigator.pop();
         scaffoldMessenger.showAppSnackBar(
           _isEditMode
-              ? '${Terms.todo.withJosa('이', '가')} 수정되었습니다'
+              ? todoUpdatedMessage(
+                  widget.todo!,
+                  values,
+                  ref.read(todoGroupsProvider).value,
+                )
               : '${Terms.todo.withJosa('이', '가')} 생성되었습니다',
           kind: AppNoticeKind.success,
         );

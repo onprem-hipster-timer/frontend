@@ -141,6 +141,7 @@ void main() {
     expect(todos.updated.single.$2.todoGroupId, 'group-study');
     expect(find.text('보고서'), findsNothing);
     expect(find.text('회의 준비'), findsOneWidget);
+    expect(find.text("'학습' 할 일 그룹으로 옮겼습니다"), findsOneWidget);
     expect(todos.readGroupIds.last, ['group-work']);
     expect(
       [

@@ -6,6 +6,7 @@ import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/linked_schedule_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_status_chips.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 서버에 보낼 상태. UNSCHEDULED/SCHEDULED는 서버가 마감일 유무로 정하는 값이라
 /// 보내지 않는다(보내서 실제와 다르면 422). 사용자가 고르는 상태는 완료·취소뿐이다.
@@ -74,6 +75,19 @@ Future<bool> updateTodoFromForm(
         ),
   );
   return true;
+}
+
+/// [todo]를 [values]로 고친 뒤의 알림. 할 일 그룹을 옮겼고 [groups]에서 그 이름을 찾으면 옮긴 곳을 알린다
+String todoUpdatedMessage(
+  TodoRead todo,
+  TodoFormValues values,
+  List<TodoGroupRead>? groups,
+) {
+  final target = values.todoGroupId == todo.todoGroupId
+      ? null
+      : groups?.where((group) => group.id == values.todoGroupId).firstOrNull;
+  if (target == null) return '${Terms.todo.withJosa('이', '가')} 수정되었습니다';
+  return "'${target.name}' ${Terms.todoGroup.withJosa('으로', '로')} 옮겼습니다";
 }
 
 /// [values]로 할 일을 만든다(할 일 그룹이 없으면 서버가 기본 그룹에 넣는다). [parentId]를 주면 그 할 일의 하위로 만든다
