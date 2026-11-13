@@ -19,6 +19,9 @@ abstract final class Terms {
 
   /// 타이머를 끝내는 동작
   static const complete = '완료';
+
+  /// 내 일정·할 일·타이머를 누가 볼 수 있는지 정한 것
+  static const visibility = '공유 설정';
 }
 
 const _hangulFirst = 0xAC00;

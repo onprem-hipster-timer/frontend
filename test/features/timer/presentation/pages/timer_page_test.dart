@@ -26,6 +26,7 @@ import 'package:momeet/features/timer/presentation/providers/break_timer_provide
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
+import 'package:momeet/features/visibility/presentation/widgets/visibility_button.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
