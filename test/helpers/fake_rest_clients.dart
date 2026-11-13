@@ -201,6 +201,7 @@ final defaultTodoGroup = makeTodoGroup(
 ///
 /// 할 일 그룹은 서버처럼 기본 그룹이 늘 있고([groups]에 없으면 [defaultTodoGroup]을 넣는다),
 /// 기본 먼저·이름순으로 준다. 그룹을 지우면 그 그룹의 할 일은 기본 그룹으로 옮겨진다.
+/// 할 일의 그룹을 바꾸면 하위 할 일도 함께 옮겨지고, 상위 할 일이 옛 그룹에 남으면 상위 연결이 풀린다.
 class FakeTodosClient extends Fake implements TodosClient {
   FakeTodosClient([
     List<TodoRead> todos = const [],
@@ -302,13 +303,44 @@ class FakeTodosClient extends Fake implements TodosClient {
             status: TodoStatus.unscheduled,
             createdAt: _at,
           );
-    final next = old.copyWith(
+    var next = old.copyWith(
       title: body.title ?? old.title,
       status: body.status ?? old.status,
       parentId: body.parentId ?? old.parentId,
     );
+    final groupId = body.todoGroupId;
+    if (index >= 0 && groupId != null && groupId != old.todoGroupId) {
+      final moved = _subtreeIds(todoId);
+      for (var i = 0; i < todos.length; i++) {
+        if (moved.contains(todos[i].id)) {
+          todos[i] = todos[i].copyWith(todoGroupId: groupId);
+        }
+      }
+      final parent = todos.where((t) => t.id == next.parentId).firstOrNull;
+      next = next.copyWith(
+        todoGroupId: groupId,
+        parentId: parent?.todoGroupId == groupId ? next.parentId : null,
+      );
+    }
     if (index >= 0) todos[index] = next;
     return next;
+  }
+
+  /// [rootId]와 그 아래 모든 할 일의 id
+  Set<String> _subtreeIds(String rootId) {
+    final ids = {rootId};
+    var grew = true;
+    while (grew) {
+      grew = false;
+      for (final todo in todos) {
+        if (todo.parentId != null &&
+            ids.contains(todo.parentId) &&
+            ids.add(todo.id)) {
+          grew = true;
+        }
+      }
+    }
+    return ids;
   }
 
   @override
