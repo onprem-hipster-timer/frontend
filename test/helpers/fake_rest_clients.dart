@@ -199,6 +199,8 @@ final defaultTodoGroup = makeTodoGroup(
 
 /// 메모리에 할 일과 할 일 그룹을 들고 있는 [TodosClient]. 받은 요청을 기록한다.
 ///
+/// 목록은 서버처럼 `scope`로 거른다([ResourceScope.mine]이 기본).
+///
 /// 할 일 그룹은 서버처럼 기본 그룹이 늘 있고([groups]에 없으면 [defaultTodoGroup]을 넣는다),
 /// 기본 먼저·이름순으로 준다. 그룹을 지우면 그 그룹의 할 일은 기본 그룹으로 옮겨진다.
 /// 할 일의 그룹을 바꾸면 하위 할 일도 함께 옮겨지고, 상위 할 일이 옛 그룹에 남으면 상위 연결이 풀린다.
@@ -228,6 +230,9 @@ class FakeTodosClient extends Fake implements TodosClient {
   /// 목록 조회마다 받은 `group_ids` 필터.
   final readGroupIds = <List<String>?>[];
 
+  /// 목록 조회마다 받은 `scope`.
+  final readScopes = <ResourceScope?>[];
+
   /// 설정하면 목록 조회가 이 오류로 실패한다.
   Object? readError;
 
@@ -250,6 +255,7 @@ class FakeTodosClient extends Fake implements TodosClient {
     RequestOptions? options,
   }) async {
     readGroupIds.add(todoGroupIds);
+    readScopes.add(scope);
     final failures = readFailures;
     if (readError != null && (failures == null || failures > 0)) {
       if (failures != null) readFailures = failures - 1;
@@ -257,7 +263,8 @@ class FakeTodosClient extends Fake implements TodosClient {
     }
     return [
       for (final todo in todos)
-        if (todoGroupIds == null || todoGroupIds.contains(todo.todoGroupId))
+        if ((todoGroupIds == null || todoGroupIds.contains(todo.todoGroupId)) &&
+            _inScope(scope, todo.isShared))
           todo,
     ];
   }
@@ -439,7 +446,15 @@ class FakeTodosClient extends Fake implements TodosClient {
 List<String> explicitNullFields(RequestOptions? options) =>
     (options?.extra['explicit_nulls'] as List<String>?) ?? const [];
 
+/// 서버처럼 `scope`로 거른다. mine(기본)은 내 것만, shared는 공유받은 것만, all은 둘 다
+bool _inScope(ResourceScope? scope, bool isShared) => switch (scope) {
+  ResourceScope.shared => isShared,
+  ResourceScope.all => true,
+  _ => !isShared,
+};
+
 /// 메모리에 일정을 들고 있는 [SchedulesClient]. 받은 요청을 기록한다.
+/// 목록은 서버처럼 `scope`로 거른다.
 class FakeSchedulesClient extends Fake implements SchedulesClient {
   FakeSchedulesClient([List<ScheduleRead> schedules = const []])
     : schedules = [...schedules];
@@ -457,6 +472,9 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   /// 설정하면 쓰기 요청이 이 오류로 실패한다.
   Object? writeError;
 
+  /// 목록 조회마다 받은 `scope`.
+  final readScopes = <ResourceScope?>[];
+
   void _failWrite() {
     if (writeError != null) throw writeError!;
   }
@@ -471,8 +489,12 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
     ResourceScope? scope = ResourceScope.mine,
     RequestOptions? options,
   }) async {
+    readScopes.add(scope);
     if (readError != null) throw readError!;
-    return [...schedules];
+    return [
+      for (final schedule in schedules)
+        if (_inScope(scope, schedule.isShared)) schedule,
+    ];
   }
 
   @override
