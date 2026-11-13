@@ -225,6 +225,50 @@ void main() {
       expect(todos.created.single.tagIds, isEmpty);
     });
 
+    testWidgets('태그 그룹이 없을 때 첫 태그 만들기는 태그 그룹부터 만들고, 그 그룹에 태그를 만들어 이어 고른다', (
+      tester,
+    ) async {
+      tags.groups.clear();
+      await open(tester);
+
+      expect(find.textContaining('태그 그룹을 만든 뒤'), findsOneWidget);
+      await tapVisible(tester, find.text('첫 태그 만들기'));
+      expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
+      await tester.enterText(field('태그 그룹 이름'), '생활');
+      await tapVisible(tester, find.widgetWithText(FilledButton, '생성').last);
+
+      expect(tags.createdGroups.single.name, '생활');
+      expect(find.text('새 태그 만들기'), findsOneWidget);
+      await tester.enterText(field('태그 이름'), '운동');
+      await tapVisible(tester, find.widgetWithText(FilledButton, '생성').last);
+
+      expect(tags.createdTags.single.groupId, 'group-new-1');
+      expect(find.text('새 태그 만들기'), findsNothing);
+      expect(find.text('새 할 일 만들기'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, '운동'), findsOneWidget);
+    });
+
+    testWidgets('태그 그룹이 없을 때 새 태그에서 태그 그룹 폼을 닫으면 태그 폼을 열지 않는다', (tester) async {
+      tags.groups.clear();
+      await open(tester);
+      await tapVisible(tester, find.text('새 태그'));
+      expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
+      await tapVisible(tester, find.widgetWithText(OutlinedButton, '취소').last);
+
+      expect(find.text('새 태그 그룹 만들기'), findsNothing);
+      expect(find.text('새 태그 만들기'), findsNothing);
+      expect(tags.createdGroups, isEmpty);
+      expect(find.text('새 할 일 만들기'), findsOneWidget);
+    });
+
+    testWidgets('태그 그룹이 있으면 새 태그는 바로 태그 폼을 연다', (tester) async {
+      await open(tester);
+      await tapVisible(tester, find.text('새 태그'));
+
+      expect(find.text('새 태그 그룹 만들기'), findsNothing);
+      expect(find.text('새 태그 만들기'), findsOneWidget);
+    });
+
     testWidgets('보내기에 실패하면 시트를 두고 오류를 알린다', (tester) async {
       todos.writeError = Exception('서버 오류');
       await open(tester);

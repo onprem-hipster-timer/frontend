@@ -5,6 +5,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_group_row.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -46,7 +47,8 @@ class TodoTagPicker extends ConsumerWidget {
                     icon: Icons.label_outline,
                     title: '아직 태그가 없습니다',
                     message:
-                        '새 태그를 만들어 ${Terms.todo.withJosa('을', '를')} 분류해보세요',
+                        '${Terms.tagGroup.withJosa('을', '를')} 만든 뒤 그 안에 태그를 만들어 '
+                        '${Terms.todo.withJosa('을', '를')} 분류해보세요',
                     actionLabel: '첫 태그 만들기',
                     onAction: () => _createTag(context, ref),
                   ),
@@ -81,18 +83,22 @@ class TodoTagPicker extends ConsumerWidget {
   }
 }
 
-/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다. 태그 그룹이 없으면 먼저 만들라고 알린다
+/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다.
+///
+/// 태그 그룹이 없으면 태그 그룹 폼을 먼저 열고, 태그 그룹이 생기면 그 그룹을 고른 채 태그 폼으로 잇는다.
+/// 태그 그룹 폼을 닫으면 아무것도 하지 않는다. 태그 목록을 아직 받지 못했으면 열지 않는다.
 Future<void> _createTag(
   BuildContext context,
   WidgetRef ref, {
   String? groupId,
 }) async {
-  final groups = ref
-      .read(tag_providers.tagTreeProvider)
-      .when(data: (g) => g, loading: () => const [], error: (_, _) => const []);
+  var groups = ref.read(tag_providers.tagTreeProvider).value;
+  if (groups == null) return;
   if (groups.isEmpty) {
-    showAppSnackBar(context, '먼저 태그 그룹을 생성해주세요. 태그 관리 페이지에서 그룹을 만들 수 있습니다.');
-    return;
+    await showTagGroupFormSheet(context);
+    if (!context.mounted) return;
+    groups = await ref.read(tag_providers.tagTreeProvider.future);
+    if (!context.mounted || groups.isEmpty) return;
   }
   await showTagFormSheet(
     context,
