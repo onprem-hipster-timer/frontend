@@ -14,10 +14,14 @@ class TodoGroupField extends ConsumerWidget {
     required this.selectedId,
     required this.onChanged,
     this.locked = false,
+    this.pickerContent,
   });
 
   final String? selectedId;
   final ValueChanged<String> onChanged;
+
+  /// 고르는 대화상자의 안내. 없으면 새 할 일을 넣을 그룹이라고 안내한다
+  final String? pickerContent;
 
   /// 바꿀 수 없게 한다(하위 할 일은 상위 할 일의 그룹을 따른다)
   final bool locked;
@@ -44,6 +48,7 @@ class TodoGroupField extends ConsumerWidget {
                 context,
                 groups: list,
                 selectedId: selected?.id,
+                content: pickerContent,
               );
               if (picked != null) onChanged(picked);
             },
@@ -51,16 +56,30 @@ class TodoGroupField extends ConsumerWidget {
   }
 }
 
+/// 있는 할 일을 다른 그룹으로 옮길 때 고르는 대화상자의 안내. 옮기면 무엇이 함께 바뀌는지 알린다
+String todoGroupMoveNote(TodoRead todo) {
+  final base =
+      '${Terms.todo.withJosa('을', '를')} 옮길 ${Terms.todoGroup}입니다. '
+      '하위 ${Terms.todo.withJosa('이', '가')} 있으면 함께 옮겨집니다.';
+  if (todo.parentId == null) return base;
+  return '$base 상위 ${Terms.todo.withJosa('과', '와')}의 연결은 풀리고, '
+      '옮긴 ${Terms.todoGroup}에서 맨 위 ${Terms.todo.withJosa('이', '가')} 됩니다.';
+}
+
 /// 할 일 그룹을 고르는 대화상자. 고른 그룹 id, 닫으면 null
+///
+/// [content]가 없으면 새 할 일을 넣을 그룹이라고 안내한다.
 Future<String?> showTodoGroupPicker(
   BuildContext context, {
   required List<TodoGroupRead> groups,
   String? selectedId,
+  String? content,
 }) {
   return showAppChoiceDialog<String>(
     context,
     title: '${Terms.todoGroup} 고르기',
-    content: '${Terms.todo.withJosa('을', '를')} 넣을 ${Terms.todoGroup}입니다.',
+    content:
+        content ?? '${Terms.todo.withJosa('을', '를')} 넣을 ${Terms.todoGroup}입니다.',
     selected: selectedId,
     choices: [
       for (final group in groups)

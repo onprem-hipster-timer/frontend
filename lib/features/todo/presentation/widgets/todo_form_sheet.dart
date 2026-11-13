@@ -44,7 +44,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   late var _selectedStatus = widget.todo?.status ?? TodoStatus.unscheduled;
   late final _selectedTagIds = {...?widget.todo?.tags.map((tag) => tag.id)};
   late var _selectedDeadline = widget.todo?.deadline;
-  late var _selectedGroupId = widget.defaultTodoGroupId;
+  late var _selectedGroupId =
+      widget.todo?.todoGroupId ?? widget.defaultTodoGroupId;
 
   @override
   void dispose() {
@@ -105,12 +106,12 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           },
           textInputAction: TextInputAction.done,
         ),
-        if (!_isEditMode)
-          TodoGroupField(
-            selectedId: _selectedGroupId,
-            onChanged: (id) => setState(() => _selectedGroupId = id),
-            locked: widget.defaultParentId != null,
-          ),
+        TodoGroupField(
+          selectedId: _selectedGroupId,
+          onChanged: (id) => setState(() => _selectedGroupId = id),
+          locked: widget.defaultParentId != null,
+          pickerContent: _isEditMode ? todoGroupMoveNote(widget.todo!) : null,
+        ),
         TodoFormStatusChips(
           selected: _selectedStatus,
           onChanged: (status) => setState(() => _selectedStatus = status),
@@ -160,6 +161,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       status: _selectedStatus,
       tagIds: _selectedTagIds.toList(),
       deadline: _selectedDeadline,
+      todoGroupId: _selectedGroupId,
     );
     try {
       if (_isEditMode) {
@@ -172,12 +174,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         );
         if (!sent) return;
       } else {
-        await createTodoFromForm(
-          ref,
-          values,
-          todoGroupId: _selectedGroupId,
-          parentId: widget.defaultParentId,
-        );
+        await createTodoFromForm(ref, values, parentId: widget.defaultParentId);
       }
       if (mounted) {
         navigator.pop();

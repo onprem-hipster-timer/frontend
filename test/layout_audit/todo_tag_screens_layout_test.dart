@@ -138,6 +138,27 @@ void main() {
   );
 
   testLayoutAudit(
+    'todo_group_picker_move',
+    subject: '할 일 그룹 이름',
+    build: (text) => app(
+      text,
+      OpenOnStart(
+        open: (context) => showTodoGroupPicker(
+          context,
+          groups: [
+            defaultTodoGroup,
+            makeTodoGroup(id: 'group-work', name: text.value),
+          ],
+          selectedId: 'group-work',
+          content: todoGroupMoveNote(
+            todo('todo-2', text.value, parentId: 'todo-1'),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  testLayoutAudit(
     'tag_form_sheet',
     subject: '태그·그룹 이름',
     build: (text) => app(

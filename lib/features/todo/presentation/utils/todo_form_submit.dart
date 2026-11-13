@@ -18,19 +18,20 @@ Future<DateTime?> pickTodoDeadline(BuildContext context, DateTime? current) {
   return showAppDatePicker(context, initial: current ?? DateTime.now());
 }
 
-/// 할 일 폼에서 고른 값. [description]이 비었으면 설명이 없다
+/// 할 일 폼에서 고른 값. [description]이 비었으면 설명이 없고, [todoGroupId]가 null이면 기본 그룹이다
 typedef TodoFormValues = ({
   String title,
   String description,
   TodoStatus status,
   List<String> tagIds,
   DateTime? deadline,
+  String? todoGroupId,
 });
 
 /// [todo]를 [values]로 고친다
 ///
-/// 비운 설명과 지운 마감일은 null로 보낸다. 예정된 할 일의 마감일을 지우면 연결된 일정 처리를 묻고,
-/// 질문을 닫으면 보내지 않고 false를 돌려준다.
+/// 비운 설명과 지운 마감일은 null로 보낸다. 할 일 그룹은 바뀌었을 때만 보낸다(서버가 하위 할 일을 함께 옮긴다).
+/// 예정된 할 일의 마감일을 지우면 연결된 일정 처리를 묻고, 질문을 닫으면 보내지 않고 false를 돌려준다.
 Future<bool> updateTodoFromForm(
   BuildContext context,
   WidgetRef ref,
@@ -61,6 +62,9 @@ Future<bool> updateTodoFromForm(
           TodoUpdate(
             title: values.title,
             description: description.isEmpty ? null : description,
+            todoGroupId: values.todoGroupId == todo.todoGroupId
+                ? null
+                : values.todoGroupId,
             status: todoStatusForRequest(values.status),
             tagIds: values.tagIds,
             deadline: values.deadline,
@@ -72,11 +76,10 @@ Future<bool> updateTodoFromForm(
   return true;
 }
 
-/// [values]로 [todoGroupId] 할 일 그룹에 할 일을 만든다(없으면 서버가 기본 그룹에 넣는다). [parentId]를 주면 그 할 일의 하위로 만든다
+/// [values]로 할 일을 만든다(할 일 그룹이 없으면 서버가 기본 그룹에 넣는다). [parentId]를 주면 그 할 일의 하위로 만든다
 Future<void> createTodoFromForm(
   WidgetRef ref,
   TodoFormValues values, {
-  String? todoGroupId,
   String? parentId,
 }) {
   return createTodoMutation.run(
@@ -86,7 +89,7 @@ Future<void> createTodoFromForm(
         .create(
           TodoCreate(
             title: values.title,
-            todoGroupId: todoGroupId,
+            todoGroupId: values.todoGroupId,
             status: todoStatusForRequest(values.status),
             description: values.description.isEmpty ? null : values.description,
             tagIds: values.tagIds,

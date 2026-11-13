@@ -257,16 +257,69 @@ void main() {
       TodoStatus status = TodoStatus.unscheduled,
       DateTime? deadline,
       String? description = '메모',
+      String? parentId,
     }) => TodoRead(
       id: 'todo-1',
       title: '보고서',
       description: description,
       todoGroupId: 'group-study',
+      parentId: parentId,
       status: status,
       deadline: deadline,
       tags: [study],
       createdAt: DateTime.utc(2026, 1, 1),
     );
+
+    testWidgets('지금 할 일 그룹을 칸에 보이고, 바꾸지 않으면 그룹을 보내지 않는다', (tester) async {
+      await open(tester, todo: existing());
+
+      expect(groupShown('학습'), findsOneWidget);
+      await tapVisible(tester, find.text('수정'));
+
+      expect(todos.updated.single.$2.todoGroupId, isNull);
+    });
+
+    testWidgets('같은 할 일 그룹을 다시 고르면 그룹을 보내지 않는다', (tester) async {
+      await open(tester, todo: existing());
+      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+      await tapVisible(tester, find.text('수정'));
+
+      expect(todos.updated.single.$2.todoGroupId, isNull);
+    });
+
+    testWidgets('다른 할 일 그룹을 고르면 그 그룹으로 옮긴다', (tester) async {
+      await open(tester, todo: existing());
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(
+        find.text('할 일을 옮길 할 일 그룹입니다. 하위 할 일이 있으면 함께 옮겨집니다.'),
+        findsOneWidget,
+      );
+      await tapVisible(tester, find.widgetWithText(ListTile, '업무'));
+      expect(groupShown('업무'), findsOneWidget);
+      await tapVisible(tester, find.text('수정'));
+
+      expect(todos.updated.single.$2.todoGroupId, 'group-work');
+    });
+
+    testWidgets('상위 할 일이 있으면 옮길 때 상위 연결이 풀린다고 알린다', (tester) async {
+      await open(tester, todo: existing(parentId: 'todo-parent'));
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.textContaining('하위 할 일이 있으면 함께 옮겨집니다.'), findsOneWidget);
+      expect(
+        find.textContaining('상위 할 일과의 연결은 풀리고, 옮긴 할 일 그룹에서 맨 위 할 일이 됩니다.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('상위 할 일이 없으면 상위 연결을 말하지 않는다', (tester) async {
+      await open(tester, todo: existing());
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.textContaining('상위'), findsNothing);
+    });
 
     testWidgets('기존 값으로 채우고 바꾼 값을 보낸 뒤 닫는다', (tester) async {
       await open(tester, todo: existing(deadline: DateTime(2026, 11, 20)));

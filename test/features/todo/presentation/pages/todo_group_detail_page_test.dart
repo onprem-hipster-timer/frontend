@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -128,6 +129,28 @@ void main() {
 
     expect(find.text('할 일 수정'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, '회의 준비'), findsOneWidget);
+  });
+
+  testWidgets('할 일을 다른 그룹으로 옮기면 하위 할 일과 함께 목록에서 빠진다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.text('보고서'));
+    await tapVisible(tester, find.byType(TodoGroupField));
+    await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+    await tapVisible(tester, find.widgetWithText(FilledButton, '수정'));
+
+    expect(todos.updated.single.$2.todoGroupId, 'group-study');
+    expect(find.text('보고서'), findsNothing);
+    expect(find.text('회의 준비'), findsOneWidget);
+    expect(todos.readGroupIds.last, ['group-work']);
+    expect(
+      [
+        for (final t in await todos.readTodosV1TodosGet(
+          todoGroupIds: ['group-work'],
+        ))
+          t.title,
+      ],
+      ['회의 준비'],
+    );
   });
 
   testWidgets('할 일이 없으면 안내를 보이고 첫 할 일 추가하기는 이 그룹으로 만든다', (tester) async {
