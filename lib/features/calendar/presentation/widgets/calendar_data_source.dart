@@ -12,14 +12,24 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 이 클래스는 OpenAPI에서 생성된 ScheduleRead 모델을 캘린더 Appointment로 변환합니다.
 class ScheduleCalendarDataSource extends CalendarDataSource {
   /// ScheduleRead 리스트로 DataSource 생성
-  ScheduleCalendarDataSource(List<ScheduleRead> schedules) {
+  ScheduleCalendarDataSource(List<ScheduleRead> schedules)
+    : _sharedIds = {
+        for (final schedule in schedules)
+          if (schedule.isShared) schedule.id,
+      } {
     appointments = schedules.map(_mapToAppointment).toList();
   }
 
   /// 빈 DataSource 생성
-  ScheduleCalendarDataSource.empty() {
+  ScheduleCalendarDataSource.empty() : _sharedIds = const {} {
     appointments = <Appointment>[];
   }
+
+  /// 다른 사람이 공유한 일정의 ID
+  final Set<String> _sharedIds;
+
+  /// [appointmentId]가 다른 사람이 공유한 일정인지. 보기만 하고 옮기거나 고칠 수 없다
+  bool isShared(Object? appointmentId) => _sharedIds.contains(appointmentId);
 
   /// ScheduleRead를 Appointment로 변환
   Appointment _mapToAppointment(ScheduleRead schedule) {

@@ -3,6 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:momeet/core/utils/color_utils.dart';
+import 'package:momeet/features/visibility/presentation/widgets/shared_by_text.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
     as fmt;
 import 'package:momeet/router.dart';
@@ -96,7 +97,7 @@ class ScheduleListSheet extends StatelessWidget {
   }
 }
 
-/// 일정 한 줄. 누르면 시트를 닫고 상세로 간다.
+/// 일정 한 줄. 누르면 시트를 닫고 상세로 간다. 공유받은 일정은 시간 옆에 공유한 사람을 보인다
 class _ScheduleTile extends StatelessWidget {
   static final _timeFormat = DateFormat('HH:mm');
 
@@ -116,6 +117,9 @@ class _ScheduleTile extends StatelessWidget {
     final end = schedule.endTime.toLocal();
     final allDay = fmt.isAllDay(start, end);
 
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+    );
     final timeText = allDay
         ? '종일'
         : '${_timeFormat.format(start)} - ${_timeFormat.format(end)}';
@@ -137,12 +141,14 @@ class _ScheduleTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text(
-        timeText,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-        ),
-      ),
+      subtitle: schedule.isShared
+          ? SharedByText(
+              ownerId: schedule.ownerId,
+              prefix: '$timeText · ',
+              style: subtitleStyle,
+              maxLines: 1,
+            )
+          : Text(timeText, style: subtitleStyle),
       trailing: const Icon(Icons.chevron_right, size: 20),
       onTap: () {
         Navigator.of(context).pop();

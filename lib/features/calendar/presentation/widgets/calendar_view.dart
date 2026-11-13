@@ -39,6 +39,14 @@ class CalendarViewWidget extends ConsumerStatefulWidget {
   ConsumerState<CalendarViewWidget> createState() => _CalendarViewWidgetState();
 }
 
+/// [details]가 그리는 일정이 [source]에서 공유받은 일정인지
+bool _sharedIn(
+  ScheduleCalendarDataSource? source,
+  CalendarAppointmentDetails details,
+) =>
+    source?.isShared((details.appointments.firstOrNull as Appointment?)?.id) ??
+    false;
+
 /// 월 보기 위쪽 요일 줄 높이(달력 기본값)
 const _monthViewHeaderHeight = 30.0;
 
@@ -102,8 +110,8 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
               onViewChanged: _onViewChanged,
               onTap: _onCalendarTap,
               onLongPress: _onCalendarLongPress,
-              onDragEnd: (details) => moveDraggedSchedule(ref, details),
-              onAppointmentResizeEnd: (details) => resizeSchedule(ref, details),
+              onDragEnd: _onDragEnd,
+              onAppointmentResizeEnd: _onResizeEnd,
               backgroundColor: colorScheme.surface,
               cellBorderColor: colorScheme.outlineVariant.withValues(
                 alpha: 0.3,
@@ -127,6 +135,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
                   ScheduleAppointmentBlock(
                     details: details,
                     viewType: ref.read(calendarSettingsProvider).viewType,
+                    shared: _sharedIn(loaded, details),
                   ),
             ),
 
@@ -178,6 +187,12 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       });
     }
   }
+
+  void _onDragEnd(AppointmentDragEndDetails details) =>
+      moveDraggedSchedule(context, ref, details);
+
+  void _onResizeEnd(AppointmentResizeEndDetails details) =>
+      resizeSchedule(context, ref, details);
 
   /// 캘린더 탭 콜백
   void _onCalendarTap(CalendarTapDetails details) {

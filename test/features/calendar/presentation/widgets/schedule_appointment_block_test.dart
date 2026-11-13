@@ -179,4 +179,41 @@ void main() {
     expect(find.text('회의'), findsOneWidget);
     expect(find.byType(Row), findsOneWidget);
   });
+
+  for (final viewType in [
+    CalendarViewType.month,
+    CalendarViewType.day,
+    CalendarViewType.agenda,
+  ]) {
+    testWidgets('${viewType.name} 보기의 공유받은 일정은 스크린 리더에 공유받은 일정이라고 알린다', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      const bounds = Rect.fromLTWH(0, 0, 160, 60);
+      Future<void> pump({required bool shared}) => tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: SizedBox.fromSize(
+              size: bounds.size,
+              child: ScheduleAppointmentBlock(
+                details: CalendarAppointmentDetails(DateTime(2026, 11, 9), [
+                  _appointment,
+                ], bounds),
+                viewType: viewType,
+                shared: shared,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await pump(shared: true);
+      expect(find.bySemanticsLabel('공유받은 일정'), findsOneWidget);
+      expect(find.text('회의'), findsOneWidget);
+
+      await pump(shared: false);
+      expect(find.bySemanticsLabel('공유받은 일정'), findsNothing);
+      handle.dispose();
+    });
+  }
 }

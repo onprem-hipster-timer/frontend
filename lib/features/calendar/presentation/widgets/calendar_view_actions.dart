@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
@@ -51,11 +52,18 @@ void openSchedulesOnDay(BuildContext context, WidgetRef ref, DateTime date) {
 }
 
 /// 끌어 놓은 일정을 길이는 그대로 두고 놓은 시각으로 옮긴다. 공휴일 등 일정이 아닌 것은 무시한다
-void moveDraggedSchedule(WidgetRef ref, AppointmentDragEndDetails details) {
+///
+/// 공유받은 일정은 옮기지 않고 제자리로 되돌린다([_keepShared]).
+void moveDraggedSchedule(
+  BuildContext context,
+  WidgetRef ref,
+  AppointmentDragEndDetails details,
+) {
   final appointment = details.appointment as Appointment?;
   final id = appointment?.id as String?;
   final droppingTime = details.droppingTime;
   if (appointment == null || id == null || droppingTime == null) return;
+  if (_keepShared(context, ref, id)) return;
   final duration = appointment.endTime.difference(appointment.startTime);
   updateScheduleMutation.run(
     ref,
@@ -70,10 +78,17 @@ void moveDraggedSchedule(WidgetRef ref, AppointmentDragEndDetails details) {
 }
 
 /// 길이를 바꾼 일정을 새 시작·종료로 보낸다. 일정이 아닌 것은 무시한다
-void resizeSchedule(WidgetRef ref, AppointmentResizeEndDetails details) {
+///
+/// 공유받은 일정은 바꾸지 않고 제자리로 되돌린다([_keepShared]).
+void resizeSchedule(
+  BuildContext context,
+  WidgetRef ref,
+  AppointmentResizeEndDetails details,
+) {
   final appointment = details.appointment as Appointment?;
   final id = appointment?.id as String?;
   if (id == null) return;
+  if (_keepShared(context, ref, id)) return;
   updateScheduleMutation.run(
     ref,
     (tsx) => tsx
@@ -84,4 +99,14 @@ void resizeSchedule(WidgetRef ref, AppointmentResizeEndDetails details) {
           newEndTime: details.endTime!,
         ),
   );
+}
+
+/// [id]가 공유받은 일정이면 달력이 옮겨 그린 것을 받은 그대로 다시 그리고 알린다. 공유받은 일정이면 true
+bool _keepShared(BuildContext context, WidgetRef ref, String id) {
+  final shared =
+      ref.read(scheduleOnlyDataSourceProvider).value?.isShared(id) ?? false;
+  if (!shared) return false;
+  ref.invalidate(scheduleOnlyDataSourceProvider);
+  showAppSnackBar(context, '공유받은 일정은 옮기거나 길이를 바꿀 수 없습니다');
+  return true;
 }

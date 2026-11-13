@@ -179,7 +179,7 @@ class CalendarFilter extends _$CalendarFilter {
 // 일정 데이터 Provider
 // ============================================================
 
-/// 현재 표시 범위의 일정 조회
+/// 현재 표시 범위의 일정 조회. 내 일정과 다른 사람이 공유한 일정(`is_shared`)을 함께 받는다
 ///
 /// CalendarSettings의 displayDate를 기반으로 적절한 범위의 일정을 조회합니다.
 @riverpod
@@ -198,6 +198,7 @@ Future<List<ScheduleRead>> currentSchedules(Ref ref) async {
   final response = await api.readSchedulesV1SchedulesGet(
     startDate: startDate.toUtc(),
     endDate: endDate.toUtc(),
+    scope: ResourceScope.all,
   );
 
   return response;

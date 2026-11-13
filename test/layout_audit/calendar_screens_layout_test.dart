@@ -69,7 +69,23 @@ void main() {
       ),
   ];
 
-  List<Override> calendarOverrides(String text, CalendarViewType viewType) => [
+  // 스트레스 문구 일정을 친구(이름도 [text])가 공유한 것으로 바꾼다
+  List<ScheduleRead> withShared(String text) => [
+    schedules(
+      text,
+    ).first.copyWith(isShared: true, ownerId: 'friend-1', sourceTodoId: null),
+    ...schedules(text).skip(1),
+  ];
+
+  Override friendsNamed(String text) => friendsProvider.overrideWith(
+    (ref) async => [makeFriend('friend-1', displayName: text)],
+  );
+
+  List<Override> calendarOverrides(
+    String text,
+    CalendarViewType viewType, {
+    bool shared = false,
+  }) => [
     calendarSettingsProvider.overrideWith(
       () => _FixedSettings(
         CalendarSettingsState(
@@ -80,7 +96,9 @@ void main() {
         ),
       ),
     ),
-    currentSchedulesProvider.overrideWith((ref) async => schedules(text)),
+    currentSchedulesProvider.overrideWith(
+      (ref) async => shared ? withShared(text) : schedules(text),
+    ),
     currentHolidaysProvider.overrideWith((ref) async => holidays(text)),
   ];
 
@@ -105,6 +123,15 @@ void main() {
         }
       },
     );
+
+    testLayoutAudit(
+      'calendar_page_${viewType.name}_shared',
+      subject: '${viewType.name} 보기 공유받은 일정',
+      build: (text) => wrapWithApp(
+        overrides: calendarOverrides(text.value, viewType, shared: true),
+      )(const CalendarPage()),
+      verify: expectNoHiddenSchedule,
+    );
   }
 
   testLayoutAudit(
@@ -124,6 +151,19 @@ void main() {
             ),
           ],
         ),
+      ],
+    )(const ScheduleDetailPage(scheduleId: 'schedule-0')),
+  );
+
+  testLayoutAudit(
+    'schedule_detail_page_shared',
+    subject: '일정 제목·공유한 친구 이름',
+    build: (text) => wrapWithApp(
+      overrides: [
+        scheduleDetailProvider(
+          'schedule-0',
+        ).overrideWith((ref) async => withShared(text.value).first),
+        friendsNamed(text.value),
       ],
     )(const ScheduleDetailPage(scheduleId: 'schedule-0')),
   );
@@ -198,6 +238,14 @@ void main() {
         allowedEmails: ['${text.value}@example.com', 'kim@partner.com'],
         allowedDomains: [text.value, 'company.co.kr'],
       ),
+    ),
+  );
+
+  testLayoutAudit(
+    'schedule_list_sheet_shared',
+    subject: '일정 제목·공유한 친구 이름',
+    build: (text) => wrapWithApp(overrides: [friendsNamed(text.value)])(
+      ScheduleListSheet(date: day, schedules: withShared(text.value)),
     ),
   );
 
