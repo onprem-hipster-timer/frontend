@@ -120,6 +120,23 @@ class _VisibilitySheetState extends ConsumerState<_VisibilitySheet> {
     _ => VisibilityUpdate(level: _level),
   };
 
+  /// 저장하면 누가 볼 수 있는지. [friends]가 null이면 친구 목록을 아직 모른다
+  String _audience(List<FriendRead>? friends) {
+    switch (_level) {
+      case VisibilityLevel.friends when friends != null && friends.isEmpty:
+        return '아직 친구가 없어 저장해도 나만 볼 수 있습니다';
+      case VisibilityLevel.friends:
+        return '저장하면 내 친구 모두가 볼 수 있습니다';
+      case VisibilityLevel.selected:
+        final count = _selectedFriendIds(friends).length;
+        return count == 0
+            ? '친구를 한 명 이상 고르면 저장할 수 있습니다'
+            : '저장하면 고른 친구 $count명만 볼 수 있습니다';
+      default:
+        return '저장하면 나만 볼 수 있습니다';
+    }
+  }
+
   Future<void> _save(List<FriendRead>? friends) async {
     // 다시 그리기 전에 연달아 누른 저장은 보내지 않는다
     if (_saving) return;
@@ -164,7 +181,9 @@ class _VisibilitySheetState extends ConsumerState<_VisibilitySheet> {
       );
     }
 
-    final friends = _level == VisibilityLevel.selected
+    // 친구 공개도 친구가 있는지 알아야 볼 수 있는 사람을 알린다
+    final friends =
+        _level == VisibilityLevel.friends || _level == VisibilityLevel.selected
         ? ref.watch(friendsProvider)
         : null;
 
@@ -197,7 +216,7 @@ class _VisibilitySheetState extends ConsumerState<_VisibilitySheet> {
               ],
             ),
           ),
-          if (friends != null)
+          if (friends != null && _level == VisibilityLevel.selected)
             _FriendChecklist(
               friends: friends,
               selected: _friendIds,
@@ -212,6 +231,8 @@ class _VisibilitySheetState extends ConsumerState<_VisibilitySheet> {
               onRetry: () => ref.invalidate(friendsProvider),
             ),
           const SizedBox(height: 16),
+          _Audience(_audience(friends?.value)),
+          const SizedBox(height: 8),
           AppFormActionBar(
             submitLabel: '저장',
             onSubmit: _canSave(friends?.value)
@@ -253,7 +274,10 @@ class _FriendChecklist extends StatelessWidget {
           trailing: TextButton(onPressed: onRetry, child: const Text('다시 시도')),
         ),
         data: (friends) => friends.isEmpty
-            ? const ListTile(title: Text('친구가 없습니다'))
+            ? const ListTile(
+                title: Text('친구가 없습니다'),
+                subtitle: Text('친구를 맺으면 여기서 고를 수 있습니다'),
+              )
             : Column(
                 children: [
                   for (final friend in friends)
@@ -271,6 +295,30 @@ class _FriendChecklist extends StatelessWidget {
                 ],
               ),
       ),
+    );
+  }
+}
+
+/// 저장하면 볼 수 있는 사람을 알리는 줄
+class _Audience extends StatelessWidget {
+  const _Audience(this.sentence);
+
+  final String sentence;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.visibility_outlined,
+          size: 20,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Text(sentence, style: theme.textTheme.bodyMedium)),
+      ],
     );
   }
 }

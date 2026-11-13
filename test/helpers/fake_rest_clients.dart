@@ -551,6 +551,89 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   }
 }
 
+/// 메모리에 공유 설정을 들고 있는 [VisibilityClient]. 받은 요청을 `get:schedule/s-1`처럼 [calls]에 기록한다.
+///
+/// 설정이 없는 리소스를 읽으면 서버처럼 404로 답한다. 저장하면 받은 목록 그대로 둔다.
+class FakeVisibilityClient extends Fake implements VisibilityClient {
+  /// `(리소스 종류, 리소스 id)`별 설정
+  final settings = <(ResourceType, String), VisibilityRead>{};
+
+  final calls = <String>[];
+
+  /// 저장(PUT)한 본문
+  final saved = <VisibilityUpdate>[];
+
+  /// 설정하면 조회가 이 오류로 실패한다.
+  Object? readError;
+
+  /// 설정하면 저장·삭제가 이 오류로 실패한다.
+  Object? writeError;
+
+  /// 설정하면 저장·삭제가 이 Future가 끝날 때까지 응답하지 않는다.
+  Future<void>? gate;
+
+  /// [type]의 [id]에 [update]를 저장해 둔다
+  void put(ResourceType type, String id, VisibilityUpdate update) {
+    settings[(type, id)] = VisibilityRead(
+      id: 'visibility-$id',
+      resourceType: type,
+      resourceId: id,
+      ownerId: 'me',
+      level: update.level,
+      createdAt: _at,
+      updatedAt: _at,
+      allowedUserIds: update.allowedUserIds ?? const [],
+      allowedEmails: update.allowedEmails ?? const [],
+      allowedDomains: update.allowedDomains ?? const [],
+    );
+  }
+
+  Future<void> _write() async {
+    await gate;
+    if (writeError != null) throw writeError!;
+  }
+
+  @override
+  Future<VisibilityRead> getVisibilityV1VisibilityResourceTypeResourceIdGet({
+    required ResourceType resourceType,
+    required String resourceId,
+    RequestOptions? options,
+  }) async {
+    calls.add('get:${resourceType.json}/$resourceId');
+    if (readError != null) throw readError!;
+    final setting = settings[(resourceType, resourceId)];
+    if (setting == null) {
+      throw httpError('/v1/visibility/${resourceType.json}/$resourceId', 404);
+    }
+    return setting;
+  }
+
+  @override
+  Future<VisibilityRead> setVisibilityV1VisibilityResourceTypeResourceIdPut({
+    required ResourceType resourceType,
+    required String resourceId,
+    required VisibilityUpdate body,
+    RequestOptions? options,
+  }) async {
+    calls.add('put:${resourceType.json}/$resourceId');
+    await _write();
+    saved.add(body);
+    put(resourceType, resourceId, body);
+    return settings[(resourceType, resourceId)]!;
+  }
+
+  @override
+  Future<void> deleteVisibilityV1VisibilityResourceTypeResourceIdDelete({
+    required ResourceType resourceType,
+    required String resourceId,
+    RequestOptions? options,
+  }) async {
+    calls.add('delete:${resourceType.json}/$resourceId');
+    await _write();
+    settings.remove((resourceType, resourceId));
+  }
+}
+
 /// 약관 동의 테스트용 현재 약관 버전.
 const testConsentVersion = '2026-11-01';
 
