@@ -30,8 +30,9 @@ class GroupFormFields extends StatelessWidget {
           controller: nameController,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: '$noun 이름',
+            label: Text('$noun 이름', maxLines: 2),
             hintText: '$noun 이름을 입력하세요',
+            hintMaxLines: 3,
             prefixIcon: Container(
               margin: const EdgeInsets.all(12),
               width: 16,

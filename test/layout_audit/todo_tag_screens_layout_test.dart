@@ -127,6 +127,13 @@ void main() {
   );
 
   testLayoutAudit(
+    'todo_group_form_sheet_new',
+    subject: '빈 칸 안내',
+    build: (text) =>
+        app(text, const SingleChildScrollView(child: TodoGroupFormSheet())),
+  );
+
+  testLayoutAudit(
     'todo_group_form_sheet',
     subject: '그룹 이름·설명',
     build: (text) => app(
