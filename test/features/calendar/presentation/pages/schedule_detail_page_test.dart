@@ -312,6 +312,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // 상세 화면은 한 화면보다 길어 삭제 버튼까지 내린다
+      await tester.ensureVisible(find.text('삭제'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
       await tester.tap(

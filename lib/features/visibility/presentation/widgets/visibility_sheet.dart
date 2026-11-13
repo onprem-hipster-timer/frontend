@@ -5,20 +5,18 @@ import 'package:momeet/features/visibility/domain/resource_visibility.dart';
 import 'package:momeet/features/visibility/domain/visibility_choice.dart';
 import 'package:momeet/features/visibility/presentation/widgets/allow_list_editor.dart';
 import 'package:momeet/features/visibility/presentation/widgets/friend_checklist.dart';
+import 'package:momeet/features/visibility/presentation/widgets/visibility_button.dart';
 import 'package:momeet/features/visibility/presentation/widgets/visibility_audience.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/providers/friend_providers.dart';
 
-/// 공유 범위 선택지의 이름과 설명
-const _options = {
-  VisibilityLevel.private: (label: '비공개', description: '나만 봄'),
-  VisibilityLevel.friends: (label: '친구 공개', description: '모든 친구'),
-  VisibilityLevel.selected: (label: '선택한 친구', description: '고른 친구만'),
-  VisibilityLevel.allowedEmails: (
-    label: '이메일·도메인 허용',
-    description: '친구가 아니어도 적은 이메일·도메인의 사용자',
-  ),
+/// 공유 범위 선택지의 설명
+const _descriptions = {
+  VisibilityLevel.private: '나만 봄',
+  VisibilityLevel.friends: '모든 친구',
+  VisibilityLevel.selected: '고른 친구만',
+  VisibilityLevel.allowedEmails: '친구가 아니어도 적은 이메일·도메인의 사용자',
 };
 
 /// [target]의 공유 범위를 고르는 바텀 시트를 연다. 선택지는 [levels]를 이 순서로 보인다
@@ -27,6 +25,7 @@ const _options = {
 /// 저장하면 비공개는 설정을 지우고(DELETE), 그 외는 그 범위가 쓰는 목록만 보낸다(PUT).
 /// 저장하면 시트를 닫고 알린 뒤 [onSaved]로 화면에 반영한다. 저장하는 사이 시트가 닫혀도 그렇게 한다.
 /// 저장에 실패하면 알리고 고른 값을 둔 채 머문다.
+/// [notice]를 주면 선택지 위에 알린다(함께 보이는 것 등).
 ///
 /// 테스트: test/features/visibility/presentation/widgets/visibility_sheet_test.dart,
 /// test/features/timer/presentation/widgets/timer_share_sheet_test.dart
@@ -35,11 +34,16 @@ Future<void> showVisibilitySheet(
   required ResourceVisibility target,
   required List<VisibilityLevel> levels,
   required Future<void> Function(ProviderContainer container) onSaved,
+  String? notice,
 }) {
   return showAppSheet<void>(
     context,
-    builder: (_) =>
-        _VisibilitySheet(target: target, levels: levels, onSaved: onSaved),
+    builder: (_) => _VisibilitySheet(
+      target: target,
+      levels: levels,
+      onSaved: onSaved,
+      notice: notice,
+    ),
   );
 }
 
@@ -48,11 +52,13 @@ class _VisibilitySheet extends ConsumerStatefulWidget {
     required this.target,
     required this.levels,
     required this.onSaved,
+    required this.notice,
   });
 
   final ResourceVisibility target;
   final List<VisibilityLevel> levels;
   final Future<void> Function(ProviderContainer container) onSaved;
+  final String? notice;
 
   @override
   ConsumerState<_VisibilitySheet> createState() => _VisibilitySheetState();
@@ -199,6 +205,8 @@ class _VisibilitySheetState extends ConsumerState<_VisibilitySheet> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
+          if (widget.notice case final notice?)
+            AppHintCard(message: notice, icon: Icons.info_outline),
           _LevelChoices(
             levels: widget.levels,
             level: level,
@@ -272,8 +280,8 @@ class _LevelChoices extends StatelessWidget {
             RadioListTile<VisibilityLevel>(
               value: level,
               enabled: enabled,
-              title: Text(_options[level]!.label),
-              subtitle: Text(_options[level]!.description),
+              title: Text(visibilityLevelLabel(level)),
+              subtitle: Text(_descriptions[level]!),
             ),
         ],
       ),

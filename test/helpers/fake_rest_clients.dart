@@ -572,6 +572,9 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
   /// 설정하면 저장·삭제가 이 Future가 끝날 때까지 응답하지 않는다.
   Future<void>? gate;
 
+  /// 저장·삭제가 끝나면 그 리소스와 새 범위(지웠으면 null)로 부른다. 리소스 쪽 가짜에 반영할 때 쓴다
+  void Function(ResourceType type, String id, VisibilityLevel? level)? onWrite;
+
   /// [type]의 [id]에 [update]를 저장해 둔다
   void put(ResourceType type, String id, VisibilityUpdate update) {
     settings[(type, id)] = VisibilityRead(
@@ -619,6 +622,7 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
     await _write();
     saved.add(body);
     put(resourceType, resourceId, body);
+    onWrite?.call(resourceType, resourceId, body.level);
     return settings[(resourceType, resourceId)]!;
   }
 
@@ -631,6 +635,7 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
     calls.add('delete:${resourceType.json}/$resourceId');
     await _write();
     settings.remove((resourceType, resourceId));
+    onWrite?.call(resourceType, resourceId, null);
   }
 }
 

@@ -11,13 +11,17 @@ import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_visibility_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/holiday_detail_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_appointment_block.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
+import 'package:momeet/shared/providers/friend_providers.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
+import '../helpers/fake_rest_clients.dart';
 import '../helpers/layout_audit_app.dart';
 import '../helpers/schedule_fixtures.dart';
 import '../helpers/timer_fixtures.dart';
@@ -139,6 +143,61 @@ void main() {
     subject: '일정 제목',
     build: (text) => wrapWithApp()(
       ScheduleListSheet(date: day, schedules: schedules(text.value)),
+    ),
+  );
+
+  // 저장된 설정 [saved]로 할 일 마감에서 만든 일정의 공유 설정 시트를 연다. 친구 이름에 [text]를 넣는다
+  Widget visibilitySheet(String text, VisibilityUpdate? saved) {
+    final client = FakeVisibilityClient();
+    if (saved != null) client.put(ResourceType.schedule, 'schedule-0', saved);
+    return wrapWithApp(
+      overrides: [
+        visibilityApiProvider.overrideWithValue(client),
+        friendsProvider.overrideWith(
+          (ref) async => [
+            makeFriend('friend-1', displayName: text),
+            makeFriend('friend-2', displayName: '민수'),
+          ],
+        ),
+      ],
+    )(
+      OpenOnStart(
+        open: (context) => showScheduleVisibilitySheet(
+          context,
+          schedules(text).first.copyWith(sourceTodoId: 'todo-1'),
+        ),
+      ),
+    );
+  }
+
+  testLayoutAudit(
+    'schedule_visibility_sheet',
+    subject: '친구 이름',
+    build: (text) => visibilitySheet(text.value, null),
+  );
+
+  testLayoutAudit(
+    'schedule_visibility_sheet_selected',
+    subject: '친구 이름',
+    build: (text) => visibilitySheet(
+      text.value,
+      const VisibilityUpdate(
+        level: VisibilityLevel.selected,
+        allowedUserIds: ['friend-1'],
+      ),
+    ),
+  );
+
+  testLayoutAudit(
+    'schedule_visibility_sheet_emails',
+    subject: '허용한 이메일·도메인',
+    build: (text) => visibilitySheet(
+      text.value,
+      VisibilityUpdate(
+        level: VisibilityLevel.allowedEmails,
+        allowedEmails: ['${text.value}@example.com', 'kim@partner.com'],
+        allowedDomains: [text.value, 'company.co.kr'],
+      ),
     ),
   );
 

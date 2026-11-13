@@ -5,12 +5,14 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
+import 'package:momeet/features/calendar/presentation/utils/schedule_visibility_sheet.dart';
 import 'package:momeet/features/calendar/presentation/utils/source_todo_policy_dialog.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_info.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
+import 'package:momeet/features/visibility/presentation/widgets/visibility_tile.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -56,7 +58,12 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
               _ScheduleTitle(title: schedule.title),
               const SizedBox(height: 24),
               ScheduleDetailInfo(schedule: schedule),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              VisibilityTile(
+                level: schedule.visibilityLevel,
+                onTap: () => showScheduleVisibilitySheet(context, schedule),
+              ),
+              const SizedBox(height: 8),
               ScheduleTimerSection(scheduleId: schedule.id),
               const SizedBox(height: 16),
               _TodoConversionButton(
