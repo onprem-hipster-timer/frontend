@@ -20,6 +20,7 @@ void main() {
     VisibilityLevel.private,
     VisibilityLevel.friends,
     VisibilityLevel.selected,
+    VisibilityLevel.allowedEmails,
   ];
 
   late FakeVisibilityClient client;
@@ -181,6 +182,39 @@ void main() {
       expect(savedCount, 1);
     });
 
+    testWidgets('비공개로 바꾸면 설정을 지운다(DELETE)', (tester) async {
+      client.put(
+        ResourceType.schedule,
+        's-1',
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['a@x.com'],
+        ),
+      );
+
+      await open(tester);
+      await choose(tester, '비공개');
+      await tapInSheet(tester, saveButton());
+
+      expect(client.calls, ['get:schedule/s-1', 'delete:schedule/s-1']);
+      expect(client.saved, isEmpty);
+      expect(savedCount, 1);
+    });
+
+    testWidgets('지금 설정을 읽지 못하면 알리고 다시 시도로 읽는다', (tester) async {
+      client.readError = Exception('네트워크 오류');
+
+      await open(tester);
+      expect(find.text('공유 설정을 불러오지 못했습니다'), findsOneWidget);
+      expect(saveButton(), findsNothing);
+
+      client.readError = null;
+      await tapInSheet(tester, find.widgetWithText(FilledButton, '다시 시도'));
+
+      expect(find.text('저장하면 나만 볼 수 있습니다'), findsOneWidget);
+      expect(client.calls, ['get:schedule/s-1', 'get:schedule/s-1']);
+    });
+
     testWidgets('실패하면 반영하지 않고 고른 값을 둔 채 머문다', (tester) async {
       client.writeError = Exception('서버 오류');
 
@@ -191,6 +225,181 @@ void main() {
       expect(sheet(), findsOneWidget);
       expect(find.text('저장하면 내 친구 모두가 볼 수 있습니다'), findsOneWidget);
       expect(savedCount, 0);
+    });
+  });
+
+  group('이메일·도메인 허용', () {
+    Finder field() => find.widgetWithText(TextField, '이메일 또는 도메인');
+
+    Future<void> enter(WidgetTester tester, String text) async {
+      await choose(tester, '이메일·도메인 허용');
+      await tester.ensureVisible(field());
+      await tester.enterText(field(), text);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('고르면 입력 칸을 보이고, 비어 있으면 나만 본다고 알리되 저장은 할 수 있다', (tester) async {
+      await open(tester);
+      expect(field(), findsNothing);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(RadioListTile<VisibilityLevel>, '이메일·도메인 허용'),
+          matching: find.text('친구가 아니어도 적은 이메일·도메인의 사용자'),
+        ),
+        findsOneWidget,
+      );
+
+      await choose(tester, '이메일·도메인 허용');
+
+      expect(field(), findsOneWidget);
+      expect(find.text('허용할 이메일이나 도메인이 없어 저장해도 나만 볼 수 있습니다'), findsOneWidget);
+      expect(canSave(tester), isTrue);
+
+      await tapInSheet(tester, saveButton());
+      expect(client.saved, [
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: [],
+          allowedDomains: [],
+        ),
+      ]);
+    });
+
+    testWidgets('넣은 이메일·도메인을 정리해 보이고 그 목록만 보낸다', (tester) async {
+      await open(tester);
+      await enter(tester, ' Kim@Partner.com, @Company.com ');
+
+      expect(find.text('kim@partner.com'), findsOneWidget);
+      expect(find.text('company.com'), findsOneWidget);
+      expect(tester.widget<TextField>(field()).controller!.text, isEmpty);
+      expect(
+        find.text('저장하면 이메일 인증을 마친 사용자 중 이메일 1개·도메인 1개에 해당하는 사람이 볼 수 있습니다'),
+        findsOneWidget,
+      );
+
+      await tapInSheet(tester, saveButton());
+
+      expect(client.saved, [
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['kim@partner.com'],
+          allowedDomains: ['company.com'],
+        ),
+      ]);
+      expect(sheet(), findsNothing);
+    });
+
+    testWidgets('추가 버튼으로도 넣는다', (tester) async {
+      await open(tester);
+      await choose(tester, '이메일·도메인 허용');
+      await tester.enterText(field(), 'a@x.com');
+      await tapInSheet(tester, find.byTooltip('추가'));
+
+      expect(find.text('a@x.com'), findsOneWidget);
+      expect(
+        find.text('저장하면 이메일 인증을 마친 사용자 중 이메일 1개에 해당하는 사람이 볼 수 있습니다'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('형식이 틀린 것은 알리고 칸에 남기며, 맞는 것은 넣는다', (tester) async {
+      await open(tester);
+      await enter(tester, 'ok@x.com, nope, 김철수');
+
+      expect(find.text('ok@x.com'), findsOneWidget);
+      expect(find.text('이메일이나 도메인 형식이 아닙니다: nope, 김철수'), findsOneWidget);
+      expect(tester.widget<TextField>(field()).controller!.text, 'nope, 김철수');
+
+      // 고치면 알림을 지운다
+      await tester.enterText(field(), 'x.org');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('형식이 아닙니다'), findsNothing);
+    });
+
+    testWidgets('이미 넣은 것은 알리고 다시 넣지 않는다', (tester) async {
+      await open(tester);
+      await enter(tester, 'a@x.com');
+      await tester.enterText(field(), 'A@X.com');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(find.text('이미 넣었습니다: A@X.com'), findsOneWidget);
+      expect(find.text('a@x.com'), findsOneWidget);
+    });
+
+    testWidgets('뺄 수 있다', (tester) async {
+      await open(tester);
+      await enter(tester, 'a@x.com x.com');
+      await tapInSheet(tester, find.byTooltip('a@x.com 빼기'));
+
+      expect(find.text('a@x.com'), findsNothing);
+      expect(find.text('x.com'), findsOneWidget);
+    });
+
+    testWidgets('저장된 목록을 읽어 보인다', (tester) async {
+      client.put(
+        ResourceType.schedule,
+        's-1',
+        const VisibilityUpdate(
+          level: VisibilityLevel.allowedEmails,
+          allowedEmails: ['kim@partner.com'],
+          allowedDomains: ['company.com'],
+        ),
+      );
+
+      await open(tester);
+
+      expect(field(), findsOneWidget);
+      expect(find.text('kim@partner.com'), findsOneWidget);
+      expect(find.text('company.com'), findsOneWidget);
+    });
+
+    testWidgets('칸에 남은 맞는 입력은 저장할 때 함께 넣는다', (tester) async {
+      await open(tester);
+      await enter(tester, 'a@x.com');
+      await tester.enterText(field(), 'b.com');
+      await tapInSheet(tester, saveButton());
+
+      expect(client.saved.single.allowedEmails, ['a@x.com']);
+      expect(client.saved.single.allowedDomains, ['b.com']);
+    });
+
+    testWidgets('칸에 틀린 입력이 남아 있으면 저장하지 않고 알린다', (tester) async {
+      await open(tester);
+      await enter(tester, 'a@x.com');
+      await tester.enterText(field(), 'nope');
+      await tapInSheet(tester, saveButton());
+
+      expect(client.saved, isEmpty);
+      expect(sheet(), findsOneWidget);
+      expect(find.text('이메일이나 도메인 형식이 아닙니다: nope'), findsOneWidget);
+    });
+
+    testWidgets('다른 범위로 바꿔 저장하면 이메일 목록은 보내지 않는다', (tester) async {
+      await open(tester);
+      await enter(tester, 'a@x.com');
+      await choose(tester, '선택한 친구');
+      await tapInSheet(tester, find.widgetWithText(CheckboxListTile, '영희'));
+      await tapInSheet(tester, saveButton());
+
+      expect(client.saved, [
+        const VisibilityUpdate(
+          level: VisibilityLevel.selected,
+          allowedUserIds: ['friend-1'],
+        ),
+      ]);
+    });
+
+    testWidgets('저장에 실패해도 넣은 목록을 둔 채 머문다', (tester) async {
+      client.writeError = Exception('서버 오류');
+
+      await open(tester);
+      await enter(tester, 'a@x.com');
+      await tapInSheet(tester, saveButton());
+
+      expect(sheet(), findsOneWidget);
+      expect(find.text('a@x.com'), findsOneWidget);
     });
   });
 }
