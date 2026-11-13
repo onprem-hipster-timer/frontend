@@ -107,6 +107,13 @@ void main() {
   );
 
   testLayoutAudit(
+    'todo_form_sheet_new',
+    subject: '태그 이름',
+    build: (text) =>
+        app(text, const SingleChildScrollView(child: TodoFormSheet())),
+  );
+
+  testLayoutAudit(
     'tag_form_sheet',
     subject: '태그·그룹 이름',
     build: (text) => app(

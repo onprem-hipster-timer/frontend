@@ -71,6 +71,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           decoration: InputDecoration(
             labelText: '${Terms.todo} 제목',
             hintText: '${Terms.todo.withJosa('을', '를')} 입력하세요',
+            hintMaxLines: 2,
             prefixIcon: const Icon(Icons.task_alt),
           ),
           validator: (value) {
