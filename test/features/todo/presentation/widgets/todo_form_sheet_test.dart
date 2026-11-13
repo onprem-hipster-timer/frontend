@@ -120,13 +120,14 @@ void main() {
       await open(tester);
 
       expect(groupShown('기본'), findsOneWidget);
+      expect(groupShown('할 일 목록'), findsOneWidget);
     });
 
     testWidgets('할 일 그룹을 고르면 지금 그룹에 체크가 있고, 고른 그룹으로 만든다', (tester) async {
       await open(tester, defaultTodoGroupId: 'group-work');
       await tapVisible(tester, find.byType(TodoGroupField));
 
-      expect(find.text('할 일 그룹 고르기'), findsOneWidget);
+      expect(find.text('해야 할 일 목록 고르기'), findsOneWidget);
       expect(
         find.descendant(
           of: find.widgetWithText(ListTile, '업무'),
@@ -147,7 +148,7 @@ void main() {
       await tapVisible(tester, find.byType(TodoGroupField));
       await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
 
-      expect(find.text('할 일 그룹 고르기'), findsNothing);
+      expect(find.text('해야 할 일 목록 고르기'), findsNothing);
       expect(groupShown('업무'), findsOneWidget);
       await tester.enterText(field('할 일 제목'), '회의');
       await tapVisible(tester, find.text('생성'));
@@ -162,7 +163,7 @@ void main() {
       );
       await tapVisible(tester, find.byType(TodoGroupField));
 
-      expect(find.text('할 일 그룹 고르기'), findsNothing);
+      expect(find.text('해야 할 일 목록 고르기'), findsNothing);
       expect(groupShown('업무'), findsOneWidget);
     });
 
@@ -170,9 +171,9 @@ void main() {
       todos.groupsReadError = Exception('끊김');
       await open(tester);
 
-      expect(find.text('할 일 그룹을 불러오지 못했습니다'), findsOneWidget);
+      expect(find.text('해야 할 일 목록을 불러오지 못했습니다'), findsOneWidget);
       await tapVisible(tester, find.byType(TodoGroupField));
-      expect(find.text('할 일 그룹 고르기'), findsNothing);
+      expect(find.text('해야 할 일 목록 고르기'), findsNothing);
 
       await tester.enterText(field('할 일 제목'), '정리');
       await tapVisible(tester, find.text('생성'));
@@ -339,7 +340,7 @@ void main() {
       await tapVisible(tester, find.byType(TodoGroupField));
 
       expect(
-        find.text('할 일을 옮길 할 일 그룹입니다. 하위 할 일이 있으면 함께 옮겨집니다.'),
+        find.text('할 일을 옮길 해야 할 일 목록입니다. 하위 할 일이 있으면 함께 옮겨집니다.'),
         findsOneWidget,
       );
       await tapVisible(tester, find.widgetWithText(ListTile, '업무'));
@@ -347,7 +348,7 @@ void main() {
       await tapVisible(tester, find.text('수정'));
 
       expect(todos.updated.single.$2.todoGroupId, 'group-work');
-      expect(find.text("'업무' 할 일 그룹으로 옮겼습니다"), findsOneWidget);
+      expect(find.text("'업무' 해야 할 일 목록으로 옮겼습니다"), findsOneWidget);
       expect(find.text('할 일이 수정되었습니다'), findsNothing);
     });
 
@@ -357,7 +358,7 @@ void main() {
 
       expect(find.textContaining('하위 할 일이 있으면 함께 옮겨집니다.'), findsOneWidget);
       expect(
-        find.textContaining('상위 할 일과의 연결은 풀리고, 옮긴 할 일 그룹에서 맨 위 할 일이 됩니다.'),
+        find.textContaining('상위 할 일과의 연결은 풀리고, 옮긴 해야 할 일 목록에서 맨 위 할 일이 됩니다.'),
         findsOneWidget,
       );
     });

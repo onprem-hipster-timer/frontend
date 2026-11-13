@@ -102,8 +102,8 @@ void main() {
   testWidgets('목록에 없는 그룹이면 기본 제목을 보이고 설정 버튼이 없다', (tester) async {
     await pumpPage(tester, groupId: 'group-gone');
 
-    expect(find.text('할 일 그룹'), findsOneWidget);
-    expect(find.byTooltip('할 일 그룹 설정'), findsNothing);
+    expect(find.text('해야 할 일 목록'), findsOneWidget);
+    expect(find.byTooltip('해야 할 일 목록 설정'), findsNothing);
   });
 
   testWidgets('뒤로 가기는 대시보드로 간다', (tester) async {
@@ -115,7 +115,7 @@ void main() {
 
   testWidgets('추가 버튼은 이 그룹에 할 일을 만들고 목록에 넣는다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.byTooltip('이 할 일 그룹에 할 일 추가'));
+    await tapVisible(tester, find.byTooltip('이 해야 할 일 목록에 할 일 추가'));
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
 
@@ -141,7 +141,7 @@ void main() {
     expect(todos.updated.single.$2.todoGroupId, 'group-study');
     expect(find.text('보고서'), findsNothing);
     expect(find.text('회의 준비'), findsOneWidget);
-    expect(find.text("'학습' 할 일 그룹으로 옮겼습니다"), findsOneWidget);
+    expect(find.text("'학습' 해야 할 일 목록으로 옮겼습니다"), findsOneWidget);
     expect(todos.readGroupIds.last, ['group-work']);
     expect(
       [
@@ -158,7 +158,7 @@ void main() {
     todos.todos.removeWhere((t) => t.todoGroupId == 'group-work');
     await pumpPage(tester);
 
-    expect(find.text('이 할 일 그룹에는 할 일이 없습니다'), findsOneWidget);
+    expect(find.text('이 해야 할 일 목록에는 할 일이 없습니다'), findsOneWidget);
     await tapVisible(tester, find.text('첫 할 일 추가하기'));
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
@@ -186,12 +186,12 @@ void main() {
 
   group('할 일 그룹 설정', () {
     Future<void> openSettings(WidgetTester tester) =>
-        tapVisible(tester, find.byTooltip('할 일 그룹 설정'));
+        tapVisible(tester, find.byTooltip('해야 할 일 목록 설정'));
 
     testWidgets('수정은 그룹 값으로 채운 시트를 열고, 바꾼 이름이 제목에 보인다', (tester) async {
       await pumpPage(tester);
       await openSettings(tester);
-      await tapVisible(tester, find.text('할 일 그룹 수정'));
+      await tapVisible(tester, find.text('해야 할 일 목록 수정'));
 
       expect(find.widgetWithText(TextFormField, '회사 일'), findsOneWidget);
       await tester.enterText(find.widgetWithText(TextFormField, '업무'), '회사');
@@ -206,20 +206,20 @@ void main() {
     ) async {
       await pumpPage(tester);
       await openSettings(tester);
-      await tapVisible(tester, find.text('할 일 그룹 삭제'));
+      await tapVisible(tester, find.text('해야 할 일 목록 삭제'));
 
-      expect(find.textContaining('기본 할 일 그룹으로 옮겨집니다'), findsOneWidget);
+      expect(find.textContaining('기본 해야 할 일 목록으로 옮겨집니다'), findsOneWidget);
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
       expect(todos.deletedGroups, ['group-work']);
       expect(location(), AppRoute.todo.path);
-      expect(find.text('업무 할 일 그룹이 삭제되었습니다'), findsOneWidget);
+      expect(find.text('업무 해야 할 일 목록이 삭제되었습니다'), findsOneWidget);
     });
 
     testWidgets('삭제를 취소하면 지우지 않고 머문다', (tester) async {
       await pumpPage(tester);
       await openSettings(tester);
-      await tapVisible(tester, find.text('할 일 그룹 삭제'));
+      await tapVisible(tester, find.text('해야 할 일 목록 삭제'));
       await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
 
       expect(todos.deletedGroups, isEmpty);
@@ -230,10 +230,10 @@ void main() {
       todos.writeError = Exception('서버 오류');
       await pumpPage(tester);
       await openSettings(tester);
-      await tapVisible(tester, find.text('할 일 그룹 삭제'));
+      await tapVisible(tester, find.text('해야 할 일 목록 삭제'));
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
-      expect(find.textContaining('할 일 그룹 삭제에 실패했습니다'), findsOneWidget);
+      expect(find.textContaining('해야 할 일 목록 삭제에 실패했습니다'), findsOneWidget);
       expect(location(), '/todo/group-work');
     });
 
@@ -241,8 +241,8 @@ void main() {
       await pumpPage(tester, groupId: defaultTodoGroupId);
       await openSettings(tester);
 
-      expect(find.text('할 일 그룹 수정'), findsOneWidget);
-      expect(find.text('할 일 그룹 삭제'), findsNothing);
+      expect(find.text('해야 할 일 목록 수정'), findsOneWidget);
+      expect(find.text('해야 할 일 목록 삭제'), findsNothing);
     });
   });
 }

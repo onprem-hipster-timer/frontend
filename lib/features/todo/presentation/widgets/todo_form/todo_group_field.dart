@@ -34,7 +34,7 @@ class TodoGroupField extends ConsumerWidget {
         list.where((group) => group.id == selectedId).firstOrNull ??
         (selectedId == null ? defaultTodoGroupOf(list) : null);
     return AppPickerField(
-      label: Terms.todoGroup,
+      label: Terms.todoGroupShort,
       icon: Icons.folder_outlined,
       value: selected?.name,
       placeholder: selectedId == null ? '기본 ${Terms.todoGroup}' : null,

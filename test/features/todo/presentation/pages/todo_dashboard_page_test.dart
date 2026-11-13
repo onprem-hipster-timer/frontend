@@ -92,10 +92,10 @@ void main() {
 
   testWidgets('새 할 일 그룹 카드로 만든 그룹이 카드로 나타난다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.text('새 할 일 그룹'));
-    expect(find.text('새 할 일 그룹 만들기'), findsOneWidget);
+    await tapVisible(tester, find.text('새 해야 할 일 목록'));
+    expect(find.text('새 해야 할 일 목록 만들기'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextFormField, '할 일 그룹 이름'),
+      find.widgetWithText(TextFormField, '해야 할 일 목록 이름'),
       '운동',
     );
     await tapVisible(tester, find.text('생성'));
@@ -109,7 +109,7 @@ void main() {
     todos.groupsReadError = Exception('끊김');
     await pumpPage(tester);
 
-    expect(find.text('할 일 그룹을 불러오지 못했습니다'), findsOneWidget);
+    expect(find.text('해야 할 일 목록을 불러오지 못했습니다'), findsOneWidget);
     todos.groupsReadError = null;
     await tapVisible(tester, find.text('다시 시도'));
     expect(find.byType(TodoGroupCard), findsNWidgets(3));

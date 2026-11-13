@@ -29,7 +29,7 @@ void main() {
   test('다른 할 일 그룹으로 옮기면 그 그룹 이름을 알린다', () {
     expect(
       todoUpdatedMessage(todo, values('group-work'), groups),
-      "'업무' 할 일 그룹으로 옮겼습니다",
+      "'업무' 해야 할 일 목록으로 옮겼습니다",
     );
   });
 
