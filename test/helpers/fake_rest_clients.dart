@@ -344,6 +344,19 @@ class FakeTodosClient extends Fake implements TodosClient {
   }
 
   @override
+  Future<TodoRead> readTodoV1TodosTodoIdGet({
+    required String todoId,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    if (readError != null) throw readError!;
+    return todos.firstWhere(
+      (t) => t.id == todoId,
+      orElse: () => throw StateError('no todo $todoId'),
+    );
+  }
+
+  @override
   Future<void> deleteTodoV1TodosTodoIdDelete({
     required String todoId,
     LinkedSchedulePolicy? linkedSchedulePolicy,

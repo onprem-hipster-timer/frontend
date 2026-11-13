@@ -10,6 +10,7 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_in
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -60,7 +61,8 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
               _TodoConversionButton(
                 linked: schedule.sourceTodoId != null,
                 converting: _pendingAction == _PendingAction.convert,
-                onOpenLinked: () => _navigateToLinkedTodo(context, schedule),
+                onOpenLinked: () =>
+                    _navigateToLinkedTodo(context, schedule.sourceTodoId!),
                 onConvert: isMutating
                     ? null
                     : () => _handleConvertToTodo(context, ref, schedule),
@@ -123,8 +125,31 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     }
   }
 
-  void _navigateToLinkedTodo(BuildContext context, ScheduleRead schedule) {
-    context.goNamed(AppRoute.todo.name);
+  /// 연결된 할 일이 있는 할 일 그룹으로 간다. 할 일을 받지 못하면 할 일 탭으로 간다
+  Future<void> _navigateToLinkedTodo(
+    BuildContext context,
+    String todoId,
+  ) async {
+    final provider = todoByIdProvider(todoId);
+    // 받는 동안 autoDispose 프로바이더를 붙잡아 둔다
+    final keepAlive = ref.listenManual(provider, (_, _) {});
+    String? groupId;
+    try {
+      groupId = (await ref.read(provider.future)).todoGroupId;
+    } catch (_) {
+      groupId = null;
+    } finally {
+      keepAlive.close();
+    }
+    if (!context.mounted) return;
+    if (groupId == null) {
+      context.goNamed(AppRoute.todo.name);
+    } else {
+      context.goNamed(
+        AppRoute.todoGroupDetail.name,
+        pathParameters: {'groupId': groupId},
+      );
+    }
   }
 
   Future<void> _handleDelete(

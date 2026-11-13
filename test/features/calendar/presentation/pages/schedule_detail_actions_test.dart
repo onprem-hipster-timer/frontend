@@ -33,6 +33,7 @@ void main() {
 
   late FakeSchedulesClient schedules;
   late FakeTagsClient tags;
+  late FakeTodosClient todos;
   late GoRouter router;
 
   ScheduleRead schedule({String? sourceTodoId}) => makeSchedule(
@@ -45,6 +46,15 @@ void main() {
   );
 
   setUp(() {
+    todos = FakeTodosClient([
+      TodoRead(
+        id: 'todo-1',
+        title: '회의 준비',
+        todoGroupId: 'group-study',
+        status: TodoStatus.scheduled,
+        createdAt: DateTime.utc(2026, 1, 1),
+      ),
+    ]);
     tags = FakeTagsClient([
       makeTagGroup(id: 'group-work', name: '업무'),
       makeTagGroup(id: 'group-study', name: '학습'),
@@ -93,6 +103,7 @@ void main() {
         overrides: [
           schedulesApiProvider.overrideWithValue(schedules),
           tagsApiProvider.overrideWithValue(tags),
+          todosApiProvider.overrideWithValue(todos),
           scheduleTimersProvider(
             'schedule-1',
           ).overrideWith((ref) async => const []),
@@ -183,8 +194,24 @@ void main() {
     });
   });
 
-  testWidgets('연결된 할 일 보기는 할 일 탭으로 간다', (tester) async {
+  testWidgets('연결된 할 일 보기는 그 할 일이 있는 할 일 그룹으로 간다', (tester) async {
     await pumpDetail(tester, schedule(sourceTodoId: 'todo-1'));
+    await tapVisible(tester, find.text(_linkedTodoLabel));
+
+    expect(location(), '/todo/group-study');
+    expect(find.text('그룹 화면 group-study'), findsOneWidget);
+  });
+
+  testWidgets('연결된 할 일을 받지 못하면 할 일 탭으로 간다', (tester) async {
+    todos.readError = Exception('끊김');
+    await pumpDetail(tester, schedule(sourceTodoId: 'todo-1'));
+    await tapVisible(tester, find.text(_linkedTodoLabel));
+
+    expect(location(), '/todo');
+  });
+
+  testWidgets('연결된 할 일이 지워져 없으면 할 일 탭으로 간다', (tester) async {
+    await pumpDetail(tester, schedule(sourceTodoId: 'todo-gone'));
     await tapVisible(tester, find.text(_linkedTodoLabel));
 
     expect(location(), '/todo');
