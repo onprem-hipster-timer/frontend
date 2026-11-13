@@ -7,6 +7,7 @@ import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dar
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_actions.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
+import 'package:momeet/features/todo/presentation/utils/todo_visibility_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tag_indicators.dart';
@@ -14,6 +15,7 @@ import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_child_c
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_elapsed_badge.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_chip.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_start_button.dart';
+import 'package:momeet/features/visibility/presentation/widgets/visibility_button.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -22,7 +24,7 @@ const double kDraggingOpacity = 0.5;
 
 /// 고칠 수 있는 할 일 트리 한 줄. 펼쳐 있으면 하위를 같은 모양으로 이어 그린다.
 ///
-/// 누르면 선택하고 [onTap]을 부른다. 상태 메뉴·수정·삭제·타이머 시작을 두고,
+/// 누르면 선택하고 [onTap]을 부른다. 상태 메뉴·타이머 시작·공유 설정·수정·삭제를 두고,
 /// 길게 눌러 다른 줄 위에 놓으면 그 하위로 옮긴다(자기 하위 위에는 놓을 수 없다).
 class EditableTodoTreeTile extends ConsumerWidget {
   const EditableTodoTreeTile({
@@ -219,7 +221,7 @@ class _ExpandButton extends StatelessWidget {
   }
 }
 
-/// 타이머 시작·수정·삭제 버튼
+/// 타이머 시작·공유 설정·수정·삭제 버튼
 class _TileActions extends ConsumerWidget {
   const _TileActions({required this.node});
 
@@ -227,10 +229,11 @@ class _TileActions extends ConsumerWidget {
 
   /// [width] 폭의 줄에 버튼을 옆에 두면 제목 칸이 글자 배율을 반영한 최소 폭(140)보다 좁아지는지
   ///
-  /// 타이머 버튼은 40, 왼쪽 펼침·상태 칸과 여백은 64, 제목과 버튼 사이는 8이다.
+  /// 타이머·공유 설정 버튼은 40씩, 왼쪽 펼침·상태 칸과 여백은 64, 제목과 버튼 사이는 8이다.
   static bool crowds(BuildContext context, TodoRead todo, double width) {
     final buttons =
         (canLinkTimer(todo) ? 40 : 0) +
+        40 +
         AppEditDeleteButtons.widthOf(context) +
         8;
     return width - 64 - buttons < MediaQuery.textScalerOf(context).scale(140);
@@ -244,6 +247,11 @@ class _TileActions extends ConsumerWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (canLinkTimer(todo)) TodoTimerStartButton(todo: todo),
+        VisibilityButton(
+          level: todo.visibilityLevel,
+          visualDensity: VisualDensity.compact,
+          onPressed: () => showTodoVisibilitySheet(context, node),
+        ),
         AppEditDeleteButtons(
           onEdit: () => TodoActions.showEditTodoDialog(context, todo),
           onDelete: () =>

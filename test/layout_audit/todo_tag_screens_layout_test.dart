@@ -14,13 +14,17 @@ import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
+import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
+import 'package:momeet/features/todo/presentation/utils/todo_visibility_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
+import 'package:momeet/shared/providers/friend_providers.dart';
 
 import '../helpers/fake_rest_clients.dart';
 import '../helpers/layout_audit_app.dart';
 import '../helpers/schedule_fixtures.dart';
+import '../helpers/timer_fixtures.dart';
 
 /// 할 일·태그 화면과 폼 시트를 화면 크기 × 글자 배율 × 긴 문구로 점검한다.
 ///
@@ -156,6 +160,44 @@ void main() {
         ),
       ),
     ),
+  );
+
+  // 마감과 하위 할 일이 있는 할 일의 공유 설정 시트. 친구 이름에 [text]를 넣는다
+  testLayoutAudit(
+    'todo_visibility_sheet',
+    subject: '친구 이름',
+    build: (text) {
+      final visibility = FakeVisibilityClient()
+        ..put(
+          ResourceType.todo,
+          'todo-1',
+          const VisibilityUpdate(
+            level: VisibilityLevel.selected,
+            allowedUserIds: ['friend-1'],
+          ),
+        );
+      final tree = buildTodoTree([
+        todo('todo-1', text.value).copyWith(deadline: DateTime.utc(2026, 5, 1)),
+        todo('todo-2', '짧은 할 일', parentId: 'todo-1'),
+      ]);
+      return wrapWithApp(
+        overrides: [
+          ...overrides(text.value),
+          visibilityApiProvider.overrideWithValue(visibility),
+          friendsProvider.overrideWith(
+            (ref) async => [
+              makeFriend('friend-1', displayName: text.value),
+              makeFriend('friend-2', displayName: '민수'),
+            ],
+          ),
+        ],
+      )(
+        OpenOnStart(
+          open: (context) =>
+              showTodoVisibilitySheet(context, tree.getNode('todo-1')!),
+        ),
+      );
+    },
   );
 
   testLayoutAudit(

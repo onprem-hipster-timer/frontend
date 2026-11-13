@@ -34,16 +34,19 @@ class VisibilityButton extends StatelessWidget {
     super.key,
     required this.level,
     required this.onPressed,
+    this.visualDensity,
   });
 
   final VisibilityLevel? level;
   final VoidCallback onPressed;
+  final VisualDensity? visualDensity;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(visibilityLevelIcon(level)),
       tooltip: Terms.visibility,
+      visualDensity: visualDensity,
       onPressed: onPressed,
     );
   }
