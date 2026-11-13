@@ -78,9 +78,9 @@ void main() {
     expect(find.text('학습'), findsOneWidget);
   });
 
-  testWidgets('새 그룹 버튼은 그룹 생성 시트를 열고, 만든 그룹이 목록에 나타난다', (tester) async {
+  testWidgets('새 태그 그룹 버튼은 태그 그룹 생성 시트를 열고, 만든 그룹이 목록에 나타난다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.text('새 그룹'));
+    await tapVisible(tester, find.text('새 태그 그룹'));
     expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
 
     await tester.enterText(
@@ -93,7 +93,7 @@ void main() {
 
   testWidgets('그룹의 태그 추가는 그 그룹에 태그를 만든다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.bySemanticsLabel('업무 그룹에 태그 추가'));
+    await tapVisible(tester, find.bySemanticsLabel('업무 태그 그룹에 태그 추가'));
     expect(find.text('새 태그 만들기'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextFormField, '태그 이름'), '회의');
@@ -104,7 +104,7 @@ void main() {
 
   testWidgets('그룹 수정은 그 그룹 값으로 채운 시트를 연다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.bySemanticsLabel('학습 그룹 수정'));
+    await tapVisible(tester, find.bySemanticsLabel('학습 태그 그룹 수정'));
 
     expect(find.widgetWithText(TextFormField, '학습'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, '공부 기록'), findsOneWidget);
@@ -124,18 +124,19 @@ void main() {
   group('그룹 삭제', () {
     testWidgets('확인하면 지우고 알린 뒤 목록에서 뺀다', (tester) async {
       await pumpPage(tester);
-      await tapVisible(tester, find.bySemanticsLabel('업무 그룹 삭제'));
-      expect(find.textContaining('업무 그룹을 삭제하시겠습니까?'), findsOneWidget);
+      await tapVisible(tester, find.bySemanticsLabel('업무 태그 그룹 삭제'));
+      expect(find.textContaining('업무 태그 그룹을 삭제하시겠습니까?'), findsOneWidget);
+      expect(find.textContaining('이 태그 그룹의 모든 태그도 함께 삭제됩니다.'), findsOneWidget);
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
       expect(tags.deletedGroups, ['group-work']);
-      expect(find.text('업무 그룹이 삭제되었습니다'), findsOneWidget);
+      expect(find.text('업무 태그 그룹이 삭제되었습니다'), findsOneWidget);
       expect(find.text('집중'), findsNothing);
     });
 
     testWidgets('취소하면 지우지 않는다', (tester) async {
       await pumpPage(tester);
-      await tapVisible(tester, find.bySemanticsLabel('업무 그룹 삭제'));
+      await tapVisible(tester, find.bySemanticsLabel('업무 태그 그룹 삭제'));
       await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
 
       expect(tags.deletedGroups, isEmpty);
@@ -145,10 +146,10 @@ void main() {
     testWidgets('실패하면 오류를 알린다', (tester) async {
       tags.writeError = Exception('서버 오류');
       await pumpPage(tester);
-      await tapVisible(tester, find.bySemanticsLabel('업무 그룹 삭제'));
+      await tapVisible(tester, find.bySemanticsLabel('업무 태그 그룹 삭제'));
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
-      expect(find.textContaining('그룹 삭제에 실패했습니다'), findsOneWidget);
+      expect(find.textContaining('태그 그룹 삭제에 실패했습니다'), findsOneWidget);
     });
   });
 
