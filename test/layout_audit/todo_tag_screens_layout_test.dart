@@ -12,6 +12,7 @@ import 'package:momeet/features/todo/presentation/pages/todo_dashboard_page.dart
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -108,9 +109,32 @@ void main() {
 
   testLayoutAudit(
     'todo_form_sheet_new',
-    subject: '태그 이름',
-    build: (text) =>
-        app(text, const SingleChildScrollView(child: TodoFormSheet())),
+    subject: '할 일 그룹·태그 이름',
+    build: (text) => app(
+      text,
+      const SingleChildScrollView(
+        child: TodoFormSheet(defaultTodoGroupId: 'group-work'),
+      ),
+    ),
+  );
+
+  testLayoutAudit(
+    'todo_group_picker',
+    subject: '할 일 그룹 이름',
+    build: (text) => app(
+      text,
+      OpenOnStart(
+        open: (context) => showTodoGroupPicker(
+          context,
+          groups: [
+            defaultTodoGroup,
+            makeTodoGroup(id: 'group-work', name: text.value),
+            makeTodoGroup(id: 'group-study', name: '학습'),
+          ],
+          selectedId: 'group-work',
+        ),
+      ),
+    ),
   );
 
   testLayoutAudit(

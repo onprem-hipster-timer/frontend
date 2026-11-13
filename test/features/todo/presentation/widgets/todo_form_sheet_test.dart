@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -18,7 +19,10 @@ void main() {
   final study2 = makeTag(id: 'tag-read', name: '독서', groupId: 'group-study');
 
   setUp(() {
-    todos = FakeTodosClient();
+    todos = FakeTodosClient(const [], [
+      makeTodoGroup(id: 'group-work', name: '업무'),
+      makeTodoGroup(id: 'group-study', name: '학습'),
+    ]);
     tags = FakeTagsClient([
       makeTagGroup(id: 'group-work', name: '업무', tags: [focus]),
       makeTagGroup(id: 'group-study', name: '학습', tags: [study, study2]),
@@ -45,6 +49,12 @@ void main() {
   );
 
   Finder field(String label) => find.widgetWithText(TextFormField, label);
+
+  /// 할 일 그룹 칸에 보이는 글자
+  Finder groupShown(String text) => find.descendant(
+    of: find.byType(TodoGroupField),
+    matching: find.text(text),
+  );
 
   group('새 할 일', () {
     testWidgets('좁은 화면에 글자가 커도 설명 칸 이름을 자르지 않는다', (tester) async {
@@ -96,13 +106,77 @@ void main() {
       expect(find.text('할 일이 생성되었습니다'), findsOneWidget);
     });
 
-    testWidgets('할 일 그룹을 받으면 그 그룹으로 만든다', (tester) async {
+    testWidgets('할 일 그룹을 받으면 그 그룹을 칸에 보이고 그 그룹으로 만든다', (tester) async {
       await open(tester, defaultTodoGroupId: 'group-work');
 
+      expect(groupShown('업무'), findsOneWidget);
       await tester.enterText(field('할 일 제목'), '회의');
       await tapVisible(tester, find.text('생성'));
 
       expect(todos.created.single.todoGroupId, 'group-work');
+    });
+
+    testWidgets('할 일 그룹을 받지 않으면 칸에 기본 그룹을 보인다', (tester) async {
+      await open(tester);
+
+      expect(groupShown('기본'), findsOneWidget);
+    });
+
+    testWidgets('할 일 그룹을 고르면 지금 그룹에 체크가 있고, 고른 그룹으로 만든다', (tester) async {
+      await open(tester, defaultTodoGroupId: 'group-work');
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.text('할 일 그룹 고르기'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, '업무'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+      expect(groupShown('학습'), findsOneWidget);
+
+      await tester.enterText(field('할 일 제목'), '단어 외우기');
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created.single.todoGroupId, 'group-study');
+    });
+
+    testWidgets('할 일 그룹 고르기를 취소하면 그대로 둔다', (tester) async {
+      await open(tester, defaultTodoGroupId: 'group-work');
+      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
+
+      expect(find.text('할 일 그룹 고르기'), findsNothing);
+      expect(groupShown('업무'), findsOneWidget);
+      await tester.enterText(field('할 일 제목'), '회의');
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created.single.todoGroupId, 'group-work');
+    });
+
+    testWidgets('하위 할 일은 할 일 그룹을 바꿀 수 없다', (tester) async {
+      await open(
+        tester,
+        defaultParentId: 'parent-1',
+        defaultTodoGroupId: 'group-work',
+      );
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.text('할 일 그룹 고르기'), findsNothing);
+      expect(groupShown('업무'), findsOneWidget);
+    });
+
+    testWidgets('할 일 그룹을 불러오지 못하면 칸에 알리고, 할 일은 그래도 만든다', (tester) async {
+      todos.groupsReadError = Exception('끊김');
+      await open(tester);
+
+      expect(find.text('할 일 그룹을 불러오지 못했습니다'), findsOneWidget);
+      await tapVisible(tester, find.byType(TodoGroupField));
+      expect(find.text('할 일 그룹 고르기'), findsNothing);
+
+      await tester.enterText(field('할 일 제목'), '정리');
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created.single.todoGroupId, isNull);
     });
 
     testWidgets('완료를 고르면 완료 상태로 보낸다', (tester) async {

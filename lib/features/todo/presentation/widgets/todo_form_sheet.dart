@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_status_chips.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_picker.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_form_submit.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -18,7 +19,8 @@ class TodoFormSheet extends ConsumerStatefulWidget {
   /// 기본 상위 Todo ID (생성 시 사용)
   final String? defaultParentId;
 
-  /// 새 할 일이 들어갈 할 일 그룹 ID. 없으면 서버가 기본 그룹에 넣는다
+  /// 새 할 일의 할 일 그룹 칸에 미리 고를 그룹 ID. 없으면 기본 그룹을 보이고 보내지 않는다(서버가 기본 그룹에 넣는다).
+  /// [defaultParentId]와 함께 주면 상위 할 일의 그룹이어야 하고, 칸은 바꿀 수 없다
   final String? defaultTodoGroupId;
 
   const TodoFormSheet({
@@ -42,6 +44,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   late var _selectedStatus = widget.todo?.status ?? TodoStatus.unscheduled;
   late final _selectedTagIds = {...?widget.todo?.tags.map((tag) => tag.id)};
   late var _selectedDeadline = widget.todo?.deadline;
+  late var _selectedGroupId = widget.defaultTodoGroupId;
 
   @override
   void dispose() {
@@ -102,6 +105,12 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
           },
           textInputAction: TextInputAction.done,
         ),
+        if (!_isEditMode)
+          TodoGroupField(
+            selectedId: _selectedGroupId,
+            onChanged: (id) => setState(() => _selectedGroupId = id),
+            locked: widget.defaultParentId != null,
+          ),
         TodoFormStatusChips(
           selected: _selectedStatus,
           onChanged: (status) => setState(() => _selectedStatus = status),
@@ -166,7 +175,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         await createTodoFromForm(
           ref,
           values,
-          todoGroupId: widget.defaultTodoGroupId,
+          todoGroupId: _selectedGroupId,
           parentId: widget.defaultParentId,
         );
       }
