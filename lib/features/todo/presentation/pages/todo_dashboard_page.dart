@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/features/todo/presentation/providers/shared_todo_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_card.dart';
@@ -15,7 +16,7 @@ import 'package:momeet/shared/domain/terms.dart';
 /// 할 일 대시보드 페이지
 ///
 /// 할 일 그룹들을 카드로 보이는 할 일 탭의 첫 화면이다. 기본 그룹이 맨 앞에 오고, 끝 카드로 새 그룹을 만든다.
-/// 할 일 추가는 기본 그룹에 넣는다.
+/// 할 일 추가는 기본 그룹에 넣는다. 공유받은 할 일이 있으면 그 화면으로 가는 줄을 그룹 위에 둔다.
 class TodoDashboardPage extends ConsumerWidget {
   const TodoDashboardPage({super.key});
 
@@ -73,6 +74,7 @@ class _GroupGrid extends StatelessWidget {
             ),
           ),
         ),
+        const SliverToBoxAdapter(child: _SharedTodosEntry()),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(
@@ -94,6 +96,29 @@ class _GroupGrid extends StatelessWidget {
         // 하단 여백 (FAB 가리지 않도록)
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
+    );
+  }
+}
+
+/// 공유받은 할 일 화면으로 가는 줄. 공유받은 할 일이 없거나 아직 모르면 두지 않는다
+class _SharedTodosEntry extends ConsumerWidget {
+  const _SharedTodosEntry();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(sharedTodosProvider).value?.length ?? 0;
+    if (count == 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Card(
+        child: ListTile(
+          leading: const Icon(Icons.people_outline),
+          title: const Text('공유받은 ${Terms.todo}'),
+          subtitle: Text('$count개'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.goNamed(AppRoute.sharedTodos.name),
+        ),
+      ),
     );
   }
 }

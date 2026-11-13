@@ -220,6 +220,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                   builder: (_) => todo.TodoDashboardPage(),
                 ),
                 routes: [
+                  // 할 일 그룹 id보다 먼저 맞춘다
+                  GoRoute(
+                    path: 'shared',
+                    name: AppRoute.sharedTodos.name,
+                    builder: (context, state) => DeferredWidget(
+                      loader: todo.loadLibrary,
+                      builder: (_) => todo.SharedTodosPage(),
+                    ),
+                  ),
                   GoRoute(
                     path: ':groupId',
                     name: AppRoute.todoGroupDetail.name,

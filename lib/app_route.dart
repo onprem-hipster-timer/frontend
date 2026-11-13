@@ -43,6 +43,7 @@ enum AppRoute {
   calendar(path: '/'),
   scheduleDetail(path: '/schedule/detail'),
   todo(path: '/todo'),
+  sharedTodos(path: '/todo/shared'),
   todoGroupDetail(path: '/todo/:groupId'),
   timer(path: '/timer'),
   timerDetail(path: '/timer/detail'),

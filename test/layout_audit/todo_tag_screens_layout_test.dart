@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/tag/presentation/pages/tag_management_page.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
+import 'package:momeet/features/todo/presentation/pages/shared_todos_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_dashboard_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
@@ -51,13 +52,14 @@ void main() {
     ],
   );
 
-  List<Override> overrides(String text) => [
+  List<Override> overrides(String text, {List<TodoRead> shared = const []}) => [
     todosApiProvider.overrideWithValue(
       FakeTodosClient(
         [
           todo('todo-1', text),
           todo('todo-2', text, parentId: 'todo-1'),
           todo('todo-3', '짧은 할 일'),
+          ...shared,
         ],
         [
           makeTodoGroup(id: 'group-work', name: text, description: text),
@@ -86,6 +88,42 @@ void main() {
     subject: '그룹·할 일 제목',
     build: (text) =>
         app(text, const TodoGroupDetailPage(groupId: 'group-work')),
+  );
+
+  // 친구(이름도 [text])가 공유한 할 일 둘(상위·하위)과 친구 목록에 없는 사람이 공유한 할 일 하나
+  Widget withShared(String text, Widget child) {
+    TodoRead shared(String id, String owner, {String? parentId}) => todo(
+      id,
+      text,
+      parentId: parentId,
+    ).copyWith(isShared: true, ownerId: owner, todoGroupId: '$owner-group');
+    return wrapWithApp(
+      overrides: [
+        ...overrides(
+          text,
+          shared: [
+            shared('shared-1', 'friend-1'),
+            shared('shared-2', 'friend-1', parentId: 'shared-1'),
+            shared('shared-3', 'stranger'),
+          ],
+        ),
+        friendsProvider.overrideWith(
+          (ref) async => [makeFriend('friend-1', displayName: text)],
+        ),
+      ],
+    )(child);
+  }
+
+  testLayoutAudit(
+    'todo_dashboard_page_shared',
+    subject: '그룹 이름·공유받은 할 일',
+    build: (text) => withShared(text.value, const TodoDashboardPage()),
+  );
+
+  testLayoutAudit(
+    'shared_todos_page',
+    subject: '공유한 친구 이름·할 일 제목',
+    build: (text) => withShared(text.value, const SharedTodosPage()),
   );
 
   testLayoutAudit(

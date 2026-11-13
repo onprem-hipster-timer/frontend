@@ -6,6 +6,7 @@
 export 'presentation/pages/todo_dashboard_page.dart';
 export 'presentation/pages/todo_group_detail_page.dart';
 export 'presentation/pages/todo_picker_page.dart';
+export 'presentation/pages/shared_todos_page.dart';
 
 // Widgets
 export 'presentation/widgets/todo_tree/editable_todo_tree_tile.dart';
