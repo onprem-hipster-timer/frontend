@@ -21,7 +21,6 @@ abstract class ScheduleUpdate with _$ScheduleUpdate {
     @JsonKey(name: 'recurrence_rule') String? recurrenceRule,
     @JsonKey(name: 'recurrence_end') DateTime? recurrenceEnd,
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
-    @JsonKey(name: 'tag_group_id') String? tagGroupId,
     ScheduleState? state,
     @JsonKey(name: 'source_todo_policy') SourceTodoPolicy? sourceTodoPolicy,
   }) = _ScheduleUpdate;

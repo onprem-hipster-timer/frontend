@@ -16,7 +16,7 @@ abstract class TodoUpdate with _$TodoUpdate {
   const factory TodoUpdate({
     String? title,
     String? description,
-    @JsonKey(name: 'tag_group_id') String? tagGroupId,
+    @JsonKey(name: 'todo_group_id') String? todoGroupId,
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
     DateTime? deadline,
     @JsonKey(name: 'parent_id') String? parentId,

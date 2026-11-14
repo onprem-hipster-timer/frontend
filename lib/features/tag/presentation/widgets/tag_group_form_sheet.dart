@@ -6,9 +6,10 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
 import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
-import 'package:momeet/features/tag/presentation/widgets/tag_color_picker.dart';
+import 'package:momeet/features/tag/presentation/widgets/group_form_fields.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
-/// 태그 그룹 생성/수정 폼 시트
+/// 태그 그룹 생성/수정 폼 시트. 칸은 [GroupFormFields]
 class TagGroupFormSheet extends ConsumerStatefulWidget {
   /// 수정할 태그 그룹 (null인 경우 생성 모드)
   final TagGroupReadWithTags? tagGroup;
@@ -56,7 +57,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         : ref.watch(createTagGroupMutation).isPending;
 
     return AppFormSheet(
-      title: isEditMode ? '그룹 수정' : '새 그룹 만들기',
+      title: isEditMode ? '${Terms.tagGroup} 수정' : '새 ${Terms.tagGroup} 만들기',
       formKey: _formKey,
       actions: AppFormActionBar(
         submitLabel: isEditMode ? '수정' : '생성',
@@ -64,53 +65,12 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         busy: isLoading,
       ),
       children: [
-        TextFormField(
-          controller: _nameController,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: '그룹 이름',
-            hintText: '태그 그룹 이름을 입력하세요',
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(12),
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: _selectedColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return '그룹 이름을 입력해주세요';
-            }
-            if (value.trim().length > 50) {
-              return '그룹 이름은 50자 이하로 입력해주세요';
-            }
-            return null;
-          },
-          textInputAction: TextInputAction.next,
-        ),
-        TextFormField(
-          controller: _descriptionController,
-          decoration: const InputDecoration(
-            label: Text('설명 (선택사항)', maxLines: 2),
-            hintText: '그룹에 대한 간단한 설명을 입력하세요',
-            prefixIcon: Icon(Icons.notes),
-            alignLabelWithHint: true,
-          ),
-          maxLines: 3,
-          validator: (value) {
-            if (value != null && value.length > 200) {
-              return '설명은 200자 이하로 입력해주세요';
-            }
-            return null;
-          },
-          textInputAction: TextInputAction.done,
-        ),
-        TagColorPicker(
-          selected: _selectedColor,
-          onChanged: (color) => setState(() => _selectedColor = color),
+        GroupFormFields(
+          noun: Terms.tagGroup,
+          nameController: _nameController,
+          descriptionController: _descriptionController,
+          color: _selectedColor,
+          onColorChanged: (color) => setState(() => _selectedColor = color),
         ),
       ],
     );
@@ -151,7 +111,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         if (mounted) {
           navigator.pop();
           scaffoldMessenger.showAppSnackBar(
-            '태그 그룹이 수정되었습니다',
+            '${Terms.tagGroup.withJosa('이', '가')} 수정되었습니다',
             kind: AppNoticeKind.success,
           );
         }
@@ -174,7 +134,7 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         if (mounted) {
           navigator.pop();
           scaffoldMessenger.showAppSnackBar(
-            '태그 그룹이 생성되었습니다',
+            '${Terms.tagGroup.withJosa('이', '가')} 생성되었습니다',
             kind: AppNoticeKind.success,
           );
         }
@@ -184,8 +144,8 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         showAppSnackBar(
           context,
           widget.tagGroup != null
-              ? '태그 그룹 수정에 실패했습니다: $error'
-              : '태그 그룹 생성에 실패했습니다: $error',
+              ? '${Terms.tagGroup} 수정에 실패했습니다: $error'
+              : '${Terms.tagGroup} 생성에 실패했습니다: $error',
           kind: AppNoticeKind.error,
         );
       }

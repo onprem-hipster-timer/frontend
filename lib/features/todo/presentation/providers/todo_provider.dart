@@ -22,12 +22,18 @@ final todosProvider = FutureProvider.family<List<TodoRead>, String?>((
   final api = ref.watch(todosApiProvider);
 
   final response = await api.readTodosV1TodosGet(
-    groupIds: groupId != null ? [groupId] : null,
+    todoGroupIds: groupId != null ? [groupId] : null,
     tagIds: null,
   );
 
   return response;
 });
+
+/// 할 일 하나. 볼 때마다 새로 받는다
+final todoByIdProvider = FutureProvider.autoDispose.family<TodoRead, String>(
+  (ref, todoId) =>
+      ref.watch(todosApiProvider).readTodoV1TodosTodoIdGet(todoId: todoId),
+);
 
 /// 모든 Todo 조회 (그룹 필터 없음)
 final allTodosProvider = FutureProvider<List<TodoRead>>((ref) async {

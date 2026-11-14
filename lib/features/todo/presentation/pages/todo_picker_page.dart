@@ -4,7 +4,7 @@ import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/providers/tag_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -68,7 +68,7 @@ class _TodoPickerPageState extends ConsumerState<TodoPickerPage> {
   @override
   Widget build(BuildContext context) {
     final todos = ref.watch(allTodosProvider);
-    final groups = ref.watch(tagGroupsProvider).value ?? const [];
+    final groups = ref.watch(todoGroupsProvider).value ?? const [];
     return Scaffold(
       appBar: AppBar(title: const Text('${Terms.todo} 고르기')),
       body: Column(
@@ -127,11 +127,11 @@ class _TodoPickerPageState extends ConsumerState<TodoPickerPage> {
 /// 그룹 하나와 그 안에서 보일 줄들
 typedef _Section = ({String title, List<TodoTreeNode> rows});
 
-/// 그룹 순서대로 묶고, [query]가 있으면 제목이 맞는 할 일과 그 상위만 남긴다.
+/// 할 일 그룹 순서대로 묶고, [query]가 있으면 제목이 맞는 할 일과 그 상위만 남긴다.
 /// 그룹 목록에 없는 그룹의 할 일은 끝에 '기타' 하나로 묶는다.
 List<_Section> _sections(
   List<TodoRead> todos,
-  List<TagGroupRead> groups,
+  List<TodoGroupRead> groups,
   String query,
 ) {
   final known = {for (final group in groups) group.id};
@@ -141,8 +141,8 @@ List<_Section> _sections(
   );
   return [
     for (final group in groups)
-      section(group.name, (todo) => todo.tagGroupId == group.id),
-    section('기타', (todo) => !known.contains(todo.tagGroupId)),
+      section(group.name, (todo) => todo.todoGroupId == group.id),
+    section('기타', (todo) => !known.contains(todo.todoGroupId)),
   ].where((section) => section.rows.isNotEmpty).toList();
 }
 

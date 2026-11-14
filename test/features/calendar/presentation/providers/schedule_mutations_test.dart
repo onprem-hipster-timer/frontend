@@ -169,26 +169,25 @@ void main() {
       ).called(1);
     });
 
-    test('convertToTodo', () async {
+    test('convertToTodo는 할 일 그룹 없이(기본 그룹으로) 바꾼다', () async {
       when(
         () => api.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
           scheduleId: any(named: 'scheduleId'),
-          tagGroupId: any(named: 'tagGroupId'),
+          todoGroupId: any(named: 'todoGroupId'),
         ),
       ).thenAnswer((_) async {});
 
       final c = makeContainer();
       await convertToTodoMutation.run(
         c,
-        (tsx) => tsx
-            .get(scheduleMutationsProvider.notifier)
-            .convertToTodo('s1', 'group-1'),
+        (tsx) =>
+            tsx.get(scheduleMutationsProvider.notifier).convertToTodo('s1'),
       );
 
       verify(
         () => api.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
           scheduleId: 's1',
-          tagGroupId: 'group-1',
+          todoGroupId: null,
         ),
       ).called(1);
     });

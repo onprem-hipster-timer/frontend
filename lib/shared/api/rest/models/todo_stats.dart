@@ -15,7 +15,7 @@ abstract class TodoStats with _$TodoStats {
   const factory TodoStats({
     @JsonKey(name: 'total_count') required int totalCount,
     @JsonKey(name: 'by_tag') required List<TagStat> byTag,
-    @JsonKey(name: 'group_id') String? groupId,
+    @JsonKey(name: 'todo_group_id') String? todoGroupId,
   }) = _TodoStats;
 
   factory TodoStats.fromJson(Map<String, Object?> json) =>

@@ -169,7 +169,6 @@ void main() {
         id: testScheduleId,
         title: '연결된 일정',
         sourceTodoId: 'todo-123',
-        tagGroupId: 'group-1',
       );
 
       await tester.pumpWidget(buildPage(schedule: linkedSchedule));

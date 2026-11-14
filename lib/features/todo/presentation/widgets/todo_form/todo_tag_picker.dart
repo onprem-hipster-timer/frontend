@@ -5,26 +5,21 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_group_row.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 그룹별로 태그 칩을 늘어놓는다.
+/// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 태그 그룹별로 태그 칩을 늘어놓는다.
+/// 할 일에는 어느 태그 그룹의 태그든 붙일 수 있다.
 class TodoTagPicker extends ConsumerWidget {
   const TodoTagPicker({
     super.key,
-    required this.lockedGroupId,
     required this.selectedTagIds,
     required this.onToggle,
-    this.onFirstGroup,
   });
 
-  /// 새 할 일이 들어갈 그룹. 주면 바꿀 수 없다는 표시와 함께 보인다
-  final String? lockedGroupId;
   final Set<String> selectedTagIds;
   final void Function(String tagId, bool selected) onToggle;
-
-  /// 태그 그룹을 불러온 뒤 첫 그룹 id로 한 번 불린다(새 할 일의 기본 그룹)
-  final ValueChanged<String>? onFirstGroup;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,20 +27,6 @@ class TodoTagPicker extends ConsumerWidget {
         .watch(tag_providers.tagTreeProvider)
         .when(
           data: (tagGroups) {
-            final onFirstGroup = this.onFirstGroup;
-            if (onFirstGroup != null && tagGroups.isNotEmpty) {
-              final first = tagGroups.first.group.id;
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => onFirstGroup(first),
-              );
-            }
-            // 목록에 없는 그룹이면 보낼 때처럼 첫 그룹으로 본다
-            final locked = lockedGroupId == null || tagGroups.isEmpty
-                ? null
-                : tagGroups
-                          .where((g) => g.group.id == lockedGroupId)
-                          .firstOrNull ??
-                      tagGroups.first;
             final selectedTags = [
               for (final group in tagGroups)
                 for (final tag in group.tags)
@@ -54,10 +35,6 @@ class TodoTagPicker extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (locked != null) ...[
-                  _GroupBadge(group: locked.group),
-                  const SizedBox(height: 12),
-                ],
                 if (selectedTags.isNotEmpty) ...[
                   _SelectedTags(
                     tags: selectedTags,
@@ -70,7 +47,8 @@ class TodoTagPicker extends ConsumerWidget {
                     icon: Icons.label_outline,
                     title: '아직 태그가 없습니다',
                     message:
-                        '새 태그를 만들어 ${Terms.todo.withJosa('을', '를')} 분류해보세요',
+                        '${Terms.tagGroup.withJosa('을', '를')} 만든 뒤 그 안에 태그를 만들어 '
+                        '${Terms.todo.withJosa('을', '를')} 분류해보세요',
                     actionLabel: '첫 태그 만들기',
                     onAction: () => _createTag(context, ref),
                   ),
@@ -105,18 +83,22 @@ class TodoTagPicker extends ConsumerWidget {
   }
 }
 
-/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다. 태그 그룹이 없으면 먼저 만들라고 알린다
+/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다.
+///
+/// 태그 그룹이 없으면 태그 그룹 폼을 먼저 열고, 태그 그룹이 생기면 그 그룹을 고른 채 태그 폼으로 잇는다.
+/// 태그 그룹 폼을 닫으면 아무것도 하지 않는다. 태그 목록을 아직 받지 못했으면 열지 않는다.
 Future<void> _createTag(
   BuildContext context,
   WidgetRef ref, {
   String? groupId,
 }) async {
-  final groups = ref
-      .read(tag_providers.tagTreeProvider)
-      .when(data: (g) => g, loading: () => const [], error: (_, _) => const []);
+  var groups = ref.read(tag_providers.tagTreeProvider).value;
+  if (groups == null) return;
   if (groups.isEmpty) {
-    showAppSnackBar(context, '먼저 태그 그룹을 생성해주세요. 태그 관리 페이지에서 그룹을 만들 수 있습니다.');
-    return;
+    await showTagGroupFormSheet(context);
+    if (!context.mounted) return;
+    groups = await ref.read(tag_providers.tagTreeProvider.future);
+    if (!context.mounted || groups.isEmpty) return;
   }
   await showTagFormSheet(
     context,
@@ -144,46 +126,6 @@ class _TagHeader extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         ),
-      ),
-    );
-  }
-}
-
-/// 새 할 일이 들어갈 그룹. 폼에서는 바꿀 수 없다
-class _GroupBadge extends StatelessWidget {
-  const _GroupBadge({required this.group});
-
-  final TagGroupRead group;
-
-  @override
-  Widget build(BuildContext context) {
-    final groupColor = HexColor.fromHex(group.color);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: groupColor.withValues(alpha: 0.1),
-        borderRadius: AppRadius.pillAll,
-        border: Border.all(color: groupColor.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.folder_rounded, size: 16, color: groupColor),
-          const SizedBox(width: 6),
-          Text(
-            '${group.name} 그룹',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: groupColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.lock_outline,
-            size: 12,
-            color: groupColor.withValues(alpha: 0.7),
-          ),
-        ],
       ),
     );
   }

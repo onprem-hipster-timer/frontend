@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -18,7 +19,10 @@ void main() {
   final study2 = makeTag(id: 'tag-read', name: '독서', groupId: 'group-study');
 
   setUp(() {
-    todos = FakeTodosClient();
+    todos = FakeTodosClient(const [], [
+      makeTodoGroup(id: 'group-work', name: '업무'),
+      makeTodoGroup(id: 'group-study', name: '학습'),
+    ]);
     tags = FakeTagsClient([
       makeTagGroup(id: 'group-work', name: '업무', tags: [focus]),
       makeTagGroup(id: 'group-study', name: '학습', tags: [study, study2]),
@@ -29,7 +33,7 @@ void main() {
     WidgetTester tester, {
     TodoRead? todo,
     String? defaultParentId,
-    String? defaultTagGroupId,
+    String? defaultTodoGroupId,
   }) => pumpSheetHost(
     tester,
     overrides: [
@@ -40,11 +44,17 @@ void main() {
       context,
       todo: todo,
       defaultParentId: defaultParentId,
-      defaultTagGroupId: defaultTagGroupId,
+      defaultTodoGroupId: defaultTodoGroupId,
     ),
   );
 
   Finder field(String label) => find.widgetWithText(TextFormField, label);
+
+  /// 할 일 그룹 칸에 보이는 글자
+  Finder groupShown(String text) => find.descendant(
+    of: find.byType(TodoGroupField),
+    matching: find.text(text),
+  );
 
   group('새 할 일', () {
     testWidgets('좁은 화면에 글자가 커도 설명 칸 이름을 자르지 않는다', (tester) async {
@@ -73,10 +83,11 @@ void main() {
       expect(todos.created, isEmpty);
     });
 
-    testWidgets('기본 그룹은 태그가 가장 많은 그룹이고, 고른 태그·상위와 함께 보낸 뒤 닫는다', (tester) async {
+    testWidgets('고른 태그·상위와 함께 보낸 뒤 닫는다. 할 일 그룹을 받지 않았으면 그룹을 보내지 않는다', (
+      tester,
+    ) async {
       await open(tester, defaultParentId: 'parent-1');
 
-      expect(find.text('학습 그룹'), findsOneWidget);
       await tester.enterText(field('할 일 제목'), '  보고서 쓰기  ');
       await tester.enterText(field('설명 (선택사항)'), '  초안  ');
       await tapVisible(tester, find.widgetWithText(FilterChip, '공부'));
@@ -87,7 +98,7 @@ void main() {
       final body = todos.created.single;
       expect(body.title, '보고서 쓰기');
       expect(body.description, '초안');
-      expect(body.tagGroupId, 'group-study');
+      expect(body.todoGroupId, isNull);
       expect(body.tagIds, ['tag-study']);
       expect(body.parentId, 'parent-1');
       expect(body.status, isNull);
@@ -95,14 +106,78 @@ void main() {
       expect(find.text('할 일이 생성되었습니다'), findsOneWidget);
     });
 
-    testWidgets('기본 태그 그룹을 받으면 그 그룹으로 만든다', (tester) async {
-      await open(tester, defaultTagGroupId: 'group-work');
+    testWidgets('할 일 그룹을 받으면 그 그룹을 칸에 보이고 그 그룹으로 만든다', (tester) async {
+      await open(tester, defaultTodoGroupId: 'group-work');
 
-      expect(find.text('업무 그룹'), findsOneWidget);
+      expect(groupShown('업무'), findsOneWidget);
       await tester.enterText(field('할 일 제목'), '회의');
       await tapVisible(tester, find.text('생성'));
 
-      expect(todos.created.single.tagGroupId, 'group-work');
+      expect(todos.created.single.todoGroupId, 'group-work');
+    });
+
+    testWidgets('할 일 그룹을 받지 않으면 칸에 기본 그룹을 보인다', (tester) async {
+      await open(tester);
+
+      expect(groupShown('기본'), findsOneWidget);
+      expect(groupShown('할 일 목록'), findsOneWidget);
+    });
+
+    testWidgets('할 일 그룹을 고르면 지금 그룹에 체크가 있고, 고른 그룹으로 만든다', (tester) async {
+      await open(tester, defaultTodoGroupId: 'group-work');
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.text('해야 할 일 목록 고르기'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, '업무'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+      expect(groupShown('학습'), findsOneWidget);
+
+      await tester.enterText(field('할 일 제목'), '단어 외우기');
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created.single.todoGroupId, 'group-study');
+    });
+
+    testWidgets('할 일 그룹 고르기를 취소하면 그대로 둔다', (tester) async {
+      await open(tester, defaultTodoGroupId: 'group-work');
+      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
+
+      expect(find.text('해야 할 일 목록 고르기'), findsNothing);
+      expect(groupShown('업무'), findsOneWidget);
+      await tester.enterText(field('할 일 제목'), '회의');
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created.single.todoGroupId, 'group-work');
+    });
+
+    testWidgets('하위 할 일은 할 일 그룹을 바꿀 수 없다', (tester) async {
+      await open(
+        tester,
+        defaultParentId: 'parent-1',
+        defaultTodoGroupId: 'group-work',
+      );
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.text('해야 할 일 목록 고르기'), findsNothing);
+      expect(groupShown('업무'), findsOneWidget);
+    });
+
+    testWidgets('할 일 그룹을 불러오지 못하면 칸에 알리고, 할 일은 그래도 만든다', (tester) async {
+      todos.groupsReadError = Exception('끊김');
+      await open(tester);
+
+      expect(find.text('해야 할 일 목록을 불러오지 못했습니다'), findsOneWidget);
+      await tapVisible(tester, find.byType(TodoGroupField));
+      expect(find.text('해야 할 일 목록 고르기'), findsNothing);
+
+      await tester.enterText(field('할 일 제목'), '정리');
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created.single.todoGroupId, isNull);
     });
 
     testWidgets('완료를 고르면 완료 상태로 보낸다', (tester) async {
@@ -125,7 +200,20 @@ void main() {
       expect(todos.created.single.tagIds, isEmpty);
     });
 
-    testWidgets('태그 그룹이 없으면 안내를 보이고, 만들 때 기본 그룹을 먼저 만든다', (tester) async {
+    testWidgets('여러 태그 그룹의 태그를 함께 붙인다', (tester) async {
+      await open(tester);
+      await tester.enterText(field('할 일 제목'), '정리');
+      await tapVisible(tester, find.widgetWithText(FilterChip, '집중'));
+      await tapVisible(tester, find.widgetWithText(FilterChip, '독서'));
+      await tapVisible(tester, find.text('생성'));
+
+      expect(
+        todos.created.single.tagIds,
+        unorderedEquals(['tag-focus', 'tag-read']),
+      );
+    });
+
+    testWidgets('태그 그룹이 없으면 안내를 보이고, 태그 그룹을 만들지 않고 할 일만 만든다', (tester) async {
       tags.groups.clear();
       await open(tester);
 
@@ -133,8 +221,53 @@ void main() {
       await tester.enterText(field('할 일 제목'), '첫 할 일');
       await tapVisible(tester, find.text('생성'));
 
-      expect(tags.createdGroups.single.name, '기본 그룹');
-      expect(todos.created.single.tagGroupId, 'group-new-1');
+      expect(tags.createdGroups, isEmpty);
+      expect(todos.created.single.title, '첫 할 일');
+      expect(todos.created.single.tagIds, isEmpty);
+    });
+
+    testWidgets('태그 그룹이 없을 때 첫 태그 만들기는 태그 그룹부터 만들고, 그 그룹에 태그를 만들어 이어 고른다', (
+      tester,
+    ) async {
+      tags.groups.clear();
+      await open(tester);
+
+      expect(find.textContaining('태그 그룹을 만든 뒤'), findsOneWidget);
+      await tapVisible(tester, find.text('첫 태그 만들기'));
+      expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
+      await tester.enterText(field('태그 그룹 이름'), '생활');
+      await tapVisible(tester, find.widgetWithText(FilledButton, '생성').last);
+
+      expect(tags.createdGroups.single.name, '생활');
+      expect(find.text('새 태그 만들기'), findsOneWidget);
+      await tester.enterText(field('태그 이름'), '운동');
+      await tapVisible(tester, find.widgetWithText(FilledButton, '생성').last);
+
+      expect(tags.createdTags.single.groupId, 'group-new-1');
+      expect(find.text('새 태그 만들기'), findsNothing);
+      expect(find.text('새 할 일 만들기'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, '운동'), findsOneWidget);
+    });
+
+    testWidgets('태그 그룹이 없을 때 새 태그에서 태그 그룹 폼을 닫으면 태그 폼을 열지 않는다', (tester) async {
+      tags.groups.clear();
+      await open(tester);
+      await tapVisible(tester, find.text('새 태그'));
+      expect(find.text('새 태그 그룹 만들기'), findsOneWidget);
+      await tapVisible(tester, find.widgetWithText(OutlinedButton, '취소').last);
+
+      expect(find.text('새 태그 그룹 만들기'), findsNothing);
+      expect(find.text('새 태그 만들기'), findsNothing);
+      expect(tags.createdGroups, isEmpty);
+      expect(find.text('새 할 일 만들기'), findsOneWidget);
+    });
+
+    testWidgets('태그 그룹이 있으면 새 태그는 바로 태그 폼을 연다', (tester) async {
+      await open(tester);
+      await tapVisible(tester, find.text('새 태그'));
+
+      expect(find.text('새 태그 그룹 만들기'), findsNothing);
+      expect(find.text('새 태그 만들기'), findsOneWidget);
     });
 
     testWidgets('보내기에 실패하면 시트를 두고 오류를 알린다', (tester) async {
@@ -169,16 +302,73 @@ void main() {
       TodoStatus status = TodoStatus.unscheduled,
       DateTime? deadline,
       String? description = '메모',
+      String? parentId,
     }) => TodoRead(
       id: 'todo-1',
       title: '보고서',
       description: description,
-      tagGroupId: 'group-study',
+      todoGroupId: 'group-study',
+      parentId: parentId,
       status: status,
       deadline: deadline,
       tags: [study],
       createdAt: DateTime.utc(2026, 1, 1),
     );
+
+    testWidgets('지금 할 일 그룹을 칸에 보이고, 바꾸지 않으면 그룹을 보내지 않는다', (tester) async {
+      await open(tester, todo: existing());
+
+      expect(groupShown('학습'), findsOneWidget);
+      await tapVisible(tester, find.text('수정'));
+
+      expect(todos.updated.single.$2.todoGroupId, isNull);
+      expect(find.text('할 일이 수정되었습니다'), findsOneWidget);
+      expect(find.textContaining('옮겼습니다'), findsNothing);
+    });
+
+    testWidgets('같은 할 일 그룹을 다시 고르면 그룹을 보내지 않는다', (tester) async {
+      await open(tester, todo: existing());
+      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+      await tapVisible(tester, find.text('수정'));
+
+      expect(todos.updated.single.$2.todoGroupId, isNull);
+    });
+
+    testWidgets('다른 할 일 그룹을 고르면 그 그룹으로 옮긴다', (tester) async {
+      await open(tester, todo: existing());
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(
+        find.text('할 일을 옮길 해야 할 일 목록입니다. 하위 할 일이 있으면 함께 옮겨집니다.'),
+        findsOneWidget,
+      );
+      await tapVisible(tester, find.widgetWithText(ListTile, '업무'));
+      expect(groupShown('업무'), findsOneWidget);
+      await tapVisible(tester, find.text('수정'));
+
+      expect(todos.updated.single.$2.todoGroupId, 'group-work');
+      expect(find.text("'업무' 해야 할 일 목록으로 옮겼습니다"), findsOneWidget);
+      expect(find.text('할 일이 수정되었습니다'), findsNothing);
+    });
+
+    testWidgets('상위 할 일이 있으면 옮길 때 상위 연결이 풀린다고 알린다', (tester) async {
+      await open(tester, todo: existing(parentId: 'todo-parent'));
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.textContaining('하위 할 일이 있으면 함께 옮겨집니다.'), findsOneWidget);
+      expect(
+        find.textContaining('상위 할 일과의 연결은 풀리고, 옮긴 해야 할 일 목록에서 맨 위 할 일이 됩니다.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('상위 할 일이 없으면 상위 연결을 말하지 않는다', (tester) async {
+      await open(tester, todo: existing());
+      await tapVisible(tester, find.byType(TodoGroupField));
+
+      expect(find.textContaining('상위'), findsNothing);
+    });
 
     testWidgets('기존 값으로 채우고 바꾼 값을 보낸 뒤 닫는다', (tester) async {
       await open(tester, todo: existing(deadline: DateTime(2026, 11, 20)));
@@ -188,7 +378,6 @@ void main() {
       expect(find.text('메모'), findsOneWidget);
       expect(find.text('2026년 11월 20일'), findsOneWidget);
       expect(find.text('선택된 태그 (1)'), findsOneWidget);
-      expect(find.text('학습 그룹'), findsNothing);
 
       await tester.enterText(field('할 일 제목'), '보고서 2');
       await tapVisible(tester, find.text('수정'));

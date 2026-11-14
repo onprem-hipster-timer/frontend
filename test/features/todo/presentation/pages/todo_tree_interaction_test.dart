@@ -30,7 +30,7 @@ void main() {
   }) => TodoRead(
     id: id,
     title: title,
-    tagGroupId: 'group-work',
+    todoGroupId: 'group-work',
     parentId: parentId,
     status: status,
     tags: tags,
@@ -38,11 +38,14 @@ void main() {
   );
 
   setUp(() {
-    todos = FakeTodosClient([
-      todo('todo-1', '보고서'),
-      todo('todo-2', '자료 조사', parentId: 'todo-1'),
-      todo('todo-3', '회의 준비'),
-    ]);
+    todos = FakeTodosClient(
+      [
+        todo('todo-1', '보고서'),
+        todo('todo-2', '자료 조사', parentId: 'todo-1'),
+        todo('todo-3', '회의 준비'),
+      ],
+      [makeTodoGroup(id: 'group-work', name: '업무')],
+    );
   });
 
   Future<void> pumpPage(WidgetTester tester) async {

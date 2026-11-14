@@ -15,12 +15,14 @@ class AppDialogChoice<T> {
 
 /// 선택지 중 하나를 고르는 다이얼로그. 닫으면 null.
 ///
-/// 서버가 기본값 없이 클라이언트의 결정을 요구하는 정책(연결 일정·원본 할 일 처리)을 물을 때 쓴다.
+/// 서버가 기본값 없이 클라이언트의 결정을 요구하는 정책(연결 일정·원본 할 일 처리)을 묻거나,
+/// 짧은 목록에서 하나를 고를 때 쓴다. [selected]와 같은 선택지에는 체크 표시를 한다.
 Future<T?> showAppChoiceDialog<T>(
   BuildContext context, {
   required String title,
   required String content,
   required List<AppDialogChoice<T>> choices,
+  T? selected,
 }) {
   return showDialog<T>(
     context: context,
@@ -34,6 +36,8 @@ Future<T?> showAppChoiceDialog<T>(
         for (final choice in choices)
           ListTile(
             contentPadding: EdgeInsets.zero,
+            selected: choice.value == selected,
+            trailing: choice.value == selected ? const Icon(Icons.check) : null,
             title: Text(choice.label),
             subtitle: choice.description == null
                 ? null

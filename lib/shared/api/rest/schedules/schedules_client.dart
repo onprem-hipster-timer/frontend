@@ -195,17 +195,17 @@ abstract class SchedulesClient {
   ///
   /// 제약사항:.
   /// - 이미 Todo와 연결된 Schedule에서는 호출 불가 (400 에러).
-  /// - tag_group_id는 필수 파라미터.
+  /// - todo_group_id가 남의 그룹이면 404.
   ///
   /// :param schedule_id: Schedule ID.
-  /// :param tag_group_id: Todo가 속할 TagGroup ID.
+  /// :param todo_group_id: Todo가 속할 할 일 그룹 ID (없으면 기본 그룹).
   /// :return: 생성된 Todo.
   ///
-  /// [tagGroupId] - Todo가 속할 TagGroup ID (필수).
+  /// [todoGroupId] - Todo가 속할 할 일 그룹 ID. 없으면 기본 그룹.
   @POST('/v1/schedules/{schedule_id}/todo')
   Future<void> createTodoFromScheduleV1SchedulesScheduleIdTodoPost({
     @Path('schedule_id') required String scheduleId,
-    @Query('tag_group_id') required String tagGroupId,
+    @Query('todo_group_id') String? todoGroupId,
     @DioOptions() RequestOptions? options,
   });
 }
