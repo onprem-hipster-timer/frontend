@@ -11,6 +11,9 @@ abstract final class Terms {
   /// [todoGroup]의 짧은 이름. 온 이름이 들어가지 않는 좁은 자리에만 쓴다
   static const todoGroupShort = '할 일 목록';
 
+  /// [todoGroup]을 가리키는 말. 문맥상 어느 목록인지 이미 분명한 자리에만 쓴다
+  static const list = '목록';
+
   /// 태그를 묶는 묶음
   static const tagGroup = '태그 그룹';
 

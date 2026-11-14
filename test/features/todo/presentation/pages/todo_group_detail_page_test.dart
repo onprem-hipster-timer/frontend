@@ -115,7 +115,7 @@ void main() {
 
   testWidgets('추가 버튼은 이 그룹에 할 일을 만들고 목록에 넣는다', (tester) async {
     await pumpPage(tester);
-    await tapVisible(tester, find.byTooltip('이 해야 할 일 목록에 할 일 추가'));
+    await tapVisible(tester, find.byTooltip('이 목록에 할 일 추가'));
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
 
@@ -158,7 +158,7 @@ void main() {
     todos.todos.removeWhere((t) => t.todoGroupId == 'group-work');
     await pumpPage(tester);
 
-    expect(find.text('이 해야 할 일 목록에는 할 일이 없습니다'), findsOneWidget);
+    expect(find.text('이 목록에는 할 일이 없습니다'), findsOneWidget);
     await tapVisible(tester, find.text('첫 할 일 추가하기'));
     await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
@@ -208,7 +208,7 @@ void main() {
       await openSettings(tester);
       await tapVisible(tester, find.text('해야 할 일 목록 삭제'));
 
-      expect(find.textContaining('기본 해야 할 일 목록으로 옮겨집니다'), findsOneWidget);
+      expect(find.textContaining('이 목록의 할 일은 기본 목록으로 옮겨집니다'), findsOneWidget);
       await tapVisible(tester, find.widgetWithText(FilledButton, '삭제'));
 
       expect(todos.deletedGroups, ['group-work']);

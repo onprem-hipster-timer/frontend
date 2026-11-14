@@ -69,7 +69,7 @@ class TodoGroupDetailPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateTodoDialog(context),
-        tooltip: '이 ${Terms.todoGroup}에 ${Terms.todo} 추가',
+        tooltip: '이 ${Terms.list}에 ${Terms.todo} 추가',
         child: const Icon(Icons.add_task),
       ),
     );
@@ -210,8 +210,8 @@ class _GroupAppBar extends ConsumerWidget {
       title: '${Terms.todoGroup} 삭제',
       content:
           '${group.name} ${Terms.todoGroup.withJosa('을', '를')} 삭제하시겠습니까?\n'
-          '이 ${Terms.todoGroup}의 ${Terms.todo.withJosa('은', '는')} '
-          '기본 ${Terms.todoGroup.withJosa('으로', '로')} 옮겨집니다.',
+          '이 ${Terms.list}의 ${Terms.todo.withJosa('은', '는')} '
+          '기본 ${Terms.list.withJosa('으로', '로')} 옮겨집니다.',
       confirmText: '삭제',
       destructive: true,
     );
@@ -256,7 +256,7 @@ class _TodoList extends StatelessWidget {
       return SliverFillRemaining(
         child: AppEmptyState(
           icon: Icons.task_alt_rounded,
-          title: '이 ${Terms.todoGroup}에는 ${Terms.todo.withJosa('이', '가')} 없습니다',
+          title: '이 ${Terms.list}에는 ${Terms.todo.withJosa('이', '가')} 없습니다',
           message: '첫 번째 ${Terms.todo.withJosa('을', '를')} 추가해서\n체계적으로 관리해보세요!',
           actionLabel: '첫 ${Terms.todo} 추가하기',
           actionIcon: Icons.add_task,
@@ -275,7 +275,7 @@ class _TodoList extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: const AppHintCard(
                 message:
-                    '이 ${Terms.todoGroup}의 ${Terms.todo}들입니다. 드래그로 순서를 바꿀 수 있습니다.',
+                    '이 ${Terms.list}의 ${Terms.todo}들입니다. 드래그로 순서를 바꿀 수 있습니다.',
               ),
             );
           }
