@@ -88,6 +88,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
             .create(
               draft.toMeetingCreate(title: title, timezone: timezone),
               isPublic: draft.isPublic,
+              allowGuests: draft.allowGuests,
             );
       });
       if (!mounted) return;

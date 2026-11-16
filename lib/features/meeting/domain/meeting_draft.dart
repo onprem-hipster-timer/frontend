@@ -102,7 +102,8 @@ class MeetingDraft {
 
   /// 만들기 요청. 시간을 묻지 않는 방식은 하루 전체(0시~다음 날 0시)로 보낸다.
   ///
-  /// 게스트 로그인([allowGuests])은 담지 않는다([MeetingCreate]에 칸이 없다).
+  /// 게스트 로그인([allowGuests])은 담지 않는다. backend는 새 미팅에 게스트를 켜지 않으므로 만든 뒤 공개로
+  /// 열고 켠다(`MeetingMutations.create`).
   MeetingCreate toMeetingCreate({
     required String title,
     required String timezone,

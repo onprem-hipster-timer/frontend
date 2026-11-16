@@ -41,14 +41,26 @@ MeetingRead makeMeeting({
 
 /// 받은 요청을 기록하는 [MeetingsClient]
 class FakeMeetingsClient extends Fake implements MeetingsClient {
-  FakeMeetingsClient({this.meeting});
+  FakeMeetingsClient({this.meeting, List<String>? calls}) : calls = calls ?? [];
 
   /// 조회가 돌려주는 미팅. 없으면 만든 미팅을 돌려준다
   MeetingRead? meeting;
 
+  /// 만들기·수정·삭제 요청을 보낸 순서. [FakeVisibilityClient]에 같은 목록을 주면 함께 쌓인다
+  final List<String> calls;
+
   final created = <MeetingCreate>[];
   final deleted = <String>[];
   final reads = <String>[];
+
+  /// 받은 수정 요청 (미팅 id, 본문)
+  final updates = <(String, MeetingUpdate)>[];
+
+  /// 설정하면 수정이 이 오류로 실패한다
+  Object? updateError;
+
+  /// 설정하면 삭제가 이 오류로 실패한다
+  Object? deleteError;
 
   /// 설정하면 만들기가 이 오류로 실패한다
   Object? createError;
@@ -65,6 +77,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     String? timezone,
     RequestOptions? options,
   }) async {
+    calls.add('create');
     created.add(body);
     await createGate;
     if (createError != null) throw createError!;
@@ -96,11 +109,28 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
   }
 
   @override
+  Future<MeetingRead> updateMeetingV1MeetingsMeetingIdPatch({
+    required String meetingId,
+    required MeetingUpdate body,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    calls.add('update ${body.toJson()}');
+    updates.add((meetingId, body));
+    if (updateError != null) throw updateError!;
+    return makeMeeting(
+      id: meetingId,
+    ).copyWith(allowGuests: body.allowGuests ?? false);
+  }
+
+  @override
   Future<void> deleteMeetingV1MeetingsMeetingIdDelete({
     required String meetingId,
     RequestOptions? options,
   }) async {
+    calls.add('delete $meetingId');
     deleted.add(meetingId);
+    if (deleteError != null) throw deleteError!;
   }
 
   /// 가능 시간 조회가 돌려주는 참여자별 가능 시간. 참여·저장하면 backend처럼 바뀐다
@@ -236,6 +266,11 @@ AvailabilityRead availabilityOf(
 
 /// 받은 공개 범위 요청을 기록하는 [VisibilityClient]
 class FakeVisibilityClient extends Fake implements VisibilityClient {
+  FakeVisibilityClient({List<String>? calls}) : calls = calls ?? [];
+
+  /// 공개 범위 요청을 보낸 순서. [FakeMeetingsClient]와 같은 목록을 쓸 수 있다
+  final List<String> calls;
+
   final updates = <(ResourceType, String, VisibilityUpdate)>[];
 
   /// 설정하면 공개 범위 저장이 이 오류로 실패한다
@@ -248,6 +283,7 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
     required VisibilityUpdate body,
     RequestOptions? options,
   }) async {
+    calls.add('visibility ${body.level.name}');
     if (setError != null) throw setError!;
     updates.add((resourceType, resourceId, body));
     return VisibilityRead(

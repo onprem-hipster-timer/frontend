@@ -256,16 +256,13 @@ void main() {
       ]).toMeetingCreate(title: '회의', timezone: timezone).toJson();
       expect(json['start_date'], '2027-03-01T00:00:00.000Z');
       expect(json['end_date'], '2027-03-01T00:00:00.000Z');
-      expect(json['allow_guests'], isFalse);
     });
 
-    test('게스트 로그인은 요청에 담지 않는다', () {
+    test('게스트 로그인을 허용해도 만들기 요청의 allow_guests는 false다(만든 뒤 켠다)', () {
       final allowed = tapAll(const MeetingDraft(), [1]);
-      final denied = allowed.withGuests(false);
-      expect(
-        allowed.toMeetingCreate(title: 't', timezone: timezone),
-        denied.toMeetingCreate(title: 't', timezone: timezone),
-      );
+      expect(allowed.allowGuests, isTrue);
+      final json = allowed.toMeetingCreate(title: 't', timezone: timezone);
+      expect(json.toJson()['allow_guests'], isFalse);
     });
   });
 

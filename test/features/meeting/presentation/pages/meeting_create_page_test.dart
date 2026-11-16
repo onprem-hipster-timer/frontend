@@ -25,11 +25,13 @@ Finder dayCell(DateTime day) =>
 void main() {
   late FakeMeetingsClient meetings;
   late FakeVisibilityClient visibility;
+  late List<String> calls;
   late GoRouter router;
 
   setUp(() {
-    meetings = FakeMeetingsClient();
-    visibility = FakeVisibilityClient();
+    calls = [];
+    meetings = FakeMeetingsClient(calls: calls);
+    visibility = FakeVisibilityClient(calls: calls);
   });
 
   Future<void> pumpPage(WidgetTester tester, {String? name = '지현'}) async {
@@ -225,7 +227,9 @@ void main() {
     expect(location(), AppRoute.meetings.path);
   });
 
-  testWidgets('제목을 비우면 이름이 든 자리 글자로 만들고, 공개로 연 뒤 만든 뒤 화면으로 간다', (tester) async {
+  testWidgets('제목을 비우면 이름이 든 자리 글자로 만들고, 공개로 열고 게스트 로그인을 켠 뒤 만든 뒤 화면으로 간다', (
+    tester,
+  ) async {
     await pumpPage(tester);
     await tapDays(tester, [3, 5]);
     await tester.tap(find.text('6:00'));
@@ -250,6 +254,24 @@ void main() {
     expect(type, ResourceType.meeting);
     expect(id, 'meeting-new-1');
     expect(update.level, VisibilityLevel.public);
+    expect(meetings.updates.single.$1, 'meeting-new-1');
+    expect(calls, [
+      'create',
+      'visibility public',
+      'update {allow_guests: true}',
+    ]);
+    expect(location(), '/meetings/meeting-new-1/created');
+  });
+
+  testWidgets('게스트 로그인만 끄면 공개로 열고 게스트 로그인은 켜지 않는다', (tester) async {
+    await pumpPage(tester);
+    await tapDays(tester, [3]);
+    await tester.tap(find.text('비허용').last);
+    await tester.pumpAndSettle();
+
+    await submit(tester);
+
+    expect(calls, ['create', 'visibility public']);
     expect(location(), '/meetings/meeting-new-1/created');
   });
 
@@ -272,8 +294,7 @@ void main() {
 
     await submit(tester);
 
-    expect(meetings.created, hasLength(1));
-    expect(visibility.updates, isEmpty);
+    expect(calls, ['create']);
     expect(location(), '/meetings/meeting-new-1/created');
   });
 
@@ -302,6 +323,7 @@ void main() {
     await submit(tester);
 
     expect(find.textContaining('모임을 만들지 못했습니다'), findsOneWidget);
+    expect(calls, ['create']);
     expect(location(), AppRoute.meetings.path);
     expect(
       tester.getSemantics(dayCell(nextMonth(3))),
@@ -316,7 +338,7 @@ void main() {
 
     await submit(tester);
 
-    expect(meetings.deleted, ['meeting-new-1']);
+    expect(calls, ['create', 'visibility public', 'delete meeting-new-1']);
     expect(find.textContaining('모임을 만들지 못했습니다'), findsOneWidget);
     expect(location(), AppRoute.meetings.path);
 
@@ -324,6 +346,43 @@ void main() {
     await submit(tester);
     expect(meetings.created, hasLength(2));
     expect(location(), '/meetings/meeting-new-2/created');
+  });
+
+  testWidgets('게스트 로그인을 켜지 못하면 만든 모임을 지우고 알리며, 다시 누르면 새로 만든다', (tester) async {
+    meetings.updateError = StateError('게스트 실패');
+    await pumpPage(tester);
+    await tapDays(tester, [3]);
+
+    await submit(tester);
+
+    expect(calls, [
+      'create',
+      'visibility public',
+      'update {allow_guests: true}',
+      'delete meeting-new-1',
+    ]);
+    expect(find.textContaining('게스트 실패'), findsOneWidget);
+    expect(location(), AppRoute.meetings.path);
+
+    meetings.updateError = null;
+    await submit(tester);
+    expect(meetings.created, hasLength(2));
+    expect(location(), '/meetings/meeting-new-2/created');
+  });
+
+  testWidgets('만든 모임을 지우지도 못하면 처음 실패를 알린다', (tester) async {
+    meetings
+      ..updateError = StateError('게스트 실패')
+      ..deleteError = StateError('지우기 실패');
+    await pumpPage(tester);
+    await tapDays(tester, [3]);
+
+    await submit(tester);
+
+    expect(meetings.deleted, ['meeting-new-1']);
+    expect(find.textContaining('게스트 실패'), findsOneWidget);
+    expect(find.textContaining('지우기 실패'), findsNothing);
+    expect(location(), AppRoute.meetings.path);
   });
 
   testWidgets('만드는 중에는 화살표를 막고 완료 키를 다시 눌러도 한 번만 보낸다', (tester) async {
