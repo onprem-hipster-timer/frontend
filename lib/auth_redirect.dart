@@ -77,15 +77,22 @@ String? authRedirect({
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
-  // 1. 인증 초기화 중이면 로딩 페이지로
+  // 1. 인증 초기화 중이면 로딩 페이지로 (연 주소를 기억한다)
   if (isAuthLoading) {
-    return matchedLocation == AppRoute.loading.path
-        ? null
-        : AppRoute.loading.path;
+    if (matchedLocation == AppRoute.loading.path) return null;
+    return _gate(
+      AppRoute.loading.path,
+      from: Uri(
+        path: matchedLocation,
+        queryParameters: queryParameters.isEmpty ? null : queryParameters,
+      ).toString(),
+    );
   }
 
-  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
+  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 기억한 주소로 돌아간다. 그 주소의 규칙은 다음
+  //      리다이렉트가 본다
   if (matchedLocation == AppRoute.loading.path) {
+    if (_resumable(redirectAfterLogin) case final resume?) return resume;
     return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
   }
 
@@ -164,6 +171,22 @@ String _gate(String page, {required String? from}) {
     return page;
   }
   return '$page?redirect=${Uri.encodeComponent(from)}';
+}
+
+/// 로딩 화면이 기억한 주소. 앱에 있는 경로(로딩 화면 밖)의 내부 주소만 돌려주고, 아니면 null
+String? _resumable(String? location) {
+  if (location == null ||
+      !location.startsWith('/') ||
+      location.startsWith('//') ||
+      location.contains('://')) {
+    return null;
+  }
+  final path = Uri.tryParse(location)?.path;
+  if (path == null || path == AppRoute.loading.path) return null;
+  final known =
+      AppRoute.isKnownProtectedPath(path) ||
+      AppRoute.publicPaths.contains(path);
+  return known ? location : null;
 }
 
 /// 로그인·약관 동의를 마친 뒤 갈 곳. [redirect]가 안전한 내부 경로가 아니면 메인 앱으로,

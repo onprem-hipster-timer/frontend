@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -88,6 +91,28 @@ void main() {
     expect(find.text('팀 회의'), findsOneWidget);
     expect(meetings.reads, ['meeting-1']);
     expect(find.byType(ScaffoldWithNavBar), findsNothing);
+  });
+
+  testWidgets('로그인한 회원이 새 탭에서 모임 링크를 열면 세션을 확인한 뒤에도 그 모임에 머문다', (tester) async {
+    tester.binding.platformDispatcher.defaultRouteNameTestValue =
+        '/meetings/meeting-1';
+    addTearDown(
+      tester.binding.platformDispatcher.clearDefaultRouteNameTestValue,
+    );
+    final whoami = Completer<void>();
+    when(() => harness.kratos.whoami(any())).thenAnswer((_) async {
+      await whoami.future;
+      return KratosSession(user: testUser, accessToken: harness.accessToken);
+    });
+    final router = await pumpRouter(tester);
+    expect(location(router), startsWith(AppRoute.loading.path));
+
+    whoami.complete();
+    await pumpAWhile(tester);
+
+    expect(location(router), '/meetings/meeting-1');
+    expect(find.byType(MeetingPage), findsOneWidget);
+    expect(meetings.reads, ['meeting-1']);
   });
 
   testWidgets('로그인하지 않았으면 로그인으로 보내지 않고 공개 모임의 방문자 화면을 연다', (tester) async {

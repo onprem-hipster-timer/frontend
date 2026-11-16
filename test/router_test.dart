@@ -181,13 +181,16 @@ void main() {
         expect(result, AppRoute.loading.path);
       });
 
-      test('로딩 중이면 어떤 경로든 /loading으로 리다이렉트한다', () {
+      test('로딩 중이면 어떤 경로든 연 주소를 기억해 /loading으로 리다이렉트한다', () {
         final result = authRedirect(
           isAuthenticated: false,
           isAuthLoading: true,
           matchedLocation: AppRoute.todo.path,
         );
-        expect(result, AppRoute.loading.path);
+        expect(
+          result,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(AppRoute.todo.path)}',
+        );
       });
 
       test('로딩 중이면 로그인 페이지에서도 /loading으로 리다이렉트한다', () {
@@ -195,6 +198,32 @@ void main() {
           isAuthenticated: false,
           isAuthLoading: true,
           matchedLocation: AppRoute.login.path,
+        );
+        expect(
+          result,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(AppRoute.login.path)}',
+        );
+      });
+
+      test('로딩 중에 연 주소의 쿼리도 함께 기억한다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: AppRoute.scheduleDetail.path,
+          queryParameters: {'id': 'schedule-1'},
+        );
+        expect(
+          result,
+          '${AppRoute.loading.path}?redirect='
+          '${Uri.encodeComponent('${AppRoute.scheduleDetail.path}?id=schedule-1')}',
+        );
+      });
+
+      test('로딩 중에 루트(/)를 열면 기억할 것 없이 /loading으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: AppRoute.calendar.path,
         );
         expect(result, AppRoute.loading.path);
       });
@@ -229,6 +258,85 @@ void main() {
           matchedLocation: AppRoute.loading.path,
         );
         expect(result, AppRoute.calendar.path);
+      });
+
+      String? leaveLoading({
+        required bool isAuthenticated,
+        required String remembered,
+      }) => authRedirect(
+        isAuthenticated: isAuthenticated,
+        isAuthLoading: false,
+        matchedLocation: AppRoute.loading.path,
+        redirectAfterLogin: remembered,
+        queryParameters: {'redirect': remembered},
+      );
+
+      test('로딩 끝나면 로그인 여부와 상관없이 기억한 주소로 돌아간다', () {
+        for (final isAuthenticated in [true, false]) {
+          for (final remembered in [
+            '/meetings/meeting-1',
+            AppRoute.todo.path,
+            '${AppRoute.scheduleDetail.path}?id=schedule-1',
+            '${AppRoute.verification.path}?flow=f&code=123456',
+            AppRoute.login.path,
+          ]) {
+            expect(
+              leaveLoading(
+                isAuthenticated: isAuthenticated,
+                remembered: remembered,
+              ),
+              remembered,
+              reason: '$isAuthenticated $remembered',
+            );
+          }
+        }
+      });
+
+      test('기억한 주소로 돌아간 뒤에는 그 주소의 규칙을 따른다', () {
+        final resumed = leaveLoading(
+          isAuthenticated: false,
+          remembered: AppRoute.todo.path,
+        );
+        expect(
+          authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: resumed!,
+          ),
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.todo.path)}',
+        );
+        expect(
+          authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: '/meetings/meeting-1',
+          ),
+          isNull,
+        );
+      });
+
+      test('기억한 주소가 앱의 경로가 아니면 버리고 처음 화면으로 간다', () {
+        for (final remembered in [
+          'https://evil.example',
+          '//evil.example/path',
+          'javascript:alert(1)',
+          '/unknown',
+          '/todo?next=https://evil.example',
+          AppRoute.loading.path,
+          '${AppRoute.loading.path}?redirect=%2Ftodo',
+          '',
+        ]) {
+          expect(
+            leaveLoading(isAuthenticated: true, remembered: remembered),
+            AppRoute.calendar.path,
+            reason: remembered,
+          );
+          expect(
+            leaveLoading(isAuthenticated: false, remembered: remembered),
+            AppRoute.landing.path,
+            reason: remembered,
+          );
+        }
       });
     });
 
@@ -1098,7 +1206,10 @@ void main() {
           matchedLocation: AppRoute.consent.path,
           consentRequired: null,
         );
-        expect(result, AppRoute.loading.path);
+        expect(
+          result,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(AppRoute.consent.path)}',
+        );
       });
 
       test('로그인하지 않았으면 동의 화면도 로그인으로 보낸다', () {
