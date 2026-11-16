@@ -9,6 +9,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/my_profile_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart'
@@ -80,7 +81,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
 
-    initialLocation: AppRoute.calendar.path,
+    // 로그아웃·게스트 삭제로 계정이 바뀌면 라우터를 새로 만든다. 그때 웹 엔진의 기본 경로는 이미 '/'이므로
+    // 로그인하지 않아도 머무는 화면(모임)에 있었으면 브라우저 주소의 그 화면에서 이어 간다
+    initialLocation:
+        signedOutStay(ref.read(browserRouteProvider)) ?? AppRoute.calendar.path,
 
     routes: [
       // ============================================================

@@ -49,12 +49,17 @@ void main() {
     }
   }
 
-  Future<GoRouter> pumpRouter(WidgetTester tester) async {
+  Future<GoRouter> pumpRouter(
+    WidgetTester tester, {
+    String? browserRoute,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         retry: appRetry,
         overrides: [
           ...harness.overrides,
+          if (browserRoute != null)
+            browserRouteProvider.overrideWithValue(browserRoute),
           usersApiProvider.overrideWithValue(
             FakeUsersClient(consentRequired: false),
           ),
@@ -182,6 +187,29 @@ void main() {
     expect(location(router), '/meetings/meeting-1');
     expect(find.byType(MeetingLoginPanel), findsOneWidget);
     expect(meetings.resultReads, 1);
+  });
+
+  group('계정이 바뀌어 라우터를 새로 만들 때(로그아웃, 게스트 삭제)', () {
+    setUp(() async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubCreateFlow(KratosFlowType.login, 'flow-login');
+    });
+
+    testWidgets('브라우저가 모임 화면에 있었으면 그 모임의 방문자 화면에서 이어 간다', (tester) async {
+      final router = await pumpRouter(
+        tester,
+        browserRoute: '/meetings/meeting-1',
+      );
+
+      expect(location(router), '/meetings/meeting-1');
+      expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    });
+
+    testWidgets('로그인해야 보는 화면에 있었으면 처음 화면으로 간다', (tester) async {
+      final router = await pumpRouter(tester, browserRoute: AppRoute.todo.path);
+
+      expect(location(router), AppRoute.landing.path);
+    });
   });
 
   group('게스트 세션', () {
