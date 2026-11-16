@@ -222,6 +222,53 @@ void main() {
     verify: (tester) => expect(find.byTooltip('내 이름 바꾸기'), findsOneWidget),
   );
 
+  for (final mode in ['hourly', 'daily', 'weekly']) {
+    testLayoutAudit(
+      'meeting_page_visitor_$mode',
+      subject: '모임 제목',
+      texts: const [StressTexts.koreanLong],
+      build: (text) => routed(
+        const MeetingPage(meetingId: 'meeting-1'),
+        meetingOverrides(
+          signedIn: false,
+          meetings: FakeMeetingsClient(
+            meeting: meetingIn(mode, title: text.value),
+          )..availability = _fivePeople('참여자'),
+        ),
+      ),
+    );
+  }
+
+  testLayoutAudit(
+    'meeting_page_visitor_empty',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const MeetingPage(meetingId: 'meeting-1'),
+      meetingOverrides(
+        signedIn: false,
+        meetings: FakeMeetingsClient(
+          meeting: meetingIn('hourly', title: text.value),
+        ),
+      ),
+    ),
+  );
+
+  for (final signedIn in [false, true]) {
+    testLayoutAudit(
+      'meeting_page_not_found_${signedIn ? 'member' : 'visitor'}',
+      subject: '안내',
+      texts: const [StressTexts.koreanLong],
+      build: (text) => routed(
+        const MeetingPage(meetingId: 'meeting-1'),
+        meetingOverrides(
+          signedIn: signedIn,
+          meetings: FakeMeetingsClient(meeting: null)..readError = notFound(),
+        ),
+      ),
+    );
+  }
+
   testLayoutAudit(
     'meeting_page_save_failed',
     subject: '참여자 이름',

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart'
     show DioException, DioExceptionType, RequestOptions, Response;
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/auth_user.dart';
@@ -237,6 +238,33 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     return slots;
   }
 
+  /// 결과 조회가 돌려주는 칸. 참여자 수는 [availability]의 수다
+  List<AvailabilityCell> resultGrid = [];
+
+  /// 결과 조회 횟수
+  var resultReads = 0;
+
+  /// 설정하면 결과 조회가 이 오류로 실패한다
+  Object? resultError;
+
+  /// 로그인하지 않은 방문자처럼 주인 id 없는 미팅과 사람 수만 돌려준다. 미팅이 없으면 404다
+  @override
+  Future<MeetingResultRead> getMeetingResultV1MeetingsMeetingIdResultGet({
+    required String meetingId,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    resultReads++;
+    if (resultError != null) throw resultError!;
+    final meeting = this.meeting;
+    if (meeting == null) throw notFound();
+    return MeetingResultRead(
+      meeting: meeting.copyWith(ownerId: null),
+      participantCount: availability.length,
+      availabilityGrid: resultGrid,
+    );
+  }
+
   /// 받은 참여자 빼기의 참여자 id
   final removedParticipants = <String>[];
 
@@ -351,24 +379,38 @@ class FixedTimezone extends TimezoneNotifier {
   Future<String> build() async => value;
 }
 
-/// 모임 화면을 띄울 때 바꿔 끼우는 것. 로그인한 사람의 이름은 [name]
+/// 로그인한 사람(user-1). 이름은 [name]
+AuthUser meetingUser({String? name = '지현'}) => AuthUser(
+  id: 'user-1',
+  email: 'user@example.com',
+  emailVerified: true,
+  createdAt: _at,
+  name: name,
+);
+
+/// 모임 화면을 띄울 때 바꿔 끼우는 것. 로그인한 사람의 이름은 [name]이고, [signedIn]이 false면 로그인하지
+/// 않은 방문자다. [session]을 주면 그 값이 바뀔 때 로그인 상태가 바뀐다(세션이 끝나는 경우)
 List<Override> meetingOverrides({
   required FakeMeetingsClient meetings,
   FakeVisibilityClient? visibility,
   String? name = '지현',
+  bool signedIn = true,
+  ValueNotifier<AuthUser?>? session,
   String timezone = 'Asia/Seoul',
 }) => [
   meetingsApiProvider.overrideWithValue(meetings),
   visibilityApiProvider.overrideWithValue(visibility ?? FakeVisibilityClient()),
   timezoneProvider.overrideWith(() => FixedTimezone(timezone)),
   appOriginProvider.overrideWithValue('https://app.example.com'),
-  currentUserProvider.overrideWithValue(
-    AuthUser(
-      id: 'user-1',
-      email: 'user@example.com',
-      emailVerified: true,
-      createdAt: _at,
-      name: name,
+  if (session != null)
+    currentUserProvider.overrideWith((ref) {
+      void changed() => ref.invalidateSelf();
+      session.addListener(changed);
+      ref.onDispose(() => session.removeListener(changed));
+      return session.value;
+    })
+  else
+    currentUserProvider.overrideWithValue(
+      signedIn ? meetingUser(name: name) : null,
     ),
-  ),
 ];

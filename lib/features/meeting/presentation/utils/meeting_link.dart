@@ -28,3 +28,15 @@ Future<void> copyMeetingLink(
     showAppSnackBar(context, '링크를 복사했습니다', kind: AppNoticeKind.success);
   }
 }
+
+/// 로그인 화면으로 간다. 로그인하면 모임 [meetingId] 화면으로 돌아온다
+void goToLoginForMeeting(BuildContext context, String meetingId) =>
+    context.goNamed(
+      AppRoute.login.name,
+      queryParameters: {
+        'redirect': context.namedLocation(
+          AppRoute.meeting.name,
+          pathParameters: {'meetingId': meetingId},
+        ),
+      },
+    );

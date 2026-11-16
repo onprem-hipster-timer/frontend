@@ -9,6 +9,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
+import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -22,6 +23,16 @@ final meetingProvider = FutureProvider.autoDispose.family<MeetingRead, String>(
       .watch(meetingsApiProvider)
       .readMeetingV1MeetingsMeetingIdGet(meetingId: meetingId),
 );
+
+/// 로그인하지 않은 방문자가 보는 모임: 결과(`GET /result`)의 칸마다 사람 수와 참여자 수. 공개 모임만 받는다
+final meetingHeadcountProvider = FutureProvider.autoDispose
+    .family<MeetingHeadcount, String>(
+      (ref, meetingId) async => MeetingHeadcount(
+        await ref
+            .watch(meetingsApiProvider)
+            .getMeetingResultV1MeetingsMeetingIdResultGet(meetingId: meetingId),
+      ),
+    );
 
 /// 미팅 만들기. 화면의 작업 상태는 [createMeetingMutation]이 담는다.
 ///
