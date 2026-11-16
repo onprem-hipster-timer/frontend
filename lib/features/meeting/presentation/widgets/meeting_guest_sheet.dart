@@ -136,7 +136,8 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
           controller: _name,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: '이 ${Terms.meeting}에서 보일 이름',
+            // 큰 글자에서는 칸 이름을 자르지 않고 두 줄까지 보인다
+            label: Text('이 ${Terms.meeting}에서 보일 이름', maxLines: 2),
             prefixIcon: const Icon(Icons.badge_outlined),
             errorText: _nameError,
             errorMaxLines: 3,

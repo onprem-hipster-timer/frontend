@@ -42,7 +42,7 @@ class _MeetingGuestPasswordFieldState extends State<MeetingGuestPasswordField> {
         labelText: '비밀번호',
         prefixIcon: const Icon(Icons.lock_outlined),
         helperText: widget.helper,
-        helperMaxLines: 3,
+        helperMaxLines: 6,
         errorText: widget.errorText,
         suffixIcon: IconButton(
           icon: Icon(

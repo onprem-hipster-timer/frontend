@@ -259,7 +259,7 @@ class _NameField extends StatelessWidget {
         helperText: known
             ? '이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요'
             : '이 ${Terms.meeting}에서 보일 이름',
-        helperMaxLines: 3,
+        helperMaxLines: 6,
         suffixIcon: checking ? const _Checking() : null,
       ),
       validator: (value) => meetingNameError(guestName(value ?? '')),

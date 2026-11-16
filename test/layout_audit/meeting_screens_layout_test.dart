@@ -13,18 +13,28 @@ import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/auth/guest_user.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/features/auth/presentation/pages/guest_session_page.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
+import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
+import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
+import '../features/meeting/guest_fixtures.dart';
 import '../features/meeting/meeting_fixtures.dart';
+import '../helpers/fake_turnstile.dart';
+import '../helpers/layout_audit_app.dart';
 
 /// 서울 2027년 3월 [day]일 [hour]시의 UTC 시각
 DateTime _seoul(int day, int hour) => DateTime.utc(2027, 3, day, hour - 9);
@@ -86,6 +96,45 @@ class _PressWhenLoadedState extends ConsumerState<_PressWhenLoaded> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final button = find.widgetWithText(TextButton, widget.label);
         (button.evaluate().first.widget as TextButton).onPressed!();
+      });
+    });
+    return widget.child;
+  }
+}
+
+/// 방문자 모임 화면을 불러온 뒤 'Guest'를 눌러 게스트 폼을 열고, 이름 [name]을 넣어 찾은 화면
+class _GuestFormOpened extends ConsumerStatefulWidget {
+  const _GuestFormOpened({required this.name, required this.child});
+
+  final String name;
+  final Widget child;
+
+  @override
+  ConsumerState<_GuestFormOpened> createState() => _GuestFormOpenedState();
+}
+
+class _GuestFormOpenedState extends ConsumerState<_GuestFormOpened> {
+  var _opened = false;
+
+  void _afterFrame(VoidCallback action) =>
+      WidgetsBinding.instance.addPostFrameCallback((_) => action());
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(meetingHeadcountProvider('meeting-1'), (_, next) {
+      if (_opened || !next.hasValue) return;
+      _opened = true;
+      _afterFrame(() {
+        final guest = find.widgetWithText(FilledButton, 'Guest');
+        (guest.evaluate().first.widget as FilledButton).onPressed!();
+        _afterFrame(() {
+          final field = find.byType(EditableText).evaluate().first;
+          final editable = field.widget as EditableText;
+          editable.controller.text = widget.name;
+          editable.focusNode.requestFocus();
+          // 이름 칸을 벗어나면 그 이름을 찾는다
+          _afterFrame(editable.focusNode.unfocus);
+        });
       });
     });
     return widget.child;
@@ -283,4 +332,129 @@ void main() {
       ]);
     },
   );
+
+  /// 게스트 [name]으로 들어온 모임 화면에 바꿔 끼우는 것
+  List<Override> guestOverrides(FakeMeetingsClient meetings, String name) => [
+    ...meetingOverrides(
+      meetings: meetings..guestName = name,
+      guest: GuestUser(id: 'g', handle: 'g@guest.invalid', name: name),
+    ),
+    guestsApiProvider.overrideWithValue(FakeGuestsClient()),
+    FakeTurnstiles().override,
+  ];
+
+  for (final returning in [false, true]) {
+    testLayoutAudit(
+      'meeting_page_guest_entry_${returning ? 'returning' : 'new'}',
+      subject: '게스트 이름',
+      build: (text) => routed(
+        _GuestFormOpened(
+          // 게스트 이름은 50자까지다
+          name: meetingDisplayName(text.value),
+          child: const MeetingPage(meetingId: 'meeting-1'),
+        ),
+        [
+          ...meetingOverrides(
+            signedIn: false,
+            meetings: FakeMeetingsClient(
+              meeting: meetingIn(
+                'hourly',
+                title: '팀 회의',
+              ).copyWith(allowGuests: true),
+            ),
+          ),
+          guestsApiProvider.overrideWithValue(
+            FakeGuestsClient()
+              ..guests.addAll({
+                if (returning)
+                  guestName(meetingDisplayName(text.value)): 'g@guest.invalid',
+              }),
+          ),
+          FakeTurnstiles().override,
+        ],
+      ),
+      verify: (tester) => expect(
+        returning
+            ? find.text('이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요')
+            : find.text('참여하기'),
+        findsOneWidget,
+      ),
+    );
+  }
+
+  for (final mode in ['hourly', 'weekly']) {
+    testLayoutAudit(
+      'meeting_page_guest_$mode',
+      subject: '게스트·참여자 이름',
+      build: (text) => routed(
+        const MeetingPage(meetingId: 'meeting-1'),
+        guestOverrides(
+          FakeMeetingsClient(meeting: meetingIn(mode, title: '팀 회의'))
+            ..availability = _fivePeople(text.value),
+          meetingDisplayName(text.value),
+        ),
+      ),
+      verify: (tester) =>
+          expect(find.textContaining('진행 중입니다'), findsOneWidget),
+    );
+  }
+
+  testLayoutAudit(
+    'meeting_page_guest_consent',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const MeetingPage(meetingId: 'meeting-1'),
+      guestOverrides(
+        FakeMeetingsClient(meeting: meetingIn('hourly', title: '팀 회의'))
+          ..participateError = guestError(428, 'ConsentRequiredError'),
+        '민수',
+      ),
+    ),
+    verify: (tester) => expect(find.text('동의하고 계속하기'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_guest_sheet',
+    subject: '게스트 이름',
+    build: (text) => routed(
+      OpenOnStart(
+        open: (context) => showAppSheet<String>(
+          context,
+          builder: (context) => MeetingGuestSheet(
+            meetingId: 'meeting-1',
+            guest: GuestUser(
+              id: 'g',
+              handle: 'g@guest.invalid',
+              name: meetingDisplayName(text.value),
+            ),
+          ),
+        ),
+      ),
+      guestOverrides(
+        FakeMeetingsClient(meeting: makeMeeting()),
+        meetingDisplayName(text.value),
+      ),
+    ),
+  );
+
+  for (final known in [true, false]) {
+    testLayoutAudit(
+      'guest_session_page_${known ? 'meeting' : 'unknown'}',
+      subject: '안내',
+      texts: const [StressTexts.koreanLong],
+      build: (text) => wrapWithApp(
+        overrides: [
+          currentGuestProvider.overrideWithValue(
+            GuestUser(
+              id: 'g',
+              handle: 'g@guest.invalid',
+              name: '민수',
+              meetingId: known ? 'meeting-1' : null,
+            ),
+          ),
+        ],
+      )(const GuestSessionPage(redirect: '/todo')),
+    );
+  }
 }

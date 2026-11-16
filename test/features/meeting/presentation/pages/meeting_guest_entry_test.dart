@@ -23,6 +23,7 @@ import '../../../../helpers/fake_turnstile.dart';
 import '../../../../helpers/kratos_mocks.dart';
 import '../../guest_fixtures.dart';
 import '../../meeting_fixtures.dart';
+import '../../meeting_grid_finders.dart';
 
 /// 로그인하지 않은 방문자가 모임 화면의 로그인 상자에서 게스트로 들어간다
 void main() {
@@ -178,7 +179,7 @@ void main() {
       expect(find.text('게스트로 참여'), findsOneWidget);
       expect(nameField(), findsOneWidget);
       expect(passwordField(), findsOneWidget);
-      expect(find.text('사람인지 확인하는 상자'), findsOneWidget);
+      expect(find.bySemanticsLabel('사람인지 확인하는 상자'), findsOneWidget);
       expect(find.text('전체 동의'), findsNothing, reason: '이름을 찾기 전');
 
       await tester.tap(find.byTooltip('닫기'));
@@ -552,6 +553,25 @@ void main() {
       await press(tester, '들어가기');
       expect(guests.lookups, [('민수', 'token-1')]);
     });
+  });
+
+  testWidgets('애니메이션을 줄였으면 게스트 폼을 연 채 칠하려 해도 떨지 않고 폼을 보이게 올린다', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await pumpVisitor(tester, size: const Size(360, 800));
+    await openGuest(tester);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+    await tester.pumpAndSettle();
+    final rest = tester.getTopLeft(find.byType(MeetingLoginPanel)).dx;
+
+    await tester.tapAt(cellCenter(tester, '3월 2일 (화) 14:00 ~ 14:30'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+
+    expect(tester.getTopLeft(find.byType(MeetingLoginPanel)).dx, rest);
+    expect(tester.getTopLeft(nameField()).dy, greaterThanOrEqualTo(0));
+    expect(guests.lookups, isEmpty);
   });
 
   testWidgets('좁은 화면에서도 게스트 폼은 격자 위 로그인 상자 자리에서 열린다', (tester) async {

@@ -30,8 +30,11 @@ class FakeTurnstile implements TurnstileController {
   final _waiters = <Completer<String>>[];
 
   @override
-  Widget buildBox(BuildContext context) =>
-      const SizedBox(height: 65, child: Center(child: Text('사람인지 확인하는 상자')));
+  Widget buildBox(BuildContext context) => Semantics(
+    // 실제 위젯처럼 글자가 아니라 정해진 크기의 상자다
+    label: '사람인지 확인하는 상자',
+    child: const SizedBox(width: 300, height: 65),
+  );
 
   @override
   Future<String> nextToken() {

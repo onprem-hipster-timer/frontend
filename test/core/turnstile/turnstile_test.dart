@@ -79,7 +79,7 @@ void main() {
       final turnstile = FakeTurnstile(initial: TurnstileStatus.verifying);
       await pumpField(tester, turnstile);
 
-      expect(find.text('사람인지 확인하는 상자'), findsOneWidget);
+      expect(find.bySemanticsLabel('사람인지 확인하는 상자'), findsOneWidget);
       expect(find.byType(TextButton), findsNothing);
     });
 
@@ -87,13 +87,13 @@ void main() {
       final turnstile = FakeTurnstile(initial: TurnstileStatus.unavailable);
       await pumpField(tester, turnstile);
 
-      expect(find.text('사람인지 확인하는 상자'), findsNothing);
+      expect(find.bySemanticsLabel('사람인지 확인하는 상자'), findsNothing);
       expect(find.textContaining('확인 상자를 불러오지 못했습니다'), findsOneWidget);
 
       await tester.tap(find.text('다시 불러오기'));
       await tester.pump();
       expect(turnstile.resets, 1);
-      expect(find.text('사람인지 확인하는 상자'), findsOneWidget);
+      expect(find.bySemanticsLabel('사람인지 확인하는 상자'), findsOneWidget);
     });
 
     testWidgets('확인하지 못하면 알리고 다시 확인한다', (tester) async {
