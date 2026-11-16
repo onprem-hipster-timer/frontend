@@ -18,8 +18,8 @@ class MeetingParticipantsPanel extends StatefulWidget {
 
   final MeetingBoard board;
 
-  /// 내 이름 바꾸기
-  final VoidCallback onRename;
+  /// 내 이름 바꾸기. 없으면 다른 사람의 '편집'이 없다
+  final VoidCallback? onRename;
 
   /// 주인이 참여자를 뺀다
   final ValueChanged<ParticipantRead> onRemove;
@@ -52,7 +52,7 @@ class _MeetingParticipantsPanelState extends State<MeetingParticipantsPanel> {
                     ),
                     label: Text(editing ? '완료' : '편집'),
                   )
-          : board.me == null
+          : board.me == null || widget.onRename == null
           ? null
           : TextButton.icon(
               onPressed: widget.onRename,

@@ -10,8 +10,8 @@ import 'package:momeet/shared/domain/terms.dart';
 
 /// 모임 화면. 공유 링크(`/meetings/<id>`)로 열고, 탭 셸 밖에 있다.
 ///
-/// 로그인했으면 내 시간을 칠하고 이름을 보는 회원 본문([MeetingMemberBody]), 아니면 공개 모임의 사람 수만
-/// 보는 방문자 본문([MeetingVisitorBody])이다. 보는 중에 로그인이 끝나면 방문자 본문으로 바뀐다.
+/// 로그인했거나 이 모임의 게스트면 내 시간을 칠하고 이름을 보는 본문([MeetingMemberBody]), 아니면 공개 모임의
+/// 사람 수만 보는 방문자 본문([MeetingVisitorBody])이다. 보는 중에 세션이 끝나면 방문자 본문으로 바뀐다.
 class MeetingPage extends ConsumerWidget {
   const MeetingPage({super.key, required this.meetingId});
 
@@ -19,9 +19,11 @@ class MeetingPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final signedIn = ref.watch(
+    final member = ref.watch(
       currentUserProvider.select((user) => user != null),
     );
+    final guest = ref.watch(currentGuestProvider);
+    final signedIn = member || guest != null;
     final title = signedIn
         ? ref.watch(
             meetingBoardProvider(
@@ -45,7 +47,7 @@ class MeetingPage extends ConsumerWidget {
         title: Text(title ?? Terms.meeting),
       ),
       body: signedIn
-          ? MeetingMemberBody(meetingId: meetingId)
+          ? MeetingMemberBody(meetingId: meetingId, guest: guest)
           : MeetingVisitorBody(meetingId: meetingId),
     );
   }

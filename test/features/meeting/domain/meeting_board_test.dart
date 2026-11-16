@@ -192,6 +192,36 @@ void main() {
     expect(board.isMine(third), isTrue);
   });
 
+  test('게스트는 회원 id 없이 참여해 받은 참여자 id로 나를 찾는다', () {
+    final board = MeetingBoard(
+      meeting: makeMeeting().copyWith(ownerId: null),
+      availability: [
+        availabilityOf('a', userId: null, slots: [(seoul(9), seoul(10))]),
+        availabilityOf(
+          'g',
+          name: '민수',
+          guest: true,
+          slots: [(seoul(9), seoul(10))],
+        ),
+      ],
+      userId: null,
+      selfId: 'g',
+      selfName: '민수',
+    );
+
+    expect(board.me?.id, 'g');
+    expect(board.isMine(board.grid.cells[6]), isTrue);
+    expect(board.othersCountAt(board.grid.cells[6]), 1);
+    expect(board.ownedByMe, isFalse);
+    expect(
+      board
+          .withAvailability([availabilityOf('g', name: '민수', guest: true)])
+          .me
+          ?.id,
+      'g',
+    );
+  });
+
   test('로그인하지 않았으면 나는 없고 모든 참여자가 다른 참여자다', () {
     final board = boardOf([
       availabilityOf('a'),

@@ -5,7 +5,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 카드에 보이는 참여자 한 명
 typedef MeetingSlotPerson = ({String name, bool owner, bool guest, bool self});
 
-/// 선택된 일정 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'.
+/// 선택된 일정 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'([onAddToCalendar]가 있을 때).
 ///
 /// 이름은 펼치기 전에는 마우스를 올리면 카드 아래에 떠서 보이고, 카드를 누르면 카드 안에 고정되어
 /// 다시 누를 때까지 남는다.
@@ -21,7 +21,7 @@ class MeetingSlotCard extends StatefulWidget {
   final String title;
   final String detail;
   final List<MeetingSlotPerson> people;
-  final VoidCallback onAddToCalendar;
+  final VoidCallback? onAddToCalendar;
 
   @override
   State<MeetingSlotCard> createState() => _MeetingSlotCardState();
@@ -91,7 +91,7 @@ class _CardFace extends StatelessWidget {
   final bool pinned;
   final bool wide;
   final VoidCallback onTap;
-  final VoidCallback onAddToCalendar;
+  final VoidCallback? onAddToCalendar;
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +157,7 @@ class _CardFace extends StatelessWidget {
   }
 }
 
-/// 펼침 표시와 '내 달력에 일정 만들기'. 좁으면 둘을 양 끝에 둔다
+/// 펼침 표시와 '내 달력에 일정 만들기'. 좁으면 둘을 양 끝에 둔다. 달력 단추가 없으면 펼침 표시만 둔다
 class _Actions extends StatelessWidget {
   const _Actions({
     required this.pinned,
@@ -167,27 +167,35 @@ class _Actions extends StatelessWidget {
 
   final bool pinned;
   final bool wide;
-  final VoidCallback onAddToCalendar;
+  final VoidCallback? onAddToCalendar;
 
   @override
   Widget build(BuildContext context) {
+    final onAddToCalendar = this.onAddToCalendar;
     return Row(
       mainAxisSize: wide ? MainAxisSize.min : MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        ExcludeSemantics(
-          child: Icon(
-            pinned ? Icons.expand_less : Icons.expand_more,
-            size: 20,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Padding(
+          // 달력 단추가 없어도 카드 높이와 펼침 표시 자리가 같게 둔다
+          padding: EdgeInsets.symmetric(
+            vertical: onAddToCalendar == null ? 10 : 0,
+          ),
+          child: ExcludeSemantics(
+            child: Icon(
+              pinned ? Icons.expand_less : Icons.expand_more,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
-        IconButton(
-          tooltip: '내 달력에 일정 만들기',
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.edit_calendar_outlined),
-          onPressed: onAddToCalendar,
-        ),
+        if (onAddToCalendar != null)
+          IconButton(
+            tooltip: '내 달력에 일정 만들기',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.edit_calendar_outlined),
+            onPressed: onAddToCalendar,
+          ),
       ],
     );
   }

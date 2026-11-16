@@ -76,7 +76,7 @@ enum GuestRefusal {
     final type = data is Map ? data['error_type'] : null;
     return switch ((response.statusCode, type)) {
       (429, _) => tooManyRequests,
-      (_, 'GuestEntryRefusedError') => closed,
+      (_, 'GuestEntryRefusedError' || 'GuestAccessDeniedError') => closed,
       (_, 'GuestVerificationFailedError') => verificationFailed,
       (_, 'GuestNameTakenError') => nameTaken,
       (_, 'GuestLimitReachedError') => full,

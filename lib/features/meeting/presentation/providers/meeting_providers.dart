@@ -95,8 +95,9 @@ class MeetingBoardState {
 
 /// 모임 화면: 미팅과 모든 참여자의 가능 시간(GET), 내 가능 시간 칠하기와 저장.
 ///
-/// 칠하면 잠시 뒤 `PUT /availability`로 저장한다([MeetingAutosave]). 아직 참여하지 않았으면 저장 전에
-/// 계정 이름으로 참여한다. 저장한 뒤에는 가능 시간을 다시 받아 다른 참여자의 변경도 반영한다.
+/// 칠하면 잠시 뒤 `PUT /availability`로 저장한다([MeetingAutosave]). 회원은 아직 참여하지 않았으면 저장 전에
+/// 계정 이름으로 참여하고, 게스트는 처음 불러올 때 게스트 이름으로 참여한다(이미 참여했으면 그 참여자를
+/// 돌려받는다). 저장한 뒤에는 가능 시간을 다시 받아 다른 참여자의 변경도 반영한다.
 /// 저장하지 못한 것이 있는 동안에는 화면을 떠나도 값을 버리지 않고, 기다리던 저장은 그대로 보낸다.
 ///
 /// 주인이 참여자를 빼면([remove]) 화면에서 바로 빼되 요청은 [confirmRemove]까지 미룬다. 게스트를 빼면
@@ -130,21 +131,37 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
     final (userId, name) = ref.watch(
       currentUserProvider.select((user) => (user?.id, user?.name)),
     );
+    final guestId = ref.watch(currentGuestProvider.select((g) => g?.id));
     final meeting = await ref.watch(meetingProvider(meetingId).future);
-    final availability = await ref
-        .read(meetingsApiProvider)
+    final api = ref.read(meetingsApiProvider);
+    final joined = guestId == null
+        ? null
+        : await api.createParticipantV1MeetingsMeetingIdParticipatePost(
+            meetingId: meetingId,
+            body: ParticipantCreate(
+              displayName: meetingDisplayName(
+                ref.read(currentGuestProvider)?.name,
+              ),
+            ),
+          );
+    final availability = await api
         .getAvailabilityV1MeetingsMeetingIdAvailabilityGet(
           meetingId: meetingId,
         );
+    final board = MeetingBoard(
+      meeting: meeting,
+      availability: availability,
+      userId: userId,
+      selfId: joined?.id,
+      selfName: meetingDisplayName(joined?.displayName ?? name),
+    );
     return MeetingBoardState(
-      MeetingBoard(
-        meeting: meeting,
-        availability: availability,
-        userId: userId,
-        selfName: meetingDisplayName(name),
-      ),
+      joined == null || board.me != null ? board : board.withSelf(joined),
     );
   }
+
+  /// 가능 시간을 다시 받는다(게스트가 이름을 바꾼 뒤 참여자 이름을 새로 보인다)
+  Future<void> reload() => _refresh();
 
   /// [cells]를 칠하거나([available]) 지우고 저장을 맡긴다
   void paint(List<MeetingCell> cells, {required bool available}) {

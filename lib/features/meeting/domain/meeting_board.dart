@@ -8,7 +8,8 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 /// 모임 화면의 값: 미팅과 격자, 참여자, 칸마다 되는 다른 참여자, 내 가능 시간.
 ///
-/// 아직 참여하지 않았어도 칠하면 내 칸은 [selfName]의 [pendingSelfId]로 사람 수와 후보에 든다.
+/// 나는 회원이면 [userId]가 같은 참여자, 게스트면 참여해 받은 참여자 id([selfId])다(게스트가 받는 응답에는 회원
+/// id가 없다). 아직 참여하지 않았어도 칠하면 내 칸은 [selfName]의 [pendingSelfId]로 사람 수와 후보에 든다.
 /// 빼는 중인 참여자([removing])는 참여자·칸·후보 어디에도 들지 않는다.
 ///
 /// 테스트: test/features/meeting/domain/meeting_board_test.dart
@@ -19,11 +20,13 @@ class MeetingBoard implements MeetingShading {
     required List<AvailabilityRead> availability,
     required String? userId,
     required String selfName,
+    String? selfId,
   }) => MeetingBoard._read(
     meeting: meeting,
     grid: MeetingGrid.of(meeting),
     availability: availability,
     userId: userId,
+    selfId: selfId,
     selfName: selfName,
     edits: null,
     removing: const {},
@@ -34,6 +37,7 @@ class MeetingBoard implements MeetingShading {
     required MeetingGrid grid,
     required List<AvailabilityRead> availability,
     required String? userId,
+    required String? selfId,
     required String selfName,
     required MyAvailability? edits,
     required Set<String> removing,
@@ -47,7 +51,8 @@ class MeetingBoard implements MeetingShading {
         for (final slot in entry.timeSlots)
           TimeSpan(slot.startTime, slot.endTime),
       ]);
-      if (userId != null && participant.userId == userId) {
+      if ((userId != null && participant.userId == userId) ||
+          (selfId != null && participant.id == selfId)) {
         me = participant;
         mySlots = slots;
         continue;
@@ -68,6 +73,7 @@ class MeetingBoard implements MeetingShading {
       others: others,
       mine: edits?.withSaved(mySlots) ?? MyAvailability(saved: mySlots),
       userId: userId,
+      selfId: selfId,
       selfName: selfName,
       removing: removing,
     );
@@ -81,6 +87,7 @@ class MeetingBoard implements MeetingShading {
     required List<Set<String>> others,
     required this.mine,
     required String? userId,
+    required String? selfId,
     required this.selfName,
     required this.removing,
   }) : _all = participants,
@@ -91,7 +98,8 @@ class MeetingBoard implements MeetingShading {
                  if (!removing.contains(participant.id)) participant,
              ],
        _others = others,
-       _userId = userId;
+       _userId = userId,
+       _selfId = selfId;
 
   /// 아직 참여하지 않은 나를 [peopleAt]에서 가리키는 값
   static const pendingSelfId = '';
@@ -119,6 +127,7 @@ class MeetingBoard implements MeetingShading {
   final List<ParticipantRead> _all;
   final List<Set<String>> _others;
   final String? _userId;
+  final String? _selfId;
 
   /// 로그인한 내가 만든 모임인지. 로그인하지 않은 방문자와 게스트는 주인 id를 받지 않아 늘 false다
   bool get ownedByMe => _userId != null && meeting.ownerId == _userId;
@@ -169,6 +178,7 @@ class MeetingBoard implements MeetingShading {
         grid: grid,
         availability: availability,
         userId: _userId,
+        selfId: _selfId,
         selfName: selfName,
         edits: mine,
         removing: removing,
@@ -204,6 +214,7 @@ class MeetingBoard implements MeetingShading {
     others: _others,
     mine: mine ?? this.mine,
     userId: _userId,
+    selfId: _selfId,
     selfName: selfName,
     removing: removing ?? this.removing,
   );

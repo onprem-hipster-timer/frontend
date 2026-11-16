@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
@@ -185,6 +186,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
       participateError = null;
       throw error;
     }
+    if (guestName case final guest?) return _joinAsGuest(meetingId, guest);
     final at = availability.indexWhere(
       (entry) => entry.participant.userId == userId,
     );
@@ -290,6 +292,29 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
 
   /// 참여 요청을 보내는 로그인 사용자([meetingOverrides]의 사용자)
   String userId = 'user-1';
+
+  /// 주면 참여 요청을 이 이름의 게스트가 보낸다(backend처럼 보낸 이름이 아니라 게스트 이름으로 참여한다)
+  String? guestName;
+
+  /// 게스트 [name]의 참여자. 이미 있으면 그대로 돌려준다
+  ParticipantRead _joinAsGuest(String meetingId, String name) {
+    for (final entry in availability) {
+      final participant = entry.participant;
+      if (participant.isGuest && participant.displayName == name) {
+        return participant;
+      }
+    }
+    final joined = ParticipantRead(
+      id: 'participant-guest',
+      meetingId: meetingId,
+      displayName: name,
+      createdAt: _at,
+      isOwner: false,
+      isGuest: true,
+    );
+    availability.add(AvailabilityRead(participant: joined, timeSlots: []));
+    return joined;
+  }
 }
 
 /// backend가 404로 답한 요청의 오류
@@ -389,16 +414,19 @@ AuthUser meetingUser({String? name = '지현'}) => AuthUser(
 );
 
 /// 모임 화면을 띄울 때 바꿔 끼우는 것. 로그인한 사람의 이름은 [name]이고, [signedIn]이 false면 로그인하지
-/// 않은 방문자다. [session]을 주면 그 값이 바뀔 때 로그인 상태가 바뀐다(세션이 끝나는 경우)
+/// 않은 방문자다. [session]을 주면 그 값이 바뀔 때 로그인 상태가 바뀐다(세션이 끝나는 경우). [guest]를 주면
+/// 회원 대신 그 게스트다
 List<Override> meetingOverrides({
   required FakeMeetingsClient meetings,
   FakeVisibilityClient? visibility,
   String? name = '지현',
   bool signedIn = true,
   ValueNotifier<AuthUser?>? session,
+  GuestUser? guest,
   String timezone = 'Asia/Seoul',
 }) => [
   meetingsApiProvider.overrideWithValue(meetings),
+  currentGuestProvider.overrideWithValue(guest),
   visibilityApiProvider.overrideWithValue(visibility ?? FakeVisibilityClient()),
   timezoneProvider.overrideWith(() => FixedTimezone(timezone)),
   appOriginProvider.overrideWithValue('https://app.example.com'),
@@ -411,6 +439,6 @@ List<Override> meetingOverrides({
     })
   else
     currentUserProvider.overrideWithValue(
-      signedIn ? meetingUser(name: name) : null,
+      signedIn && guest == null ? meetingUser(name: name) : null,
     ),
 ];

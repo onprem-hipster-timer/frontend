@@ -8,7 +8,9 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.da
 import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
 
-/// '선택된 일정': 두 명 이상 되는 이어진 시간 카드와 정렬 고르기(기본 인원 많은 순)
+/// '선택된 일정': 두 명 이상 되는 이어진 시간 카드와 정렬 고르기(기본 인원 많은 순).
+///
+/// [onAddToCalendar]가 없으면(게스트는 달력이 없다) 카드에 '내 달력에 일정 만들기'가 없다.
 class MeetingSlotsPanel extends StatefulWidget {
   const MeetingSlotsPanel({
     super.key,
@@ -17,7 +19,7 @@ class MeetingSlotsPanel extends StatefulWidget {
   });
 
   final MeetingBoard board;
-  final ValueChanged<MeetingRun> onAddToCalendar;
+  final ValueChanged<MeetingRun>? onAddToCalendar;
 
   @override
   State<MeetingSlotsPanel> createState() => _MeetingSlotsPanelState();
@@ -71,7 +73,10 @@ class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
                           key: ValueKey(run.first.index),
                           board: board,
                           run: run,
-                          onAddToCalendar: () => widget.onAddToCalendar(run),
+                          onAddToCalendar: switch (widget.onAddToCalendar) {
+                            final add? => () => add(run),
+                            null => null,
+                          },
                         ),
                       ),
                   ],
@@ -93,7 +98,7 @@ class _RunCard extends StatelessWidget {
 
   final MeetingBoard board;
   final MeetingRun run;
-  final VoidCallback onAddToCalendar;
+  final VoidCallback? onAddToCalendar;
 
   @override
   Widget build(BuildContext context) {
