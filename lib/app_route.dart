@@ -46,6 +46,9 @@ enum AppRoute {
   todoGroupDetail(path: '/todo/:groupId'),
   timer(path: '/timer'),
   timerDetail(path: '/timer/detail'),
+  // 모임 탭: 만들기 화면과 만든 뒤 화면
+  meetings(path: '/meetings'),
+  meetingCreated(path: '/meetings/:meetingId/created'),
   tags(path: '/tags'),
   mypage(path: '/mypage'),
   // 공유 링크로 여는 모임 화면 (탭 셸 밖)

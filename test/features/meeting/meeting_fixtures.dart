@@ -1,6 +1,12 @@
 import 'package:dio/dio.dart' show RequestOptions;
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
+import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/providers/auth_selectors.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 
 final _at = DateTime.utc(2027, 1, 1);
 
@@ -43,6 +49,9 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
   /// 설정하면 만들기가 이 오류로 실패한다
   Object? createError;
 
+  /// 설정하면 만들기가 이것이 끝날 때까지 기다린다
+  Future<void>? createGate;
+
   /// 설정하면 조회가 이 오류로 실패한다
   Object? readError;
 
@@ -52,8 +61,9 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     String? timezone,
     RequestOptions? options,
   }) async {
-    if (createError != null) throw createError!;
     created.add(body);
+    await createGate;
+    if (createError != null) throw createError!;
     final made = makeMeeting(
       id: 'meeting-new-${created.length}',
       title: body.title,
@@ -117,3 +127,35 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
     );
   }
 }
+
+/// 정한 값을 돌려주는 앱 시간대
+class FixedTimezone extends TimezoneNotifier {
+  FixedTimezone(this.value);
+
+  final String value;
+
+  @override
+  Future<String> build() async => value;
+}
+
+/// 모임 화면을 띄울 때 바꿔 끼우는 것. 로그인한 사람의 이름은 [name]
+List<Override> meetingOverrides({
+  required FakeMeetingsClient meetings,
+  FakeVisibilityClient? visibility,
+  String? name = '지현',
+  String timezone = 'Asia/Seoul',
+}) => [
+  meetingsApiProvider.overrideWithValue(meetings),
+  visibilityApiProvider.overrideWithValue(visibility ?? FakeVisibilityClient()),
+  timezoneProvider.overrideWith(() => FixedTimezone(timezone)),
+  appOriginProvider.overrideWithValue('https://app.example.com'),
+  currentUserProvider.overrideWithValue(
+    AuthUser(
+      id: 'user-1',
+      email: 'user@example.com',
+      emailVerified: true,
+      createdAt: _at,
+      name: name,
+    ),
+  ),
+];

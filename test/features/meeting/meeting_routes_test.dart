@@ -5,6 +5,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
+import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/router.dart';
@@ -16,7 +18,7 @@ import '../../helpers/fake_rest_clients.dart';
 import '../../helpers/kratos_mocks.dart';
 import 'meeting_fixtures.dart';
 
-/// 실제 라우터(routerProvider)로 모임 화면의 주소를 연다.
+/// 실제 라우터(routerProvider)로 모임 탭과 모임 화면의 주소를 연다.
 void main() {
   late KratosTestHarness harness;
   late FakeMeetingsClient meetings;
@@ -94,5 +96,32 @@ void main() {
       '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1')}',
     );
     expect(meetings.reads, isEmpty);
+  });
+
+  testWidgets('모임 탭은 탭 셸 안의 만들기 화면이고 하단 바의 모임을 누르면 간다', (tester) async {
+    final router = await pumpRouter(tester);
+
+    await tester.tap(find.bySemanticsLabel(RegExp('^모임')));
+    await pumpAWhile(tester);
+
+    expect(location(router), AppRoute.meetings.path);
+    expect(find.byType(MeetingCreatePage), findsOneWidget);
+    expect(find.byType(ScaffoldWithNavBar), findsOneWidget);
+  });
+
+  testWidgets('만든 뒤 화면은 모임 번호를 담은 주소로 탭 셸 안에 열린다', (tester) async {
+    final router = await pumpRouter(tester);
+
+    router.go('/meetings/meeting-1/created');
+    await pumpAWhile(tester);
+
+    expect(find.byType(MeetingCreatedPage), findsOneWidget);
+    expect(find.byType(MeetingPage), findsNothing);
+    expect(find.byType(ScaffoldWithNavBar), findsOneWidget);
+
+    await tester.tap(find.text('나의 일정 입력'));
+    await pumpAWhile(tester);
+    expect(location(router), '/meetings/meeting-1');
+    expect(find.byType(MeetingPage), findsOneWidget);
   });
 }

@@ -281,7 +281,31 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // 4. 태그 브랜치
+          // 4. 모임 브랜치 (만든 뒤 화면은 만들기 화면 위에 쌓지 않고 바꾼다)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoute.meetings.path,
+                name: AppRoute.meetings.name,
+                builder: (context, state) => DeferredWidget(
+                  loader: meeting.loadLibrary,
+                  builder: (_) => meeting.MeetingCreatePage(),
+                ),
+              ),
+              GoRoute(
+                path: AppRoute.meetingCreated.path,
+                name: AppRoute.meetingCreated.name,
+                builder: (context, state) => DeferredWidget(
+                  loader: meeting.loadLibrary,
+                  builder: (_) => meeting.MeetingCreatedPage(
+                    meetingId: state.pathParameters['meetingId']!,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // 5. 태그 브랜치
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -295,7 +319,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // 5. 마이페이지 브랜치
+          // 6. 마이페이지 브랜치
           StatefulShellBranch(
             routes: [
               GoRoute(

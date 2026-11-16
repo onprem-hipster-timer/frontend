@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
-const _tabs = ['캘린더', '할 일', '타이머', '태그', '마이페이지'];
+const _tabs = ['캘린더', '할 일', '타이머', '모임', '태그', '마이페이지'];
 
 /// 하단 바는 이름을 숨기므로 접근성 이름표로 찾는다
 Finder _barTab(String label) => find.bySemanticsLabel(RegExp('^$label'));
@@ -68,7 +68,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('마이페이지 화면'), findsOneWidget);
     final selected = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    expect(selected.selectedIndex, 4);
+    expect(selected.selectedIndex, 5);
   });
 
   testWidgets('창 높이가 바뀌면 그 자리에서 내비 모양을 바꾸고 탭을 유지한다', (tester) async {
