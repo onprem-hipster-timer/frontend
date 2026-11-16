@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
@@ -13,6 +14,7 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 import '../../helpers/fake_rest_clients.dart';
 import '../../helpers/kratos_mocks.dart';
@@ -25,6 +27,7 @@ void main() {
 
   setUpAll(() async {
     registerKratosFallbacks();
+    tz.initializeTimeZones();
     await initializeDateFormatting('ko_KR');
   });
 
@@ -50,6 +53,7 @@ void main() {
             FakeUsersClient(consentRequired: false),
           ),
           meetingsApiProvider.overrideWithValue(meetings),
+          appOriginProvider.overrideWithValue('https://app.example.com'),
           timerWsClientProvider.overrideWithValue(null),
           analyticsConsentBridgeProvider.overrideWithValue(
             InMemoryAnalyticsConsentBridge(),
