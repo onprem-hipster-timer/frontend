@@ -179,8 +179,9 @@ class MeetingBoard {
   /// 주인을 맨 앞으로 옮기고 나머지 순서는 그대로 둔다
   static List<ParticipantRead> _ownerFirst(
     List<ParticipantRead> participants,
-    String ownerId,
+    String? ownerId,
   ) {
+    if (ownerId == null) return participants;
     final ordered = [...participants];
     final owner = ordered.indexWhere((p) => p.userId == ownerId);
     if (owner > 0) ordered.insert(0, ordered.removeAt(owner));

@@ -21,6 +21,7 @@ abstract class MeetingCreate with _$MeetingCreate {
     @JsonKey(name: 'start_time') required String startTime,
     @JsonKey(name: 'end_time') required String endTime,
     @JsonKey(name: 'time_slot_minutes') @Default(30) int timeSlotMinutes,
+    @JsonKey(name: 'allow_guests') @Default(false) bool allowGuests,
     String? description,
   }) = _MeetingCreate;
 

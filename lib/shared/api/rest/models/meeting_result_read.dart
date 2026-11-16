@@ -15,6 +15,7 @@ part 'meeting_result_read.g.dart';
 abstract class MeetingResultRead with _$MeetingResultRead {
   const factory MeetingResultRead({
     required MeetingRead meeting,
+    @JsonKey(name: 'participant_count') required int participantCount,
     @JsonKey(name: 'availability_grid')
     required List<AvailabilityCell> availabilityGrid,
   }) = _MeetingResultRead;

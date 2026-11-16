@@ -14,7 +14,6 @@ part 'meeting_read.g.dart';
 abstract class MeetingRead with _$MeetingRead {
   const factory MeetingRead({
     required String id,
-    @JsonKey(name: 'owner_id') required String ownerId,
     required String title,
     @JsonKey(name: 'start_date') required DateTime startDate,
     @JsonKey(name: 'end_date') required DateTime endDate,
@@ -25,7 +24,9 @@ abstract class MeetingRead with _$MeetingRead {
     @JsonKey(name: 'time_slot_minutes') required int timeSlotMinutes,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @JsonKey(name: 'updated_at') required DateTime updatedAt,
+    @JsonKey(name: 'allow_guests') @Default(false) bool allowGuests,
     @JsonKey(name: 'is_shared') @Default(false) bool isShared,
+    @JsonKey(name: 'owner_id') String? ownerId,
     String? description,
     @JsonKey(name: 'visibility_level') VisibilityLevel? visibilityLevel,
   }) = _MeetingRead;

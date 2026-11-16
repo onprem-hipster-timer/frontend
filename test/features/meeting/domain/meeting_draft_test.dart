@@ -256,7 +256,7 @@ void main() {
       ]).toMeetingCreate(title: '회의', timezone: timezone).toJson();
       expect(json['start_date'], '2027-03-01T00:00:00.000Z');
       expect(json['end_date'], '2027-03-01T00:00:00.000Z');
-      expect(json.containsKey('allow_guests'), isFalse);
+      expect(json['allow_guests'], isFalse);
     });
 
     test('게스트 로그인은 요청에 담지 않는다', () {
