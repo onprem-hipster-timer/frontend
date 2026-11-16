@@ -7,13 +7,16 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'meeting_create.freezed.dart';
 part 'meeting_create.g.dart';
 
-/// 일정 조율 생성 DTO
+/// 일정 조율 생성 DTO.
+///
+/// 수정(PATCH) 때도 저장된 값에 수정 내용을 합쳐 이 DTO로 다시 검증한다 (MeetingService.update_meeting).
 @Freezed()
 abstract class MeetingCreate with _$MeetingCreate {
   const factory MeetingCreate({
     required String title,
     @JsonKey(name: 'start_date') required DateTime startDate,
     @JsonKey(name: 'end_date') required DateTime endDate,
+    required String timezone,
     @JsonKey(name: 'available_days') required List<int> availableDays,
     @JsonKey(name: 'start_time') required String startTime,
     @JsonKey(name: 'end_time') required String endTime,

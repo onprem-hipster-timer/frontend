@@ -7,7 +7,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'consent_create.freezed.dart';
 part 'consent_create.g.dart';
 
-/// 약관 동의 (PUT /v1/users/me/consent) — 세 항목 모두 true여야 한다
+/// 약관 동의 — 세 항목 모두 true여야 한다.
+///
+/// PUT /v1/users/me/consent·PUT /v1/guests/me/consent의 본문이고 POST /v1/guests의 consent다.
 @Freezed()
 abstract class ConsentCreate with _$ConsentCreate {
   const factory ConsentCreate({

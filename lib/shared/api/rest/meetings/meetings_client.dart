@@ -97,6 +97,7 @@ abstract class MeetingsClient {
   /// 참여자 등록.
   ///
   /// 인증 필수: 접근 권한이 있는 사용자만 참여 가능합니다.
+  /// 미팅마다 사용자당 참여자는 한 명입니다. 처음 등록하면 201, 이미 참여했으면 표시 이름을 바꾼 기존 참여자를 200으로 반환합니다.
   ///
   /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @POST('/v1/meetings/{meeting_id}/participate')
@@ -113,17 +114,22 @@ abstract class MeetingsClient {
   ///
   /// 인증 필수: 본인의 참여 시간만 설정 가능합니다.
   /// 기존 시간 슬롯을 모두 삭제하고 새로운 시간 슬롯을 설정합니다.
+  /// 슬롯은 반열린 구간 [start_time, end_time)이고 시간대가 없는 값은 UTC로 읽습니다. 보낸 구간 그대로 저장합니다.
+  /// 슬롯 수는 미팅의 칸 수까지입니다 (넘으면 422). 슬롯이 미팅의 날짜·시간 범위나 칸에 맞는지는 검사하지 않습니다.
   ///
   /// :param meeting_id: 일정 조율 ID.
   /// :param participant_id: 참여자 ID (쿼리 파라미터).
   /// :param time_slots: 시간 슬롯 리스트 (요청 본문).
   ///
   /// [participantId] - 참여자 ID.
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @PUT('/v1/meetings/{meeting_id}/availability')
   Future<List<TimeSlotRead>> setAvailabilityV1MeetingsMeetingIdAvailabilityPut({
     @Path('meeting_id') required String meetingId,
     @Query('participant_id') required String participantId,
     @Body() required List<TimeSlotCreate> body,
+    @Query('timezone') String? timezone,
     @DioOptions() RequestOptions? options,
   });
 
@@ -147,7 +153,7 @@ abstract class MeetingsClient {
   /// 공통 가능 시간 분석 결과 조회.
   ///
   /// 인증 선택적: 접근 권한이 있는 경우 조회 가능합니다.
-  /// 모든 참여자의 시간 선택을 집계하여 겹치는 시간대와 인원 수를 계산합니다.
+  /// 미팅의 시간대에서 날짜·요일·하루 범위·시간 단위로 만든 칸마다, 그 칸을 모두 덮는 가능 시간을 가진 참여자 수를 셉니다.
   ///
   /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @GET('/v1/meetings/{meeting_id}/result')

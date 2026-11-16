@@ -7,13 +7,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'time_slot_create.freezed.dart';
 part 'time_slot_create.g.dart';
 
-/// 시간 슬롯 생성 DTO
+/// 가능 시간 생성 DTO: 반열린 구간 [start_time, end_time). 시간대가 없는 값은 UTC로 읽는다
 @Freezed()
 abstract class TimeSlotCreate with _$TimeSlotCreate {
   const factory TimeSlotCreate({
-    @JsonKey(name: 'slot_date') required DateTime slotDate,
-    @JsonKey(name: 'start_time') required String startTime,
-    @JsonKey(name: 'end_time') required String endTime,
+    @JsonKey(name: 'start_time') required DateTime startTime,
+    @JsonKey(name: 'end_time') required DateTime endTime,
   }) = _TimeSlotCreate;
 
   factory TimeSlotCreate.fromJson(Map<String, Object?> json) =>

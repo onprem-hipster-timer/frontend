@@ -18,6 +18,7 @@ abstract class MeetingRead with _$MeetingRead {
     required String title,
     @JsonKey(name: 'start_date') required DateTime startDate,
     @JsonKey(name: 'end_date') required DateTime endDate,
+    required String timezone,
     @JsonKey(name: 'available_days') required List<int> availableDays,
     @JsonKey(name: 'start_time') required String startTime,
     @JsonKey(name: 'end_time') required String endTime,

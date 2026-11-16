@@ -13,9 +13,8 @@ abstract class TimeSlotRead with _$TimeSlotRead {
   const factory TimeSlotRead({
     required String id,
     @JsonKey(name: 'participant_id') required String participantId,
-    @JsonKey(name: 'slot_date') required DateTime slotDate,
-    @JsonKey(name: 'start_time') required String startTime,
-    @JsonKey(name: 'end_time') required String endTime,
+    @JsonKey(name: 'start_time') required DateTime startTime,
+    @JsonKey(name: 'end_time') required DateTime endTime,
   }) = _TimeSlotRead;
 
   factory TimeSlotRead.fromJson(Map<String, Object?> json) =>

@@ -15,6 +15,7 @@ abstract class MeetingUpdate with _$MeetingUpdate {
     String? description,
     @JsonKey(name: 'start_date') DateTime? startDate,
     @JsonKey(name: 'end_date') DateTime? endDate,
+    String? timezone,
     @JsonKey(name: 'available_days') List<int>? availableDays,
     @JsonKey(name: 'start_time') String? startTime,
     @JsonKey(name: 'end_time') String? endTime,
