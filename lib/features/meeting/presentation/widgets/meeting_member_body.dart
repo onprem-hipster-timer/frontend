@@ -7,6 +7,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_availabilit
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_sheet.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_not_found.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_participants_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -15,7 +16,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 로그인한 회원의 모임 화면 본문: 내 시간 격자, 링크, 일정 참여자, 선택된 일정.
 ///
 /// 넓으면 격자 오른쪽에 링크 → 일정 참여자 → 선택된 일정, 좁으면 격자 → 선택된 일정 → 일정 참여자 → 링크
-/// 순서다(칠하기가 이 화면의 일이고, 그 결과가 바로 아래에 보이게).
+/// 순서다(칠하기가 이 화면의 일이고, 그 결과가 바로 아래에 보이게). 볼 수 없는 모임은 없는 모임과 같다.
 class MeetingMemberBody extends ConsumerWidget {
   const MeetingMemberBody({super.key, required this.meetingId});
 
@@ -64,14 +65,16 @@ class MeetingMemberBody extends ConsumerWidget {
             );
           },
           loading: () => const AppLoading(),
-          error: (error, _) => AppErrorState(
-            title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
-            error: error,
-            onRetry: () {
-              ref.invalidate(meetingProvider(meetingId));
-              ref.invalidate(provider);
-            },
-          ),
+          error: (error, _) => isMeetingNotFound(error)
+              ? const MeetingNotFound()
+              : AppErrorState(
+                  title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
+                  error: error,
+                  onRetry: () {
+                    ref.invalidate(meetingProvider(meetingId));
+                    ref.invalidate(provider);
+                  },
+                ),
         );
   }
 }

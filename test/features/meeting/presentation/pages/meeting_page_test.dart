@@ -246,6 +246,21 @@ void main() {
     expect(meetings.reads, hasLength(2));
   });
 
+  testWidgets('볼 수 없거나 없는 모임(404)은 찾을 수 없다고 하고 다시 시도·로그인은 두지 않는다', (
+    tester,
+  ) async {
+    meetings.readError = notFound();
+    await pumpMeeting(tester);
+
+    expect(find.widgetWithText(AppBar, '모임'), findsOneWidget);
+    expect(find.text('모임을 찾을 수 없습니다'), findsOneWidget);
+    expect(find.text('링크가 맞는지 확인해 주세요.'), findsOneWidget);
+    expect(find.text('다시 시도'), findsNothing);
+    expect(find.text('로그인'), findsNothing);
+    expect(find.textContaining('404'), findsNothing);
+    expect(meetings.availabilityReads, 0);
+  });
+
   testWidgets('링크로 바로 열어 돌아갈 곳이 없으면 처음 화면으로 가는 버튼을 둔다', (tester) async {
     await pumpMeeting(tester);
 
