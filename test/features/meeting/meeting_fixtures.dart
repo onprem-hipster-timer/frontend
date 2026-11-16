@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart' show RequestOptions;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
@@ -21,9 +23,10 @@ MeetingRead makeMeeting({
   String startTime = '06:00:00',
   String endTime = '18:00:00',
   int timeSlotMinutes = 30,
+  String ownerId = 'owner-1',
 }) => MeetingRead(
   id: id,
-  ownerId: 'owner-1',
+  ownerId: ownerId,
   title: title,
   startDate: startDate ?? DateTime.utc(2027, 3, 1),
   endDate: endDate ?? DateTime.utc(2027, 3, 5),
@@ -99,7 +102,137 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
   }) async {
     deleted.add(meetingId);
   }
+
+  /// 가능 시간 조회가 돌려주는 참여자별 가능 시간. 참여·저장하면 backend처럼 바뀐다
+  List<AvailabilityRead> availability = [];
+
+  /// 가능 시간 조회 횟수
+  var availabilityReads = 0;
+
+  /// 받은 참여 요청의 이름
+  final participations = <String>[];
+
+  /// 받은 가능 시간 저장 (참여자 id, 구간)
+  final puts = <(String, List<TimeSlotCreate>)>[];
+
+  /// 설정하면 다음 참여 요청 하나가 이 오류로 실패한다
+  Object? participateError;
+
+  /// 설정하면 다음 저장 하나가 이 오류로 실패한다
+  Object? putError;
+
+  /// 설정하면 가능 시간 조회가 이 오류로 실패한다
+  Object? availabilityError;
+
+  /// 설정하면 저장이 이것이 끝날 때까지 기다린다
+  Completer<void>? putGate;
+
+  @override
+  Future<List<AvailabilityRead>>
+  getAvailabilityV1MeetingsMeetingIdAvailabilityGet({
+    required String meetingId,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    availabilityReads++;
+    if (availabilityError != null) throw availabilityError!;
+    return [...availability];
+  }
+
+  /// [userId]로 참여한다. 이미 참여했으면 이름만 바꾼다(backend의 참여 경로와 같다)
+  @override
+  Future<ParticipantRead> createParticipantV1MeetingsMeetingIdParticipatePost({
+    required String meetingId,
+    required ParticipantCreate body,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    participations.add(body.displayName);
+    final error = participateError;
+    if (error != null) {
+      participateError = null;
+      throw error;
+    }
+    final at = availability.indexWhere(
+      (entry) => entry.participant.userId == userId,
+    );
+    if (at >= 0) {
+      final renamed = availability[at].participant.copyWith(
+        displayName: body.displayName,
+      );
+      availability[at] = availability[at].copyWith(participant: renamed);
+      return renamed;
+    }
+    final joined = ParticipantRead(
+      id: 'participant-$userId',
+      meetingId: meetingId,
+      displayName: body.displayName,
+      createdAt: _at,
+      userId: userId,
+    );
+    availability.add(AvailabilityRead(participant: joined, timeSlots: []));
+    return joined;
+  }
+
+  @override
+  Future<List<TimeSlotRead>> setAvailabilityV1MeetingsMeetingIdAvailabilityPut({
+    required String meetingId,
+    required String participantId,
+    required List<TimeSlotCreate> body,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    puts.add((participantId, body));
+    await putGate?.future;
+    final error = putError;
+    if (error != null) {
+      putError = null;
+      throw error;
+    }
+    final slots = [
+      for (final (i, slot) in body.indexed)
+        TimeSlotRead(
+          id: 'slot-$i',
+          participantId: participantId,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        ),
+    ];
+    final at = availability.indexWhere(
+      (entry) => entry.participant.id == participantId,
+    );
+    availability[at] = availability[at].copyWith(timeSlots: slots);
+    return slots;
+  }
+
+  /// 참여 요청을 보내는 로그인 사용자([meetingOverrides]의 사용자)
+  String userId = 'user-1';
 }
+
+/// 참여자 [id]의 가능 시간. [slots]는 UTC 구간
+AvailabilityRead availabilityOf(
+  String id, {
+  String? name,
+  String? userId,
+  List<(DateTime, DateTime)> slots = const [],
+}) => AvailabilityRead(
+  participant: ParticipantRead(
+    id: id,
+    meetingId: 'meeting-1',
+    displayName: name ?? id,
+    createdAt: _at,
+    userId: userId ?? 'user-of-$id',
+  ),
+  timeSlots: [
+    for (final (i, (start, end)) in slots.indexed)
+      TimeSlotRead(
+        id: '$id-slot-$i',
+        participantId: id,
+        startTime: start,
+        endTime: end,
+      ),
+  ],
+);
 
 /// 받은 공개 범위 요청을 기록하는 [VisibilityClient]
 class FakeVisibilityClient extends Fake implements VisibilityClient {
