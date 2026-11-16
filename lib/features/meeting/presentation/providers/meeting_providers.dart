@@ -263,24 +263,33 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
   Future<void> _save() async {
     final api = ref.read(meetingsApiProvider);
     var me = state.requireValue.board.me;
-    if (me == null) {
-      final joined = me = await api
-          .createParticipantV1MeetingsMeetingIdParticipatePost(
-            meetingId: meetingId,
-            body: ParticipantCreate(
-              displayName: state.requireValue.board.selfName,
-            ),
-          );
-      _updateBoard((board) => board.withSelf(joined));
+    try {
+      if (me == null) {
+        final joined = me = await api
+            .createParticipantV1MeetingsMeetingIdParticipatePost(
+              meetingId: meetingId,
+              body: ParticipantCreate(
+                displayName: state.requireValue.board.selfName,
+              ),
+            );
+        _updateBoard((board) => board.withSelf(joined));
+      }
+      await api.setAvailabilityV1MeetingsMeetingIdAvailabilityPut(
+        meetingId: meetingId,
+        participantId: me.id,
+        body: [
+          for (final slot in state.requireValue.board.mine.slots)
+            TimeSlotCreate(startTime: slot.start, endTime: slot.end),
+        ],
+      );
+    } on DioException catch (error) {
+      // 게스트가 거절되면(주인이 뺐거나 모임이 지금 게스트를 받지 않는다) 모임을 다시 불러와 까닭에 맞게 보인다
+      if (error.response?.statusCode == 403 &&
+          ref.read(currentGuestProvider) != null) {
+        ref.invalidate(meetingProvider(meetingId));
+      }
+      rethrow;
     }
-    await api.setAvailabilityV1MeetingsMeetingIdAvailabilityPut(
-      meetingId: meetingId,
-      participantId: me.id,
-      body: [
-        for (final slot in state.requireValue.board.mine.slots)
-          TimeSlotCreate(startTime: slot.start, endTime: slot.end),
-      ],
-    );
     unawaited(_refresh());
   }
 

@@ -306,6 +306,45 @@ void main() {
       expect(await harness.storedSessionToken(), isNull);
       expect(harness.prefs.getString(guestMeetingKey), isNull);
     });
+
+    testWidgets('칠한 것을 저장하다 거절되면(403) 다시 불러와 게스트를 받지 않는다고 보인다', (tester) async {
+      await pumpGuest(tester);
+      meetings
+        ..putError = guestError(403, 'GuestAccessDeniedError')
+        ..readError = guestError(403, 'GuestAccessDeniedError');
+
+      await tester.tapAt(cellCenter(tester, '3월 2일 (화) 9:00 ~ 9:30'));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('저장하지 못했습니다'), findsNothing);
+      expect(find.text('지금은 게스트로 이 모임을 볼 수 없습니다'), findsOneWidget);
+    });
+
+    testWidgets('칠한 것을 저장하다 거절됐는데(403) 세션도 끝났으면 게스트가 지워졌다고 알리고 방문자 화면이 된다', (
+      tester,
+    ) async {
+      var first = true;
+      when(() => harness.kratos.whoami(any())).thenAnswer((_) async {
+        if (!first) return null;
+        first = false;
+        return KratosSession.guest(
+          guest: testGuest,
+          accessToken: harness.accessToken,
+        );
+      });
+      await pumpGuest(tester);
+      meetings
+        ..putError = guestError(403, 'GuestAccessDeniedError')
+        ..readError = guestError(403, 'GuestAccessDeniedError');
+
+      await tester.tapAt(cellCenter(tester, '3월 2일 (화) 9:00 ~ 9:30'));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('이 모임의 게스트 정보가 지워졌습니다'), findsOneWidget);
+      expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    });
   });
 
   group('편집', () {
