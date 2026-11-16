@@ -18,12 +18,16 @@ class MeetingCellShape {
     this.continuous = false,
   });
 
-  /// 시간별: 슬롯 분에 비례하는 줄 높이(30분이면 26), 너무 작거나 크지 않게
+  /// 시간별: 슬롯 분에 비례하는 줄 높이(30분이면 26), 너무 작거나 크지 않게. [minRowHeight]보다는 높다
   factory MeetingCellShape.hourly({
     required int slotMinutes,
     required double columnGap,
+    double minRowHeight = 0,
   }) {
-    final rowHeight = (26 * slotMinutes / 30).clamp(20, 64).toDouble();
+    final rowHeight = math.max(
+      (26 * slotMinutes / 30).clamp(20, 64).toDouble(),
+      minRowHeight,
+    );
     return MeetingCellShape(
       columnGap: columnGap,
       rowGap: 0,

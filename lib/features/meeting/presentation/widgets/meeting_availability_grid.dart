@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
@@ -57,25 +59,39 @@ class _HourlyGrid extends StatelessWidget {
   final MeetingBoard board;
   final MeetingPaint onPaint;
 
-  static const _labelWidth = 44.0;
   static const _columnGap = 6.0;
 
   @override
   Widget build(BuildContext context) {
     final grid = board.grid;
+    final scaler = MediaQuery.textScalerOf(context);
+    final labelStyle = Theme.of(context).textTheme.labelSmall!;
+    final fontSize = scaler.scale(labelStyle.fontSize!);
+    // 큰 글자에서도 시각 글자가 다음 시각과 겹치지 않게 줄을 늘리고 칸을 넓힌다
+    final labelRows = [
+      for (final (row, minute) in grid.rowMinutes.indexed)
+        if (row == 0 || minute % 60 == 0) row,
+    ];
+    final rowsPerLabel = [
+      for (var i = 0; i < labelRows.length; i++)
+        (i + 1 < labelRows.length ? labelRows[i + 1] : grid.rows) -
+            labelRows[i],
+    ].reduce(math.min);
     final shape = MeetingCellShape.hourly(
       slotMinutes: grid.rowMinutes.length > 1
           ? grid.rowMinutes[1] - grid.rowMinutes[0]
           : 60,
       columnGap: _columnGap,
+      minRowHeight: (fontSize * (labelStyle.height ?? 1.2) + 4) / rowsPerLabel,
     );
-    final rowHeight = shape.height(0, TextScaler.noScaling);
+    final rowHeight = shape.height(0, scaler);
+    final labelWidth = math.max(44.0, fontSize * 3 + 8);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            const SizedBox(width: _labelWidth),
+            SizedBox(width: labelWidth),
             for (final (i, day) in grid.columnDays.indexed) ...[
               if (i > 0) const SizedBox(width: _columnGap),
               Expanded(child: _DayHead(day: day)),
@@ -87,9 +103,13 @@ class _HourlyGrid extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: _labelWidth,
+              width: labelWidth,
               height: grid.rows * rowHeight,
-              child: _HourLabels(grid: grid, rowHeight: rowHeight),
+              child: _HourLabels(
+                rows: labelRows,
+                grid: grid,
+                rowHeight: rowHeight,
+              ),
             ),
             Expanded(
               child: MeetingGridCells(
@@ -107,8 +127,14 @@ class _HourlyGrid extends StatelessWidget {
 
 /// 시간별 왼쪽의 정각 시각(첫 줄은 정각이 아니어도 둔다)
 class _HourLabels extends StatelessWidget {
-  const _HourLabels({required this.grid, required this.rowHeight});
+  const _HourLabels({
+    required this.rows,
+    required this.grid,
+    required this.rowHeight,
+  });
 
+  /// 시각을 적는 줄
+  final List<int> rows;
   final MeetingGrid grid;
   final double rowHeight;
 
@@ -119,20 +145,23 @@ class _HourLabels extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          for (final (row, minute) in grid.rowMinutes.indexed)
-            if (row == 0 || minute % 60 == 0)
-              Positioned(
-                top: row * rowHeight - 1,
-                left: 0,
-                right: 6,
+          for (final row in rows)
+            Positioned(
+              top: row * rowHeight - 1,
+              left: 0,
+              right: 6,
+              // 한 줄로 두고, 칸보다 넓은 글꼴이면 칸에 맞춰 줄인다
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
                 child: Text(
-                  minuteLabel(minute),
-                  textAlign: TextAlign.right,
+                  minuteLabel(grid.rowMinutes[row]),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
+            ),
         ],
       ),
     );
@@ -258,8 +287,8 @@ class _Legend extends StatelessWidget {
           ],
         ),
         if (othersTotal > 0)
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('다른 참여자 1명', style: style),
               const SizedBox(width: 6),
