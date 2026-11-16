@@ -246,12 +246,19 @@ class _DayCell extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ExcludeSemantics(
-                    child: Text(
-                      '${day.day}',
-                      style: TextStyle(
-                        color: dimmed ? base.withValues(alpha: 0.38) : base,
-                        fontWeight: selected ? FontWeight.w700 : null,
+                  // 좁은 칸·큰 글자에서는 숫자를 칸에 맞춰 줄인다
+                  Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: ExcludeSemantics(
+                        child: Text(
+                          '${day.day}',
+                          style: TextStyle(
+                            color: dimmed ? base.withValues(alpha: 0.38) : base,
+                            fontWeight: selected ? FontWeight.w700 : null,
+                          ),
+                        ),
                       ),
                     ),
                   ),
