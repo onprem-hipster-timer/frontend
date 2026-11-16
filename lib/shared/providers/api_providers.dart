@@ -51,3 +51,7 @@ final healthApiProvider = Provider<HealthClient>((ref) {
 final usersApiProvider = Provider<UsersClient>((ref) {
   return ref.watch(moMeetClientProvider).users;
 });
+
+final guestsApiProvider = Provider<GuestsClient>((ref) {
+  return ref.watch(moMeetClientProvider).guests;
+});
