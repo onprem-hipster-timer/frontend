@@ -29,12 +29,44 @@ void main() {
     final board = boardOf([
       availabilityOf('a'),
       availabilityOf('b'),
-      availabilityOf('owner', userId: 'owner-1'),
+      availabilityOf('owner', userId: 'owner-1', owner: true),
     ]);
 
     expect([for (final p in board.participants) p.id], ['owner', 'a', 'b']);
-    expect(board.isOwner(board.participants.first), isTrue);
-    expect(board.isOwner(board.participants.last), isFalse);
+  });
+
+  test('주인은 is_owner로 가린다: 회원 id가 비어 있는 응답에서도 맨 앞이다', () {
+    final board = MeetingBoard(
+      meeting: makeMeeting().copyWith(ownerId: null),
+      availability: [
+        availabilityOf('g', guest: true),
+        availabilityOf('a', userId: null),
+        availabilityOf('owner', owner: true).copyWith.participant(userId: null),
+      ],
+      userId: null,
+      selfName: '참여자',
+    );
+
+    expect([for (final p in board.participants) p.id], ['owner', 'g', 'a']);
+  });
+
+  test('회원 id가 주인 id와 같아도 is_owner가 아니면 주인으로 옮기지 않는다', () {
+    final board = boardOf([
+      availabilityOf('a'),
+      availabilityOf('b', userId: 'owner-1'),
+    ]);
+
+    expect([for (final p in board.participants) p.id], ['a', 'b']);
+  });
+
+  test('주인이 참여하지 않았으면 받은 순서 그대로다', () {
+    final board = boardOf([
+      availabilityOf('b'),
+      availabilityOf('g', guest: true),
+      availabilityOf('a'),
+    ]);
+
+    expect([for (final p in board.participants) p.id], ['b', 'g', 'a']);
   });
 
   test('로그인한 사람의 참여자가 나이고 그 가능 시간이 내 칸이다', () {
@@ -105,7 +137,7 @@ void main() {
       userId: 'user-1',
     );
     var board = boardOf([
-      availabilityOf('owner', userId: 'owner-1'),
+      availabilityOf('owner', userId: 'owner-1', owner: true),
       availabilityOf('a'),
     ]);
     board = board.withSelf(joined);
@@ -128,6 +160,7 @@ void main() {
         meetingId: 'meeting-1',
         displayName: '지현',
         createdAt: DateTime.utc(2027),
+        isOwner: true,
         userId: 'user-1',
       ),
     );

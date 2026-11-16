@@ -59,7 +59,7 @@ class MeetingBoard {
       grid: grid,
       participants: _ownerFirst([
         for (final entry in availability) entry.participant,
-      ], meeting.ownerId),
+      ]),
       me: me,
       others: others,
       mine: edits?.withSaved(mySlots) ?? MyAvailability(saved: mySlots),
@@ -121,9 +121,6 @@ class MeetingBoard {
 
   bool isSelf(String id) => id == pendingSelfId || id == me?.id;
 
-  bool isOwner(ParticipantRead participant) =>
-      participant.userId != null && participant.userId == meeting.ownerId;
-
   /// [id] 참여자의 이름
   String nameOf(String id) {
     if (id == pendingSelfId) return selfName;
@@ -155,10 +152,7 @@ class MeetingBoard {
     } else {
       next[at] = participant;
     }
-    return _copy(
-      me: participant,
-      participants: _ownerFirst(next, meeting.ownerId),
-    );
+    return _copy(me: participant, participants: _ownerFirst(next));
   }
 
   MeetingBoard _copy({
@@ -176,14 +170,11 @@ class MeetingBoard {
     selfName: selfName,
   );
 
-  /// 주인을 맨 앞으로 옮기고 나머지 순서는 그대로 둔다
-  static List<ParticipantRead> _ownerFirst(
-    List<ParticipantRead> participants,
-    String? ownerId,
-  ) {
-    if (ownerId == null) return participants;
+  /// 주인(`is_owner`)을 맨 앞으로 옮기고 나머지 순서는 그대로 둔다. 회원 id는 받는 사람에 따라 비어 있어
+  /// 비교하지 않는다
+  static List<ParticipantRead> _ownerFirst(List<ParticipantRead> participants) {
     final ordered = [...participants];
-    final owner = ordered.indexWhere((p) => p.userId == ownerId);
+    final owner = ordered.indexWhere((p) => p.isOwner);
     if (owner > 0) ordered.insert(0, ordered.removeAt(owner));
     return ordered;
   }

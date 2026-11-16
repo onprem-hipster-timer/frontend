@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_crown.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_participants_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_save_indicator.dart';
@@ -25,6 +26,7 @@ List<AvailabilityRead> threePeople() => [
     'a',
     name: '민수',
     userId: 'owner-1',
+    owner: true,
     slots: [(seoul(1, 9), seoul(1, 12))],
   ),
   availabilityOf(
@@ -50,14 +52,19 @@ MeetingBoard boardOf(
 );
 
 /// 이름이 [name]인 참여자 칩
-Finder chip(String name, {bool owner = false, bool self = false}) =>
-    find.byWidgetPredicate(
-      (widget) =>
-          widget is MeetingNameChip &&
-          widget.name == name &&
-          widget.owner == owner &&
-          widget.self == self,
-    );
+Finder chip(
+  String name, {
+  bool owner = false,
+  bool guest = false,
+  bool self = false,
+}) => find.byWidgetPredicate(
+  (widget) =>
+      widget is MeetingNameChip &&
+      widget.name == name &&
+      widget.owner == owner &&
+      widget.guest == guest &&
+      widget.self == self,
+);
 
 Future<void> pumpPanel(
   WidgetTester tester,
@@ -183,6 +190,23 @@ void main() {
       expect(find.byType(MeetingNameChip), findsNothing);
     });
 
+    testWidgets('카드의 게스트 이름은 게스트 칩이다', (tester) async {
+      final people = threePeople();
+      await pumpSlots(
+        tester,
+        boardOf([
+          people[0],
+          people[1].copyWith.participant(isGuest: true, userId: null),
+        ]),
+      );
+
+      await tester.tap(find.text('2').first);
+      await tester.pumpAndSettle();
+
+      expect(chip('민수', owner: true), findsOneWidget);
+      expect(chip('서연', guest: true), findsOneWidget);
+    });
+
     testWidgets('마우스를 올리면 이름이 뜨고 떠나면 사라진다', (tester) async {
       await pumpSlots(tester, boardOf(threePeople()));
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -225,7 +249,7 @@ void main() {
       final board = boardOf([
         availabilityOf('b', name: '서연'),
         availabilityOf('me', name: '지현', userId: 'user-1'),
-        availabilityOf('a', name: '민수', userId: 'owner-1'),
+        availabilityOf('a', name: '민수', userId: 'owner-1', owner: true),
       ]);
       await pumpPanel(
         tester,
@@ -240,6 +264,45 @@ void main() {
       expect(chips, orderedEquals([...chips]..sort()));
       expect(find.bySemanticsLabel('민수, 주인'), findsOneWidget);
       expect(find.bySemanticsLabel('지현, 나'), findsOneWidget);
+    });
+
+    testWidgets('게스트는 회원과 이름이 같아도 다른 모양의 게스트 칩이다', (tester) async {
+      await pumpPanel(
+        tester,
+        MeetingParticipantsPanel(
+          board: boardOf([
+            availabilityOf('m', name: '민수'),
+            availabilityOf('g', name: '민수', guest: true),
+          ]),
+          onEdit: () {},
+        ),
+      );
+
+      expect(chip('민수'), findsOneWidget);
+      expect(chip('민수', guest: true), findsOneWidget);
+      expect(find.bySemanticsLabel('민수'), findsOneWidget);
+      expect(find.bySemanticsLabel('민수, 게스트'), findsOneWidget);
+      IconData? iconOf(Finder chip) => tester
+          .widget<Icon>(find.descendant(of: chip, matching: find.byType(Icon)))
+          .icon;
+      expect(iconOf(chip('민수')), isNot(iconOf(chip('민수', guest: true))));
+    });
+
+    testWidgets('주인이 참여하지 않았으면 왕관이 없다', (tester) async {
+      await pumpPanel(
+        tester,
+        MeetingParticipantsPanel(
+          board: boardOf([
+            availabilityOf('b', name: '서연'),
+            availabilityOf('g', name: '하준', guest: true),
+          ]),
+          onEdit: () {},
+        ),
+      );
+
+      expect(find.byType(MeetingCrown), findsNothing);
+      expect(chip('서연'), findsOneWidget);
+      expect(chip('하준', guest: true), findsOneWidget);
     });
 
     testWidgets('참여했으면 편집으로 내 이름 바꾸기를 연다', (tester) async {

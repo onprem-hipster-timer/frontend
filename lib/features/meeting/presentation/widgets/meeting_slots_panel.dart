@@ -106,11 +106,12 @@ class _RunCard extends StatelessWidget {
           if (run.people.contains(participant.id))
             (
               name: participant.displayName,
-              owner: board.isOwner(participant),
+              owner: participant.isOwner,
+              guest: participant.isGuest,
               self: board.isSelf(participant.id),
             ),
         if (run.people.contains(MeetingBoard.pendingSelfId))
-          (name: board.selfName, owner: false, self: true),
+          (name: board.selfName, owner: false, guest: false, self: true),
       ],
       onAddToCalendar: onAddToCalendar,
     );

@@ -3,7 +3,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.d
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 카드에 보이는 참여자 한 명
-typedef MeetingSlotPerson = ({String name, bool owner, bool self});
+typedef MeetingSlotPerson = ({String name, bool owner, bool guest, bool self});
 
 /// 선택된 일정 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'.
 ///
@@ -277,6 +277,7 @@ class _Names extends StatelessWidget {
           MeetingNameChip(
             name: person.name,
             owner: person.owner,
+            guest: person.guest,
             self: person.self,
             dense: true,
           ),

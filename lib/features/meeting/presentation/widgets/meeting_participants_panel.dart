@@ -43,7 +43,8 @@ class MeetingParticipantsPanel extends StatelessWidget {
                 for (final participant in participants)
                   MeetingNameChip(
                     name: participant.displayName,
-                    owner: board.isOwner(participant),
+                    owner: participant.isOwner,
+                    guest: participant.isGuest,
                     self: board.isSelf(participant.id),
                   ),
               ],

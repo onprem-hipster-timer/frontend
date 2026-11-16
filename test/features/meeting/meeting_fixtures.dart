@@ -198,6 +198,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
       meetingId: meetingId,
       displayName: body.displayName,
       createdAt: _at,
+      isOwner: meeting?.ownerId == userId,
       userId: userId,
     );
     availability.add(AvailabilityRead(participant: joined, timeSlots: []));
@@ -239,11 +240,13 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
   String userId = 'user-1';
 }
 
-/// 참여자 [id]의 가능 시간. [slots]는 UTC 구간
+/// 참여자 [id]의 가능 시간. [slots]는 UTC 구간. [owner]는 주인, [guest]는 게스트 참여자(회원 id 없음)
 AvailabilityRead availabilityOf(
   String id, {
   String? name,
   String? userId,
+  bool owner = false,
+  bool guest = false,
   List<(DateTime, DateTime)> slots = const [],
 }) => AvailabilityRead(
   participant: ParticipantRead(
@@ -251,7 +254,9 @@ AvailabilityRead availabilityOf(
     meetingId: 'meeting-1',
     displayName: name ?? id,
     createdAt: _at,
-    userId: userId ?? 'user-of-$id',
+    isOwner: owner,
+    isGuest: guest,
+    userId: guest ? null : userId ?? 'user-of-$id',
   ),
   timeSlots: [
     for (final (i, (start, end)) in slots.indexed)

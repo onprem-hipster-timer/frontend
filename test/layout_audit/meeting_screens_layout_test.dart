@@ -28,13 +28,15 @@ import '../features/meeting/meeting_fixtures.dart';
 /// 서울 2027년 3월 [day]일 [hour]시의 UTC 시각
 DateTime _seoul(int day, int hour) => DateTime.utc(2027, 3, day, hour - 9);
 
-/// 이름이 모두 [name]으로 시작하는 다섯 참여자(첫째가 나이자 주인). 3월 1일 9~12시에 겹친다
+/// 이름이 모두 [name]으로 시작하는 다섯 참여자(첫째가 나이자 주인, 마지막은 게스트). 3월 1일 9~12시에 겹친다
 List<AvailabilityRead> _fivePeople(String name) => [
   for (var i = 0; i < 5; i++)
     availabilityOf(
       'p$i',
       name: i == 0 ? name : '$name $i',
       userId: i == 0 ? 'user-1' : null,
+      owner: i == 0,
+      guest: i == 4,
       slots: [
         (_seoul(1, 9 + i % 2), _seoul(1, 12)),
         (_seoul(2, 0), _seoul(9, 0)),
