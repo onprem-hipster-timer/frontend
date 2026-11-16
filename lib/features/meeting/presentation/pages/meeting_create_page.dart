@@ -81,16 +81,15 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
         ? meetingTitlePlaceholder(ref.read(currentUserProvider)?.name)
         : typed;
     try {
-      final timezone = await ref.read(timezoneProvider.future);
-      final meeting = await createMeetingMutation.run(
-        ref,
-        (tsx) => tsx
+      final meeting = await createMeetingMutation.run(ref, (tsx) async {
+        final timezone = await tsx.get(timezoneProvider.future);
+        return tsx
             .get(meetingMutationsProvider.notifier)
             .create(
               draft.toMeetingCreate(title: title, timezone: timezone),
               isPublic: draft.isPublic,
-            ),
-      );
+            );
+      });
       if (!mounted) return;
       context.goNamed(
         AppRoute.meetingCreated.name,
