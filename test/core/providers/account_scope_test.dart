@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app.dart' show appScaffoldMessengerKey;
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/account_scope.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 
@@ -22,6 +23,11 @@ class _Auth extends AuthNotifier {
       emailVerified: true,
       createdAt: DateTime.utc(2024, 1, 1),
     ),
+    accessToken: 'jwt-${++_jwts}',
+  );
+
+  void enterAsGuest() => state = AuthStatus.guest(
+    guest: const GuestUser(id: 'g', handle: 'g@guest.invalid', name: '민수'),
     accessToken: 'jwt-${++_jwts}',
   );
 
@@ -110,6 +116,33 @@ void main() {
 
     expect(containers, hasLength(2));
     expect(find.text('0 b의 데이터'), findsOneWidget);
+  });
+
+  testWidgets('게스트 세션이 끝나면 게스트가 보던 값을 버린다', (tester) async {
+    await pumpScope(tester);
+    auth().enterAsGuest();
+    current().read(_counterProvider.notifier).set(5);
+    await tester.pumpAndSettle();
+    auth().enterAsGuest();
+    await tester.pumpAndSettle();
+    expect(containers, hasLength(1), reason: 'JWT 갱신');
+
+    auth().leave();
+    await tester.pumpAndSettle();
+
+    expect(containers, hasLength(2));
+    expect(find.textContaining('0 '), findsOneWidget);
+  });
+
+  testWidgets('게스트가 회원으로 로그인하면 컨테이너를 그대로 둔다', (tester) async {
+    await pumpScope(tester);
+    auth().enterAsGuest();
+    await tester.pumpAndSettle();
+
+    auth().signIn('a');
+    await tester.pumpAndSettle();
+
+    expect(containers, hasLength(1));
   });
 
   testWidgets('로그인과 JWT 갱신에는 컨테이너를 그대로 둔다', (tester) async {

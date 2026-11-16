@@ -381,4 +381,55 @@ void main() {
       expect(container.read(consentRequiredProvider), isNull);
     });
   });
+
+  group('게스트 세션', () {
+    late FakeUsersClient users;
+
+    Future<(ProviderContainer, Dio)> bootGuest(_FakeBackend backend) async {
+      harness = await KratosTestHarness.create();
+      harness.stubGuestSession();
+      users = FakeUsersClient(consentRequired: false);
+      return boot(backend, users: users);
+    }
+
+    test('게스트 요청에는 게스트 JWT를 붙이고 회원 프로필은 받지 않는다', () async {
+      final backend = _FakeBackend([200]);
+      final (container, dio) = await bootGuest(backend);
+
+      await dio.get<dynamic>('/v1/meetings/meeting-1');
+
+      expect(
+        authorization(backend.requests.single),
+        'Bearer ${harness.accessToken}',
+      );
+      expect(await container.read(myProfileProvider.future), isNull);
+      expect(container.read(consentRequiredProvider), isNull);
+      expect(container.read(deletionPendingProvider), isNull);
+      expect(users.reads, 0);
+    });
+
+    test('약관 동의가 필요해 거절돼도(428) 회원 프로필을 다시 받지 않는다', () async {
+      final backend = _FakeBackend(
+        [428],
+        body:
+            '{"error_type": "ConsentRequiredError", "message": "consent_required"}',
+      );
+      final (container, dio) = await bootGuest(backend);
+      container.listen(consentRequiredProvider, (_, _) {});
+
+      await expectLater(
+        dio.post<dynamic>('/v1/meetings/meeting-1/participate'),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.response?.statusCode,
+            'status',
+            428,
+          ),
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(users.reads, 0);
+    });
+  });
 }

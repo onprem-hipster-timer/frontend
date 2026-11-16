@@ -306,14 +306,57 @@ void main() {
       expect(request.uri.queryParameters, {'tokenize_as': 'api'});
       expect(request.headers['X-Session-Token'], 'ory_st_abc');
       expect(session!.accessToken, 'header.payload.signature');
-      expect(session.user.id, 'u1');
-      expect(session.user.email, 'A@example.com');
-      expect(session.user.emailVerified, isTrue);
-      expect(session.user.name, isNull);
-      expect(
-        session.user.createdAt,
-        DateTime.utc(2026, 11, 3, 17, 45, 17, 132, 908),
-      );
+      expect(session.guest, isNull);
+      final user = session.user!;
+      expect(user.id, 'u1');
+      expect(user.email, 'A@example.com');
+      expect(user.emailVerified, isTrue);
+      expect(user.name, isNull);
+      expect(user.createdAt, DateTime.utc(2026, 11, 3, 17, 45, 17, 132, 908));
+    });
+
+    test('게스트 세션은 이메일 없이 handle과 이름으로 읽는다', () async {
+      fake.respond = (_) => _json(200, {
+        'id': 'sess',
+        'tokenized': 'header.payload.signature',
+        'identity': {
+          'id': 'g1',
+          'schema_id': 'guest',
+          'created_at': '2026-11-16T01:00:00Z',
+          'traits': {'handle': '0b9c@guest.invalid', 'name': '민수'},
+          'verifiable_addresses': [
+            {'value': '0b9c@guest.invalid', 'verified': true, 'via': 'email'},
+          ],
+        },
+      });
+
+      final session = await client.whoami('ory_st_guest');
+
+      expect(session!.accessToken, 'header.payload.signature');
+      expect(session.user, isNull);
+      final guest = session.guest!;
+      expect(guest.id, 'g1');
+      expect(guest.handle, '0b9c@guest.invalid');
+      expect(guest.name, '민수');
+      expect(guest.meetingId, isNull);
+    });
+
+    test('회원 schema(default)의 세션은 회원으로 읽는다', () async {
+      fake.respond = (_) => _json(200, {
+        'tokenized': 'jwt',
+        'identity': {
+          'id': 'u1',
+          'schema_id': 'default',
+          'created_at': '2026-11-03T17:45:17Z',
+          'traits': {'email': 'a@example.com', 'name': '지현'},
+        },
+      });
+
+      final session = await client.whoami('ory_st_abc');
+
+      expect(session!.guest, isNull);
+      expect(session.user!.name, '지현');
+      expect(session.user!.emailVerified, isFalse);
     });
 
     test('whoami 401은 null이다', () async {

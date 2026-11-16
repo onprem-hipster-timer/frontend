@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 
 part 'auth_status.freezed.dart';
 
@@ -18,6 +19,12 @@ sealed class AuthStatus with _$AuthStatus {
     required AuthUser user,
     required String accessToken,
   }) = AuthAuthenticated;
+
+  /// 게스트 세션. [accessToken]은 [guest]의 모임 경로에 보낼 JWT다. 회원 화면과 회원 요청에는 쓰지 않는다.
+  const factory AuthStatus.guest({
+    required GuestUser guest,
+    required String accessToken,
+  }) = AuthGuest;
 
   /// 미인증
   const factory AuthStatus.unauthenticated() = AuthUnauthenticated;

@@ -25,12 +25,18 @@ export 'package:momeet/core/providers/auth_selectors.dart';
 export 'package:momeet/core/providers/auth_status.dart';
 
 part 'auth_provider.g.dart';
+part 'guest_auth_provider.dart';
 
 /// Google 로그인을 시작할 때 받은 교환 코드를 보관하는 키.
 ///
 /// Google을 다녀오는 동안 페이지가 새로 뜨므로 메모리가 아니라 저장소에 둔다.
 /// 이 값이 있어야 돌아온 코드로 세션을 받을 수 있으므로, 남이 보낸 복귀 링크로는 로그인되지 않는다.
 const googleSignInCodeKey = 'momeet.google_sign_in_code';
+
+/// 게스트로 들어온 모임을 적어 두는 키. 값은 `<게스트 identity id> <모임 id>`다.
+///
+/// Kratos 세션에는 게스트의 모임이 없어서, 들어올 때 적어 두고 세션을 되살릴 때 같은 게스트면 읽는다.
+const guestMeetingKey = 'momeet.guest_meeting';
 
 // ============================================================
 // 인증 상태 프로바이더
@@ -73,31 +79,40 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 세션 토큰으로 JWT를 받아 인증 상태가 된다. 세션이 끝났으면 토큰을 지우고 미인증이 된다.
-  Future<String?> _authenticateWith(String sessionToken) async {
+  /// 세션 토큰으로 JWT를 받아 회원이나 게스트 상태가 된다. 세션이 끝났으면 토큰을 지우고 미인증이 된다.
+  ///
+  /// 세션 토큰은 한 칸에 둔다. 게스트 세션을 다른 세션(회원 로그인)으로 바꾸면 게스트 세션은 끝낸다.
+  /// [guestMeetingId]는 게스트로 막 들어온 모임이다.
+  Future<String?> _authenticateWith(
+    String sessionToken, {
+    String? guestMeetingId,
+  }) async {
     final signOutsBefore = _signOuts;
     final session = await _kratos.whoami(sessionToken);
     // 기다리는 사이 로그아웃했으면 끝난 세션을 되살리지 않는다
     if (_signOuts != signOutsBefore) return null;
     if (session == null) {
       await _tokenStore.clear();
+      await _prefs.remove(guestMeetingKey);
       state = const AuthStatus.unauthenticated();
       return null;
     }
+    if (state is AuthGuest) _endGuestSessionReplacedBy(sessionToken);
     await _tokenStore.save(sessionToken);
-    state = AuthStatus.authenticated(
-      user: session.user,
-      accessToken: session.accessToken,
-    );
+    state = await _statusOf(session, guestMeetingId: guestMeetingId);
     return session.accessToken;
   }
 
-  /// 백엔드 요청에 쓸 JWT. 만료까지 1분이 안 남았으면 새로 받는다. 미인증이면 null.
+  /// 백엔드 요청에 쓸 JWT(회원·게스트). 만료까지 1분이 안 남았으면 새로 받는다. 세션이 없으면 null.
   Future<String?> freshAccessToken() async {
-    final current = state;
-    if (current is! AuthAuthenticated) return null;
-    if (!_expiresWithin(current.accessToken, const Duration(minutes: 1))) {
-      return current.accessToken;
+    final accessToken = switch (state) {
+      AuthAuthenticated(:final accessToken) ||
+      AuthGuest(:final accessToken) => accessToken,
+      _ => null,
+    };
+    if (accessToken == null) return null;
+    if (!_expiresWithin(accessToken, const Duration(minutes: 1))) {
+      return accessToken;
     }
     return refreshAccessToken();
   }
@@ -304,6 +319,7 @@ class AuthNotifier extends _$AuthNotifier {
       final sessionToken = _sessionToken;
       if (sessionToken != null) await _kratos.logout(sessionToken);
       await _tokenStore.clear();
+      await _prefs.remove(guestMeetingKey);
       _signOuts++;
       state = const AuthStatus.unauthenticated();
     });
