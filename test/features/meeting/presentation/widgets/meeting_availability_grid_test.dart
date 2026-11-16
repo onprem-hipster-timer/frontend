@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
+import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_grid.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -378,5 +379,116 @@ void main() {
     );
 
     expect(find.text('이 모임 기간에는 고를 수 있는 날이 없습니다'), findsOneWidget);
+  });
+
+  group('로그인하기 전(칠할 수 없는 격자)', () {
+    late int locked;
+
+    /// 결과의 사람 수로 칠할 수 없는 격자를 띄운다
+    Future<void> pumpLocked(
+      WidgetTester tester, {
+      List<(DateTime, DateTime, int)> cells = const [],
+      int participants = 3,
+    }) async {
+      locked = 0;
+      final meeting = makeMeeting();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MeetingAvailabilityGrid(
+                shading: MeetingHeadcount(
+                  MeetingResultRead(
+                    meeting: meeting,
+                    participantCount: participants,
+                    availabilityGrid: [
+                      for (final (start, end, count) in cells)
+                        AvailabilityCell(
+                          startTime: start,
+                          endTime: end,
+                          count: count,
+                        ),
+                    ],
+                  ),
+                ),
+                onPaint: null,
+                onLocked: () => locked++,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('칸마다 되는 사람 수를 읽고 누르기 동작은 두지 않는다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpLocked(tester, cells: [(seoul(1, 6), seoul(1, 6, 30), 2)]);
+
+      final cell = cellData('3월 1일 (월) 6:00 ~ 6:30');
+      expect(cell.hint, '참여자 2명');
+      expect(cell.value, isEmpty);
+      expect(cell.flagsCollection.isButton, isFalse);
+      expect(cell.flagsCollection.isSelected, Tristate.none);
+      expect(cellData('3월 1일 (월) 6:30 ~ 7:00').hint, isEmpty);
+      semantics.dispose();
+    });
+
+    testWidgets('터치로 누르거나 길게 눌러 끌면 칠하지 않고 알린다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpLocked(tester);
+
+      await tester.tapAt(cellCenter(tester, '3월 2일 (화) 7:00 ~ 7:30'));
+      expect(locked, 1);
+
+      final gesture = await tester.startGesture(
+        cellCenter(tester, '3월 1일 (월) 8:00 ~ 8:30'),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await gesture.moveTo(cellCenter(tester, '3월 2일 (화) 9:00 ~ 9:30'));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(locked, 2);
+      expect(painted, isEmpty);
+      expect(cellData('3월 2일 (화) 9:00 ~ 9:30').value, isEmpty);
+      semantics.dispose();
+    });
+
+    testWidgets('마우스로 누른 채 끌어도 칠하지 않고 누를 때 한 번 알린다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpLocked(tester);
+
+      final gesture = await tester.startGesture(
+        cellCenter(tester, '3월 2일 (화) 8:00 ~ 8:30'),
+        kind: PointerDeviceKind.mouse,
+        buttons: kPrimaryMouseButton,
+      );
+      await tester.pump();
+      await gesture.moveTo(cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'));
+      await tester.pump();
+      expect(cellData('3월 1일 (월) 9:00 ~ 9:30').value, isEmpty);
+      await gesture.up();
+      await tester.pump();
+
+      expect(locked, 1);
+      expect(painted, isEmpty);
+      semantics.dispose();
+    });
+
+    testWidgets('색 설명은 내 시간 없이 참여자 1명부터 모두까지다', (tester) async {
+      await pumpLocked(tester);
+
+      expect(find.text('내 시간'), findsNothing);
+      expect(find.text('참여자 1명'), findsOneWidget);
+      expect(find.text('3명'), findsOneWidget);
+    });
+
+    testWidgets('참여자가 없으면 색 설명이 없다', (tester) async {
+      await pumpLocked(tester, participants: 0);
+
+      expect(find.text('내 시간'), findsNothing);
+      expect(find.textContaining('참여자'), findsNothing);
+    });
   });
 }
