@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
+import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_cells.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
@@ -14,19 +14,23 @@ import 'package:momeet/shared/ui/ui.dart';
 /// - 시간별: 위에 날짜, 왼쪽에 정각 시각, 날짜마다 세로 띠(정각 실선, 그 밖의 칸 경계 점선)
 /// - 날짜별: 일요일부터의 요일 머리와 달력 칸
 /// - 요일별: 월요일부터 일곱 칸
+///
+/// [onPaint]가 없으면 칠할 수 없고, 칸을 누르면 [onLocked]를 부른다([MeetingGridCells]).
 class MeetingAvailabilityGrid extends StatelessWidget {
   const MeetingAvailabilityGrid({
     super.key,
-    required this.board,
+    required this.shading,
     required this.onPaint,
+    this.onLocked,
   });
 
-  final MeetingBoard board;
-  final MeetingPaint onPaint;
+  final MeetingShading shading;
+  final MeetingPaint? onPaint;
+  final VoidCallback? onLocked;
 
   @override
   Widget build(BuildContext context) {
-    final grid = board.grid;
+    final grid = shading.grid;
     if (grid.cells.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
@@ -37,16 +41,25 @@ class MeetingAvailabilityGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         switch (grid.mode) {
-          MeetingMode.hourly => _HourlyGrid(board: board, onPaint: onPaint),
-          MeetingMode.daily => _DailyGrid(board: board, onPaint: onPaint),
+          MeetingMode.hourly => _HourlyGrid(
+            shading: shading,
+            onPaint: onPaint,
+            onLocked: onLocked,
+          ),
+          MeetingMode.daily => _DailyGrid(
+            shading: shading,
+            onPaint: onPaint,
+            onLocked: onLocked,
+          ),
           MeetingMode.weekly => MeetingGridCells(
-            board: board,
+            shading: shading,
             shape: MeetingCellShape.weekly,
             onPaint: onPaint,
+            onLocked: onLocked,
           ),
         },
         const SizedBox(height: 12),
-        _Legend(othersTotal: board.othersTotal),
+        _Legend(othersTotal: shading.othersTotal, hasSelf: shading.hasSelf),
       ],
     );
   }
@@ -54,16 +67,21 @@ class MeetingAvailabilityGrid extends StatelessWidget {
 
 /// 시간별: 위에 날짜, 왼쪽에 정각 시각, 가운데 칸
 class _HourlyGrid extends StatelessWidget {
-  const _HourlyGrid({required this.board, required this.onPaint});
+  const _HourlyGrid({
+    required this.shading,
+    required this.onPaint,
+    required this.onLocked,
+  });
 
-  final MeetingBoard board;
-  final MeetingPaint onPaint;
+  final MeetingShading shading;
+  final MeetingPaint? onPaint;
+  final VoidCallback? onLocked;
 
   static const _columnGap = 6.0;
 
   @override
   Widget build(BuildContext context) {
-    final grid = board.grid;
+    final grid = shading.grid;
     final scaler = MediaQuery.textScalerOf(context);
     final labelStyle = Theme.of(context).textTheme.labelSmall!;
     final fontSize = scaler.scale(labelStyle.fontSize!);
@@ -113,9 +131,10 @@ class _HourlyGrid extends StatelessWidget {
             ),
             Expanded(
               child: MeetingGridCells(
-                board: board,
+                shading: shading,
                 shape: shape,
                 onPaint: onPaint,
+                onLocked: onLocked,
               ),
             ),
           ],
@@ -207,10 +226,15 @@ const _sundayFirstHeads = ['일', '월', '화', '수', '목', '금', '토'];
 
 /// 날짜별: 일요일부터의 요일 머리와 달력 칸
 class _DailyGrid extends StatelessWidget {
-  const _DailyGrid({required this.board, required this.onPaint});
+  const _DailyGrid({
+    required this.shading,
+    required this.onPaint,
+    required this.onLocked,
+  });
 
-  final MeetingBoard board;
-  final MeetingPaint onPaint;
+  final MeetingShading shading;
+  final MeetingPaint? onPaint;
+  final VoidCallback? onLocked;
 
   @override
   Widget build(BuildContext context) {
@@ -239,9 +263,10 @@ class _DailyGrid extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         MeetingGridCells(
-          board: board,
+          shading: shading,
           shape: MeetingCellShape.daily,
           onPaint: onPaint,
+          onLocked: onLocked,
         ),
       ],
     );
@@ -256,11 +281,12 @@ Color? _weekendColor(BuildContext context, int sundayFirstColumn) =>
       _ => null,
     };
 
-/// 색 설명: 내 시간과 다른 참여자 농도(1명 ~ 모두)
+/// 색 설명: 내 시간과 다른 참여자 농도(1명 ~ 모두). 내 시간이 없으면(로그인 전) 참여자 농도만
 class _Legend extends StatelessWidget {
-  const _Legend({required this.othersTotal});
+  const _Legend({required this.othersTotal, required this.hasSelf});
 
   final int othersTotal;
+  final bool hasSelf;
 
   @override
   Widget build(BuildContext context) {
@@ -278,19 +304,20 @@ class _Legend extends StatelessWidget {
       runSpacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _Swatch(colors.mine, border: colors.border),
-            const SizedBox(width: 4),
-            Text('내 시간', style: style),
-          ],
-        ),
+        if (hasSelf)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Swatch(colors.mine, border: colors.border),
+              const SizedBox(width: 4),
+              Text('내 시간', style: style),
+            ],
+          ),
         if (othersTotal > 0)
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('다른 참여자 1명', style: style),
+              Text('${hasSelf ? '다른 참여자' : '참여자'} 1명', style: style),
               const SizedBox(width: 6),
               for (final level in levels)
                 _Swatch(

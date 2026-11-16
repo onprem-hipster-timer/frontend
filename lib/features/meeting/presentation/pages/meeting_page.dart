@@ -238,7 +238,7 @@ class _AvailabilitySection extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        MeetingAvailabilityGrid(board: state.board, onPaint: onPaint),
+        MeetingAvailabilityGrid(shading: state.board, onPaint: onPaint),
       ],
     );
   }

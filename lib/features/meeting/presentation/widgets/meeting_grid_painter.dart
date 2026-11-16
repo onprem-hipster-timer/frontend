@@ -1,19 +1,20 @@
 import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
-import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
+import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 격자 칸을 그린다. 내 칸(끄는 중이면 끄는 값)은 진하게, 그 밖은 다른 참여자 농도로 칠한다.
 ///
-/// 칸마다 스크린 리더 항목(날짜·시각, 내 시간인지, 다른 참여자 수)과 누르기 동작을 둔다.
+/// 칸마다 스크린 리더 항목(날짜·시각, 내 시간인지, 되는 사람 수)과 누르기 동작을 둔다. [onToggle]이
+/// 없으면(칠할 수 없는 격자) 누르기 동작을 두지 않는다.
 class MeetingGridPainter extends CustomPainter {
   MeetingGridPainter({
-    required this.board,
+    required this.shading,
     required this.geometry,
     required this.drag,
     required this.colors,
@@ -23,28 +24,28 @@ class MeetingGridPainter extends CustomPainter {
     required this.onToggle,
   });
 
-  final MeetingBoard board;
+  final MeetingShading shading;
   final MeetingGridGeometry geometry;
   final MeetingGridDrag? drag;
   final MeetingGridColors colors;
   final TextStyle textStyle;
   final TextScaler scaler;
   final TextDirection direction;
-  final ValueChanged<MeetingCell> onToggle;
+  final ValueChanged<MeetingCell>? onToggle;
 
-  MeetingGrid get grid => board.grid;
+  MeetingGrid get grid => shading.grid;
 
   bool _mine(MeetingCell cell) {
     final drag = this.drag;
     return drag != null && drag.covers(cell)
         ? drag.available
-        : board.isMine(cell);
+        : shading.isMine(cell);
   }
 
   Color? _fill(MeetingCell cell) => _mine(cell)
       ? colors.mine
       : colors.shade(
-          availabilityShade(board.othersAt(cell).length, board.othersTotal),
+          availabilityShade(shading.othersCountAt(cell), shading.othersTotal),
         );
 
   @override
@@ -162,29 +163,32 @@ class MeetingGridPainter extends CustomPainter {
   }
 
   @override
-  SemanticsBuilderCallback get semanticsBuilder =>
-      (size) => [
-        for (final cell in grid.cells)
-          CustomPainterSemantics(
-            rect: geometry.rectOf(cell.column, cell.row),
-            properties: SemanticsProperties(
-              label: meetingCellLabel(grid, cell),
-              value: board.isMine(cell) ? '내 시간' : null,
-              hint: switch (board.othersAt(cell).length) {
-                0 => null,
-                final count => '다른 참여자 $count명',
-              },
-              selected: board.isMine(cell),
-              button: true,
-              onTap: () => onToggle(cell),
-              textDirection: direction,
-            ),
+  SemanticsBuilderCallback get semanticsBuilder {
+    final others = shading.hasSelf ? '다른 참여자' : '참여자';
+    final onToggle = this.onToggle;
+    return (size) => [
+      for (final cell in grid.cells)
+        CustomPainterSemantics(
+          rect: geometry.rectOf(cell.column, cell.row),
+          properties: SemanticsProperties(
+            label: meetingCellLabel(grid, cell),
+            value: shading.isMine(cell) ? '내 시간' : null,
+            hint: switch (shading.othersCountAt(cell)) {
+              0 => null,
+              final count => '$others $count명',
+            },
+            selected: shading.hasSelf ? shading.isMine(cell) : null,
+            button: onToggle != null,
+            onTap: onToggle == null ? null : () => onToggle(cell),
+            textDirection: direction,
           ),
-      ];
+        ),
+    ];
+  }
 
   @override
   bool shouldRepaint(MeetingGridPainter oldDelegate) =>
-      oldDelegate.board != board ||
+      oldDelegate.shading != shading ||
       oldDelegate.geometry != geometry ||
       oldDelegate.drag != drag ||
       oldDelegate.colors != colors ||
@@ -192,5 +196,7 @@ class MeetingGridPainter extends CustomPainter {
 
   @override
   bool shouldRebuildSemantics(MeetingGridPainter oldDelegate) =>
-      oldDelegate.board != board || oldDelegate.geometry != geometry;
+      oldDelegate.shading != shading ||
+      oldDelegate.geometry != geometry ||
+      (oldDelegate.onToggle == null) != (onToggle == null);
 }

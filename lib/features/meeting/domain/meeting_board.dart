@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
+import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/domain/time_span.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -12,7 +13,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 ///
 /// 테스트: test/features/meeting/domain/meeting_board_test.dart
 @immutable
-class MeetingBoard {
+class MeetingBoard implements MeetingShading {
   factory MeetingBoard({
     required MeetingRead meeting,
     required List<AvailabilityRead> availability,
@@ -96,6 +97,7 @@ class MeetingBoard {
   static const pendingSelfId = '';
 
   final MeetingRead meeting;
+  @override
   final MeetingGrid grid;
 
   /// 참여자. 주인이 맨 앞이고 그다음은 받은 순서다
@@ -121,7 +123,11 @@ class MeetingBoard {
   /// 로그인한 내가 만든 모임인지. 로그인하지 않은 방문자와 게스트는 주인 id를 받지 않아 늘 false다
   bool get ownedByMe => _userId != null && meeting.ownerId == _userId;
 
+  @override
+  bool get hasSelf => true;
+
   /// 나를 뺀 참여자 수
+  @override
   int get othersTotal => participants.length - (me == null ? 0 : 1);
 
   /// [cell]에서 되는 다른 참여자
@@ -129,6 +135,10 @@ class MeetingBoard {
       ? _others[cell.index]
       : _others[cell.index].difference(removing);
 
+  @override
+  int othersCountAt(MeetingCell cell) => othersAt(cell).length;
+
+  @override
   bool isMine(MeetingCell cell) => mine.has(cell.span);
 
   /// [cell]에서 되는 사람. 내 칸이면 나도 든다

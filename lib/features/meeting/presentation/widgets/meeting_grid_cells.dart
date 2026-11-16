@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
+import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_painter.dart';
 
@@ -18,17 +18,21 @@ const _touchDevices = {
 /// 마우스는 누른 채 끌면 바로 칠한다. 터치는 칸을 누르면 그 칸만 바꾸고, 길게 누른 채 끌면 여러 칸을
 /// 칠한다(그냥 끌면 화면이 굴러간다). 칠한 칸에서 시작하면 지운다. 끈 범위는 시작 칸과 지금 칸을
 /// 꼭짓점으로 하는 사각형이고, 손을 떼면 [onPaint]로 넘긴다.
+///
+/// [onPaint]가 없으면 칠할 수 없는 격자다. 칸을 누르거나 끌기 시작하면 칠하지 않고 [onLocked]를 부른다.
 class MeetingGridCells extends StatefulWidget {
   const MeetingGridCells({
     super.key,
-    required this.board,
+    required this.shading,
     required this.shape,
     required this.onPaint,
+    this.onLocked,
   });
 
-  final MeetingBoard board;
+  final MeetingShading shading;
   final MeetingCellShape shape;
-  final MeetingPaint onPaint;
+  final MeetingPaint? onPaint;
+  final VoidCallback? onLocked;
 
   @override
   State<MeetingGridCells> createState() => _MeetingGridCellsState();
@@ -38,17 +42,18 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
   MeetingGridDrag? _drag;
   var _mouseDown = false;
 
-  MeetingGrid get _grid => widget.board.grid;
+  MeetingGrid get _grid => widget.shading.grid;
 
   void _begin(MeetingGridGeometry geometry, Offset position) {
     final place = geometry.placeAt(position);
     final cell = _grid.at(place.$1, place.$2);
     if (cell == null) return;
+    if (widget.onPaint == null) return widget.onLocked?.call();
     setState(
       () => _drag = MeetingGridDrag(
         place,
         place,
-        available: !widget.board.isMine(cell),
+        available: !widget.shading.isMine(cell),
       ),
     );
   }
@@ -71,7 +76,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
     final drag = _drag;
     if (drag == null) return;
     setState(() => _drag = null);
-    widget.onPaint(
+    widget.onPaint?.call(
       _grid.within(drag.anchor, drag.current),
       available: drag.available,
     );
@@ -81,8 +86,11 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
     if (_drag != null) setState(() => _drag = null);
   }
 
-  void _toggle(MeetingCell cell) =>
-      widget.onPaint([cell], available: !widget.board.isMine(cell));
+  void _toggle(MeetingCell cell) {
+    final onPaint = widget.onPaint;
+    if (onPaint == null) return widget.onLocked?.call();
+    onPaint([cell], available: !widget.shading.isMine(cell));
+  }
 
   void _tapAt(MeetingGridGeometry geometry, Offset position) {
     final (column, row) = geometry.placeAt(position);
@@ -166,14 +174,14 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
                 child: CustomPaint(
                   size: geometry.size,
                   painter: MeetingGridPainter(
-                    board: widget.board,
+                    shading: widget.shading,
                     geometry: geometry,
                     drag: _drag,
                     colors: colors,
                     textStyle: textStyle,
                     scaler: scaler,
                     direction: direction,
-                    onToggle: _toggle,
+                    onToggle: widget.onPaint == null ? null : _toggle,
                   ),
                 ),
               ),

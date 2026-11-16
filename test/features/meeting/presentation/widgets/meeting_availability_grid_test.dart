@@ -56,7 +56,7 @@ void main() {
               children: [
                 const SizedBox(height: 200),
                 MeetingAvailabilityGrid(
-                  board: board,
+                  shading: board,
                   onPaint: (cells, {required available}) =>
                       painted.add((cells.map(nameOf).join(', '), available)),
                 ),
