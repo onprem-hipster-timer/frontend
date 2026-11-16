@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 
 import '../../meeting_fixtures.dart';
@@ -61,8 +62,30 @@ void main() {
       expect(timezoneBasisText('Asia/Seoul'), '한국 시간 기준');
     });
 
-    test('그 밖의 시간대는 이름을 그대로 쓴다', () {
+    test('그 밖의 시간대는 도시와 지금의 UTC 차이로 보인다', () {
+      tz.initializeTimeZones();
+      expect(timezoneBasisText('Asia/Kolkata'), 'Kolkata (UTC+05:30) 기준');
+    });
+
+    test('모르는 시간대는 이름을 그대로 쓴다', () {
       expect(timezoneBasisText('Mars/Olympus'), 'Mars/Olympus 기준');
     });
+  });
+
+  group('제목 자리 글자', () {
+    test('이름이 있으면 OO님의 모임 일정이다', () {
+      expect(meetingTitlePlaceholder('지현'), '지현님의 모임 일정');
+      expect(meetingTitlePlaceholder('  지현 '), '지현님의 모임 일정');
+    });
+
+    test('이름이 없거나 비었으면 모임 일정이다', () {
+      expect(meetingTitlePlaceholder(null), '모임 일정');
+      expect(meetingTitlePlaceholder('   '), '모임 일정');
+    });
+  });
+
+  test('달 이름은 영문이다', () {
+    expect(meetingMonthName(march(1)), 'March');
+    expect(meetingMonthName(DateTime.utc(2027, 12)), 'December');
   });
 }

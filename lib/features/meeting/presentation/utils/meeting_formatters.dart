@@ -2,8 +2,27 @@ import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 const _weekdayNames = ['월', '화', '수', '목', '금', '토', '일'];
+
+const _monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/// 달의 영문 이름 ('March')
+String meetingMonthName(DateTime day) => _monthNames[day.month - 1];
 
 /// 방식 이름
 String meetingModeLabel(MeetingMode mode) => switch (mode) {
@@ -45,5 +64,13 @@ String meetingHoursText(MeetingRead meeting) {
 String timezoneBasisText(String timezone) => timezone == 'Asia/Seoul'
     ? '한국 시간 기준'
     : '${getTimezoneDisplayName(timezone)} 기준';
+
+/// 제목을 비웠을 때 쓰는 제목. 이름이 있으면 'OO님의 모임 일정'
+String meetingTitlePlaceholder(String? name) {
+  final trimmed = name?.trim() ?? '';
+  return trimmed.isEmpty
+      ? '${Terms.meeting} 일정'
+      : '$trimmed님의 ${Terms.meeting} 일정';
+}
 
 int _hourOf(String clock) => int.tryParse(clock.split(':').first) ?? 0;

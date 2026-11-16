@@ -1,0 +1,144 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
+
+/// 2027년 3월의 [day]일 (3월 1일은 월요일)
+DateTime march(int day) => DateTime.utc(2027, 3, day);
+
+Finder dayCell(String label) => find.bySemanticsLabel(RegExp('^$label'));
+
+void main() {
+  late List<DateTime> taps;
+
+  Future<void> pumpCalendar(
+    WidgetTester tester, {
+    DateTime? firstDay,
+    MeetingDayState Function(DateTime day)? stateOf,
+  }) async {
+    taps = [];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: MeetingCalendar(
+              firstDay: firstDay ?? march(10),
+              stateOf: stateOf ?? (_) => MeetingDayState.open,
+              onDayTap: taps.add,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  testWidgets('첫날이 든 달을 연도·달 숫자·영문 달 이름으로 보이고 일요일부터 칸을 놓는다', (tester) async {
+    await pumpCalendar(tester);
+
+    expect(find.text('2027'), findsOneWidget);
+    expect(find.text('3'), findsWidgets);
+    expect(find.text('March'), findsOneWidget);
+    final sunday = tester.getRect(find.text('Sun'));
+    final monday = tester.getRect(find.text('Mon'));
+    expect(sunday.left, lessThan(monday.left));
+    final first = tester.getCenter(dayCell('3월 1일'));
+    expect((first.dx - monday.center.dx).abs(), lessThan(1));
+  });
+
+  testWidgets('누른 날을 날짜만으로 알린다', (tester) async {
+    await pumpCalendar(tester);
+
+    await tester.tap(dayCell('3월 12일'));
+
+    expect(taps, [march(12)]);
+  });
+
+  testWidgets('고를 수 없는 날은 눌러도 알리지 않고, 고르면 방식이 바뀌는 날은 알린다', (tester) async {
+    await pumpCalendar(
+      tester,
+      stateOf: (day) => switch (day.day) {
+        5 => MeetingDayState.unavailable,
+        20 => MeetingDayState.leavesHourly,
+        _ => MeetingDayState.open,
+      },
+    );
+
+    await tester.tap(dayCell('3월 5일'));
+    await tester.tap(dayCell('3월 20일'));
+
+    expect(taps, [march(20)]);
+  });
+
+  testWidgets('스크린 리더가 날짜·고른 상태·고를 수 있는지·방식이 바뀐다는 안내를 읽는다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpCalendar(
+      tester,
+      stateOf: (day) => switch (day.day) {
+        3 => MeetingDayState.selected,
+        5 => MeetingDayState.unavailable,
+        20 => MeetingDayState.leavesHourly,
+        _ => MeetingDayState.open,
+      },
+    );
+
+    expect(
+      tester.getSemantics(dayCell('3월 3일')),
+      isSemantics(
+        label: '3월 3일 (수)',
+        isButton: true,
+        isSelected: true,
+        isEnabled: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(dayCell('3월 5일')),
+      isSemantics(
+        label: '3월 5일 (금)',
+        isSelected: false,
+        isEnabled: false,
+        hasTapAction: false,
+      ),
+    );
+    expect(tester.getSemantics(dayCell('3월 20일')).hint, '고르면 날짜별로 바뀝니다');
+    semantics.dispose();
+  });
+
+  testWidgets('다음 달로 넘기고 돌아올 수 있지만 첫날이 든 달 앞으로는 가지 않는다', (tester) async {
+    await pumpCalendar(tester);
+
+    final previous = find.widgetWithIcon(IconButton, Icons.chevron_left);
+    expect(tester.widget<IconButton>(previous).onPressed, isNull);
+
+    await tester.tap(find.byTooltip('다음 달'));
+    await tester.pump();
+    expect(find.text('April'), findsOneWidget);
+    await tester.tap(dayCell('4월 30일'));
+    expect(taps, [DateTime.utc(2027, 4, 30)]);
+
+    await tester.tap(previous);
+    await tester.pump();
+    expect(find.text('March'), findsOneWidget);
+    expect(tester.widget<IconButton>(previous).onPressed, isNull);
+  });
+
+  testWidgets('해를 넘겨 다음 달로 간다', (tester) async {
+    await pumpCalendar(tester, firstDay: DateTime.utc(2027, 12, 31));
+
+    await tester.tap(find.byTooltip('다음 달'));
+    await tester.pump();
+
+    expect(find.text('2028'), findsOneWidget);
+    expect(find.text('January'), findsOneWidget);
+  });
+
+  testWidgets('한 달의 날을 빠짐없이 한 번씩 놓는다', (tester) async {
+    await pumpCalendar(tester, firstDay: DateTime.utc(2028, 2, 1));
+
+    for (var day = 1; day <= 29; day++) {
+      expect(dayCell('2월 $day일'), findsOneWidget, reason: '2월 $day일');
+    }
+    expect(dayCell('2월 30일'), findsNothing);
+    expect(dayCell('3월 1일'), findsNothing);
+  });
+}
