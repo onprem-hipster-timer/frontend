@@ -203,27 +203,35 @@ void main() {
     expect(find.text('링크를 복사했습니다'), findsOneWidget);
   });
 
-  testWidgets('넓으면 격자 오른쪽에 링크·일정 참여자·선택된 일정을 둔다', (tester) async {
+  testWidgets('로그인 상자 자리에 지금 계정으로 진행 중이라고 하고 게스트로 들어가는 길은 없다', (tester) async {
+    meetings.meeting = makeMeeting().copyWith(allowGuests: true);
+    await pumpMeeting(tester);
+
+    expect(find.text('user@example.com 계정으로 진행 중입니다'), findsOneWidget);
+    expect(find.text('Guest'), findsNothing);
+    expect(find.text('로그아웃'), findsNothing);
+  });
+
+  testWidgets('넓으면 격자 오른쪽에 계정·링크·일정 참여자·선택된 일정을 둔다', (tester) async {
     await pumpMeeting(tester, size: const Size(1280, 800));
 
     final grid = tester.getTopLeft(find.text('내 시간 선택하기'));
+    final account = tester.getTopLeft(find.text('로그인'));
     final link = tester.getTopLeft(find.text('링크'));
     final people = tester.getTopLeft(find.text('일정 참여자'));
     final slots = tester.getTopLeft(find.text('선택된 일정'));
-    expect(link.dx, greaterThan(grid.dx + 400));
+    expect(account.dx, greaterThan(grid.dx + 400));
+    expect(link.dx, account.dx);
     expect(people.dx, link.dx);
-    expect([
-      link.dy,
-      people.dy,
-      slots.dy,
-    ], orderedEquals([link.dy, people.dy, slots.dy]..sort()));
+    final rows = [account.dy, link.dy, people.dy, slots.dy];
+    expect(rows, orderedEquals([...rows]..sort()));
   });
 
-  testWidgets('좁으면 격자, 선택된 일정, 일정 참여자, 링크 순서로 쌓는다', (tester) async {
+  testWidgets('좁으면 계정, 격자, 선택된 일정, 일정 참여자, 링크 순서로 쌓는다', (tester) async {
     await pumpMeeting(tester, size: const Size(360, 800));
 
     final order = [
-      for (final title in ['내 시간 선택하기', '선택된 일정', '일정 참여자', '링크'])
+      for (final title in ['로그인', '내 시간 선택하기', '선택된 일정', '일정 참여자', '링크'])
         tester.getTopLeft(find.text(title, skipOffstage: false)),
     ];
     for (var i = 1; i < order.length; i++) {
