@@ -305,4 +305,178 @@ void main() {
       container.dispose();
     });
   });
+
+  group('주인의 참여자 빼기', () {
+    setUp(() {
+      meetings.availability = [
+        availabilityOf('a', name: '민수', slots: [(seoul(6), seoul(8))]),
+        availabilityOf(
+          'g',
+          name: '하준',
+          guest: true,
+          slots: [(seoul(6), seoul(8))],
+        ),
+      ];
+    });
+
+    List<String> shown(ProviderContainer container) => [
+      for (final p in read(container).board.participants) p.id,
+    ];
+
+    Set<String> others(ProviderContainer container) {
+      final board = read(container).board;
+      return board.othersAt(board.grid.at(0, 0)!);
+    }
+
+    test('빼면 바로 화면에서 빠지고 요청은 확정할 때까지 보내지 않는다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        container.read(provider.notifier).remove('a');
+
+        expect(shown(container), ['g']);
+        expect(others(container), {'g'});
+        async.elapse(const Duration(minutes: 1));
+        expect(meetings.removedParticipants, isEmpty);
+        container.dispose();
+      });
+    });
+
+    test('되돌리면 다시 보이고 요청을 보내지 않으며, 그 뒤 확정해도 보내지 않는다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier)..remove('a');
+
+        notifier.undoRemove('a');
+        expect(shown(container), ['a', 'g']);
+        unawaited(notifier.confirmRemove('a'));
+        async.flushMicrotasks();
+
+        expect(meetings.removedParticipants, isEmpty);
+        container.dispose();
+      });
+    });
+
+    test('확정하면 참여자 id로 한 번만 보내고 다시 받은 뒤에도 빠져 있다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier)..remove('g');
+
+        unawaited(notifier.confirmRemove('g'));
+        unawaited(notifier.confirmRemove('g'));
+        async.flushMicrotasks();
+
+        expect(meetings.removedParticipants, ['g'], reason: '게스트도 참여자 id로 뺀다');
+        expect(meetings.availabilityReads, 2, reason: '뺀 뒤 다시 받는다');
+        expect(shown(container), ['a']);
+        container.dispose();
+      });
+    });
+
+    test('보내지 못하면 다시 보이고 오류를 넘긴다', () {
+      fakeAsync((async) {
+        meetings.removeError = StateError('끊김');
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier)..remove('a');
+
+        Object? error;
+        notifier.confirmRemove('a').catchError((Object e) => error = e);
+        async.flushMicrotasks();
+
+        expect(error, isA<StateError>());
+        expect(shown(container), ['a', 'g']);
+        expect(others(container), {'a', 'g'});
+        container.dispose();
+      });
+    });
+
+    test('이미 없는 참여자(404)면 뺀 것으로 본다', () {
+      fakeAsync((async) {
+        meetings.removeError = notFound('MeetingParticipantNotFoundError');
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier)..remove('a');
+
+        Object? error;
+        notifier.confirmRemove('a').catchError((Object e) => error = e);
+        async.flushMicrotasks();
+
+        expect(error, isNull);
+        expect(shown(container), ['g']);
+        container.dispose();
+      });
+    });
+
+    test('둘을 잇달아 빼면 각각 되돌리거나 보낸다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier)
+          ..remove('a')
+          ..remove('g');
+        expect(shown(container), isEmpty);
+        expect(read(container).board.othersTotal, 0);
+
+        unawaited(notifier.confirmRemove('a'));
+        notifier.undoRemove('g');
+        async.flushMicrotasks();
+
+        expect(meetings.removedParticipants, ['a']);
+        expect(shown(container), ['g']);
+        container.dispose();
+      });
+    });
+
+    test('빼기를 기다리는 동안 화면을 떠나도 값을 버리지 않고, 확정해 보낸 뒤에 버린다', () {
+      fakeAsync((async) {
+        final gate = meetings.removeGate = Completer<void>();
+        final (container, subscription) = open(async);
+        final notifier = container.read(provider.notifier)..remove('a');
+        subscription.close();
+        async.elapse(const Duration(minutes: 1));
+        expect(container.exists(provider), isTrue);
+
+        unawaited(notifier.confirmRemove('a'));
+        async.flushMicrotasks();
+        expect(meetings.removedParticipants, ['a']);
+        expect(container.exists(provider), isTrue, reason: '보내는 중');
+
+        gate.complete();
+        async.flushMicrotasks();
+        async.elapse(wait);
+        expect(container.exists(provider), isFalse);
+        container.dispose();
+      });
+    });
+
+    test('되돌린 뒤 떠나면 값을 버린다', () {
+      fakeAsync((async) {
+        final (container, subscription) = open(async);
+        container.read(provider.notifier)
+          ..remove('a')
+          ..undoRemove('a');
+        subscription.close();
+        async.elapse(wait);
+
+        expect(container.exists(provider), isFalse);
+        container.dispose();
+      });
+    });
+
+    test('빼기를 기다리는 동안 칠한 것을 저장해도 빼기는 그대로 기다린다', () {
+      fakeAsync((async) {
+        final (container, subscription) = open(async);
+        final notifier = container.read(provider.notifier)
+          ..remove('a')
+          ..paint(cells(read(container), [0]), available: true);
+        subscription.close();
+        async.elapse(wait);
+
+        expect(meetings.puts, hasLength(1));
+        expect(container.exists(provider), isTrue, reason: '빼기를 기다린다');
+        expect(shown(container), ['g', 'participant-user-1']);
+        unawaited(notifier.confirmRemove('a'));
+        async.flushMicrotasks();
+        expect(meetings.removedParticipants, ['a']);
+        container.dispose();
+      });
+    });
+  });
 }

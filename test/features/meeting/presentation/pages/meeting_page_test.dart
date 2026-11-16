@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -266,5 +268,197 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('처음 화면'), findsOneWidget);
+  });
+
+  group('주인의 참여자 빼기', () {
+    const cell = '3월 1일 (월) 9:00 ~ 9:30';
+
+    setUp(() {
+      meetings = FakeMeetingsClient(meeting: makeMeeting(ownerId: 'user-1'))
+        ..availability = [
+          availabilityOf(
+            'me',
+            name: '지현',
+            userId: 'user-1',
+            owner: true,
+            slots: [(seoul(1, 9), seoul(1, 10))],
+          ),
+          availabilityOf('a', name: '민수', slots: [(seoul(1, 9), seoul(1, 10))]),
+          availabilityOf(
+            'g',
+            name: '하준',
+            guest: true,
+            slots: [(seoul(1, 9), seoul(1, 10))],
+          ),
+        ];
+    });
+
+    Future<void> openEdit(WidgetTester tester) async {
+      await tester.ensureVisible(find.text('편집'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('편집'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> removeChip(WidgetTester tester, String name) async {
+      await tester.ensureVisible(find.byTooltip('$name 빼기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('$name 빼기'));
+      await tester.pumpAndSettle();
+    }
+
+    /// 되돌리기 알림이 저절로 닫힐 때까지 넘긴다
+    Future<void> letUndoPass(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('편집은 다른 참여자 칩에 빼기를, 내 칩에 이름 바꾸기를 두고 완료로 닫는다', (tester) async {
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      expect(find.byTooltip('민수 빼기'), findsNothing);
+
+      await openEdit(tester);
+      expect(find.byTooltip('민수 빼기'), findsOneWidget);
+      expect(find.byTooltip('하준 빼기'), findsOneWidget);
+      expect(find.byTooltip('지현 빼기'), findsNothing);
+      expect(find.byTooltip('내 이름 바꾸기'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('내 이름 바꾸기'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextFormField, '지현'), findsOneWidget);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('완료'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('민수 빼기'), findsNothing);
+      expect(find.byTooltip('내 이름 바꾸기'), findsNothing);
+    });
+
+    testWidgets('참여하지 않은 주인도 편집으로 모든 참여자를 뺄 수 있다', (tester) async {
+      meetings.availability.removeAt(0);
+      await pumpMeeting(tester, size: const Size(1280, 900));
+
+      await openEdit(tester);
+
+      expect(find.byTooltip('민수 빼기'), findsOneWidget);
+      expect(find.byTooltip('하준 빼기'), findsOneWidget);
+      expect(find.byTooltip('내 이름 바꾸기'), findsNothing);
+    });
+
+    testWidgets('빼면 칩·격자·카드에서 바로 빠지고 되돌리기 알림이 저절로 닫힐 때 보낸다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      expect(cellData(cell).hint, '다른 참여자 2명');
+      await openEdit(tester);
+
+      await removeChip(tester, '민수');
+
+      expect(find.text('민수를 뺐습니다'), findsOneWidget);
+      expect(find.bySemanticsLabel('민수'), findsNothing);
+      expect(cellData(cell).hint, '다른 참여자 1명');
+      expect(find.text('2'), findsOneWidget, reason: '카드 인원수');
+      expect(meetings.removedParticipants, isEmpty);
+
+      await tester.pump(const Duration(seconds: 3));
+      expect(meetings.removedParticipants, isEmpty);
+      await letUndoPass(tester);
+
+      expect(meetings.removedParticipants, ['a']);
+      expect(find.bySemanticsLabel('민수'), findsNothing);
+      expect(find.text('민수를 뺐습니다'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('되돌리면 다시 보이고 보내지 않는다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      await openEdit(tester);
+      await removeChip(tester, '민수');
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      await letUndoPass(tester);
+
+      expect(find.bySemanticsLabel('민수'), findsOneWidget);
+      expect(cellData(cell).hint, '다른 참여자 2명');
+      expect(meetings.removedParticipants, isEmpty);
+      semantics.dispose();
+    });
+
+    testWidgets('둘을 잇달아 빼면 앞의 것은 다음 알림이 덮을 때 보내고 뒤의 것은 되돌릴 수 있다', (
+      tester,
+    ) async {
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      await openEdit(tester);
+
+      await removeChip(tester, '민수');
+      await removeChip(tester, '하준');
+
+      expect(meetings.removedParticipants, ['a']);
+      expect(find.text('게스트 하준을 뺐습니다'), findsOneWidget);
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      await letUndoPass(tester);
+
+      expect(meetings.removedParticipants, ['a']);
+      expect(find.bySemanticsLabel('하준, 게스트'), findsOneWidget);
+      expect(find.bySemanticsLabel('민수'), findsNothing);
+    });
+
+    testWidgets('게스트를 빼면 게스트라고 알리고 그 참여자 id로 보낸다', (tester) async {
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      await openEdit(tester);
+
+      await removeChip(tester, '하준');
+      expect(find.text('게스트 하준을 뺐습니다'), findsOneWidget);
+      await letUndoPass(tester);
+
+      expect(meetings.removedParticipants, ['g']);
+    });
+
+    testWidgets('보내지 못하면 다시 보이고 알린다', (tester) async {
+      meetings.removeError = StateError('끊김');
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      await openEdit(tester);
+
+      await removeChip(tester, '민수');
+      await letUndoPass(tester);
+
+      expect(meetings.removedParticipants, ['a']);
+      expect(find.textContaining('민수를 빼지 못했습니다'), findsOneWidget);
+      expect(find.byTooltip('민수 빼기'), findsOneWidget);
+    });
+
+    testWidgets('알림이 떠 있는 동안 화면을 떠나도 알림이 닫힐 때 보낸다', (tester) async {
+      final router = await pumpMeeting(tester, initialLocation: '/');
+      unawaited(
+        router.pushNamed(
+          AppRoute.meeting.name,
+          pathParameters: {'meetingId': 'meeting-1'},
+        ),
+      );
+      await tester.pumpAndSettle();
+      await openEdit(tester);
+      await removeChip(tester, '민수');
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.text('처음 화면'), findsOneWidget);
+      expect(meetings.removedParticipants, isEmpty);
+      await letUndoPass(tester);
+
+      expect(meetings.removedParticipants, ['a']);
+    });
+
+    testWidgets('주인이 아니면 빼기 단추가 없고 편집은 바로 내 이름 바꾸기다', (tester) async {
+      meetings.meeting = makeMeeting(ownerId: 'someone');
+      await pumpMeeting(tester, size: const Size(1280, 900));
+
+      await openEdit(tester);
+
+      expect(find.text('내 이름'), findsOneWidget);
+      expect(find.byTooltip('민수 빼기'), findsNothing);
+    });
   });
 }

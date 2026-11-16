@@ -201,4 +201,85 @@ void main() {
     expect(board.me, isNull);
     expect(board.othersTotal, 2);
   });
+
+  group('빼는 중인 참여자', () {
+    List<AvailabilityRead> people() => [
+      availabilityOf('a', slots: [(seoul(6), seoul(7))]),
+      availabilityOf('g', guest: true, slots: [(seoul(6), seoul(7))]),
+      availabilityOf('me', userId: 'user-1', slots: [(seoul(6), seoul(7))]),
+    ];
+
+    test('참여자·다른 참여자 수·칸·후보 어디에도 들지 않고, 비우면 돌아온다', () {
+      final board = boardOf(people());
+      final cell = board.grid.at(0, 0)!;
+      expect(board.runs(MeetingRunOrder.people).single.people, hasLength(3));
+
+      final removing = board.withRemoving({'g'});
+      expect([for (final p in removing.participants) p.id], ['a', 'me']);
+      expect(removing.othersTotal, 1);
+      expect(removing.othersAt(cell), {'a'});
+      expect(removing.peopleAt(cell), {'a', 'me'});
+      expect(removing.runs(MeetingRunOrder.people).single.people, {'a', 'me'});
+
+      final back = removing.withRemoving({});
+      expect(back.participants, board.participants);
+      expect(back.othersAt(cell), {'a', 'g'});
+    });
+
+    test('나만 남기고 모두 빼면 후보가 없다', () {
+      final board = boardOf(people()).withRemoving({'a', 'g'});
+
+      expect(board.othersTotal, 0);
+      expect(board.runs(MeetingRunOrder.people), isEmpty);
+    });
+
+    test('가능 시간을 다시 받거나 내가 참여해도 빼는 중인 참여자는 빠진 채다', () {
+      var board = boardOf([availabilityOf('a'), availabilityOf('b')]);
+      board = board.withRemoving({'a'});
+
+      board = board.withAvailability([
+        availabilityOf('a'),
+        availabilityOf('b'),
+        availabilityOf('c'),
+      ]);
+      expect([for (final p in board.participants) p.id], ['b', 'c']);
+
+      board = board.withSelf(
+        ParticipantRead(
+          id: 'me',
+          meetingId: 'meeting-1',
+          displayName: '지현',
+          createdAt: DateTime.utc(2027),
+          userId: 'user-1',
+        ),
+      );
+      expect([for (final p in board.participants) p.id], ['b', 'c', 'me']);
+      expect(board.withRemoving({}).participants, hasLength(4));
+    });
+  });
+
+  group('내가 만든 모임인지', () {
+    test('주인 id가 로그인한 나면 참여하지 않았어도 내 모임이다', () {
+      expect(boardOf([], ownerId: 'user-1').ownedByMe, isTrue);
+      expect(boardOf([], ownerId: 'someone').ownedByMe, isFalse);
+    });
+
+    test('주인 id를 받지 못했거나 로그인하지 않았으면 내 모임이 아니다', () {
+      final hidden = MeetingBoard(
+        meeting: makeMeeting().copyWith(ownerId: null),
+        availability: const [],
+        userId: 'user-1',
+        selfName: '지현',
+      );
+      expect(hidden.ownedByMe, isFalse);
+      expect(boardOf([], ownerId: 'user-1', userId: null).ownedByMe, isFalse);
+    });
+
+    test('내 모임인지는 주인 id로만 가리고 참여자의 is_owner는 보지 않는다', () {
+      final board = boardOf([
+        availabilityOf('me', userId: 'user-1', owner: true),
+      ]);
+      expect(board.ownedByMe, isFalse);
+    });
+  });
 }

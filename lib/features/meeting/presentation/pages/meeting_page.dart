@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_participant_removal.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_grid.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
@@ -60,10 +61,16 @@ class MeetingPage extends ConsumerWidget {
             ),
             participants: MeetingParticipantsPanel(
               board: board,
-              onEdit: () => showMeetingNameSheet(
+              onRename: () => showMeetingNameSheet(
                 context,
                 meetingId: meetingId,
                 currentName: board.me?.displayName ?? board.selfName,
+              ),
+              onRemove: (participant) => removeMeetingParticipant(
+                context,
+                ref,
+                meetingId,
+                participant,
               ),
             ),
             link: MeetingLinkPanel(meetingId: meetingId),

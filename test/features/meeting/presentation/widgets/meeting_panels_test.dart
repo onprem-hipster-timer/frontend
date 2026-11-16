@@ -253,7 +253,11 @@ void main() {
       ]);
       await pumpPanel(
         tester,
-        MeetingParticipantsPanel(board: board, onEdit: () {}),
+        MeetingParticipantsPanel(
+          board: board,
+          onRename: () {},
+          onRemove: (_) {},
+        ),
       );
 
       final chips = [
@@ -274,7 +278,8 @@ void main() {
             availabilityOf('m', name: '민수'),
             availabilityOf('g', name: '민수', guest: true),
           ]),
-          onEdit: () {},
+          onRename: () {},
+          onRemove: (_) {},
         ),
       );
 
@@ -296,7 +301,8 @@ void main() {
             availabilityOf('b', name: '서연'),
             availabilityOf('g', name: '하준', guest: true),
           ]),
-          onEdit: () {},
+          onRename: () {},
+          onRemove: (_) {},
         ),
       );
 
@@ -311,7 +317,8 @@ void main() {
         tester,
         MeetingParticipantsPanel(
           board: boardOf([availabilityOf('me', name: '지현', userId: 'user-1')]),
-          onEdit: () => edits++,
+          onRename: () => edits++,
+          onRemove: (_) {},
         ),
       );
 
@@ -324,7 +331,8 @@ void main() {
         tester,
         MeetingParticipantsPanel(
           board: boardOf([availabilityOf('a', name: '민수')]),
-          onEdit: () {},
+          onRename: () {},
+          onRemove: (_) {},
         ),
       );
 
@@ -334,7 +342,11 @@ void main() {
     testWidgets('아무도 없으면 칠하면 참여한다고 알린다', (tester) async {
       await pumpPanel(
         tester,
-        MeetingParticipantsPanel(board: boardOf(const []), onEdit: () {}),
+        MeetingParticipantsPanel(
+          board: boardOf(const []),
+          onRename: () {},
+          onRemove: (_) {},
+        ),
       );
 
       expect(find.text('아직 참여한 사람이 없습니다. 내 시간을 칠하면 참여합니다.'), findsOneWidget);
@@ -345,7 +357,8 @@ void main() {
         tester,
         MeetingParticipantsPanel(
           board: boardOf([availabilityOf('a', name: '아주긴이름' * 10)]),
-          onEdit: () {},
+          onRename: () {},
+          onRemove: (_) {},
         ),
         width: 300,
       );

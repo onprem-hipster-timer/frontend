@@ -7,7 +7,8 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
-import 'package:flutter_test/flutter_test.dart' show Tags, setUpAll;
+import 'package:flutter_test/flutter_test.dart'
+    show Tags, expect, find, findsOneWidget, setUpAll;
 import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
@@ -61,6 +62,34 @@ class _FailedSave extends MeetingBoardNotifier {
     ),
     status: MeetingSaveStatus.failed,
   );
+}
+
+/// 모임 화면을 불러온 뒤 [label] 단추를 한 번 누른 화면(예: 주인의 '편집')
+class _PressWhenLoaded extends ConsumerStatefulWidget {
+  const _PressWhenLoaded({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  ConsumerState<_PressWhenLoaded> createState() => _PressWhenLoadedState();
+}
+
+class _PressWhenLoadedState extends ConsumerState<_PressWhenLoaded> {
+  var _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(meetingBoardProvider('meeting-1'), (_, next) {
+      if (_pressed || !next.hasValue) return;
+      _pressed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final button = find.widgetWithText(TextButton, widget.label);
+        (button.evaluate().first.widget as TextButton).onPressed!();
+      });
+    });
+    return widget.child;
+  }
 }
 
 /// 모임 만들기·만든 뒤·모임 화면을 화면 크기 × 글자 배율 × 긴 문구로 점검한다.
@@ -174,6 +203,23 @@ void main() {
         ),
       ),
     ),
+  );
+
+  testLayoutAudit(
+    'meeting_page_owner_editing',
+    subject: '참여자 이름',
+    build: (text) => routed(
+      const _PressWhenLoaded(
+        label: '편집',
+        child: MeetingPage(meetingId: 'meeting-1'),
+      ),
+      meetingOverrides(
+        meetings: FakeMeetingsClient(
+          meeting: meetingIn('hourly', title: '팀 회의'),
+        )..availability = _fivePeople(text.value),
+      ),
+    ),
+    verify: (tester) => expect(find.byTooltip('내 이름 바꾸기'), findsOneWidget),
   );
 
   testLayoutAudit(

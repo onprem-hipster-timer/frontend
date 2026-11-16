@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart' show RequestOptions;
+import 'package:dio/dio.dart'
+    show DioException, DioExceptionType, RequestOptions, Response;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/auth_user.dart';
@@ -236,8 +237,45 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     return slots;
   }
 
+  /// 받은 참여자 빼기의 참여자 id
+  final removedParticipants = <String>[];
+
+  /// 설정하면 참여자 빼기가 이 오류로 실패한다
+  Object? removeError;
+
+  /// 설정하면 참여자 빼기가 이것이 끝날 때까지 기다린다
+  Completer<void>? removeGate;
+
+  /// 참여자와 그 가능 시간을 지운다(backend의 참여자 빼기와 같다)
+  @override
+  Future<void>
+  removeParticipantV1MeetingsMeetingIdParticipantsParticipantIdDelete({
+    required String meetingId,
+    required String participantId,
+    RequestOptions? options,
+  }) async {
+    removedParticipants.add(participantId);
+    await removeGate?.future;
+    if (removeError != null) throw removeError!;
+    availability.removeWhere((entry) => entry.participant.id == participantId);
+  }
+
   /// 참여 요청을 보내는 로그인 사용자([meetingOverrides]의 사용자)
   String userId = 'user-1';
+}
+
+/// backend가 404로 답한 요청의 오류
+DioException notFound([String errorType = 'MeetingNotFoundError']) {
+  final request = RequestOptions(path: '/v1/meetings');
+  return DioException(
+    requestOptions: request,
+    type: DioExceptionType.badResponse,
+    response: Response(
+      requestOptions: request,
+      statusCode: 404,
+      data: {'error_type': errorType, 'message': 'not found'},
+    ),
+  );
 }
 
 /// 참여자 [id]의 가능 시간. [slots]는 UTC 구간. [owner]는 주인, [guest]는 게스트 참여자(회원 id 없음)

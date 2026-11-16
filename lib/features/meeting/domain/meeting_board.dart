@@ -8,6 +8,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 모임 화면의 값: 미팅과 격자, 참여자, 칸마다 되는 다른 참여자, 내 가능 시간.
 ///
 /// 아직 참여하지 않았어도 칠하면 내 칸은 [selfName]의 [pendingSelfId]로 사람 수와 후보에 든다.
+/// 빼는 중인 참여자([removing])는 참여자·칸·후보 어디에도 들지 않는다.
 ///
 /// 테스트: test/features/meeting/domain/meeting_board_test.dart
 @immutable
@@ -24,6 +25,7 @@ class MeetingBoard {
     userId: userId,
     selfName: selfName,
     edits: null,
+    removing: const {},
   );
 
   factory MeetingBoard._read({
@@ -33,6 +35,7 @@ class MeetingBoard {
     required String? userId,
     required String selfName,
     required MyAvailability? edits,
+    required Set<String> removing,
   }) {
     ParticipantRead? me;
     var mySlots = const <TimeSpan>[];
@@ -65,19 +68,28 @@ class MeetingBoard {
       mine: edits?.withSaved(mySlots) ?? MyAvailability(saved: mySlots),
       userId: userId,
       selfName: selfName,
+      removing: removing,
     );
   }
 
-  const MeetingBoard._({
+  MeetingBoard._({
     required this.meeting,
     required this.grid,
-    required this.participants,
+    required List<ParticipantRead> participants,
     required this.me,
     required List<Set<String>> others,
     required this.mine,
     required String? userId,
     required this.selfName,
-  }) : _others = others,
+    required this.removing,
+  }) : _all = participants,
+       participants = removing.isEmpty
+           ? participants
+           : [
+               for (final participant in participants)
+                 if (!removing.contains(participant.id)) participant,
+             ],
+       _others = others,
        _userId = userId;
 
   /// 아직 참여하지 않은 나를 [peopleAt]에서 가리키는 값
@@ -89,6 +101,9 @@ class MeetingBoard {
   /// 참여자. 주인이 맨 앞이고 그다음은 받은 순서다
   final List<ParticipantRead> participants;
 
+  /// 빼는 중인(되돌릴 수 있는) 참여자 id
+  final Set<String> removing;
+
   /// 나의 참여자. 아직 참여하지 않았으면 null
   final ParticipantRead? me;
 
@@ -98,20 +113,27 @@ class MeetingBoard {
   /// 참여하지 않았을 때 쓰는 내 이름
   final String selfName;
 
+  /// 빼는 중인 참여자도 든 참여자
+  final List<ParticipantRead> _all;
   final List<Set<String>> _others;
   final String? _userId;
+
+  /// 로그인한 내가 만든 모임인지. 로그인하지 않은 방문자와 게스트는 주인 id를 받지 않아 늘 false다
+  bool get ownedByMe => _userId != null && meeting.ownerId == _userId;
 
   /// 나를 뺀 참여자 수
   int get othersTotal => participants.length - (me == null ? 0 : 1);
 
   /// [cell]에서 되는 다른 참여자
-  Set<String> othersAt(MeetingCell cell) => _others[cell.index];
+  Set<String> othersAt(MeetingCell cell) => removing.isEmpty
+      ? _others[cell.index]
+      : _others[cell.index].difference(removing);
 
   bool isMine(MeetingCell cell) => mine.has(cell.span);
 
   /// [cell]에서 되는 사람. 내 칸이면 나도 든다
   Set<String> peopleAt(MeetingCell cell) => {
-    ..._others[cell.index],
+    ...othersAt(cell),
     if (isMine(cell)) me?.id ?? pendingSelfId,
   };
 
@@ -139,13 +161,17 @@ class MeetingBoard {
         userId: _userId,
         selfName: selfName,
         edits: mine,
+        removing: removing,
       );
 
   MeetingBoard withMine(MyAvailability mine) => _copy(mine: mine);
 
+  /// 빼는 중인 참여자를 [ids]로 바꾼다
+  MeetingBoard withRemoving(Set<String> ids) => _copy(removing: ids);
+
   /// 참여했거나 이름을 바꾼 나([participant])를 참여자에 넣는다. 이미 있으면 그 자리, 처음이면 맨 뒤다
   MeetingBoard withSelf(ParticipantRead participant) {
-    final next = [...participants];
+    final next = [..._all];
     final at = next.indexWhere((p) => p.id == participant.id);
     if (at < 0) {
       next.add(participant);
@@ -159,15 +185,17 @@ class MeetingBoard {
     ParticipantRead? me,
     List<ParticipantRead>? participants,
     MyAvailability? mine,
+    Set<String>? removing,
   }) => MeetingBoard._(
     meeting: meeting,
     grid: grid,
-    participants: participants ?? this.participants,
+    participants: participants ?? _all,
     me: me ?? this.me,
     others: _others,
     mine: mine ?? this.mine,
     userId: _userId,
     selfName: selfName,
+    removing: removing ?? this.removing,
   );
 
   /// 주인(`is_owner`)을 맨 앞으로 옮기고 나머지 순서는 그대로 둔다. 회원 id는 받는 사람에 따라 비어 있어
