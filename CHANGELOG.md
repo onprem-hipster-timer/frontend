@@ -74,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### API
 - OpenAPI 스펙 v2026.11.09-76cce36 반영 및 API 클라이언트 재생성
+- 미팅·게스트 경로와 그 스키마를 backend v2026.11.16-6e39e06 스펙으로 반영하고 클라이언트를 재생성한다: 미팅 `timezone`(IANA), 가능 시간은 `slot_date` 없는 UTC 구간, 결과 `availability_grid`는 `AvailabilityCell`(칸의 시작·끝, 인원 수) 목록, `/v1/guests`. 할 일 그룹 경로·스키마는 이 스펙에 아직 없다
 
 #### UI
 - 화면 용어를 개념마다 하나로 통일하고 `lib/shared/domain/terms.dart`의 `Terms`에서 관리한다. 'TODO'·'투두'는 '할 일', 타이머의 '작업'은 '타이머'(시트·제목·완료 알림·빈 상태)와 '집중'(휴식의 짝), '정지'는 '완료'로 부르고, '이 작업은 되돌릴 수 없습니다'는 '되돌릴 수 없습니다'로 줄인다. 용어 뒤의 조사는 받침에 맞춰 고른다(`KoreanJosa.withJosa`)
@@ -111,6 +112,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android 자동 백업·기기 이전에서 보안 저장소를 뺀다(`res/xml/backup_rules.xml`, `res/xml/data_extraction_rules.xml`)
 
 ### Added
+
+#### Meeting
+- '모임' 탭(하단 바, 타이머 다음)에서 모임을 만든다(`POST /v1/meetings`). 입력은 날짜 → 시간 → 공개·게스트 로그인 → 제목과 화살표 버튼 순서이고, 폭 720 이상은 날짜를 왼쪽, 나머지를 오른쪽에 둔다
+  - 시간을 받는 방식: 시간별(기간 5일까지, 하루 시간 범위는 정각으로 시작 6~23시·끝 24시까지), 날짜별(날짜만), 요일별(누른 날부터 7일). 날짜별·요일별은 하루 전체(00:00~00:00)로 보낸다
+  - 방식은 저장하지 않고 값에서 읽는다: 하루 범위가 0시에 시작하면 시간을 묻지 않은 방식이고, 그중 기간이 7일이면 요일별이다. 그래서 날짜별로 기간이 7일이 되게 고른 모임은 요일별로 읽힌다
+  - 고른 날짜는 "첫날~마지막 날 중 고른 요일의 날 전부" 모양을 지킨다(미팅이 기간과 요일로만 담는다). 7일을 넘겨 더하면 그 사이의 같은 요일 날이 함께 들어오고, 기간 가운데의 날을 빼면 기간 안의 같은 요일 날이 함께 빠진다. 지난 날과 첫날에서 3개월 뒤를 넘는 날은 고르지 못한다
+  - 시간별에서 기간을 5일 넘게 만드는 날은 흐리게 보이고, 고르면 묻지 않고 날짜별로 바꾼 뒤 방식 고르기를 짧게 떤다. 공개를 끄면 게스트 로그인을 비허용으로 바꿔 막고 그 줄을 떤다. 기기에서 애니메이션을 줄였으면 떨지 않는다
+  - 제목을 비우면 'OO님의 모임 일정'(이름이 없으면 '모임 일정')으로 만든다. 시간대는 앱 시간대이고 '한국 시간 기준' 같은 한 줄로 보인다. 물음표 도움말은 누르거나 마우스를 올리면 뜬다
+  - 공개를 허용하면 만든 뒤 `PUT /v1/visibility/meeting/{id}`로 링크가 있는 누구나 보게 연다. 열지 못하면 만든 모임을 지우고 알린다. 게스트 로그인 값은 요청에 담지 않는다(`MeetingCreate`에 칸이 없다)
+- 만든 뒤 화면(`/meetings/<모임 번호>/created`): 첫날 달력 그림, '링크 공유'(모임 화면 주소를 복사), '나의 일정 입력'(모임 화면으로)
+- 모임 화면(`/meetings/<모임 번호>`, 탭 셸 밖): 제목, 기간, 방식(시간별이면 하루 범위), 시간 기준. 링크로 바로 열면 앱바에 처음 화면 버튼을 두고, 로그인하지 않았으면 로그인 뒤 그 모임으로 돌아온다
 
 #### Auth
 - 인증 메일 링크(`/verification?flow=&code=`)로 열면 코드를 채워 두고, 인증하기를 눌러야 제출한다. 코드는 주소창에서 지운다. `code`가 flow 없이 오거나 6자리 숫자가 아니면 보안 경고 화면으로 보낸다
@@ -181,6 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `LAYOUT_AUDIT=off`로 끄고, `LAYOUT_AUDIT_VIEWPORT`·`LAYOUT_AUDIT_TEXT_SCALE`로 스위트 전체를 다른 화면·배율로 돌린다
 - Todo 트리 타일, 타이머 목록 항목, 마이페이지 태그 통계, 달력 일정 블록에 화면 크기 16종 × 글자 배율 × 긴 텍스트 조합 레이아웃 점검 테스트
 - 렌더링 테스트 뷰포트 프리셋을 `packages/layout_audit`로 옮기고 iPhone SE·mini, Z Flip, Surface Duo, 폴드 내부, 가로 폰 추가
+- 모임 만들기·만든 뒤·모임 화면 레이아웃 전수 점검(`test/layout_audit/meeting_screens_layout_test.dart`)
 
 ### Removed
 
