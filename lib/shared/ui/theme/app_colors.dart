@@ -19,6 +19,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.onWarningContainer,
     required this.holiday,
     required this.saturday,
+    required this.owner,
     required this.categorical,
   });
 
@@ -33,6 +34,7 @@ class AppColors extends ThemeExtension<AppColors> {
     onWarningContainer: Color(0xFFE65100),
     holiday: Color(0xFFD32F2F),
     saturday: Color(0xFF1976D2),
+    owner: Color(0xFFF2B200),
     categorical: _categorical,
   );
 
@@ -47,6 +49,7 @@ class AppColors extends ThemeExtension<AppColors> {
     onWarningContainer: Color(0xFFFFE0B2),
     holiday: Color(0xFFEF9A9A),
     saturday: Color(0xFF90CAF9),
+    owner: Color(0xFFFFD54F),
     categorical: _categorical,
   );
 
@@ -79,6 +82,9 @@ class AppColors extends ThemeExtension<AppColors> {
   /// 토요일 날짜 글자
   final Color saturday;
 
+  /// 모임 주인 표시(왕관)
+  final Color owner;
+
   final List<Color> categorical;
 
   /// 테마에 확장이 없으면 밝기에 맞는 기본값을 쓴다.
@@ -100,6 +106,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? onWarningContainer,
     Color? holiday,
     Color? saturday,
+    Color? owner,
     List<Color>? categorical,
   }) => AppColors(
     success: success ?? this.success,
@@ -112,6 +119,7 @@ class AppColors extends ThemeExtension<AppColors> {
     onWarningContainer: onWarningContainer ?? this.onWarningContainer,
     holiday: holiday ?? this.holiday,
     saturday: saturday ?? this.saturday,
+    owner: owner ?? this.owner,
     categorical: categorical ?? this.categorical,
   );
 
@@ -130,6 +138,7 @@ class AppColors extends ThemeExtension<AppColors> {
       onWarningContainer: mix(onWarningContainer, other.onWarningContainer),
       holiday: mix(holiday, other.holiday),
       saturday: mix(saturday, other.saturday),
+      owner: mix(owner, other.owner),
       categorical: t < 0.5 ? categorical : other.categorical,
     );
   }
