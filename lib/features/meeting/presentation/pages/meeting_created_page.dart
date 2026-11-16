@@ -1,13 +1,11 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
-import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.dart';
 import 'package:momeet/shared/domain/terms.dart';
-import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
     show ShellMenuButton, ShellScope;
 
@@ -16,22 +14,6 @@ class MeetingCreatedPage extends ConsumerWidget {
   const MeetingCreatedPage({super.key, required this.meetingId});
 
   final String meetingId;
-
-  /// 이 모임의 공유 링크 (웹 앱 주소 + 모임 화면 경로)
-  Uri _link(BuildContext context, WidgetRef ref) =>
-      Uri.parse(ref.read(appOriginProvider)).replace(
-        path: context.namedLocation(
-          AppRoute.meeting.name,
-          pathParameters: {'meetingId': meetingId},
-        ),
-      );
-
-  Future<void> _copyLink(BuildContext context, WidgetRef ref) async {
-    await Clipboard.setData(ClipboardData(text: '${_link(context, ref)}'));
-    if (context.mounted) {
-      showAppSnackBar(context, '링크를 복사했습니다', kind: AppNoticeKind.success);
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +42,7 @@ class MeetingCreatedPage extends ConsumerWidget {
                 Center(child: MeetingDateBadge(day: meeting?.startDate)),
                 const SizedBox(height: 32),
                 FilledButton.tonal(
-                  onPressed: () => _copyLink(context, ref),
+                  onPressed: () => copyMeetingLink(context, ref, meetingId),
                   child: const Text('링크 공유'),
                 ),
                 const SizedBox(height: 12),
