@@ -77,6 +77,11 @@ checkout
 |------|------|-----------|
 | `API_BASE_URL` | 백엔드 API 서버 URL. 인증(Ory Kratos)도 `API_BASE_URL/auth`로 부른다 | 클라이언트 공개 값 |
 | `REALTIME_BACKEND` | 타이머 실시간 소켓 모드. backend의 `REALTIME_BACKEND`와 같은 값을 넣는다. `inprocess`(기본): `/v1/ws/timers`, `cloudflare`: `/realtime/ws` | 클라이언트 공개 값 |
+| `TURNSTILE_SITE_KEY` | 게스트로 모임에 들어갈 때 띄우는 Cloudflare Turnstile 위젯의 사이트 키. 비우면 게스트 입장을 두지 않는다 | 클라이언트 공개 값 |
+
+로컬에서는 `assets/.env.example`을 `assets/.env`로 복사해 쓴다. 예시의 `TURNSTILE_SITE_KEY`는 Cloudflare의 테스트 사이트 키(늘 통과)이고, backend의 테스트 비밀 키(`TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`)와 함께 쓴다.
+
+Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 켜지 않는다. 앱은 쿠키 없이 토큰만 보낸다.
 
 ### 레포에 커밋하지 않는 이유
 
@@ -146,6 +151,7 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 |----------|------|
 | `API_BASE_URL` | 백엔드 API 서버 URL (인증은 `API_BASE_URL/auth`) |
 | `REALTIME_BACKEND` | 타이머 실시간 소켓 모드 (`inprocess` 또는 `cloudflare`, 비우면 `inprocess`) |
+| `TURNSTILE_SITE_KEY` | Cloudflare Turnstile 사이트 키 (infra `terraform output turnstile_site_key`). 비우면 게스트 입장이 없다 |
 
 !!! tip "환경변수 변경 시 재배포"
     GitHub vars를 변경해도 자동으로 재배포되지 않습니다.
