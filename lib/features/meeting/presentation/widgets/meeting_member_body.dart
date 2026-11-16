@@ -8,6 +8,7 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart
 import 'package:momeet/features/meeting/presentation/widgets/meeting_account_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_problem.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_sheet.dart';
@@ -24,7 +25,8 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 참여자 → 링크 순서다(칠하기가 이 화면의 일이고, 그 결과가 바로 아래에 보이게). 볼 수 없는 모임은 없는
 /// 모임과 같다.
 ///
-/// [guest]면 게스트 이름과 로그아웃을 보이고, 달력이 없어 카드에 '내 달력에 일정 만들기'가 없다. 불러오지
+/// [guest]면 게스트 이름과 로그아웃을 보이고, 달력이 없어 카드에 '내 달력에 일정 만들기'가 없다. '편집'은
+/// 게스트의 이름 바꾸기와 게스트 계정 지우기([showMeetingGuestSheet])다. 불러오지
 /// 못하면 [MeetingGuestProblem]이 까닭(약관 동의, 게스트를 받지 않음, 지워진 게스트)에 맞게 보인다.
 class MeetingMemberBody extends ConsumerWidget {
   const MeetingMemberBody({super.key, required this.meetingId, this.guest});
@@ -58,7 +60,12 @@ class MeetingMemberBody extends ConsumerWidget {
             final participants = MeetingParticipantsPanel(
               board: board,
               onRename: guest != null
-                  ? null
+                  ? () => showMeetingGuestSheet(
+                      context,
+                      ref,
+                      meetingId: meetingId,
+                      guest: guest,
+                    )
                   : () => showMeetingNameSheet(
                       context,
                       meetingId: meetingId,

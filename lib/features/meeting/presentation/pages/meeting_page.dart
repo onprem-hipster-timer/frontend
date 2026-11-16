@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_guest_leave.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_member_body.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_visitor_body.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -23,7 +24,9 @@ class MeetingPage extends ConsumerWidget {
       currentUserProvider.select((user) => user != null),
     );
     final guest = ref.watch(currentGuestProvider);
-    final signedIn = member || guest != null;
+    // 자기를 지우는 게스트는 되돌리기를 기다리는 동안에도 방문자 화면을 본다
+    final leaving = ref.watch(meetingGuestLeavingProvider);
+    final signedIn = member || (guest != null && !leaving);
     final title = signedIn
         ? ref.watch(
             meetingBoardProvider(

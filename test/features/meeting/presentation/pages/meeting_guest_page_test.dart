@@ -5,12 +5,14 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
+import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -285,6 +287,164 @@ void main() {
       expect(find.byType(MeetingLoginPanel), findsOneWidget);
       expect(await harness.storedSessionToken(), isNull);
       expect(harness.prefs.getString(guestMeetingKey), isNull);
+    });
+  });
+
+  group('편집', () {
+    Future<void> openEdit(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(TextButton, '편집'));
+      await tester.pumpAndSettle();
+    }
+
+    Finder nameField() => find.byType(TextFormField);
+
+    /// 게스트 이름 바꾸기가 [name]으로 성공하게 한다. backend처럼 참여자 이름도 바뀐다
+    void stubRename(String name) {
+      harness.stubCreateFlow(KratosFlowType.settings, 's1');
+      when(
+        () => harness.kratos.submit(
+          KratosFlowType.settings,
+          any(),
+          any(),
+          sessionToken: any(named: 'sessionToken'),
+          turnstileToken: any(named: 'turnstileToken'),
+        ),
+      ).thenAnswer((_) async {
+        final at = meetings.availability.indexWhere(
+          (e) => e.participant.isGuest,
+        );
+        meetings.availability[at] = meetings.availability[at].copyWith(
+          participant: meetings.availability[at].participant.copyWith(
+            displayName: name,
+          ),
+        );
+        harness.stubGuestSession(
+          GuestUser(id: testGuest.id, handle: testGuest.handle, name: name),
+        );
+        return const KratosSubmitResult();
+      });
+    }
+
+    Future<void> letUndoPass(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('이름을 바꾸면 설정 플로우에 새 토큰으로 내고 참여자 이름도 바뀐다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      stubRename('철수');
+      await pumpGuest(tester);
+      await openEdit(tester);
+      expect(find.widgetWithText(TextFormField, '민수'), findsOneWidget);
+
+      await tester.enterText(nameField(), ' 철수 ');
+      await tester.tap(find.text('저장'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => harness.kratos.submit(
+          KratosFlowType.settings,
+          's1',
+          {
+            'method': 'profile',
+            'traits': {'handle': testGuest.handle, 'name': '철수'},
+          },
+          sessionToken: KratosTestHarness.sessionToken,
+          turnstileToken: 'token-1',
+        ),
+      ).called(1);
+      expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+      expect(find.bySemanticsLabel('철수, 게스트, 나'), findsOneWidget);
+      expect(find.text('게스트 철수로 진행 중입니다'), findsOneWidget);
+      expect(turnstiles.last.resets, 1);
+      semantics.dispose();
+    });
+
+    testWidgets('같은 이름이 있으면 이름 칸에 알리고 다시 보낼 때는 새 토큰이다', (tester) async {
+      harness.stubCreateFlow(KratosFlowType.settings, 's1');
+      harness.stubSubmitError(
+        KratosFlowType.settings,
+        const KratosException(statusCode: 409, errorId: 'guest_name_taken'),
+      );
+      await pumpGuest(tester);
+      await openEdit(tester);
+
+      await tester.enterText(nameField(), '서연');
+      await tester.tap(find.text('저장'));
+      await tester.pumpAndSettle();
+      expect(find.text('이 모임에 같은 이름이 있습니다. 다른 이름을 입력해 주세요'), findsOneWidget);
+
+      stubRename('서연2');
+      await tester.enterText(nameField(), '서연2');
+      await tester.tap(find.text('저장'));
+      await tester.pumpAndSettle();
+      expect(turnstiles.last.issued, ['token-1', 'token-2']);
+      expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+    });
+
+    testWidgets('이름을 그대로 두고 저장하면 보내지 않고 닫는다', (tester) async {
+      await pumpGuest(tester);
+      await openEdit(tester);
+
+      await tester.tap(find.text('저장'));
+      await tester.pumpAndSettle();
+
+      expect(nameField(), findsNothing);
+      expect(turnstiles.last.issued, isEmpty);
+    });
+
+    testWidgets('지우면 바로 방문자 화면이 되고 되돌리면 게스트 화면으로 돌아와 보내지 않는다', (tester) async {
+      await pumpGuest(tester);
+      await openEdit(tester);
+
+      await tester.tap(find.text('게스트 계정 지우기'));
+      await tester.pumpAndSettle();
+      expect(find.text('게스트 계정을 지웠습니다'), findsOneWidget);
+      expect(find.byType(MeetingLoginPanel), findsOneWidget);
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      await letUndoPass(tester);
+
+      expect(guests.deletes, isEmpty);
+      expect(find.text('게스트 민수로 진행 중입니다'), findsOneWidget);
+      expect(container(tester).read(currentGuestProvider), isNotNull);
+    });
+
+    testWidgets('알림이 되돌리기 없이 닫히면 시트에서 받은 토큰으로 지우고 세션을 끝낸다', (tester) async {
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+      await pumpGuest(tester);
+      await openEdit(tester);
+
+      await tester.tap(find.text('게스트 계정 지우기'));
+      await tester.pumpAndSettle();
+      expect(guests.deletes, isEmpty);
+      await letUndoPass(tester);
+
+      expect(guests.deletes, ['token-1']);
+      verify(
+        () => harness.kratos.logout(KratosTestHarness.sessionToken),
+      ).called(1);
+      expect(await harness.storedSessionToken(), isNull);
+      expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    });
+
+    testWidgets('지우지 못하면 게스트 화면으로 돌아오고 알린다', (tester) async {
+      guests.deleteError = guestError(403, 'GuestVerificationFailedError');
+      await pumpGuest(tester);
+      await openEdit(tester);
+
+      await tester.tap(find.text('게스트 계정 지우기'));
+      await tester.pumpAndSettle();
+      await letUndoPass(tester);
+
+      expect(guests.deletes, ['token-1']);
+      expect(
+        find.text('게스트 계정을 지우지 못했습니다: 사람인지 확인하지 못했습니다. 다시 시도해 주세요'),
+        findsOneWidget,
+      );
+      expect(find.text('게스트 민수로 진행 중입니다'), findsOneWidget);
+      expect(container(tester).read(currentGuestProvider), isNotNull);
     });
   });
 }
