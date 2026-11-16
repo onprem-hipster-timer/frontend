@@ -1251,6 +1251,159 @@ void main() {
       });
     });
     // ----------------------------------------------------------
+    // 게스트 세션
+    // ----------------------------------------------------------
+    group('게스트 세션', () {
+      String? guest(
+        String location, {
+        String? meetingId = 'meeting-1',
+        Map<String, String> query = const {},
+      }) => authRedirect(
+        isAuthenticated: false,
+        isAuthLoading: false,
+        matchedLocation: location,
+        redirectAfterLogin: query['redirect'],
+        queryParameters: query,
+        isGuest: true,
+        guestMeetingId: meetingId,
+        consentRequired: null,
+        deletionPending: null,
+      );
+
+      String notice(String from) =>
+          '${AppRoute.guestSession.path}?redirect=${Uri.encodeComponent(from)}';
+
+      test('게스트는 자기 모임 화면에 머문다', () {
+        expect(guest('/meetings/meeting-1'), isNull);
+      });
+
+      test('게스트가 다른 모임이나 회원 화면으로 가면 가려던 곳을 기억해 게스트 세션 안내로 간다', () {
+        for (final path in [
+          '/meetings/meeting-2',
+          '/meetings/meeting-1/created',
+          AppRoute.meetings.path,
+          AppRoute.todo.path,
+          AppRoute.mypage.path,
+          AppRoute.consent.path,
+          AppRoute.accountDeletion.path,
+          AppRoute.landing.path,
+          '/todo/group-1',
+        ]) {
+          expect(guest(path), notice(path), reason: path);
+        }
+        expect(
+          guest(AppRoute.scheduleDetail.path, query: {'id': 's1'}),
+          notice('${AppRoute.scheduleDetail.path}?id=s1'),
+        );
+      });
+
+      test('게스트가 루트(/)로 가면 기억할 것 없이 게스트 세션 안내로 간다', () {
+        expect(guest(AppRoute.calendar.path), AppRoute.guestSession.path);
+      });
+
+      test('게스트도 회원으로 로그인하는 화면과 인증 화면에는 머문다', () {
+        for (final route in [
+          AppRoute.login,
+          AppRoute.signup,
+          AppRoute.forgotPassword,
+          AppRoute.verification,
+          AppRoute.authError,
+          AppRoute.securityWarning,
+          AppRoute.guestSession,
+        ]) {
+          expect(guest(route.path), isNull, reason: route.path);
+        }
+        expect(
+          guest(AppRoute.login.path, query: {'redirect': AppRoute.todo.path}),
+          isNull,
+        );
+      });
+
+      test('들어온 모임을 모르면 모임 화면은 어느 모임이든 막지 않는다', () {
+        expect(guest('/meetings/meeting-2', meetingId: null), isNull);
+        expect(
+          guest(AppRoute.todo.path, meetingId: null),
+          notice(AppRoute.todo.path),
+        );
+      });
+
+      test('게스트 세션을 되살리면 기억한 곳, 없으면 자기 모임(모르면 안내)으로 간다', () {
+        expect(guest(AppRoute.loading.path), '/meetings/meeting-1');
+        expect(
+          guest(AppRoute.loading.path, meetingId: null),
+          AppRoute.guestSession.path,
+        );
+        // 기억한 곳의 규칙은 다음 리다이렉트가 본다
+        final resumed = guest(
+          AppRoute.loading.path,
+          query: {'redirect': AppRoute.todo.path},
+        );
+        expect(resumed, AppRoute.todo.path);
+        expect(guest(resumed!), notice(AppRoute.todo.path));
+      });
+
+      test('위조된 인증 링크는 게스트도 보안 경고로 보낸다', () {
+        final params = {'flow': 'not-a-flow'};
+        expect(
+          guest(AppRoute.verification.path, query: params),
+          '${AppRoute.securityWarning.path}?blocked='
+          '${Uri.encodeComponent(Uri(path: AppRoute.verification.path, queryParameters: params).toString())}',
+        );
+      });
+
+      test('게스트가 회원으로 로그인하면 안내가 기억한 곳으로 간다', () {
+        final fromNotice = Uri.parse(notice(AppRoute.todo.path));
+        final login = Uri(
+          path: AppRoute.login.path,
+          queryParameters: {
+            'redirect': fromNotice.queryParameters['redirect']!,
+          },
+        );
+        expect(
+          authRedirect(
+            isAuthenticated: true,
+            isAuthLoading: false,
+            matchedLocation: login.path,
+            redirectAfterLogin: login.queryParameters['redirect'],
+            queryParameters: login.queryParameters,
+          ),
+          AppRoute.todo.path,
+        );
+      });
+
+      test('게스트가 아니면 게스트 세션 안내에 머물지 않는다', () {
+        expect(
+          authRedirect(
+            isAuthenticated: true,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.guestSession.path,
+            redirectAfterLogin: AppRoute.todo.path,
+            queryParameters: {'redirect': AppRoute.todo.path},
+          ),
+          AppRoute.todo.path,
+        );
+        expect(
+          authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.guestSession.path,
+          ),
+          AppRoute.landing.path,
+        );
+        expect(
+          authRedirect(
+            isAuthenticated: false,
+            isAuthLoading: false,
+            matchedLocation: AppRoute.guestSession.path,
+            redirectAfterLogin: '/meetings/meeting-1',
+            queryParameters: {'redirect': '/meetings/meeting-1'},
+          ),
+          '/meetings/meeting-1',
+        );
+      });
+    });
+
+    // ----------------------------------------------------------
     // 탈퇴 대기 (로그인한 사용자)
     // ----------------------------------------------------------
     group('탈퇴 대기', () {

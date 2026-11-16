@@ -64,9 +64,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // 인증 상태 리다이렉트
     redirect: (context, state) {
+      // 인증 상태 알림 안에서 불릴 수 있어 파생 provider 대신 지금 상태를 직접 읽는다
+      final auth = ref.read(authProvider);
+      final guest = auth is AuthGuest ? auth.guest : null;
       return authRedirect(
-        isAuthenticated: ref.read(isAuthenticatedProvider),
-        isAuthLoading: ref.read(isAuthLoadingProvider),
+        isAuthenticated: auth is AuthAuthenticated,
+        isGuest: guest != null,
+        guestMeetingId: guest?.meetingId,
+        isAuthLoading: auth is AuthLoading,
         matchedLocation: state.matchedLocation,
         redirectAfterLogin: state.uri.queryParameters['redirect'],
         queryParameters: state.uri.queryParameters,
@@ -155,6 +160,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoute.loading.path,
         name: AppRoute.loading.name,
         builder: (context, state) => const Scaffold(body: AppLoading()),
+      ),
+
+      // ============================================================
+      // 게스트 세션 안내 (게스트가 자기 모임 밖으로 가면)
+      // ============================================================
+      GoRoute(
+        path: AppRoute.guestSession.path,
+        name: AppRoute.guestSession.name,
+        // redirect: 가려던 곳. 회원으로 로그인하면 그리로 간다
+        builder: (context, state) =>
+            GuestSessionPage(redirect: state.uri.queryParameters['redirect']),
       ),
 
       // ============================================================

@@ -18,22 +18,39 @@
 /// context.go(AppRoute.todo.path);
 /// ```
 enum AppRoute {
-  // 인증 불필요 (공개 페이지)
-  login(path: '/login', requiresAuth: false),
-  signup(path: '/signup', requiresAuth: false),
+  // 인증 불필요 (공개 페이지). 게스트도 머무는 곳은 회원으로 로그인하는 길이다
+  login(path: '/login', requiresAuth: false, allowsGuest: true),
+  signup(path: '/signup', requiresAuth: false, allowsGuest: true),
   // 로그인한 사용자도 머문다: 비밀번호 변경도 메일 코드로 이 화면에서 한다
   forgotPassword(
     path: '/forgot-password',
     requiresAuth: false,
     authNeutral: true,
+    allowsGuest: true,
   ),
   landing(path: '/landing', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
-  securityWarning(path: '/security-warning', requiresAuth: false),
+  securityWarning(
+    path: '/security-warning',
+    requiresAuth: false,
+    allowsGuest: true,
+  ),
+  // 게스트가 자기 모임 밖으로 가면 보는 안내. 게스트만 머문다
+  guestSession(path: '/guest-session', requiresAuth: false, allowsGuest: true),
 
   // 로그인 여부와 상관없이 머무는 페이지 (Kratos 메일 링크·오류로 들어옴)
-  verification(path: '/verification', requiresAuth: false, authNeutral: true),
-  authError(path: '/auth-error', requiresAuth: false, authNeutral: true),
+  verification(
+    path: '/verification',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
+  authError(
+    path: '/auth-error',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
 
   // 인증 필요 (보호된 페이지)
   // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
@@ -51,7 +68,8 @@ enum AppRoute {
   meetingCreated(path: '/meetings/:meetingId/created'),
   tags(path: '/tags'),
   mypage(path: '/mypage'),
-  // 공유 링크로 여는 모임 화면 (탭 셸 밖). 로그인하지 않아도 머문다(공개 모임만 보인다)
+  // 공유 링크로 여는 모임 화면 (탭 셸 밖). 로그인하지 않아도 머문다(공개 모임만 보인다).
+  // 게스트는 자기 모임의 화면에만 머문다
   meeting(path: '/meetings/:meetingId', allowsSignedOut: true);
 
   const AppRoute({
@@ -59,6 +77,7 @@ enum AppRoute {
     this.requiresAuth = true,
     this.authNeutral = false,
     this.allowsSignedOut = false,
+    this.allowsGuest = false,
   });
 
   /// 라우트 경로
@@ -74,10 +93,19 @@ enum AppRoute {
   /// 로그인한 사용자에게는 다른 보호된 페이지와 같다(약관 동의·탈퇴 대기를 먼저 본다).
   final bool allowsSignedOut;
 
+  /// 게스트 세션도 머무는 페이지인지 (기본값: false). 게스트의 모임 화면은 리다이렉트가 따로 본다
+  final bool allowsGuest;
+
   /// 공개 라우트(인증 불필요) 경로 집합
   static final publicPaths = {
     for (final route in values)
       if (!route.requiresAuth) route.path,
+  };
+
+  /// 게스트 세션도 머무는 경로 집합
+  static final guestPaths = {
+    for (final route in values)
+      if (route.allowsGuest) route.path,
   };
 
   /// 로그인 여부와 상관없이 리다이렉트하지 않는 경로 집합

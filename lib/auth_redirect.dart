@@ -74,6 +74,8 @@ String? authRedirect({
   Map<String, String> queryParameters = const {},
   bool? consentRequired = false,
   bool? deletionPending = false,
+  bool isGuest = false,
+  String? guestMeetingId,
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
@@ -93,6 +95,7 @@ String? authRedirect({
   //      리다이렉트가 본다
   if (matchedLocation == AppRoute.loading.path) {
     if (_resumable(redirectAfterLogin) case final resume?) return resume;
+    if (isGuest) return _guestHome(guestMeetingId);
     return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
   }
 
@@ -103,6 +106,30 @@ String? authRedirect({
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
     ).toString();
     return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(attempted)}';
+  }
+
+  // 1-3. 게스트는 자기 모임 화면과 회원으로 로그인하는 화면에만 머문다. 다른 곳은 게스트 세션 안내로
+  //      보내고 가려던 곳을 기억한다(회원으로 로그인하면 그리로 간다)
+  if (isGuest) {
+    final ownMeeting = guestMeetingId == null
+        ? AppRoute.allowsSignedOutPath(matchedLocation)
+        : matchedLocation == _guestHome(guestMeetingId);
+    if (ownMeeting || AppRoute.guestPaths.contains(matchedLocation)) {
+      return null;
+    }
+    return _gate(
+      AppRoute.guestSession.path,
+      from: Uri(
+        path: matchedLocation,
+        queryParameters: queryParameters.isEmpty ? null : queryParameters,
+      ).toString(),
+    );
+  }
+
+  // 1-4. 게스트 세션 안내는 게스트만 본다. 회원은 기억한 곳으로, 로그인하지 않았으면 기억한 곳이나 처음 화면으로
+  if (matchedLocation == AppRoute.guestSession.path) {
+    if (isAuthenticated) return _destination(redirectAfterLogin);
+    return _resumable(redirectAfterLogin) ?? AppRoute.landing.path;
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
@@ -172,6 +199,11 @@ String _gate(String page, {required String? from}) {
   }
   return '$page?redirect=${Uri.encodeComponent(from)}';
 }
+
+/// 게스트가 머무는 곳. 들어온 모임을 모르면 게스트 세션 안내다
+String _guestHome(String? meetingId) => meetingId == null
+    ? AppRoute.guestSession.path
+    : AppRoute.meeting.path.replaceFirst(':meetingId', meetingId);
 
 /// 로딩 화면이 기억한 주소. 앱에 있는 경로(로딩 화면 밖)의 내부 주소만 돌려주고, 아니면 null
 String? _resumable(String? location) {
