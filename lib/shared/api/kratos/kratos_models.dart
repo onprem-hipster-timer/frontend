@@ -239,6 +239,7 @@ class KratosException implements Exception {
     this.messages = const [],
     this.useFlowId,
     this.verificationFlowId,
+    this.retryAfter,
   });
 
   final int statusCode;
@@ -254,6 +255,9 @@ class KratosException implements Exception {
 
   /// 이메일 인증 전 로그인(session_verified_address_required)일 때 Kratos가 새로 만든 인증 플로우 ID
   final String? verificationFlowId;
+
+  /// 요청 한도를 넘었을 때(429) 다시 보낼 수 있을 때까지의 시간
+  final Duration? retryAfter;
 
   /// 첫 오류 메시지의 text ID
   int? get messageId => messages.isEmpty ? null : messages.first.id;

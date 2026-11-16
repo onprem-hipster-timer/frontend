@@ -134,6 +134,7 @@ class KratosTestHarness {
         any(),
         any(),
         sessionToken: any(named: 'sessionToken'),
+        turnstileToken: any(named: 'turnstileToken'),
       ),
     ).thenAnswer((_) async => result);
   }
@@ -169,6 +170,7 @@ class KratosTestHarness {
         any(),
         any(),
         sessionToken: any(named: 'sessionToken'),
+        turnstileToken: any(named: 'turnstileToken'),
       ),
     ).thenThrow(error);
   }

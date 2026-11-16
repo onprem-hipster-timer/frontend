@@ -108,6 +108,63 @@ void main() {
       expect(result.continueWith, isEmpty);
     });
 
+    test('게스트 제출은 Turnstile 토큰을 헤더에 담고, 회원 제출에는 붙이지 않는다', () async {
+      fake.respond = (_) => _json(200, {'session_token': 'ory_st_guest'});
+
+      await client.submit(KratosFlowType.login, 'f1', {
+        'method': 'password',
+        'identifier': 'g@guest.invalid',
+      }, turnstileToken: 'turnstile-1');
+      await client.submit(KratosFlowType.login, 'f2', {'method': 'password'});
+      await client.submit(
+        KratosFlowType.settings,
+        'f3',
+        {'method': 'profile'},
+        sessionToken: 'ory_st_guest',
+        turnstileToken: 'turnstile-2',
+      );
+
+      final [guest, member, settings] = fake.requests;
+      expect(guest.headers['X-Turnstile-Token'], 'turnstile-1');
+      expect(guest.headers.containsKey('X-Session-Token'), isFalse);
+      expect(member.headers.containsKey('X-Turnstile-Token'), isFalse);
+      expect(settings.headers['X-Turnstile-Token'], 'turnstile-2');
+      expect(settings.headers['X-Session-Token'], 'ory_st_guest');
+    });
+
+    test('프록시가 직접 거절한 오류(error.id)와 429의 다시 보낼 시간을 담는다', () async {
+      fake.respond = (_) => _json(403, {
+        'error': {
+          'id': 'guest_verification_failed',
+          'code': 403,
+          'status': 'Forbidden',
+        },
+      });
+      await expectLater(
+        client.submit(KratosFlowType.login, 'f1', {}, turnstileToken: 't'),
+        throwsA(
+          isA<KratosException>()
+              .having((e) => e.statusCode, 'status', 403)
+              .having((e) => e.errorId, 'id', 'guest_verification_failed')
+              .having((e) => e.retryAfter, 'retryAfter', isNull),
+        ),
+      );
+
+      fake.respond = (_) => _json(429, {'detail': '한도 초과', 'retry_after': 35});
+      await expectLater(
+        client.submit(KratosFlowType.login, 'f1', {}, turnstileToken: 't'),
+        throwsA(
+          isA<KratosException>()
+              .having((e) => e.statusCode, 'status', 429)
+              .having(
+                (e) => e.retryAfter,
+                'retryAfter',
+                const Duration(seconds: 35),
+              ),
+        ),
+      );
+    });
+
     test('가입 결과에서 세션 토큰과 이메일 인증 플로우 ID를 꺼낸다', () async {
       fake.respond = (_) => _json(200, {
         'session_token': 'ory_st_new',
