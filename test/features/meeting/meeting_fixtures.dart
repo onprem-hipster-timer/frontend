@@ -20,6 +20,7 @@ MeetingRead makeMeeting({
   List<int> availableDays = const [0, 1, 2, 3, 4],
   String startTime = '06:00:00',
   String endTime = '18:00:00',
+  int timeSlotMinutes = 30,
 }) => MeetingRead(
   id: id,
   ownerId: 'owner-1',
@@ -30,7 +31,7 @@ MeetingRead makeMeeting({
   availableDays: availableDays,
   startTime: startTime,
   endTime: endTime,
-  timeSlotMinutes: 30,
+  timeSlotMinutes: timeSlotMinutes,
   createdAt: _at,
   updatedAt: _at,
 );
