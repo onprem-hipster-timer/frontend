@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent_step.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_not_found.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -71,8 +72,9 @@ class _MeetingGuestProblemState extends ConsumerState<MeetingGuestProblem> {
 
   @override
   Widget build(BuildContext context) {
+    final canAgree = ref.watch(turnstileFactoryProvider) != null;
     return switch (_status) {
-      428 => MeetingGuestConsentStep(
+      428 when canAgree => MeetingGuestConsentStep(
         meetingId: widget.meetingId,
         guest: widget.guest,
         onAgreed: widget.onRetry,
@@ -103,6 +105,9 @@ class _MeetingGuestProblemState extends ConsumerState<MeetingGuestProblem> {
         title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
         error: widget.error,
         onRetry: widget.onRetry,
+        secondaryLabel: '로그아웃',
+        secondaryIcon: Icons.logout,
+        onSecondary: _signOut,
       ),
     };
   }

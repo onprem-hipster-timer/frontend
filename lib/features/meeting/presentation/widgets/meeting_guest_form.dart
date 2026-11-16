@@ -68,7 +68,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
   void initState() {
     super.initState();
     _nameFocus.addListener(() {
-      if (!_nameFocus.hasFocus) unawaited(_find());
+      if (mounted && !_nameFocus.hasFocus) unawaited(_find());
     });
     // 찾은 뒤 이름을 고치면 다시 찾을 때까지 처음인지 모른다
     _name.addListener(() => setState(() {}));

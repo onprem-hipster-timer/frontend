@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_participant_removal.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart';
@@ -59,13 +60,16 @@ class MeetingMemberBody extends ConsumerWidget {
             );
             final participants = MeetingParticipantsPanel(
               board: board,
+              // 게스트의 이름 바꾸기·지우기는 확인 위젯이 있어야 한다
               onRename: guest != null
-                  ? () => showMeetingGuestSheet(
-                      context,
-                      ref,
-                      meetingId: meetingId,
-                      guest: guest,
-                    )
+                  ? ref.watch(turnstileFactoryProvider) == null
+                        ? null
+                        : () => showMeetingGuestSheet(
+                            context,
+                            ref,
+                            meetingId: meetingId,
+                            guest: guest,
+                          )
                   : () => showMeetingNameSheet(
                       context,
                       meetingId: meetingId,
@@ -87,31 +91,48 @@ class MeetingMemberBody extends ConsumerWidget {
             );
           },
           loading: () => const AppLoading(),
-          error: (error, _) {
-            void retry() {
-              ref.invalidate(meetingProvider(meetingId));
-              ref.invalidate(provider);
-            }
-
-            if (guest case final guest?) {
-              return MeetingGuestProblem(
-                // 다시 불러와 또 거절되면 처음부터 다시 본다
-                key: ObjectKey(error),
-                meetingId: meetingId,
-                guest: guest,
-                error: error,
-                onRetry: retry,
-              );
-            }
-            return isMeetingNotFound(error)
-                ? const MeetingNotFound()
-                : AppErrorState(
-                    title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
-                    error: error,
-                    onRetry: retry,
-                  );
-          },
+          error: (error, _) =>
+              _LoadError(meetingId: meetingId, guest: guest, error: error),
         );
+  }
+}
+
+/// 불러오지 못했을 때. 게스트는 까닭에 맞게([MeetingGuestProblem]), 회원은 찾을 수 없음이나 다시 시도
+class _LoadError extends ConsumerWidget {
+  const _LoadError({
+    required this.meetingId,
+    required this.guest,
+    required this.error,
+  });
+
+  final String meetingId;
+  final GuestUser? guest;
+  final Object error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    void retry() {
+      ref.invalidate(meetingProvider(meetingId));
+      ref.invalidate(meetingBoardProvider(meetingId));
+    }
+
+    if (guest case final guest?) {
+      return MeetingGuestProblem(
+        // 다시 불러와 또 거절되면 처음부터 다시 본다
+        key: ObjectKey(error),
+        meetingId: meetingId,
+        guest: guest,
+        error: error,
+        onRetry: retry,
+      );
+    }
+    return isMeetingNotFound(error)
+        ? const MeetingNotFound()
+        : AppErrorState(
+            title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
+            error: error,
+            onRetry: retry,
+          );
   }
 }
 

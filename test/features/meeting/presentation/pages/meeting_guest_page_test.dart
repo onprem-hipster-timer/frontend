@@ -10,6 +10,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
+import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
@@ -69,6 +70,7 @@ void main() {
   Future<void> pumpGuest(
     WidgetTester tester, {
     Size size = const Size(1280, 900),
+    bool turnstile = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -100,7 +102,10 @@ void main() {
           usersApiProvider.overrideWithValue(users),
           timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
           appOriginProvider.overrideWithValue('https://app.example.com'),
-          turnstiles.override,
+          if (turnstile)
+            turnstiles.override
+          else
+            turnstileFactoryProvider.overrideWithValue(null),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -193,6 +198,19 @@ void main() {
 
     expect(find.byType(MeetingLoginPanel), findsOneWidget);
     expect(find.text('3명 참여 중'), findsOneWidget);
+  });
+
+  testWidgets('확인 위젯이 없는 환경이면 편집과 약관 동의 대신 로그아웃 길만 둔다', (tester) async {
+    meetings.participateError = guestError(428, 'ConsentRequiredError');
+    await pumpGuest(tester, turnstile: false);
+
+    expect(find.text('동의하고 계속하기'), findsNothing);
+    expect(find.text('로그아웃'), findsOneWidget);
+
+    await tester.tap(find.text('다시 시도'));
+    await tester.pumpAndSettle();
+    expect(find.text('게스트 민수로 진행 중입니다'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, '편집'), findsNothing);
   });
 
   group('거절', () {
