@@ -99,7 +99,10 @@ String? authRedirect({
   }
 
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
-  if (!isAuthenticated && !isPublicRoute) {
+  //    (로그인하지 않아도 머무는 페이지는 제외)
+  if (!isAuthenticated &&
+      !isPublicRoute &&
+      !AppRoute.allowsSignedOutPath(matchedLocation)) {
     // 2-1. 루트 경로는 랜딩 페이지로 (서비스 소개)
     if (matchedLocation == AppRoute.calendar.path) {
       return AppRoute.landing.path;

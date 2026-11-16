@@ -3,12 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
+import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
@@ -87,7 +90,7 @@ void main() {
     expect(find.byType(ScaffoldWithNavBar), findsNothing);
   });
 
-  testWidgets('로그인하지 않았으면 로그인 화면으로 보내며 그 모임 주소를 돌아갈 곳으로 붙인다', (tester) async {
+  testWidgets('로그인하지 않았으면 로그인으로 보내지 않고 공개 모임의 방문자 화면을 연다', (tester) async {
     harness = await KratosTestHarness.create(authenticated: false);
     harness.stubCreateFlow(KratosFlowType.login, 'flow-login');
     final router = await pumpRouter(tester);
@@ -95,11 +98,54 @@ void main() {
     router.go('/meetings/meeting-1');
     await pumpAWhile(tester);
 
+    expect(location(router), '/meetings/meeting-1');
+    expect(find.byType(MeetingPage), findsOneWidget);
+    expect(find.text('팀 회의'), findsOneWidget);
+    expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    expect(meetings.resultReads, 1);
+    expect(meetings.reads, isEmpty);
+
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await pumpAWhile(tester);
     expect(
       location(router),
       '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1')}',
     );
-    expect(meetings.reads, isEmpty);
+  });
+
+  testWidgets('로그인하지 않았으면 모임을 만든 뒤 화면은 로그인으로 보낸다', (tester) async {
+    harness = await KratosTestHarness.create(authenticated: false);
+    harness.stubCreateFlow(KratosFlowType.login, 'flow-login');
+    final router = await pumpRouter(tester);
+
+    router.go('/meetings/meeting-1/created');
+    await pumpAWhile(tester);
+
+    expect(
+      location(router),
+      '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1/created')}',
+    );
+  });
+
+  testWidgets('모임 화면에서 세션이 끝나면 그 자리에서 방문자 화면으로 바뀐다', (tester) async {
+    final router = await pumpRouter(tester);
+    router.go('/meetings/meeting-1');
+    await pumpAWhile(tester);
+    expect(find.text('내 시간 선택하기'), findsOneWidget);
+    expect(find.byType(MeetingLoginPanel), findsNothing);
+
+    when(() => harness.kratos.whoami(any())).thenAnswer((_) async => null);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MeetingPage)),
+    );
+    await tester.runAsync(
+      () => container.read(authProvider.notifier).refreshAccessToken(),
+    );
+    await pumpAWhile(tester);
+
+    expect(location(router), '/meetings/meeting-1');
+    expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    expect(meetings.resultReads, 1);
   });
 
   testWidgets('모임 탭은 탭 셸 안의 만들기 화면이고 하단 바의 모임을 누르면 간다', (tester) async {

@@ -57,6 +57,20 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/todo/some-group-id'), true);
         expect(AppRoute.isKnownProtectedPath('/meetings/abc-123'), true);
       });
+    });
+
+    group('allowsSignedOutPath', () {
+      test('모임 화면 경로만 로그인하지 않아도 머문다', () {
+        expect(AppRoute.allowsSignedOutPath('/meetings/abc-123'), true);
+        expect(AppRoute.allowsSignedOutPath('/meetings'), false);
+        expect(
+          AppRoute.allowsSignedOutPath('/meetings/abc-123/created'),
+          false,
+        );
+        expect(AppRoute.allowsSignedOutPath('/meetings/a/b'), false);
+        expect(AppRoute.allowsSignedOutPath('/todo/abc-123'), false);
+        expect(AppRoute.allowsSignedOutPath('/'), false);
+      });
 
       test('등록되지 않은 경로를 거부한다', () {
         expect(AppRoute.isKnownProtectedPath('/unknown'), false);
@@ -233,7 +247,7 @@ void main() {
 
       test('미인증 사용자가 보호된 경로에 접근하면 /login으로 리다이렉트한다', () {
         final protectedRoutes = AppRoute.values.where(
-          (r) => r.requiresAuth && r != AppRoute.calendar,
+          (r) => r.requiresAuth && !r.allowsSignedOut && r != AppRoute.calendar,
         );
 
         for (final route in protectedRoutes) {
@@ -248,6 +262,37 @@ void main() {
             reason: '${route.name} 경로에서 /login 리다이렉트 실패',
           );
         }
+      });
+
+      test('미인증 사용자가 모임 화면에 오면 로그인으로 보내지 않는다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: '/meetings/meeting-1',
+        );
+        expect(result, isNull);
+      });
+
+      test('미인증 사용자가 모임을 만든 뒤 화면에 오면 /login으로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: '/meetings/meeting-1/created',
+        );
+        expect(
+          result,
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1/created')}',
+        );
+      });
+
+      test('로그인하면 돌아갈 곳으로 붙인 모임 화면으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.login.path,
+          redirectAfterLogin: '/meetings/meeting-1',
+        );
+        expect(result, '/meetings/meeting-1');
       });
 
       test('미인증 사용자가 /login에 있으면 리다이렉트하지 않는다', () {
@@ -686,8 +731,10 @@ void main() {
         );
       });
 
-      test('인증된 사용자가 로그아웃하면 모든 보호된 경로에서 리다이렉트된다', () {
-        final protectedRoutes = AppRoute.values.where((r) => r.requiresAuth);
+      test('인증된 사용자가 로그아웃하면 로그인하지 않아도 머무는 곳 밖의 보호된 경로에서 리다이렉트된다', () {
+        final protectedRoutes = AppRoute.values.where(
+          (r) => r.requiresAuth && !r.allowsSignedOut,
+        );
 
         for (final route in protectedRoutes) {
           final result = authRedirect(
@@ -943,6 +990,7 @@ void main() {
           AppRoute.tags.path,
           '/todo/group-1',
           AppRoute.scheduleDetail.path,
+          '/meetings/meeting-1',
         ]) {
           expect(
             signedIn(path, consentRequired: true),
