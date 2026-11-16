@@ -21,6 +21,7 @@ import 'package:momeet/features/todo/todo.dart' deferred as todo;
 import 'package:momeet/features/tag/tag.dart' deferred as tag;
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
     deferred as mypage;
+import 'package:momeet/features/meeting/meeting.dart' deferred as meeting;
 import 'package:momeet/shared/widgets/deferred_widget.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
@@ -164,6 +165,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.securityWarning.name,
         builder: (context, state) => SecurityWarningPage(
           attemptedUrl: state.uri.queryParameters['blocked'],
+        ),
+      ),
+
+      // ============================================================
+      // 모임 화면 (공유 링크로 연다. Floating Navigation 없음)
+      // ============================================================
+      GoRoute(
+        path: AppRoute.meeting.path,
+        name: AppRoute.meeting.name,
+        builder: (context, state) => DeferredWidget(
+          loader: meeting.loadLibrary,
+          builder: (_) => meeting.MeetingPage(
+            meetingId: state.pathParameters['meetingId']!,
+          ),
         ),
       ),
 

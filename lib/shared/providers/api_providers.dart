@@ -32,6 +32,10 @@ final friendsApiProvider = Provider<FriendsClient>((ref) {
   return ref.watch(moMeetClientProvider).friends;
 });
 
+final meetingsApiProvider = Provider<MeetingsClient>((ref) {
+  return ref.watch(moMeetClientProvider).meetings;
+});
+
 final visibilityApiProvider = Provider<VisibilityClient>((ref) {
   return ref.watch(moMeetClientProvider).visibility;
 });

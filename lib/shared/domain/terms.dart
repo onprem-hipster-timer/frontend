@@ -12,6 +12,9 @@ abstract final class Terms {
 
   /// 타이머를 끝내는 동작
   static const complete = '완료';
+
+  /// 여럿이 가능한 시간을 모아 날짜를 정하는 미팅
+  static const meeting = '모임';
 }
 
 const _hangulFirst = 0xAC00;

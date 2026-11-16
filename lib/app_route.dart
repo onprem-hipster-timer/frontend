@@ -47,7 +47,9 @@ enum AppRoute {
   timer(path: '/timer'),
   timerDetail(path: '/timer/detail'),
   tags(path: '/tags'),
-  mypage(path: '/mypage');
+  mypage(path: '/mypage'),
+  // 공유 링크로 여는 모임 화면 (탭 셸 밖)
+  meeting(path: '/meetings/:meetingId');
 
   const AppRoute({
     required this.path,

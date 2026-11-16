@@ -55,6 +55,7 @@ void main() {
       test('파라미터가 포함된 동적 경로를 인식한다', () {
         expect(AppRoute.isKnownProtectedPath('/todo/abc-123'), true);
         expect(AppRoute.isKnownProtectedPath('/todo/some-group-id'), true);
+        expect(AppRoute.isKnownProtectedPath('/meetings/abc-123'), true);
       });
 
       test('등록되지 않은 경로를 거부한다', () {
