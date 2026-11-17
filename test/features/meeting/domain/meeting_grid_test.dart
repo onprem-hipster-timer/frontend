@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/time_span.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 import '../meeting_fixtures.dart';
@@ -77,8 +77,13 @@ void main() {
       expect(grid.cells.single.span, TimeSpan(utc(3, 1, 14), utc(3, 1, 15)));
     });
 
-    test('받지 않는 요일의 날은 열이 없다', () {
-      final grid = MeetingGrid.of(makeMeeting(availableDays: [0, 2]));
+    test('제외 날짜는 열이 없다', () {
+      final grid = MeetingGrid.of(
+        makeMeeting(
+          endDate: date(3, 3),
+          excludedDates: [DateTime.parse('2027-03-02')],
+        ),
+      );
 
       expect(grid.columnDays, [date(3, 1), date(3, 3)]);
     });
@@ -108,7 +113,6 @@ void main() {
           timezone: 'America/New_York',
           startDate: date(3, 13),
           endDate: date(3, 15),
-          availableDays: [0, 1, 2, 3, 4, 5, 6],
           startTime: '09:00:00',
           endTime: '10:00:00',
           timeSlotMinutes: 60,
@@ -127,7 +131,6 @@ void main() {
           timezone: 'America/New_York',
           startDate: date(3, 14),
           endDate: date(3, 14),
-          availableDays: [6],
           startTime: '01:00:00',
           endTime: '04:00:00',
           timeSlotMinutes: 60,
@@ -148,7 +151,6 @@ void main() {
           timezone: 'America/New_York',
           startDate: date(11, 7),
           endDate: date(11, 7),
-          availableDays: [6],
           startTime: '01:00:00',
           endTime: '03:00:00',
           timeSlotMinutes: 60,
@@ -165,14 +167,15 @@ void main() {
       required DateTime from,
       required DateTime to,
       String timezone = 'Asia/Seoul',
-      List<int> days = const [0, 1, 2, 3, 4, 5, 6],
+      List<DateTime> excluded = const [],
       String endTime = '00:00:00',
     }) => MeetingGrid.of(
       makeMeeting(
         timezone: timezone,
         startDate: from,
         endDate: to,
-        availableDays: days,
+        excludedDates: excluded,
+        mode: MeetingMode.daily,
         startTime: '00:00:00',
         endTime: endTime,
       ),
@@ -198,8 +201,12 @@ void main() {
       expect(grid.cells.first.endMinute, minutesPerDay);
     });
 
-    test('이어지는 날끼리 이어지고 받지 않는 요일이 끼면 끊긴다', () {
-      final grid = daily(from: date(3, 1), to: date(3, 5), days: [0, 1, 3, 4]);
+    test('이어지는 날끼리 이어지고 제외 날짜가 끼면 끊긴다', () {
+      final grid = daily(
+        from: date(3, 1),
+        to: date(3, 5),
+        excluded: [date(3, 3)],
+      );
 
       expect(
         [for (final cell in grid.cells) cell.joinsPrevious],
@@ -238,8 +245,12 @@ void main() {
       expect(fall.cells.skip(1).every((cell) => cell.joinsPrevious), isTrue);
     });
 
-    test('기간 안에 받는 요일이 없으면 칸이 없다', () {
-      final grid = daily(from: date(3, 1), to: date(3, 2), days: [5]);
+    test('기간의 날이 모두 제외되면 칸이 없다', () {
+      final grid = daily(
+        from: date(3, 1),
+        to: date(3, 2),
+        excluded: [date(3, 1), date(3, 2)],
+      );
 
       expect(grid.cells, isEmpty);
       expect(grid.rows, 0);
@@ -247,14 +258,11 @@ void main() {
   });
 
   group('요일별', () {
-    MeetingGrid weekly(
-      DateTime from, {
-      List<int> days = const [0, 1, 2, 3, 4, 5, 6],
-    }) => MeetingGrid.of(
+    MeetingGrid weekly(DateTime from) => MeetingGrid.of(
       makeMeeting(
         startDate: from,
         endDate: from.add(const Duration(days: 6)),
-        availableDays: days,
+        mode: MeetingMode.weekly,
         startTime: '00:00:00',
         endTime: '00:00:00',
       ),
@@ -278,16 +286,6 @@ void main() {
 
       expect(grid.cells.first.joinsPrevious, isFalse);
       expect(grid.cells.skip(1).every((cell) => cell.joinsPrevious), isTrue);
-    });
-
-    test('받지 않는 요일이 끼면 끊긴다', () {
-      final grid = weekly(date(3, 1), days: [0, 2, 3]);
-
-      expect([for (final cell in grid.cells) cell.column], [0, 2, 3]);
-      expect(
-        [for (final cell in grid.cells) cell.joinsPrevious],
-        [false, false, true],
-      );
     });
 
     test('이어진 요일의 구간은 첫 요일의 날부터 그 수만큼의 날이다', () {

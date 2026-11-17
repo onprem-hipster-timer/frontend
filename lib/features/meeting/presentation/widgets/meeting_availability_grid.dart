@@ -2,11 +2,11 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_cells.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 내 시간 격자와 색 설명. 방식마다 모양이 다르다.
@@ -46,14 +46,14 @@ class MeetingAvailabilityGrid extends StatelessWidget {
             onPaint: onPaint,
             onLocked: onLocked,
           ),
-          MeetingMode.daily => _DailyGrid(
-            shading: shading,
-            onPaint: onPaint,
-            onLocked: onLocked,
-          ),
           MeetingMode.weekly => MeetingGridCells(
             shading: shading,
             shape: MeetingCellShape.weekly,
+            onPaint: onPaint,
+            onLocked: onLocked,
+          ),
+          MeetingMode.daily || MeetingMode.$unknown => _DailyGrid(
+            shading: shading,
             onPaint: onPaint,
             onLocked: onLocked,
           ),

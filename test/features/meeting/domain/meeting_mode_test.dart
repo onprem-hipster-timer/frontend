@@ -14,7 +14,7 @@ MeetingRead roundTrip(MeetingDraft draft) {
   return makeMeeting(
     startDate: body.startDate,
     endDate: body.endDate,
-    availableDays: body.availableDays,
+    excludedDates: body.excludedDates,
     startTime: body.startTime,
     endTime: body.endTime,
   );

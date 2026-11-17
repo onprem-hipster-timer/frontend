@@ -4,6 +4,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'time_slot_kind.dart';
+
 part 'time_slot_create.freezed.dart';
 part 'time_slot_create.g.dart';
 
@@ -13,6 +15,7 @@ abstract class TimeSlotCreate with _$TimeSlotCreate {
   const factory TimeSlotCreate({
     @JsonKey(name: 'start_time') required DateTime startTime,
     @JsonKey(name: 'end_time') required DateTime endTime,
+    @Default(TimeSlotKind.available) TimeSlotKind kind,
   }) = _TimeSlotCreate;
 
   factory TimeSlotCreate.fromJson(Map<String, Object?> json) =>

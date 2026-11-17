@@ -62,6 +62,16 @@ class MeetingDates {
   List<int> get weekdays =>
       {for (final day in days) weekdayNumber(day)}.toList()..sort();
 
+  /// 첫날부터 마지막 날까지 중 고르지 않은 날, 오름차순. 첫날과 마지막 날은 늘 고른 날이다
+  List<DateTime> get excluded {
+    final picked = days.toSet();
+    return [
+      for (var i = 1; i < span - 1; i++)
+        if (!picked.contains(first.add(Duration(days: i))))
+          first.add(Duration(days: i)),
+    ];
+  }
+
   bool contains(DateTime day) => days.contains(calendarDay(day));
 
   /// [day]를 고르거나 뺀다. 모양을 지키려고 같은 요일의 날이 함께 들고 날 수 있다

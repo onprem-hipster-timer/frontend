@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'meeting_mode.dart';
 import 'visibility_level.dart';
 
 part 'meeting_read.freezed.dart';
@@ -17,8 +18,9 @@ abstract class MeetingRead with _$MeetingRead {
     required String title,
     @JsonKey(name: 'start_date') required DateTime startDate,
     @JsonKey(name: 'end_date') required DateTime endDate,
+    @JsonKey(name: 'excluded_dates') required List<DateTime> excludedDates,
     required String timezone,
-    @JsonKey(name: 'available_days') required List<int> availableDays,
+    required MeetingMode mode,
     @JsonKey(name: 'start_time') required String startTime,
     @JsonKey(name: 'end_time') required String endTime,
     @JsonKey(name: 'time_slot_minutes') required int timeSlotMinutes,

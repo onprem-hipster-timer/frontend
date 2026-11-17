@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// 2027년 3월의 [day]일 (3월 1일은 월요일)
 DateTime march(int day) => DateTime.utc(2027, 3, day);
@@ -190,7 +190,7 @@ void main() {
   group('만들기 요청', () {
     const timezone = 'Asia/Seoul';
 
-    test('시간별은 고른 기간·요일과 하루 시간 범위를 보낸다', () {
+    test('시간별은 방식, 고른 기간과 그 사이 고르지 않은 날, 하루 시간 범위를 보낸다', () {
       final body = tapAll(const MeetingDraft(startHour: 9, endHour: 18), [
         1,
         3,
@@ -200,7 +200,8 @@ void main() {
       expect(body.timezone, timezone);
       expect(body.startDate, march(1));
       expect(body.endDate, march(5));
-      expect(body.availableDays, [0, 2, 4]);
+      expect(body.excludedDates, [march(2), march(4)]);
+      expect(body.mode, MeetingMode.hourly);
       expect(body.startTime, '09:00:00');
       expect(body.endTime, '18:00:00');
       expect(body.timeSlotMinutes, 30);
@@ -236,7 +237,8 @@ void main() {
       expect(body.endTime, '00:00:00');
       expect(body.startDate, march(1));
       expect(body.endDate, march(6));
-      expect(body.availableDays, [0, 1, 2, 3, 4, 5]);
+      expect(body.excludedDates, isEmpty);
+      expect(body.mode, MeetingMode.daily);
     });
 
     test('요일별은 7일 기간과 모든 요일을 하루 전체로 보낸다', () {
@@ -245,7 +247,8 @@ void main() {
       ).tapDay(march(4)).toMeetingCreate(title: '정기 모임', timezone: timezone);
       expect(body.startDate, march(4));
       expect(body.endDate, march(10));
-      expect(body.availableDays, [0, 1, 2, 3, 4, 5, 6]);
+      expect(body.excludedDates, isEmpty);
+      expect(body.mode, MeetingMode.weekly);
       expect(body.startTime, '00:00:00');
       expect(body.endTime, '00:00:00');
     });

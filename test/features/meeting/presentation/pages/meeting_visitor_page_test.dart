@@ -30,6 +30,7 @@ AvailabilityCell counted(int day, int hour, int count, {int minute = 0}) =>
       startTime: seoul(day, hour, minute),
       endTime: seoul(day, hour, minute + 30),
       count: count,
+      unavailableCount: 0,
     );
 
 const requestReason = '로그인하면 내 시간을 칠할 수 있어요';

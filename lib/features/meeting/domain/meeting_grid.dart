@@ -82,8 +82,9 @@ class MeetingGrid {
         dayEnd,
         meeting.timeSlotMinutes,
       ),
-      MeetingMode.daily => _daily(location, days, dayStart, dayEnd),
       MeetingMode.weekly => _weekly(location, days, dayStart, dayEnd),
+      MeetingMode.daily ||
+      MeetingMode.$unknown => _daily(location, days, dayStart, dayEnd),
     };
   }
 
@@ -285,17 +286,18 @@ class MeetingGrid {
       );
 }
 
-/// 기간 안에서 미팅이 받는 요일의 날짜(그날의 UTC 자정 값), 빠른 순
+/// 미팅 날짜: 기간에서 제외 날짜를 뺀 날(그날의 UTC 자정 값), 빠른 순
 List<DateTime> meetingDays(MeetingRead meeting) {
   final first = calendarDay(meeting.startDate);
   final last = calendarDay(meeting.endDate);
+  final excluded = {for (final day in meeting.excludedDates) calendarDay(day)};
   return [
     for (
       var day = first;
       !day.isAfter(last);
       day = day.add(const Duration(days: 1))
     )
-      if (meeting.availableDays.contains(weekdayNumber(day))) day,
+      if (!excluded.contains(day)) day,
   ];
 }
 

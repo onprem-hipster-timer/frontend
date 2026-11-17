@@ -4333,7 +4333,7 @@
           "Meetings"
         ],
         "summary": "Set Availability",
-        "description": "\ucc38\uc5ec\uc790\uc758 \uac00\ub2a5 \uc2dc\uac04 \uc124\uc815\n\n\uc778\uc99d \ud544\uc218: \ud68c\uc6d0\uacfc \uadf8 \ubbf8\ud305\uc758 \uac8c\uc2a4\ud2b8\uac00 \ubcf8\uc778\uc758 \ucc38\uc5ec \uc2dc\uac04\ub9cc \uc124\uc815 \uac00\ub2a5\ud569\ub2c8\ub2e4.\n\uae30\uc874 \uc2dc\uac04 \uc2ac\ub86f\uc744 \ubaa8\ub450 \uc0ad\uc81c\ud558\uace0 \uc0c8\ub85c\uc6b4 \uc2dc\uac04 \uc2ac\ub86f\uc744 \uc124\uc815\ud569\ub2c8\ub2e4.\n\uc2ac\ub86f\uc740 \ubc18\uc5f4\ub9b0 \uad6c\uac04 [start_time, end_time)\uc774\uace0 \uc2dc\uac04\ub300\uac00 \uc5c6\ub294 \uac12\uc740 UTC\ub85c \uc77d\uc2b5\ub2c8\ub2e4. \ubcf4\ub0b8 \uad6c\uac04 \uadf8\ub300\ub85c \uc800\uc7a5\ud569\ub2c8\ub2e4.\n\uc2ac\ub86f \uc218\ub294 \ubbf8\ud305\uc758 \uce78 \uc218\uae4c\uc9c0\uc785\ub2c8\ub2e4 (\ub118\uc73c\uba74 422). \uc2ac\ub86f\uc774 \ubbf8\ud305\uc758 \ub0a0\uc9dc\u00b7\uc2dc\uac04 \ubc94\uc704\ub098 \uce78\uc5d0 \ub9de\ub294\uc9c0\ub294 \uac80\uc0ac\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.\n\n:param meeting_id: \uc77c\uc815 \uc870\uc728 ID\n:param participant_id: \ucc38\uc5ec\uc790 ID (\ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130)\n:param time_slots: \uc2dc\uac04 \uc2ac\ub86f \ub9ac\uc2a4\ud2b8 (\uc694\uccad \ubcf8\ubb38)",
+        "description": "\ucc38\uc5ec\uc790\uc758 \uac00\ub2a5 \uc2dc\uac04 \uc124\uc815\n\n\uc778\uc99d \ud544\uc218: \ud68c\uc6d0\uacfc \uadf8 \ubbf8\ud305\uc758 \uac8c\uc2a4\ud2b8\uac00 \ubcf8\uc778\uc758 \ucc38\uc5ec \uc2dc\uac04\ub9cc \uc124\uc815 \uac00\ub2a5\ud569\ub2c8\ub2e4.\n\uae30\uc874 \uc2dc\uac04 \uc2ac\ub86f\uc744 \ubaa8\ub450 \uc0ad\uc81c\ud558\uace0 \uc0c8\ub85c\uc6b4 \uc2dc\uac04 \uc2ac\ub86f\uc744 \uc124\uc815\ud569\ub2c8\ub2e4.\n\uc2ac\ub86f\uc740 \ubc18\uc5f4\ub9b0 \uad6c\uac04 [start_time, end_time)\uc774\uace0 \uc2dc\uac04\ub300\uac00 \uc5c6\ub294 \uac12\uc740 UTC\ub85c \uc77d\uc2b5\ub2c8\ub2e4. \ubcf4\ub0b8 \uad6c\uac04 \uadf8\ub300\ub85c \uc800\uc7a5\ud569\ub2c8\ub2e4.\n\uc2ac\ub86f \uc218\ub294 \ubbf8\ud305\uc758 \uce78 \uc218\uae4c\uc9c0\uc785\ub2c8\ub2e4 (\ub118\uc73c\uba74 422). \uc2ac\ub86f\uc774 \ubbf8\ud305\uc758 \ub0a0\uc9dc\u00b7\uc2dc\uac04 \ubc94\uc704\ub098 \uce78\uc5d0 \ub9de\ub294\uc9c0\ub294 \uac80\uc0ac\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.\n\uc2ac\ub86f\ub9c8\ub2e4 kind(available, unavailable, \uae30\ubcf8 available)\uac00 \uc788\uace0, available \uc2ac\ub86f\uacfc unavailable \uc2ac\ub86f\uc774 \uacb9\uce58\uba74 422\uc785\ub2c8\ub2e4(\ub9de\ub2ff\ub294 \uac83\uc740 \ub429\ub2c8\ub2e4).\n\n:param meeting_id: \uc77c\uc815 \uc870\uc728 ID\n:param participant_id: \ucc38\uc5ec\uc790 ID (\ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130)\n:param time_slots: \uc2dc\uac04 \uc2ac\ub86f \ub9ac\uc2a4\ud2b8 (\uc694\uccad \ubcf8\ubb38)",
         "operationId": "set_availability_v1_meetings__meeting_id__availability_put",
         "security": [
           {
@@ -4499,7 +4499,7 @@
           "Meetings"
         ],
         "summary": "Get Meeting Result",
-        "description": "\uacf5\ud1b5 \uac00\ub2a5 \uc2dc\uac04 \ubd84\uc11d \uacb0\uacfc \uc870\ud68c\n\n\uc778\uc99d \uc120\ud0dd\uc801: \ud68c\uc6d0\uc740 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\uc73c\uba74, \uadf8 \ubbf8\ud305\uc758 \uac8c\uc2a4\ud2b8\uc640 \ub85c\uadf8\uc778\ud558\uc9c0 \uc54a\uc740 \ubc29\ubb38\uc790\ub294 PUBLIC\uc774\uba74 \uc870\ud68c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\ubbf8\ud305\uc758 \uc2dc\uac04\ub300\uc5d0\uc11c \ub0a0\uc9dc\u00b7\uc694\uc77c\u00b7\ud558\ub8e8 \ubc94\uc704\u00b7\uc2dc\uac04 \ub2e8\uc704\ub85c \ub9cc\ub4e0 \uce78\ub9c8\ub2e4, \uadf8 \uce78\uc744 \ubaa8\ub450 \ub36e\ub294 \uac00\ub2a5 \uc2dc\uac04\uc744 \uac00\uc9c4 \ucc38\uc5ec\uc790 \uc218\ub97c \uc149\ub2c8\ub2e4.\n\uac8c\uc2a4\ud2b8\uc640 \ubc29\ubb38\uc790\uc758 \uc751\ub2f5\uc5d0\ub294 owner_id\uac00 \uc5c6\uc2b5\ub2c8\ub2e4(null).",
+        "description": "\uacf5\ud1b5 \uac00\ub2a5 \uc2dc\uac04 \ubd84\uc11d \uacb0\uacfc \uc870\ud68c\n\n\uc778\uc99d \uc120\ud0dd\uc801: \ud68c\uc6d0\uc740 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\uc73c\uba74, \uadf8 \ubbf8\ud305\uc758 \uac8c\uc2a4\ud2b8\uc640 \ub85c\uadf8\uc778\ud558\uc9c0 \uc54a\uc740 \ubc29\ubb38\uc790\ub294 PUBLIC\uc774\uba74 \uc870\ud68c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\ubbf8\ud305\uc758 \uc2dc\uac04\ub300\uc5d0\uc11c \ubbf8\ud305 \ub0a0\uc9dc(\uc81c\uc678 \ub0a0\uc9dc\ub97c \ube80 \uae30\uac04)\u00b7\ud558\ub8e8 \ubc94\uc704\u00b7\uc2dc\uac04 \ub2e8\uc704\ub85c \ub9cc\ub4e0 \uce78\ub9c8\ub2e4, \uadf8 \uce78\uc744 \ubaa8\ub450 \ub36e\ub294\navailable \uad6c\uac04\uc744 \uac00\uc9c4 \ucc38\uc5ec\uc790 \uc218(count)\uc640 unavailable \uad6c\uac04\uc744 \uac00\uc9c4 \ucc38\uc5ec\uc790 \uc218(unavailable_count)\ub97c \uc149\ub2c8\ub2e4.\n\uac8c\uc2a4\ud2b8\uc640 \ubc29\ubb38\uc790\uc758 \uc751\ub2f5\uc5d0\ub294 owner_id\uac00 \uc5c6\uc2b5\ub2c8\ub2e4(null).",
         "operationId": "get_meeting_result_v1_meetings__meeting_id__result_get",
         "security": [
           {
@@ -4636,16 +4636,21 @@
           "count": {
             "type": "integer",
             "title": "Count"
+          },
+          "unavailable_count": {
+            "type": "integer",
+            "title": "Unavailable Count"
           }
         },
         "type": "object",
         "required": [
           "start_time",
           "end_time",
-          "count"
+          "count",
+          "unavailable_count"
         ],
         "title": "AvailabilityCell",
-        "description": "\uacb0\uacfc \uadf8\ub9ac\ub4dc\uc758 \uce78 [start_time, end_time)\uacfc \uadf8 \uce78\uc744 \ubaa8\ub450 \ub36e\ub294 \uac00\ub2a5 \uc2dc\uac04\uc744 \uac00\uc9c4 \ucc38\uc5ec\uc790 \uc218"
+        "description": "\uacb0\uacfc \uadf8\ub9ac\ub4dc\uc758 \uce78 [start_time, end_time)\uacfc \uadf8 \uce78\uc744 \ubaa8\ub450 \ub36e\ub294 available\u00b7unavailable \uad6c\uac04\uc744 \uac00\uc9c4 \ucc38\uc5ec\uc790 \uc218"
       },
       "AvailabilityRead": {
         "properties": {
@@ -5073,16 +5078,21 @@
             "format": "date",
             "title": "End Date"
           },
+          "excluded_dates": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Excluded Dates",
+            "default": []
+          },
           "timezone": {
             "type": "string",
             "title": "Timezone"
           },
-          "available_days": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Available Days"
+          "mode": {
+            "$ref": "#/components/schemas/MeetingMode"
           },
           "start_time": {
             "type": "string",
@@ -5111,7 +5121,7 @@
           "start_date",
           "end_date",
           "timezone",
-          "available_days",
+          "mode",
           "start_time",
           "end_time"
         ],
@@ -5161,16 +5171,20 @@
             "format": "date",
             "title": "End Date"
           },
+          "excluded_dates": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Excluded Dates"
+          },
           "timezone": {
             "type": "string",
             "title": "Timezone"
           },
-          "available_days": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Available Days"
+          "mode": {
+            "$ref": "#/components/schemas/MeetingMode"
           },
           "start_time": {
             "type": "string",
@@ -5223,8 +5237,9 @@
           "title",
           "start_date",
           "end_date",
+          "excluded_dates",
           "timezone",
-          "available_days",
+          "mode",
           "start_time",
           "end_time",
           "time_slot_minutes",
@@ -5308,23 +5323,20 @@
             ],
             "title": "End Date"
           },
+          "excluded_dates": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Excluded Dates"
+          },
           "timezone": {
             "type": "string",
             "title": "Timezone"
           },
-          "available_days": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Available Days"
+          "mode": {
+            "$ref": "#/components/schemas/MeetingMode"
           },
           "start_time": {
             "anyOf": [
@@ -6381,6 +6393,10 @@
             "type": "string",
             "format": "date-time",
             "title": "End Time"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TimeSlotKind",
+            "default": "available"
           }
         },
         "type": "object",
@@ -6412,6 +6428,9 @@
             "type": "string",
             "format": "date-time",
             "title": "End Time"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TimeSlotKind"
           }
         },
         "type": "object",
@@ -6419,7 +6438,8 @@
           "id",
           "participant_id",
           "start_time",
-          "end_time"
+          "end_time",
+          "kind"
         ],
         "title": "TimeSlotRead",
         "description": "\uc2dc\uac04 \uc2ac\ub86f \uc870\ud68c DTO"
@@ -7291,6 +7311,25 @@
         ],
         "title": "VisibilityUpdate",
         "description": "\uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc5c5\ub370\uc774\ud2b8 DTO"
+      },
+      "MeetingMode": {
+        "type": "string",
+        "enum": [
+          "hourly",
+          "daily",
+          "weekly"
+        ],
+        "title": "MeetingMode",
+        "description": "\ucc38\uc5ec\uc790\uac00 \ubbf8\ud305\uc5d0 \ub2f5\ud558\ub294 \ubc29\uc2dd. \ud504\ub860\ud2b8\uc5d4\ub4dc\ub294 \uc774 \uac12\uc73c\ub85c \ud654\uba74\uc744 \uc815\ud55c\ub2e4"
+      },
+      "TimeSlotKind": {
+        "type": "string",
+        "enum": [
+          "available",
+          "unavailable"
+        ],
+        "title": "TimeSlotKind",
+        "description": "\ucc38\uc5ec\uc790\uac00 \uace0\ub978 \uc2dc\uac04 \uad6c\uac04\uc758 \uc885\ub958"
       }
     },
     "securitySchemes": {

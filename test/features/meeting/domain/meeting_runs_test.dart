@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 import '../meeting_fixtures.dart';
@@ -94,7 +95,7 @@ void main() {
         makeMeeting(
           startDate: march(1),
           endDate: march(10),
-          availableDays: [0, 1, 2, 3, 4, 5, 6],
+          mode: MeetingMode.daily,
           startTime: '00:00:00',
           endTime: '00:00:00',
         ),
@@ -121,7 +122,7 @@ void main() {
         makeMeeting(
           startDate: march(3),
           endDate: march(9),
-          availableDays: [0, 1, 2, 3, 4, 5, 6],
+          mode: MeetingMode.weekly,
           startTime: '00:00:00',
           endTime: '00:00:00',
         ),
@@ -151,7 +152,8 @@ void main() {
         makeMeeting(
           startDate: march(1),
           endDate: march(2),
-          availableDays: [5],
+          excludedDates: [march(1), march(2)],
+          mode: MeetingMode.daily,
           startTime: '00:00:00',
           endTime: '00:00:00',
         ),

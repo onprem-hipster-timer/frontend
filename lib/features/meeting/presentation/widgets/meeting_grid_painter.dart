@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 격자 칸을 그린다. 내 칸(끄는 중이면 끄는 값)은 진하게, 그 밖은 다른 참여자 농도로 칠한다.

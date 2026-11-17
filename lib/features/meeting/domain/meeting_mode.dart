@@ -1,20 +1,6 @@
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
-/// 모임 시간을 받는 방식. 저장하지 않고 미팅 값에서 읽는다([inferMeetingMode]).
-///
-/// backend는 가장 세밀한 값(기간·요일·하루 시간 범위·슬롯 분)을 그대로 갖고, 방식은 참여자에게 보이는 해상도만 정한다.
-enum MeetingMode {
-  /// 5일 이내의 날짜와 하루 시간 범위
-  hourly,
-
-  /// 날짜만(하루가 한 칸)
-  daily,
-
-  /// 한 주(7일)의 요일만
-  weekly,
-}
-
 /// 시간별의 기간 상한(일). 넘으면 시간 격자가 화면에 들어가지 않는다
 const hourlyMaxDays = 5;
 

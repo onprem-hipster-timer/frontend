@@ -152,7 +152,7 @@ void main() {
       final meeting = makeMeeting(
         startDate: march(1),
         endDate: march(7),
-        availableDays: [0, 1, 2, 3, 4, 5, 6],
+        mode: MeetingMode.weekly,
         startTime: '00:00:00',
         endTime: '00:00:00',
       );

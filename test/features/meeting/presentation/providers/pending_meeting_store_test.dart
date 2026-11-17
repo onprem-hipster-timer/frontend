@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

@@ -7,7 +7,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
-import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
@@ -269,10 +268,8 @@ void main() {
     expect(body.timezone, 'Asia/Seoul');
     expect(body.startDate, nextMonth(3));
     expect(body.endDate, nextMonth(5));
-    expect(
-      body.availableDays,
-      [weekdayNumber(nextMonth(3)), weekdayNumber(nextMonth(5))]..sort(),
-    );
+    expect(body.excludedDates, [nextMonth(4)]);
+    expect(body.mode, MeetingMode.hourly);
     expect(body.startTime, '09:00:00');
     expect(body.endTime, '18:00:00');
     final (type, id, update) = visibility.updates.single;
@@ -335,7 +332,8 @@ void main() {
     final body = meetings.created.single;
     expect(body.startDate, nextMonth(10));
     expect(body.endDate, nextMonth(16));
-    expect(body.availableDays, [0, 1, 2, 3, 4, 5, 6]);
+    expect(body.excludedDates, isEmpty);
+    expect(body.mode, MeetingMode.weekly);
     expect(body.startTime, '00:00:00');
     expect(body.endTime, '00:00:00');
   });

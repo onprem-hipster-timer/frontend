@@ -1,7 +1,6 @@
 import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -29,8 +28,8 @@ String meetingMonthName(DateTime day) => _monthNames[day.month - 1];
 /// 방식 이름
 String meetingModeLabel(MeetingMode mode) => switch (mode) {
   MeetingMode.hourly => '시간별',
-  MeetingMode.daily => '날짜별',
   MeetingMode.weekly => '요일별',
+  MeetingMode.daily || MeetingMode.$unknown => '날짜별',
 };
 
 /// 정각 시각. 24는 하루의 끝으로 '24:00'이다
@@ -46,21 +45,6 @@ String weekdayName(int number) => _weekdayNames[number];
 /// '3월 1일 (월)'
 String meetingDayLabel(DateTime day) =>
     '${day.month}월 ${day.day}일 (${_weekdayNames[weekdayNumber(day)]})';
-
-/// 미팅 기간. 하루면 그날만, 기간 안의 요일을 일부만 받으면 그 요일을 덧붙인다
-String meetingPeriodText(MeetingRead meeting) {
-  final first = calendarDay(meeting.startDate);
-  final last = calendarDay(meeting.endDate);
-  if (first == last) return meetingDayLabel(first);
-  final period = '${meetingDayLabel(first)} ~ ${meetingDayLabel(last)}';
-  final inPeriod = MeetingDates.period(
-    first,
-    last.difference(first).inDays + 1,
-  ).weekdays;
-  final taken = inPeriod.where(meeting.availableDays.contains).toList();
-  if (taken.length == inPeriod.length) return period;
-  return '$period 중 ${taken.map((d) => _weekdayNames[d]).join('·')}';
-}
 
 /// 시간별 미팅의 하루 범위. '6:00 ~ 18:00', 끝이 00:00이면 '24:00'
 String meetingHoursText(MeetingRead meeting) {
@@ -91,8 +75,8 @@ String meetingCellLabel(
 ) => switch (grid.mode) {
   MeetingMode.hourly =>
     '${meetingDayLabel(cell.day)} ${_rangeLabel(cell.startMinute, cell.endMinute)}',
-  MeetingMode.daily => meetingDayLabel(cell.day),
   MeetingMode.weekly => '${weekdayName(weekdayNumber(cell.day))}요일',
+  MeetingMode.daily || MeetingMode.$unknown => meetingDayLabel(cell.day),
 };
 
 /// 선택된 일정 카드의 제목과 둘째 줄.
@@ -114,23 +98,23 @@ String meetingCellLabel(
       title: meetingDayLabel(first.day),
       detail: _rangeLabel(first.startMinute, last.endMinute),
     ),
-    MeetingMode.daily when days == 1 => (
-      title: meetingDayLabel(first.day),
-      detail: hours,
-    ),
-    MeetingMode.daily => (
-      title: last.day.month == first.day.month
-          ? '${first.day.month}월 ${first.day.day}일 ~ ${last.day.day}일'
-          : '${first.day.month}월 ${first.day.day}일 ~ '
-                '${last.day.month}월 ${last.day.day}일',
-      detail: '$days일',
-    ),
     MeetingMode.weekly when days == 1 => (
       title: '${weekdayName(first.column)}요일',
       detail: hours,
     ),
     MeetingMode.weekly => (
       title: '${weekdayName(first.column)}요일 ~ ${weekdayName(last.column)}요일',
+      detail: '$days일',
+    ),
+    MeetingMode.daily || MeetingMode.$unknown when days == 1 => (
+      title: meetingDayLabel(first.day),
+      detail: hours,
+    ),
+    MeetingMode.daily || MeetingMode.$unknown => (
+      title: last.day.month == first.day.month
+          ? '${first.day.month}월 ${first.day.day}일 ~ ${last.day.day}일'
+          : '${first.day.month}월 ${first.day.day}일 ~ '
+                '${last.day.month}월 ${last.day.day}일',
       detail: '$days일',
     ),
   };

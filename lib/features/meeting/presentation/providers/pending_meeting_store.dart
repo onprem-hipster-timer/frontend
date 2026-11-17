@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 로그인하러 가며 둔 모임 만들기 폼: 값과 제목 칸의 글자

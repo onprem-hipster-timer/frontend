@@ -1,7 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_help_icon.dart';
@@ -9,6 +8,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_select
 import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_time_range.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_title_field.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 Future<void> pumpBody(WidgetTester tester, Widget child) => tester.pumpWidget(

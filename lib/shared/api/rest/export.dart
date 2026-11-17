@@ -73,5 +73,7 @@ export 'models/validation_error.dart';
 export 'models/visibility_level.dart';
 export 'models/visibility_read.dart';
 export 'models/visibility_update.dart';
+export 'models/meeting_mode.dart';
+export 'models/time_slot_kind.dart';
 // Root client
 export 'mo_meet_client.dart';

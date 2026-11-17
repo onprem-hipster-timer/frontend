@@ -69,6 +69,15 @@ void main() {
     expect([for (final p in board.participants) p.id], ['b', 'g', 'a']);
   });
 
+  test('안 되는 구간은 되는 사람으로 세지 않는다', () {
+    final board = boardOf([
+      availabilityOf('a', unavailable: [(seoul(6), seoul(7))]),
+      availabilityOf('b', slots: [(seoul(6), seoul(7))]),
+    ]);
+
+    expect(board.othersAt(board.grid.at(0, 0)!), {'b'});
+  });
+
   test('로그인한 사람의 참여자가 나이고 그 가능 시간이 내 칸이다', () {
     final board = boardOf([
       availabilityOf('a', slots: [(seoul(6), seoul(7))]),

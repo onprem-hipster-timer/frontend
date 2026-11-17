@@ -49,7 +49,8 @@ class MeetingBoard implements MeetingShading {
       final participant = entry.participant;
       final slots = mergeSpans([
         for (final slot in entry.timeSlots)
-          TimeSpan(slot.startTime, slot.endTime),
+          if (slot.kind == TimeSlotKind.available)
+            TimeSpan(slot.startTime, slot.endTime),
       ]);
       if ((userId != null && participant.userId == userId) ||
           (selfId != null && participant.id == selfId)) {

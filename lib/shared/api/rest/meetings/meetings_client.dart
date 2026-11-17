@@ -128,6 +128,7 @@ abstract class MeetingsClient {
   /// 기존 시간 슬롯을 모두 삭제하고 새로운 시간 슬롯을 설정합니다.
   /// 슬롯은 반열린 구간 [start_time, end_time)이고 시간대가 없는 값은 UTC로 읽습니다. 보낸 구간 그대로 저장합니다.
   /// 슬롯 수는 미팅의 칸 수까지입니다 (넘으면 422). 슬롯이 미팅의 날짜·시간 범위나 칸에 맞는지는 검사하지 않습니다.
+  /// 슬롯마다 kind(available, unavailable, 기본 available)가 있고, available 슬롯과 unavailable 슬롯이 겹치면 422입니다(맞닿는 것은 됩니다).
   ///
   /// :param meeting_id: 일정 조율 ID.
   /// :param participant_id: 참여자 ID (쿼리 파라미터).
@@ -165,7 +166,8 @@ abstract class MeetingsClient {
   /// 공통 가능 시간 분석 결과 조회.
   ///
   /// 인증 선택적: 회원은 접근 권한이 있으면, 그 미팅의 게스트와 로그인하지 않은 방문자는 PUBLIC이면 조회할 수 있습니다.
-  /// 미팅의 시간대에서 날짜·요일·하루 범위·시간 단위로 만든 칸마다, 그 칸을 모두 덮는 가능 시간을 가진 참여자 수를 셉니다.
+  /// 미팅의 시간대에서 미팅 날짜(제외 날짜를 뺀 기간)·하루 범위·시간 단위로 만든 칸마다, 그 칸을 모두 덮는.
+  /// available 구간을 가진 참여자 수(count)와 unavailable 구간을 가진 참여자 수(unavailable_count)를 셉니다.
   /// 게스트와 방문자의 응답에는 owner_id가 없습니다(null).
   ///
   /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.

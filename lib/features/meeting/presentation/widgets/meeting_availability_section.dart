@@ -1,5 +1,4 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';

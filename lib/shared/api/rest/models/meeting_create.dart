@@ -4,6 +4,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'meeting_mode.dart';
+
 part 'meeting_create.freezed.dart';
 part 'meeting_create.g.dart';
 
@@ -17,9 +19,10 @@ abstract class MeetingCreate with _$MeetingCreate {
     @JsonKey(name: 'start_date') required DateTime startDate,
     @JsonKey(name: 'end_date') required DateTime endDate,
     required String timezone,
-    @JsonKey(name: 'available_days') required List<int> availableDays,
+    required MeetingMode mode,
     @JsonKey(name: 'start_time') required String startTime,
     @JsonKey(name: 'end_time') required String endTime,
+    @JsonKey(name: 'excluded_dates') @Default([]) List<DateTime> excludedDates,
     @JsonKey(name: 'time_slot_minutes') @Default(30) int timeSlotMinutes,
     @JsonKey(name: 'allow_guests') @Default(false) bool allowGuests,
     String? description,

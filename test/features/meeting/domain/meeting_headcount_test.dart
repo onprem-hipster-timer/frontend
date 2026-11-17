@@ -19,7 +19,12 @@ MeetingResultRead resultOf(
   participantCount: participants,
   availabilityGrid: [
     for (final (start, end, count) in cells)
-      AvailabilityCell(startTime: start, endTime: end, count: count),
+      AvailabilityCell(
+        startTime: start,
+        endTime: end,
+        count: count,
+        unavailableCount: 0,
+      ),
   ],
 );
 
@@ -53,6 +58,7 @@ void main() {
           'start_time': '2027-03-01T06:00:00+0900',
           'end_time': '2027-03-01T06:30:00+0900',
           'count': 2,
+          'unavailable_count': 0,
         },
       ],
     });
@@ -66,7 +72,7 @@ void main() {
     final meeting = makeMeeting(
       startDate: DateTime.utc(2027, 3, 1),
       endDate: DateTime.utc(2027, 3, 31),
-      availableDays: [0, 1, 2, 3, 4, 5, 6],
+      mode: MeetingMode.daily,
       startTime: '00:00:00',
       endTime: '00:00:00',
     );

@@ -21,8 +21,9 @@ MeetingRead makeMeeting({
   String title = '팀 회의',
   DateTime? startDate,
   DateTime? endDate,
+  List<DateTime> excludedDates = const [],
   String timezone = 'Asia/Seoul',
-  List<int> availableDays = const [0, 1, 2, 3, 4],
+  MeetingMode mode = MeetingMode.hourly,
   String startTime = '06:00:00',
   String endTime = '18:00:00',
   int timeSlotMinutes = 30,
@@ -33,8 +34,9 @@ MeetingRead makeMeeting({
   title: title,
   startDate: startDate ?? DateTime.utc(2027, 3, 1),
   endDate: endDate ?? DateTime.utc(2027, 3, 5),
+  excludedDates: excludedDates,
   timezone: timezone,
-  availableDays: availableDays,
+  mode: mode,
   startTime: startTime,
   endTime: endTime,
   timeSlotMinutes: timeSlotMinutes,
@@ -89,8 +91,9 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
       title: body.title,
       startDate: body.startDate,
       endDate: body.endDate,
+      excludedDates: body.excludedDates,
       timezone: body.timezone,
-      availableDays: body.availableDays,
+      mode: body.mode,
       startTime: body.startTime,
       endTime: body.endTime,
     );
@@ -231,6 +234,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
           participantId: participantId,
           startTime: slot.startTime,
           endTime: slot.endTime,
+          kind: slot.kind,
         ),
     ];
     final at = availability.indexWhere(
@@ -331,7 +335,8 @@ DioException notFound([String errorType = 'MeetingNotFoundError']) {
   );
 }
 
-/// 참여자 [id]의 가능 시간. [slots]는 UTC 구간. [owner]는 주인, [guest]는 게스트 참여자(회원 id 없음)
+/// 참여자 [id]의 가능 시간. [slots]는 되는, [unavailable]은 안 되는 UTC 구간. [owner]는 주인, [guest]는 게스트
+/// 참여자(회원 id 없음)
 AvailabilityRead availabilityOf(
   String id, {
   String? name,
@@ -339,6 +344,7 @@ AvailabilityRead availabilityOf(
   bool owner = false,
   bool guest = false,
   List<(DateTime, DateTime)> slots = const [],
+  List<(DateTime, DateTime)> unavailable = const [],
 }) => AvailabilityRead(
   participant: ParticipantRead(
     id: id,
@@ -356,6 +362,15 @@ AvailabilityRead availabilityOf(
         participantId: id,
         startTime: start,
         endTime: end,
+        kind: TimeSlotKind.available,
+      ),
+    for (final (i, (start, end)) in unavailable.indexed)
+      TimeSlotRead(
+        id: '$id-unavailable-$i',
+        participantId: id,
+        startTime: start,
+        endTime: end,
+        kind: TimeSlotKind.unavailable,
       ),
   ],
 );

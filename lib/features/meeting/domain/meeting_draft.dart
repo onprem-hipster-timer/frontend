@@ -100,7 +100,8 @@ class MeetingDraft {
     return MeetingDayState.open;
   }
 
-  /// 만들기 요청. 시간을 묻지 않는 방식은 하루 전체(0시~다음 날 0시)로 보낸다.
+  /// 만들기 요청. 기간은 첫날~마지막 날이고 그 사이 고르지 않은 날은 제외 날짜다. 시간을 묻지 않는 방식은 하루
+  /// 전체(0시~다음 날 0시)로 보낸다.
   ///
   /// 게스트 로그인([allowGuests])은 담지 않는다. backend는 새 미팅에 게스트를 켜지 않으므로 만든 뒤 공개로
   /// 열고 켠다(`MeetingMutations.create`).
@@ -113,8 +114,9 @@ class MeetingDraft {
       title: title,
       startDate: dates.first,
       endDate: dates.last,
+      excludedDates: dates.excluded,
       timezone: timezone,
-      availableDays: dates.weekdays,
+      mode: mode,
       startTime: clockOf(hourly ? startHour : 0),
       endTime: clockOf(hourly ? endHour : 0),
     );

@@ -2,11 +2,11 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// '선택된 일정': 두 명 이상 되는 이어진 시간 카드와 정렬 고르기(기본 인원 많은 순).
 ///

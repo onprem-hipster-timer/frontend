@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// 모임 시간을 받는 방식 고르기
 class MeetingModeSelector extends StatelessWidget {
@@ -29,7 +29,7 @@ class MeetingModeSelector extends StatelessWidget {
     return Wrap(
       spacing: 4,
       children: [
-        for (final option in MeetingMode.values)
+        for (final option in MeetingMode.$valuesDefined)
           _ModeButton(
             icon: _icons[option]!,
             label: meetingModeLabel(option),

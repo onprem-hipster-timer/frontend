@@ -20,6 +20,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart'
 import 'package:momeet/features/meeting/presentation/widgets/meeting_time_range.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_timezone_label.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_title_field.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 

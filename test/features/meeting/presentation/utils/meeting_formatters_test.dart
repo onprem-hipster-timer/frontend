@@ -10,44 +10,6 @@ import '../../meeting_fixtures.dart';
 DateTime march(int day) => DateTime.utc(2027, 3, day);
 
 void main() {
-  group('기간', () {
-    test('하루면 그날만 보인다', () {
-      final meeting = makeMeeting(
-        startDate: march(3),
-        endDate: march(3),
-        availableDays: [2],
-      );
-      expect(meetingPeriodText(meeting), '3월 3일 (수)');
-    });
-
-    test('기간 안의 요일을 모두 받으면 첫날과 마지막 날만 보인다', () {
-      final meeting = makeMeeting(
-        startDate: march(1),
-        endDate: march(5),
-        availableDays: [0, 1, 2, 3, 4],
-      );
-      expect(meetingPeriodText(meeting), '3월 1일 (월) ~ 3월 5일 (금)');
-    });
-
-    test('기간 안의 요일을 일부만 받으면 그 요일을 덧붙인다', () {
-      final meeting = makeMeeting(
-        startDate: march(1),
-        endDate: march(15),
-        availableDays: [0, 4],
-      );
-      expect(meetingPeriodText(meeting), '3월 1일 (월) ~ 3월 15일 (월) 중 월·금');
-    });
-
-    test('기간 밖의 요일 번호는 셈하지 않는다', () {
-      final meeting = makeMeeting(
-        startDate: march(1),
-        endDate: march(2),
-        availableDays: [0, 1, 5],
-      );
-      expect(meetingPeriodText(meeting), '3월 1일 (월) ~ 3월 2일 (화)');
-    });
-  });
-
   group('하루 시간 범위', () {
     test('정각 시각을 시:00으로 보인다', () {
       expect(meetingHoursText(makeMeeting()), '6:00 ~ 18:00');
@@ -110,7 +72,6 @@ void main() {
       makeMeeting(
         startDate: from ?? march(1),
         endDate: to ?? march(7),
-        availableDays: [0, 1, 2, 3, 4, 5, 6],
         startTime: start,
         endTime: end,
       ),

@@ -247,7 +247,6 @@ void main() {
           timezone: 'America/New_York',
           startDate: march(14),
           endDate: march(14),
-          availableDays: [6],
           startTime: '01:00:00',
           endTime: '04:00:00',
           timeSlotMinutes: 60,
@@ -268,7 +267,7 @@ void main() {
     MeetingRead daily() => makeMeeting(
       startDate: march(3),
       endDate: march(16),
-      availableDays: [0, 1, 2, 3, 4, 5, 6],
+      mode: MeetingMode.daily,
       startTime: '00:00:00',
       endTime: '00:00:00',
     );
@@ -318,7 +317,7 @@ void main() {
         meeting: makeMeeting(
           startDate: march(3),
           endDate: march(9),
-          availableDays: [0, 1, 2, 3, 4, 5, 6],
+          mode: MeetingMode.weekly,
           startTime: '00:00:00',
           endTime: '00:00:00',
         ),
@@ -372,7 +371,8 @@ void main() {
       meeting: makeMeeting(
         startDate: march(1),
         endDate: march(2),
-        availableDays: [5],
+        excludedDates: [march(1), march(2)],
+        mode: MeetingMode.daily,
         startTime: '00:00:00',
         endTime: '00:00:00',
       ),
@@ -407,6 +407,7 @@ void main() {
                           startTime: start,
                           endTime: end,
                           count: count,
+                          unavailableCount: 0,
                         ),
                     ],
                   ),
