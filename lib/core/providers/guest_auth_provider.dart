@@ -1,5 +1,10 @@
 part of 'auth_provider.dart';
 
+/// 게스트로 들어온 모임을 적어 두는 키. 값은 `<게스트 identity id> <모임 id>`다.
+///
+/// Kratos 세션에는 게스트의 모임이 없어서, 들어올 때 적어 두고 세션을 되살릴 때 같은 게스트면 읽는다.
+const guestMeetingKey = 'momeet.guest_meeting';
+
 /// 게스트 세션: 회원과 같은 Kratos 세션·JWT지만 모임 하나에 속하고 이메일이 없다.
 ///
 /// 세션 토큰 저장소는 회원과 한 칸을 같이 쓴다. 게스트가 회원으로 로그인하면 게스트 세션은 끝낸다.
@@ -51,6 +56,47 @@ extension GuestAuth on AuthNotifier {
     await _authenticateWith(sessionToken);
   }
 
+  /// 게스트 요청이 [status]로 거절됐다(요청 파이프라인이 부른다). 게스트 세션이 아니면 아무것도 하지 않는다.
+  ///
+  /// - 428: 약관에 다시 동의해야 한다([GuestDenial.consentRequired]). [guestDenialCleared]로 지운다.
+  /// - 403: 세션을 한 번 확인한다(동시에 거절돼도 한 번). 세션이 끝났으면 미인증이 되고 그 까닭은
+  ///   [AuthEndReason.guestRemoved]이다. 세션이 남았으면 모임이 지금 게스트를 받지 않는 것이다
+  ///   ([GuestDenial.notAcceptingGuests]).
+  ///
+  /// 세션을 확인하지 못하면(네트워크 오류) 그 오류를 던지고 상태는 그대로 둔다.
+  Future<void> guestRefused(int status) async {
+    if (_status is! AuthGuest) return;
+    switch (status) {
+      case 428:
+        _setGuestDenial(GuestDenial.consentRequired);
+      case 403:
+        await (_guestCheck ??= _checkDeniedGuest().whenComplete(
+          () => _guestCheck = null,
+        ));
+    }
+  }
+
+  /// 게스트 거절을 지운다(약관에 동의했거나 다시 불러올 때)
+  void guestDenialCleared() => _setGuestDenial(null);
+
+  Future<void> _checkDeniedGuest() async {
+    final token = await refreshAccessToken();
+    if (token != null) {
+      _setGuestDenial(GuestDenial.notAcceptingGuests);
+    } else if (_status is AuthUnauthenticated) {
+      _status = const AuthStatus.unauthenticated(
+        reason: AuthEndReason.guestRemoved,
+      );
+    }
+  }
+
+  void _setGuestDenial(GuestDenial? denial) {
+    final current = _status;
+    if (current is AuthGuest && current.denial != denial) {
+      _status = current.copyWith(denial: denial);
+    }
+  }
+
   /// whoami 결과로 될 인증 상태. 게스트면 들어온 모임을 이 기기에 적어 둔 값에서 찾는다.
   ///
   /// [guestMeetingId]는 게스트로 막 들어온 모임이다. 주면 적어 둔다. 회원이면 적어 둔 것을 지운다.
@@ -69,9 +115,14 @@ extension GuestAuth on AuthNotifier {
     if (guestMeetingId != null) {
       await _prefs.setString(guestMeetingKey, '${guest.id} $guestMeetingId');
     }
+    // JWT를 새로 받아도 같은 게스트의 거절 까닭은 그대로 둔다
+    final current = _status;
     return AuthStatus.guest(
       guest: guest.withMeeting(_guestMeetingOf(guest.id)),
       accessToken: session.accessToken,
+      denial: current is AuthGuest && current.guest.id == guest.id
+          ? current.denial
+          : null,
     );
   }
 

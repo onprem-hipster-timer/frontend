@@ -20,7 +20,15 @@ AuthUser? currentUser(Ref ref) {
 GuestUser? currentGuest(Ref ref) {
   return ref
       .watch(authProvider)
-      .whenOrNull(guest: (guest, accessToken) => guest);
+      .whenOrNull(guest: (guest, accessToken, denial) => guest);
+}
+
+/// 지금 게스트 요청이 거절된 까닭. 게스트가 아니거나 거절되지 않았으면 null이다
+@riverpod
+GuestDenial? currentGuestDenial(Ref ref) {
+  return ref
+      .watch(authProvider)
+      .whenOrNull(guest: (guest, accessToken, denial) => denial);
 }
 
 /// 현재 회원의 백엔드용 JWT

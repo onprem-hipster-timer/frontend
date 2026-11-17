@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/network/dio_provider.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/my_profile_provider.dart';
+import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
 import '../../helpers/fake_rest_clients.dart';
@@ -430,6 +431,140 @@ void main() {
       await pumpEventQueue();
 
       expect(users.reads, 0);
+    });
+
+    Matcher refusedWith(int status) => throwsA(
+      isA<DioException>().having(
+        (e) => e.response?.statusCode,
+        'status',
+        status,
+      ),
+    );
+
+    test('거절(403)돼도 세션이 남았으면 게스트 상태에 지금은 게스트를 받지 않는다고 적고 오류를 그대로 낸다', () async {
+      final backend = _FakeBackend([403]);
+      final (container, dio) = await bootGuest(backend);
+      clearInteractions(harness.kratos);
+
+      await expectLater(
+        dio.get<dynamic>('/v1/meetings/meeting-1'),
+        refusedWith(403),
+      );
+
+      final state = container.read(authProvider);
+      expect(state, isA<AuthGuest>());
+      expect((state as AuthGuest).denial, GuestDenial.notAcceptingGuests);
+      expect(
+        container.read(currentGuestDenialProvider),
+        GuestDenial.notAcceptingGuests,
+      );
+      verify(() => harness.kratos.whoami(any())).called(1);
+      expect(backend.requests, hasLength(1), reason: '다시 보내지 않는다');
+    });
+
+    test('거절(403)됐는데 세션이 끝났으면 미인증이 되고 그 까닭은 지워진 게스트다', () async {
+      final backend = _FakeBackend([403]);
+      final (container, dio) = await bootGuest(backend);
+      when(() => harness.kratos.whoami(any())).thenAnswer((_) async => null);
+
+      await expectLater(
+        dio.get<dynamic>('/v1/meetings/meeting-1'),
+        refusedWith(403),
+      );
+
+      expect(
+        container.read(authProvider),
+        const AuthStatus.unauthenticated(reason: AuthEndReason.guestRemoved),
+      );
+      expect(await harness.storedSessionToken(), isNull);
+    });
+
+    test('여러 요청이 한꺼번에 거절(403)돼도 세션은 한 번만 확인한다', () async {
+      final backend = _FakeBackend([403]);
+      final (container, dio) = await bootGuest(backend);
+      // 확인이 끝나기 전에 세 거절이 모두 닿는다
+      final gate = Completer<void>();
+      when(() => harness.kratos.whoami(any())).thenAnswer((_) async {
+        await gate.future;
+        return KratosSession.guest(
+          guest: testGuest,
+          accessToken: harness.accessToken,
+        );
+      });
+      clearInteractions(harness.kratos);
+
+      final requests = Future.wait([
+        for (var i = 0; i < 3; i++)
+          expectLater(
+            dio.get<dynamic>('/v1/meetings/meeting-1'),
+            refusedWith(403),
+          ),
+      ]);
+      await pumpEventQueue();
+      gate.complete();
+      await requests;
+
+      verify(() => harness.kratos.whoami(any())).called(1);
+      expect(
+        container.read(currentGuestDenialProvider),
+        GuestDenial.notAcceptingGuests,
+      );
+    });
+
+    test('약관 동의가 필요해 거절(428)되면 게스트 상태에 적고, 동의를 남기면 지운다', () async {
+      final backend = _FakeBackend([428]);
+      final (container, dio) = await bootGuest(backend);
+      clearInteractions(harness.kratos);
+
+      await expectLater(
+        dio.post<dynamic>('/v1/meetings/meeting-1/participate'),
+        refusedWith(428),
+      );
+      expect(
+        container.read(currentGuestDenialProvider),
+        GuestDenial.consentRequired,
+      );
+      verifyNever(() => harness.kratos.whoami(any()));
+
+      container.read(authProvider.notifier).guestDenialCleared();
+      expect(container.read(currentGuestDenialProvider), isNull);
+      expect(container.read(authProvider), isA<AuthGuest>());
+    });
+
+    test('JWT를 새로 받아도 같은 게스트의 거절 까닭은 남는다', () async {
+      final backend = _FakeBackend([428, 401, 200]);
+      final (container, dio) = await bootGuest(backend);
+
+      await expectLater(
+        dio.post<dynamic>('/v1/meetings/meeting-1/participate'),
+        refusedWith(428),
+      );
+      harness.accessToken = testJwt();
+      await dio.get<dynamic>('/v1/meetings/meeting-1');
+
+      expect(
+        container.read(currentGuestDenialProvider),
+        GuestDenial.consentRequired,
+      );
+    });
+  });
+
+  group('회원 요청의 거절은 게스트 경로를 타지 않는다', () {
+    test('회원 요청이 403이면 세션을 확인하지 않고 상태도 그대로다', () async {
+      harness = await KratosTestHarness.create();
+      final backend = _FakeBackend([403]);
+      final (container, dio) = await boot(backend);
+      final before = container.read(authProvider);
+      clearInteractions(harness.kratos);
+
+      await expectLater(
+        dio.get<dynamic>('/v1/users/me'),
+        throwsA(isA<DioException>()),
+      );
+
+      verifyNever(() => harness.kratos.whoami(any()));
+      expect(container.read(authProvider), before);
+      expect(container.read(currentGuestDenialProvider), isNull);
     });
   });
 }

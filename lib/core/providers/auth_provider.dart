@@ -33,11 +33,6 @@ part 'guest_auth_provider.dart';
 /// 이 값이 있어야 돌아온 코드로 세션을 받을 수 있으므로, 남이 보낸 복귀 링크로는 로그인되지 않는다.
 const googleSignInCodeKey = 'momeet.google_sign_in_code';
 
-/// 게스트로 들어온 모임을 적어 두는 키. 값은 `<게스트 identity id> <모임 id>`다.
-///
-/// Kratos 세션에는 게스트의 모임이 없어서, 들어올 때 적어 두고 세션을 되살릴 때 같은 게스트면 읽는다.
-const guestMeetingKey = 'momeet.guest_meeting';
-
 // ============================================================
 // 인증 상태 프로바이더
 // ============================================================
@@ -46,6 +41,11 @@ const guestMeetingKey = 'momeet.guest_meeting';
 @Riverpod(keepAlive: true)
 class AuthNotifier extends _$AuthNotifier {
   Future<String?>? _refreshing;
+
+  /// 거절된 게스트의 세션 확인(동시에 거절돼도 한 번). 게스트 확장([GuestAuth])은 [_status]로 상태를 다룬다
+  Future<void>? _guestCheck;
+  AuthStatus get _status => state;
+  set _status(AuthStatus next) => state = next;
 
   /// 복구 코드가 맞았을 때 받은 세션. 새 비밀번호를 저장할 때까지 메모리에만 둔다.
   String? _recoverySessionToken;
