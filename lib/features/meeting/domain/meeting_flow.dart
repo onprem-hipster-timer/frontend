@@ -1,0 +1,344 @@
+import 'package:flutter/foundation.dart';
+import 'package:momeet/features/meeting/domain/meeting_dates.dart';
+import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/domain/meeting_mode.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+
+/// 모임 만들기에서 하나씩 묻는 질문. 묻는 순서다
+enum MeetingQuestion {
+  range,
+  exclusions,
+  mode,
+  time,
+  visibility,
+  guests,
+  title,
+}
+
+/// 앞의 답을 바꿔 뒤의 답을 묻지 않고 맞춘 것
+enum MeetingAdjustment {
+  /// 새 기간에 들지 않는 제외 날짜를 뺐다
+  exclusionsDropped,
+
+  /// 요일별이라 기간을 첫날부터 7일로 맞췄다
+  weeklyPeriod,
+
+  /// 요일별이라 제외 날짜를 되돌렸다
+  weeklyExclusionsDropped,
+
+  /// 시간별로 받을 수 없는 날짜가 되어 날짜별로 바꿨다
+  hourlyToDaily,
+
+  /// 이어진 7일이 아니게 되어 요일별을 날짜별로 바꿨다
+  weeklyToDaily,
+
+  /// 비공개라 게스트 답을 지웠다
+  guestsDropped,
+}
+
+/// 달력의 날짜 칸 상태
+enum MeetingDayState {
+  /// 누를 수 있다
+  open,
+
+  /// 고른 날(기간을 고르는 중이면 시작일)
+  selected,
+
+  /// 기간 안에서 뺀 날
+  excluded,
+
+  /// 누를 수 없다(지난 날, 기간 상한 밖, 제외를 고를 때 기간 밖)
+  unavailable,
+}
+
+/// 모임 만들기를 한 번에 한 질문씩 묻는 흐름. 다음 질문은 지금 질문에 답해야 나오고, 기본값이 있어도 먼저
+/// 나오지 않는다. 답한 질문은 요약으로 남아 다시 고를 수 있고([edit]), 앞의 답을 바꾸면 뒤의 답을 묻지 않고
+/// 맞춘 뒤 무엇을 맞췄는지 남긴다([adjusted]). [expanded]면 모든 설정을 한 폼으로 보인다.
+///
+/// 테스트: test/features/meeting/domain/meeting_flow_test.dart
+@immutable
+class MeetingFlow {
+  const MeetingFlow({
+    this.draft = const MeetingDraft(),
+    this.answered = const {},
+    this.rangeStart,
+    this.editing,
+    this.pickingHours = false,
+    this.adjusted = const {},
+    this.expanded = false,
+    this.before,
+  });
+
+  /// 이 기기에 두었던 폼을 되살린다. [answered]를 모르면(펼친 폼에서 둔 폼) 펼친 폼이다
+  factory MeetingFlow.restored(
+    MeetingDraft draft, {
+    Set<MeetingQuestion>? answered,
+  }) => answered == null
+      ? MeetingFlow(draft: draft, expanded: true)
+      : MeetingFlow(draft: draft, answered: answered);
+
+  final MeetingDraft draft;
+
+  /// 답한 질문(지금은 묻지 않는 질문의 답도 남는다. 다시 물을 때 쓴다)
+  final Set<MeetingQuestion> answered;
+
+  /// 기간을 고르는 중 먼저 누른 날. 끝나는 날을 누르면 null이다
+  final DateTime? rangeStart;
+
+  /// 요약을 눌러 다시 묻는 질문
+  final MeetingQuestion? editing;
+
+  /// 시간을 '아니요'로 답해 시각을 고르는 중
+  final bool pickingHours;
+
+  /// 마지막 답으로 묻지 않고 맞춘 것. 다음 답에서 지운다
+  final Set<MeetingAdjustment> adjusted;
+
+  /// 모든 설정을 한 폼으로 보인다
+  final bool expanded;
+
+  /// 다시 묻기 전의 값([keep]이 되돌린다)
+  final MeetingDraft? before;
+
+  bool get _modeChosen => answered.contains(MeetingQuestion.mode);
+
+  /// [question]을 지금 값에서 묻는지
+  bool applies(MeetingQuestion question) => switch (question) {
+    MeetingQuestion.exclusions =>
+      answered.contains(MeetingQuestion.range) &&
+          draft.dates.span > 1 &&
+          !(_modeChosen && draft.mode == MeetingMode.weekly),
+    MeetingQuestion.time => _modeChosen && draft.mode == MeetingMode.hourly,
+    MeetingQuestion.guests =>
+      answered.contains(MeetingQuestion.visibility) && draft.isPublic,
+    _ => true,
+  };
+
+  /// [question]에 답했고 지금 값에서 묻는 질문인지
+  bool isAnswered(MeetingQuestion question) =>
+      answered.contains(question) && applies(question);
+
+  /// 지금 묻는 질문: 다시 묻는 질문, 아니면 답하지 않은 첫 질문(모두 답했으면 제목)
+  MeetingQuestion get current =>
+      editing ??
+      MeetingQuestion.values.firstWhere(
+        (question) =>
+            question == MeetingQuestion.title ||
+            (applies(question) && !answered.contains(question)),
+      );
+
+  /// 요약으로 보일 답한 질문, 묻는 순서
+  List<MeetingQuestion> get summarized => [
+    for (final question in MeetingQuestion.values)
+      if (question != current && isAnswered(question)) question,
+  ];
+
+  /// 달력의 [day]를 누른다. 기간을 물으면 시작일·끝나는 날을 차례로 고르고(끝나는 날로 답한다), 제외를 물으면
+  /// 그날을 빼거나 되돌린다(첫날·마지막 날은 그대로)
+  MeetingFlow tapDay(DateTime day) => switch (current) {
+    MeetingQuestion.range => _pickRange(calendarDay(day)),
+    MeetingQuestion.exclusions => _copy(
+      draft: draft.withDates(draft.dates.toggleExcluded(day)),
+    ),
+    _ => this,
+  };
+
+  MeetingFlow _pickRange(DateTime day) {
+    final start = rangeStart;
+    if (start == null) return _copy(rangeStart: day);
+    final previous = draft.dates.excluded;
+    final next = MeetingDates.range(start, day, excluded: previous);
+    return _answer(
+      MeetingQuestion.range,
+      draft.withDates(next),
+      adjusted: {
+        if (next.excluded.length < previous.length)
+          MeetingAdjustment.exclusionsDropped,
+      },
+    );
+  }
+
+  /// 제외 '없어요': 뺀 날 없이 답한다
+  MeetingFlow skipExclusions() => _answer(
+    MeetingQuestion.exclusions,
+    draft.withDates(draft.dates.withoutExclusions()),
+  );
+
+  /// 제외 '다 골랐어요'
+  MeetingFlow confirmExclusions() => _answer(MeetingQuestion.exclusions, draft);
+
+  /// 뺄 수 있는 주말을 모두 뺀다(답하지는 않는다)
+  MeetingFlow excludeWeekends() =>
+      _copy(draft: draft.withDates(draft.dates.withoutWeekends()));
+
+  /// 방식을 고른다. 시간별을 받을 수 없는 날짜면 그대로이고, 요일별은 첫날부터 7일로 맞추고 뺀 날을 되돌린다
+  MeetingFlow chooseMode(MeetingMode mode) {
+    if (mode == MeetingMode.hourly && !draft.hourlyAvailable) return this;
+    final next = draft.withMode(mode);
+    final weekly = mode == MeetingMode.weekly;
+    return _answer(
+      MeetingQuestion.mode,
+      next,
+      adjusted: {
+        if (weekly && next.dates.last != draft.dates.last)
+          MeetingAdjustment.weeklyPeriod,
+        if (weekly && draft.dates.excluded.isNotEmpty)
+          MeetingAdjustment.weeklyExclusionsDropped,
+      },
+    );
+  }
+
+  /// 시간 '예': 처음 값(6~18시)으로 답한다
+  MeetingFlow acceptDefaultHours() => _answer(
+    MeetingQuestion.time,
+    draft
+        .withStartHour(meetingDefaultStartHour)
+        .withEndHour(meetingDefaultEndHour),
+  );
+
+  /// 시간 '아니요': 시각을 고르게 한다
+  MeetingFlow pickHours() => _copy(pickingHours: true);
+
+  MeetingFlow withStartHour(int hour) =>
+      _copy(draft: draft.withStartHour(hour));
+
+  MeetingFlow withEndHour(int hour) => _copy(draft: draft.withEndHour(hour));
+
+  /// 고른 시각으로 답한다
+  MeetingFlow confirmHours() => _answer(MeetingQuestion.time, draft);
+
+  /// 공개 여부를 답한다. 비공개면 게스트 답을 지우고(다시 공개하면 다시 묻는다), 지웠으면 알린다
+  MeetingFlow choosePublic(bool value) {
+    final dropped = !value && isAnswered(MeetingQuestion.guests);
+    final next = _answer(
+      MeetingQuestion.visibility,
+      draft.withPublic(value),
+      adjusted: {if (dropped) MeetingAdjustment.guestsDropped},
+    );
+    if (value) return next;
+    return next._copy(
+      answered: {...next.answered}..remove(MeetingQuestion.guests),
+    );
+  }
+
+  MeetingFlow chooseGuests(bool value) =>
+      _answer(MeetingQuestion.guests, draft.withGuests(value));
+
+  /// 답한 [question]을 다시 묻는다
+  MeetingFlow edit(MeetingQuestion question) => MeetingFlow(
+    draft: draft,
+    answered: answered,
+    editing: question,
+    before: draft,
+  );
+
+  /// 다시 묻던 질문을 바꾸지 않고 닫는다
+  MeetingFlow keep() => MeetingFlow(draft: before ?? draft, answered: answered);
+
+  /// 모든 설정을 한 폼으로 펼친다. 답하지 않은 설정은 처음 값으로 둔다: 제외 없음(이미 뺀 날은 그대로), 시간별
+  /// 6~18시(받을 수 없는 날짜면 날짜별), 공개, 게스트 허용
+  MeetingFlow expand() {
+    var next = draft;
+    if (!_modeChosen && !next.hourlyAvailable) {
+      next = next.withMode(MeetingMode.daily);
+    }
+    if (!answered.contains(MeetingQuestion.guests) && next.isPublic) {
+      next = next.withGuests(true);
+    }
+    return MeetingFlow(draft: next, rangeStart: rangeStart, expanded: true);
+  }
+
+  /// 펼친 폼에서 [day]를 누른다. [excluding]이면 그날을 빼거나 되돌리고, 아니면 기간을 고른다(요일별은 그날부터
+  /// 7일). 시간별을 받을 수 없는 날짜가 되면 날짜별로 바꾼다
+  MeetingFlow tapDayInForm(DateTime day, {required bool excluding}) {
+    final target = calendarDay(day);
+    if (excluding) {
+      return _copy(draft: draft.withDates(draft.dates.toggleExcluded(target)));
+    }
+    if (draft.mode == MeetingMode.weekly) {
+      return withDraft(
+        draft.withDates(MeetingDates.period(target, weeklyDays)),
+      );
+    }
+    final start = rangeStart;
+    if (start == null) return _copy(rangeStart: target);
+    var next = draft.withDates(
+      MeetingDates.range(start, target, excluded: draft.dates.excluded),
+    );
+    if (next.mode == MeetingMode.hourly && !next.hourlyAvailable) {
+      next = next.withMode(MeetingMode.daily);
+    }
+    return withDraft(next);
+  }
+
+  /// 펼친 폼의 값을 바꾼다
+  MeetingFlow withDraft(MeetingDraft next) =>
+      MeetingFlow(draft: next, expanded: expanded);
+
+  /// [today] 기준 [day] 칸의 상태. [excluding]을 주지 않으면 제외를 묻는 동안 제외 달력이다
+  MeetingDayState dayState(
+    DateTime day, {
+    required DateTime today,
+    bool? excluding,
+  }) {
+    final target = calendarDay(day);
+    final dates = draft.dates;
+    if (target.isBefore(calendarDay(today))) return MeetingDayState.unavailable;
+    if (excluding ?? current == MeetingQuestion.exclusions) {
+      if (!dates.inPeriod(target)) return MeetingDayState.unavailable;
+      return dates.contains(target)
+          ? MeetingDayState.selected
+          : MeetingDayState.excluded;
+    }
+    final start = rangeStart;
+    if (start != null) {
+      if (target == start) return MeetingDayState.selected;
+      return MeetingDates.range(start, target).withinMaxPeriod
+          ? MeetingDayState.open
+          : MeetingDayState.unavailable;
+    }
+    if (dates.contains(target)) return MeetingDayState.selected;
+    if (dates.inPeriod(target)) return MeetingDayState.excluded;
+    return MeetingDayState.open;
+  }
+
+  /// [question]에 [next] 값으로 답한다. 다시 묻던 것을 닫고, 방식이 새 날짜에 맞지 않으면 날짜별로 바꾼다
+  MeetingFlow _answer(
+    MeetingQuestion question,
+    MeetingDraft next, {
+    Set<MeetingAdjustment> adjusted = const {},
+  }) {
+    final changes = {...adjusted};
+    var settled = next;
+    if (_modeChosen || question == MeetingQuestion.mode) {
+      if (settled.mode == MeetingMode.hourly && !settled.hourlyAvailable) {
+        settled = settled.withMode(MeetingMode.daily);
+        changes.add(MeetingAdjustment.hourlyToDaily);
+      } else if (settled.mode == MeetingMode.weekly && !settled.dates.isWeek) {
+        settled = settled.withMode(MeetingMode.daily);
+        changes.add(MeetingAdjustment.weeklyToDaily);
+      }
+    }
+    return MeetingFlow(
+      draft: settled,
+      answered: {...answered, question},
+      adjusted: changes,
+    );
+  }
+
+  MeetingFlow _copy({
+    MeetingDraft? draft,
+    Set<MeetingQuestion>? answered,
+    DateTime? rangeStart,
+    bool? pickingHours,
+  }) => MeetingFlow(
+    draft: draft ?? this.draft,
+    answered: answered ?? this.answered,
+    rangeStart: rangeStart ?? this.rangeStart,
+    editing: editing,
+    pickingHours: pickingHours ?? this.pickingHours,
+    adjusted: adjusted,
+    expanded: expanded,
+    before: before,
+  );
+}

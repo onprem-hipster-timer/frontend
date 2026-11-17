@@ -33,76 +33,93 @@ void main() {
     });
   });
 
-  group('고르고 빼기', () {
-    test('누른 날만 들고 난다', () {
-      var dates = MeetingDates.none.toggle(march(1)).toggle(march(5));
-      expect(daysOf(dates), [1, 5]);
+  group('기간으로 고르기', () {
+    test('시작일부터 끝나는 날까지 모두 든다', () {
+      final dates = MeetingDates.range(march(3), march(7));
+      expect(daysOf(dates), [3, 4, 5, 6, 7]);
       expect(dates.span, 5);
-
-      dates = dates.toggle(march(3)).toggle(march(5));
-      expect(daysOf(dates), [1, 3]);
+      expect(dates.excluded, isEmpty);
     });
 
-    test('순서를 바꿔 눌러도 같은 날짜가 된다', () {
-      final forward = MeetingDates.none
-          .toggle(march(2))
-          .toggle(march(4))
-          .toggle(march(6));
-      final backward = MeetingDates.none
-          .toggle(march(6))
-          .toggle(march(4))
-          .toggle(march(2));
-      expect(daysOf(forward), daysOf(backward));
+    test('끝나는 날을 시작일보다 앞에 눌러도 앞의 날부터다', () {
+      expect(daysOf(MeetingDates.range(march(7), march(3))), [3, 4, 5, 6, 7]);
     });
 
-    test('같은 날을 두 번 누르면 처음으로 돌아간다', () {
-      final dates = MeetingDates.none.toggle(march(3)).toggle(march(3));
-      expect(dates.isEmpty, isTrue);
-      expect(dates.span, 0);
+    test('같은 날을 두 번 누르면 하루다', () {
+      final dates = MeetingDates.range(march(3), march(3));
+      expect(daysOf(dates), [3]);
+      expect(dates.span, 1);
     });
 
-    test('2주 떨어진 두 날을 고르면 그 두 날만 고르고 사이의 같은 요일 날은 들지 않는다', () {
-      final dates = MeetingDates.none.toggle(march(1)).toggle(march(15));
-      expect(daysOf(dates), [1, 15]);
-      expect(dates.span, 15);
+    test('시각이 붙은 값도 그날로 본다', () {
+      final dates = MeetingDates.range(
+        DateTime(2027, 3, 2, 15),
+        DateTime(2027, 3, 4, 1),
+      );
+      expect(daysOf(dates), [2, 3, 4]);
+      expect(dates.contains(DateTime(2027, 3, 3, 23)), isTrue);
     });
 
-    test('기간 가운데의 날을 빼면 그날만 빠진다', () {
-      final twoWeeks = MeetingDates.of([
-        for (var day = 1; day <= 14; day++) march(day),
-      ]);
-      final dates = twoWeeks.toggle(march(4));
-      expect(daysOf(dates), [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
-    });
-
-    test('같은 날을 여러 번 넣어도 한 번만 든다', () {
-      final dates = MeetingDates.of([march(3), march(1), march(3)]);
-      expect(daysOf(dates), [1, 3]);
-    });
-
-    test('끝날을 빼면 그날만 빠지고 기간이 줄어든다', () {
-      final twoWeeks = MeetingDates.of([
-        for (var day = 1; day <= 14; day++) march(day),
-      ]);
-      final dates = twoWeeks.toggle(march(14));
-      expect(daysOf(dates), [for (var day = 1; day <= 13; day++) day]);
-      expect(dates.span, 13);
-    });
-
-    test('첫날을 빼면 다음 고른 날이 첫날이 된다', () {
-      final dates = MeetingDates.of([
-        march(1),
+    test('제외 날짜는 첫날과 마지막 날 사이의 것만 남긴다', () {
+      final dates = MeetingDates.range(
         march(3),
-        march(8),
-      ]).toggle(march(1));
-      expect(daysOf(dates), [3, 8]);
-      expect(dates.span, 6);
+        march(7),
+        excluded: [march(1), march(3), march(5), march(7), march(9)],
+      );
+      expect(daysOf(dates), [3, 4, 6, 7]);
+      expect(dates.excluded, [march(5)]);
+    });
+  });
+
+  group('기간 안의 날 빼기', () {
+    final week = MeetingDates.range(march(1), march(7));
+
+    test('가운데 날을 빼고, 다시 누르면 되돌린다', () {
+      final out = week.toggleExcluded(march(3));
+      expect(out.excluded, [march(3)]);
+      expect(out.toggleExcluded(march(3)).excluded, isEmpty);
     });
 
-    test('시각이 붙은 값으로 눌러도 같은 날로 본다', () {
-      final dates = MeetingDates.none.toggle(DateTime(2027, 3, 2, 15));
-      expect(dates.contains(DateTime(2027, 3, 2, 1)), isTrue);
-      expect(dates.toggle(DateTime(2027, 3, 2, 8)).isEmpty, isTrue);
+    test('첫날과 마지막 날은 뺄 수 없다', () {
+      expect(week.canExclude(march(1)), isFalse);
+      expect(week.canExclude(march(7)), isFalse);
+      expect(week.toggleExcluded(march(1)).days, week.days);
+      expect(week.toggleExcluded(march(7)).days, week.days);
+      expect(week.canExclude(march(4)), isTrue);
+    });
+
+    test('기간 밖의 날은 뺄 수 없다', () {
+      expect(week.canExclude(march(9)), isFalse);
+      expect(week.toggleExcluded(march(9)).days, week.days);
+    });
+
+    test('주말 빼기는 첫날·마지막 날이 아닌 토·일요일만 뺀다', () {
+      // 3월 1일(월)~14일(일): 6·7·13일이 가운데 주말, 14일(일)은 마지막 날이다
+      final twoWeeks = MeetingDates.range(march(1), march(14));
+      expect(twoWeeks.weekendsInside, [march(6), march(7), march(13)]);
+      expect(twoWeeks.withoutWeekends().excluded, [
+        march(6),
+        march(7),
+        march(13),
+      ]);
+    });
+
+    test('가운데 주말이 없으면 주말 빼기는 할 것이 없다', () {
+      expect(MeetingDates.range(march(1), march(5)).weekendsInside, isEmpty);
+      // 토요일에 시작해 일요일에 끝나면 주말이 모두 첫날·마지막 날이다
+      expect(MeetingDates.range(march(6), march(7)).weekendsInside, isEmpty);
+    });
+
+    test('뺀 날을 모두 되돌린다', () {
+      final dates = week.toggleExcluded(march(3)).toggleExcluded(march(4));
+      expect(dates.withoutExclusions().days, week.days);
+    });
+
+    test('이어진 7일이고 뺀 날이 없을 때만 한 주다', () {
+      expect(week.isWeek, isTrue);
+      expect(week.toggleExcluded(march(3)).isWeek, isFalse);
+      expect(MeetingDates.range(march(1), march(6)).isWeek, isFalse);
+      expect(MeetingDates.none.isWeek, isFalse);
     });
   });
 
@@ -143,20 +160,39 @@ void main() {
   });
 
   group('기간 상한', () {
-    final start = MeetingDates.none.toggle(march(31));
-
-    test('첫날에서 3개월 뒤 같은 날(없으면 말일)까지 더할 수 있다', () {
-      expect(start.canAdd(DateTime.utc(2027, 6, 30)), isTrue);
-      expect(start.canAdd(DateTime.utc(2027, 7, 1)), isFalse);
+    test('첫날에서 3개월 뒤 같은 날(없으면 말일)까지가 상한 안이다', () {
+      expect(
+        MeetingDates.range(
+          march(31),
+          DateTime.utc(2027, 6, 30),
+        ).withinMaxPeriod,
+        isTrue,
+      );
+      expect(
+        MeetingDates.range(march(31), DateTime.utc(2027, 7, 1)).withinMaxPeriod,
+        isFalse,
+      );
     });
 
-    test('앞쪽으로 더할 때는 새 첫날에서 센다', () {
-      expect(start.canAdd(DateTime.utc(2026, 12, 31)), isTrue);
-      expect(start.canAdd(DateTime.utc(2026, 12, 30)), isFalse);
+    test('끝나는 날을 앞에 눌러도 앞의 날에서 센다', () {
+      expect(
+        MeetingDates.range(
+          march(31),
+          DateTime.utc(2026, 12, 31),
+        ).withinMaxPeriod,
+        isTrue,
+      );
+      expect(
+        MeetingDates.range(
+          march(31),
+          DateTime.utc(2026, 12, 30),
+        ).withinMaxPeriod,
+        isFalse,
+      );
     });
 
-    test('고른 날이 없으면 어느 날이든 더할 수 있다', () {
-      expect(MeetingDates.none.canAdd(DateTime.utc(2030, 1, 1)), isTrue);
+    test('고른 날이 없으면 상한 안이다', () {
+      expect(MeetingDates.none.withinMaxPeriod, isTrue);
     });
   });
 }

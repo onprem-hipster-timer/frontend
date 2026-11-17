@@ -1,5 +1,8 @@
-/// 시간별의 기간 상한(일). 넘으면 시간 격자가 화면에 들어가지 않는다
+/// 시간별의 날짜 수 상한(일). 넘으면 시간 격자가 화면에 들어가지 않는다
 const hourlyMaxDays = 5;
+
+/// 시간별의 기간 상한(일, 뺀 날 포함). backend의 상한이다
+const hourlyMaxSpanDays = 7;
 
 /// 요일별의 기간(일)
 const weeklyDays = 7;

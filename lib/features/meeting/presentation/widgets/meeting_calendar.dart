@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -204,7 +204,8 @@ class _MonthGrid extends StatelessWidget {
   }
 }
 
-/// 날짜 칸 하나. 고른 날은 동그라미로 채우고, 고를 수 없거나 고르면 방식이 바뀌는 날은 흐리게 한다(요일 색 없이)
+/// 날짜 칸 하나. 고른 날은 동그라미로 채우고, 고를 수 없는 날은 흐리게, 뺀 날은 빈 동그라미 안에 흐리게 줄을
+/// 긋는다(요일 색 없이)
 class _DayCell extends StatelessWidget {
   const _DayCell({required this.day, required this.state, required this.onTap});
 
@@ -216,12 +217,10 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final selected = state == MeetingDayState.selected;
+    final excluded = state == MeetingDayState.excluded;
     final tappable = state != MeetingDayState.unavailable;
-    final dimmed =
-        state == MeetingDayState.unavailable ||
-        state == MeetingDayState.leavesHourly;
     // 달력처럼 흐린 날은 요일 색 없이 흐린 날짜 색이다
-    final color = dimmed
+    final color = state == MeetingDayState.unavailable || excluded
         ? scheme.onSurface.withValues(alpha: 0.4)
         : _weekendColor(context, day.weekday % 7) ?? scheme.onSurface;
     return LayoutBuilder(
@@ -231,9 +230,7 @@ class _DayCell extends StatelessWidget {
         return MergeSemantics(
           child: Semantics(
             label: meetingDayLabel(day),
-            hint: state == MeetingDayState.leavesHourly
-                ? '고르면 날짜별로 바뀝니다'
-                : null,
+            hint: excluded ? '뺀 날' : null,
             selected: selected,
             button: true,
             enabled: tappable,
@@ -243,12 +240,15 @@ class _DayCell extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (selected)
+                  if (selected || excluded)
                     SizedBox.square(
                       dimension: diameter,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: scheme.primaryContainer,
+                          color: selected ? scheme.primaryContainer : null,
+                          border: excluded
+                              ? Border.all(color: scheme.outline)
+                              : null,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -264,6 +264,11 @@ class _DayCell extends StatelessWidget {
                           style: TextStyle(
                             color: color,
                             fontWeight: selected ? FontWeight.w700 : null,
+                            decoration: excluded
+                                ? TextDecoration.lineThrough
+                                : null,
+                            decorationColor: color,
+                            decorationThickness: 2,
                           ),
                         ),
                       ),

@@ -8,7 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart'
-    show Tags, expect, find, findsNothing, findsOneWidget, setUpAll;
+    show Finder, Tags, expect, find, findsOneWidget, setUpAll;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
@@ -19,7 +19,9 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/guest_session_page.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
+import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
@@ -203,7 +205,7 @@ class _SubmitOnStartState extends State<_SubmitOnStart> {
   Widget build(BuildContext context) => widget.child;
 }
 
-/// 첫 프레임 뒤에 모임 만들기 달력에서 고를 수 있는 첫날을 한 번 고른 화면(시간 단계가 펼쳐진 단계)
+/// 첫 프레임 뒤에 모임 만들기 달력에서 고를 수 있는 첫날을 한 번 고른 화면(기간의 시작일만 누른 단계)
 class _PickFirstDayOnStart extends StatefulWidget {
   const _PickFirstDayOnStart({required this.child});
 
@@ -261,6 +263,83 @@ class _TapOnStartState extends State<_TapOnStart> {
   Widget build(BuildContext context) => widget.child;
 }
 
+/// 첫 프레임 뒤에 [label] 글자의 단추를 한 번 누른 화면(모임 만들기 시간 질문의 '아니요')
+class _PressOnStart extends StatefulWidget {
+  const _PressOnStart({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  State<_PressOnStart> createState() => _PressOnStartState();
+}
+
+class _PressOnStartState extends State<_PressOnStart> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final button = find
+          .ancestor(
+            of: find.text(widget.label),
+            matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+          )
+          .evaluate()
+          .first
+          .widget;
+      (button as ButtonStyleButton).onPressed!();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// 내일부터 [days]일([excluded]번째 날을 뺌)을 고르고 [answered]에 답한 모임 만들기 폼. 시간별(6~18시),
+/// 공개, 게스트 허용이다. [answered]가 없으면 펼친 폼이다
+PendingMeeting _pendingCreate({
+  int days = 5,
+  List<int> excluded = const [],
+  Set<MeetingQuestion>? answered,
+  String title = '',
+}) {
+  final start = DateTime.now().add(const Duration(days: 1));
+  final dates = MeetingDates.range(
+    start,
+    start.add(Duration(days: days - 1)),
+    excluded: [for (final i in excluded) start.add(Duration(days: i))],
+  );
+  return (
+    flow: answered == null
+        ? MeetingFlow(
+            draft: const MeetingDraft().withDates(dates),
+            expanded: true,
+          )
+        : MeetingFlow(
+            draft: const MeetingDraft().withDates(dates),
+            answered: answered,
+          ),
+    title: title,
+  );
+}
+
+/// 모든 질문에 답했다(제목만 남는다)
+const _allAnswered = {
+  MeetingQuestion.range,
+  MeetingQuestion.exclusions,
+  MeetingQuestion.mode,
+  MeetingQuestion.time,
+  MeetingQuestion.visibility,
+  MeetingQuestion.guests,
+};
+
+/// 낱말 잇기 문자(U+2060)를 빼고 [text]인 글자
+Finder _plain(String text) => find.byWidgetPredicate(
+  (widget) => widget is Text && widget.data?.replaceAll('\u2060', '') == text,
+);
+
+Widget _same(Widget page) => page;
+
 /// 모임 만들기·만든 뒤·모임 화면을 화면 크기 × 글자 배율 × 긴 문구로 점검한다.
 ///
 /// 사용자가 정하는 글자(제목 자리 글자의 이름, 모임 제목)에 [StressText]를 넣는다.
@@ -307,56 +386,158 @@ void main() {
       ...meetingOverrides(meetings: FakeMeetingsClient(), name: text.value),
       sharedPreferencesProvider.overrideWithValue(prefs),
     ]),
+    verify: (tester) => expect(_plain('언제 모일까요?'), findsOneWidget),
   );
 
   testLayoutAudit(
-    'meeting_create_page_time_step',
-    subject: '제목 자리 글자의 이름',
+    'meeting_create_page_range_started',
+    subject: '안내',
     texts: const [StressTexts.koreanLong],
     build: (text) =>
         routed(const _PickFirstDayOnStart(child: MeetingCreatePage()), [
-          ...meetingOverrides(meetings: FakeMeetingsClient(), name: text.value),
+          ...meetingOverrides(meetings: FakeMeetingsClient()),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ]),
+    verify: (tester) => expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            (w.data?.replaceAll('\u2060', '').contains('부터예요') ?? false),
+      ),
+      findsOneWidget,
+    ),
+  );
+
+  /// 둔 폼([pending])으로 연 모임 만들기. [wrap]으로 첫 프레임 뒤에 할 일을 더한다
+  Widget createFrom(
+    PendingMeeting pending, {
+    Widget Function(Widget page) wrap = _same,
+    bool signedIn = true,
+  }) {
+    PendingMeetingStore(prefs).save(pending);
+    return routed(wrap(const MeetingCreatePage()), [
+      ...meetingOverrides(meetings: FakeMeetingsClient(), signedIn: signedIn),
+      sharedPreferencesProvider.overrideWithValue(prefs),
+    ]);
+  }
+
+  for (final (name, days, excluded, answered, headline) in [
+    (
+      'meeting_create_page_exclusions',
+      7,
+      [2],
+      {MeetingQuestion.range},
+      '이 범위에서 제외하고 싶은 날짜가 있나요?',
+    ),
+    (
+      'meeting_create_page_mode',
+      7,
+      [2],
+      {MeetingQuestion.range, MeetingQuestion.exclusions},
+      '어떻게 받을까요?',
+    ),
+    (
+      'meeting_create_page_time',
+      5,
+      <int>[],
+      {MeetingQuestion.range, MeetingQuestion.exclusions, MeetingQuestion.mode},
+      '6시부터 18시까지로 할까요?',
+    ),
+    (
+      'meeting_create_page_visibility',
+      5,
+      <int>[],
+      {
+        MeetingQuestion.range,
+        MeetingQuestion.exclusions,
+        MeetingQuestion.mode,
+        MeetingQuestion.time,
+      },
+      '어떻게 할까요?',
+    ),
+    (
+      'meeting_create_page_guests',
+      5,
+      <int>[],
+      {
+        MeetingQuestion.range,
+        MeetingQuestion.exclusions,
+        MeetingQuestion.mode,
+        MeetingQuestion.time,
+        MeetingQuestion.visibility,
+      },
+      '게스트를 허용할까요?',
+    ),
+  ]) {
+    testLayoutAudit(
+      name,
+      subject: '안내',
+      texts: const [StressTexts.koreanLong],
+      build: (text) => createFrom(
+        _pendingCreate(days: days, excluded: excluded, answered: answered),
+      ),
+      verify: (tester) => expect(_plain(headline), findsOneWidget),
+    );
+  }
+
+  testLayoutAudit(
+    'meeting_create_page_time_custom',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => createFrom(
+      _pendingCreate(
+        answered: {
+          MeetingQuestion.range,
+          MeetingQuestion.exclusions,
+          MeetingQuestion.mode,
+        },
+      ),
+      wrap: (page) => _PressOnStart(label: '아니요', child: page),
+    ),
+    verify: (tester) => expect(find.text('이 시간으로 할게요'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_all_answered',
+    subject: '제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => createFrom(
+      _pendingCreate(excluded: [2], answered: _allAnswered, title: text.value),
+    ),
     verify: (tester) {
-      expect(find.text('모임 시간'), findsOneWidget);
-      expect(find.text('공개 여부'), findsNothing);
+      expect(_plain('마지막으로 제목을 지어 주세요'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
     },
   );
 
   testLayoutAudit(
-    'meeting_create_page_all_steps',
+    'meeting_create_page_editing',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => createFrom(
+      _pendingCreate(answered: _allAnswered),
+      wrap: (page) => _TapOnStart(label: '공개', child: page),
+    ),
+    verify: (tester) => expect(find.text('그대로 둘게요'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_expanded',
     subject: '제목',
     texts: const [StressTexts.koreanLong],
-    build: (text) {
-      // 로그인하러 가며 둔 폼으로 열면 모든 단계가 바로 보인다
-      final tomorrow = DateTime.now().add(const Duration(days: 1));
-      PendingMeetingStore(
-        prefs,
-      ).save((draft: const MeetingDraft().tapDay(tomorrow), title: text.value));
-      return routed(const MeetingCreatePage(), [
-        ...meetingOverrides(meetings: FakeMeetingsClient()),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ]);
-    },
-    verify: (tester) => expect(find.byType(TextField), findsOneWidget),
+    build: (text) => createFrom(_pendingCreate(title: text.value)),
+    verify: (tester) => expect(find.text('모임 시간'), findsOneWidget),
   );
 
   testLayoutAudit(
     'meeting_create_page_login_request',
     subject: '제목',
     texts: const [StressTexts.koreanLong],
-    build: (text) {
-      // 로그인하러 가며 둔 폼(날짜 하나)으로 열고 화살표를 누른다
-      final tomorrow = DateTime.now().add(const Duration(days: 1));
-      PendingMeetingStore(
-        prefs,
-      ).save((draft: const MeetingDraft().tapDay(tomorrow), title: text.value));
-      return routed(const _SubmitOnStart(child: MeetingCreatePage()), [
-        ...meetingOverrides(meetings: FakeMeetingsClient(), signedIn: false),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ]);
-    },
+    build: (text) => createFrom(
+      _pendingCreate(answered: _allAnswered, title: text.value),
+      wrap: (page) => _SubmitOnStart(child: page),
+      signedIn: false,
+    ),
     verify: (tester) => expect(find.text('로그인하고 계속하기'), findsOneWidget),
   );
 

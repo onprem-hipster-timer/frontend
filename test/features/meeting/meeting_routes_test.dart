@@ -348,7 +348,7 @@ void main() {
       expect(find.byType(MeetingCreatePage), findsOneWidget);
     });
 
-    testWidgets('로그인하고 계속하기로 로그인하면 만들기 화면으로 돌아와 넣은 그대로이고 화살표 한 번으로 만든다', (
+    testWidgets('로그인하고 계속하기로 로그인하면 만들기 화면으로 돌아와 답한 그대로이고 화살표 한 번으로 만든다', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(480, 1800);
@@ -361,12 +361,15 @@ void main() {
       await pumpAWhile(tester);
       final now = DateTime.now();
       final day = DateTime.utc(now.year, now.month + 1, 3);
-      await tester.tap(
-        find.bySemanticsLabel(RegExp('^${day.month}월 ${day.day}일')),
-      );
-      // 날짜를 고르면 남은 단계가 차례로 펼쳐진다
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(milliseconds: 1300));
+      // 하루를 고르고(같은 날 두 번) 날짜별·비공개로 답해 제목까지 간다
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(
+          find.bySemanticsLabel(RegExp('^${day.month}월 ${day.day}일')),
+        );
+        await pumpAWhile(tester);
+      }
+      for (final answer in ['날짜별', '비공개']) {
+        await tester.tap(find.text(answer).last);
         await pumpAWhile(tester);
       }
       await tester.enterText(find.byType(TextField), '스터디');

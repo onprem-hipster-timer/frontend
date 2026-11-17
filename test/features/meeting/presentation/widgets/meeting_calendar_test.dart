@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -54,12 +54,12 @@ void main() {
     expect(taps, [march(12)]);
   });
 
-  testWidgets('고를 수 없는 날은 눌러도 알리지 않고, 고르면 방식이 바뀌는 날은 알린다', (tester) async {
+  testWidgets('고를 수 없는 날은 눌러도 알리지 않고, 뺀 날은 알린다', (tester) async {
     await pumpCalendar(
       tester,
       stateOf: (day) => switch (day.day) {
         5 => MeetingDayState.unavailable,
-        20 => MeetingDayState.leavesHourly,
+        20 => MeetingDayState.excluded,
         _ => MeetingDayState.open,
       },
     );
@@ -70,14 +70,14 @@ void main() {
     expect(taps, [march(20)]);
   });
 
-  testWidgets('스크린 리더가 날짜·고른 상태·고를 수 있는지·방식이 바뀐다는 안내를 읽는다', (tester) async {
+  testWidgets('스크린 리더가 날짜·고른 상태·고를 수 있는지·뺀 날을 읽는다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpCalendar(
       tester,
       stateOf: (day) => switch (day.day) {
         3 => MeetingDayState.selected,
         5 => MeetingDayState.unavailable,
-        20 => MeetingDayState.leavesHourly,
+        20 => MeetingDayState.excluded,
         _ => MeetingDayState.open,
       },
     );
@@ -101,7 +101,16 @@ void main() {
         hasTapAction: false,
       ),
     );
-    expect(tester.getSemantics(dayCell('3월 20일')).hint, '고르면 날짜별로 바뀝니다');
+    expect(
+      tester.getSemantics(dayCell('3월 20일')),
+      isSemantics(
+        label: '3월 20일 (토)',
+        hint: '뺀 날',
+        isSelected: false,
+        isEnabled: true,
+        hasTapAction: true,
+      ),
+    );
     semantics.dispose();
   });
 
@@ -144,33 +153,35 @@ void main() {
   });
 
   testWidgets(
-    '날짜 글자는 달력과 같은 색이다: 고를 수 있는 일·토요일은 공휴일·토요일 색, 흐린 날은 요일과 상관없이 달력의 흐린 날짜 색',
+    '날짜 글자는 달력과 같은 색이다: 고를 수 있는 일·토요일은 공휴일·토요일 색, 흐린 날과 뺀 날은 요일과 상관없이 달력의 흐린 날짜 색이고 뺀 날은 줄을 긋는다',
     (tester) async {
       await pumpCalendar(
         tester,
         stateOf: (day) => day.day < 10
             ? MeetingDayState.unavailable
             : day.day == 14
-            ? MeetingDayState.leavesHourly
+            ? MeetingDayState.excluded
             : MeetingDayState.open,
       );
       final context = tester.element(find.byType(MeetingCalendar));
       final scheme = Theme.of(context).colorScheme;
       final app = AppColors.of(context);
-      Color? colorOf(int day) => tester
+      TextStyle? styleOf(int day) => tester
           .widget<Text>(
             find.descendant(
               of: dayCell('3월 $day일'),
               matching: find.text('$day'),
             ),
           )
-          .style
-          ?.color;
+          .style;
+      Color? colorOf(int day) => styleOf(day)?.color;
 
       final dim = scheme.onSurface.withValues(alpha: 0.4);
       expect(colorOf(7), dim, reason: '지난 일요일');
       expect(colorOf(6), dim, reason: '지난 토요일');
-      expect(colorOf(14), dim, reason: '고르면 방식이 바뀌는 일요일');
+      expect(colorOf(14), dim, reason: '뺀 일요일');
+      expect(styleOf(14)?.decoration, TextDecoration.lineThrough);
+      expect(styleOf(16)?.decoration, isNot(TextDecoration.lineThrough));
       expect(colorOf(21), app.holiday);
       expect(colorOf(20), app.saturday);
       expect(colorOf(16), scheme.onSurface);
