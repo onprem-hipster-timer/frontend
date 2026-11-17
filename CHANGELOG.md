@@ -271,6 +271,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### UI
+- 확인 대화상자(`AppConfirmDialog`)는 낮은 화면이나 큰 글자에서 제목과 내용을 굴리고 단추는 그대로 둔다. 이전에는 긴 내용이 잘리고 단추에 가렸다
+
 #### Router
 - 세션을 확인하는 동안(새 탭에서 연 링크 등) 연 주소를 기억해 확인이 끝나면 그 주소로 간다. 이전에는 로딩 뒤 처음 화면으로 가 링크를 잃었다. 기억한 주소는 앱에 있는 경로만 쓰고 그 주소의 규칙(로그인·약관 동의 등)을 다시 따른다
 

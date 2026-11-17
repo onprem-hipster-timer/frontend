@@ -40,6 +40,41 @@ void main() {
       expect(find.widgetWithText(FilledButton, '삭제'), findsOneWidget);
     });
 
+    testWidgets('낮은 화면에서 큰 글자로 긴 내용이면 내용을 굴려 단추를 가리지 않는다', (tester) async {
+      tester.view.physicalSize = const Size(720, 748);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      final content = List.filled(6, '참여자가 넣은 답과 게스트가 모두 지워져요.').join(' ');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery.withClampedTextScaling(
+            minScaleFactor: 2,
+            maxScaleFactor: 2,
+            child: AppConfirmDialog(title: '모임 삭제', content: content),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.ancestor(
+          of: find.text(content),
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsOneWidget,
+      );
+      final cancel = tester.getRect(find.text('취소'));
+      final text = tester.getRect(find.text(content));
+      final viewport = tester.getRect(
+        find.ancestor(
+          of: find.text(content),
+          matching: find.byType(SingleChildScrollView),
+        ),
+      );
+      expect(viewport.bottom, lessThanOrEqualTo(cancel.top));
+      expect(text.height, greaterThan(viewport.height));
+    });
+
     testWidgets('줄바꿈이 포함된 내용이 올바르게 표시된다', (tester) async {
       const msg = '이 작업은 되돌릴 수 없습니다.\n계속하시겠습니까?';
 
