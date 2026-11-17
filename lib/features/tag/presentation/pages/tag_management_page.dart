@@ -9,6 +9,7 @@ import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 태그 관리 페이지
 ///
@@ -33,8 +34,8 @@ class TagManagementPage extends ConsumerWidget {
             ? AppEmptyState(
                 icon: Icons.label_outline,
                 title: '아직 태그가 없습니다',
-                message: '태그 그룹을 만들어 태그를 정리해보세요',
-                actionLabel: '첫 태그 그룹 만들기',
+                message: '${Terms.tagGroup.withJosa('을', '를')} 만들어 태그를 정리해보세요',
+                actionLabel: '첫 ${Terms.tagGroup} 만들기',
                 onAction: () => showTagGroupFormSheet(context),
               )
             : CustomScrollView(
@@ -58,8 +59,8 @@ class TagManagementPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showTagGroupFormSheet(context),
         icon: const Icon(Icons.add),
-        label: const Text('새 그룹'),
-        tooltip: '새 태그 그룹 만들기',
+        label: const Text('새 ${Terms.tagGroup}'),
+        tooltip: '새 ${Terms.tagGroup} 만들기',
       ),
     );
   }
@@ -151,7 +152,7 @@ class _GroupActions extends ConsumerWidget {
           icon: const Icon(Icons.add, size: 16),
           label: Text(
             '태그 추가',
-            semanticsLabel: '${tagGroup.groupName} 그룹에 태그 추가',
+            semanticsLabel: '${tagGroup.groupName} ${Terms.tagGroup}에 태그 추가',
           ),
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -164,7 +165,10 @@ class _GroupActions extends ConsumerWidget {
         OutlinedButton.icon(
           onPressed: () => _editGroup(context),
           icon: const Icon(Icons.edit, size: 16),
-          label: Text('그룹 수정', semanticsLabel: '${tagGroup.groupName} 그룹 수정'),
+          label: Text(
+            '${Terms.tagGroup} 수정',
+            semanticsLabel: '${tagGroup.groupName} ${Terms.tagGroup} 수정',
+          ),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             minimumSize: const Size(0, 32),
@@ -176,7 +180,10 @@ class _GroupActions extends ConsumerWidget {
         OutlinedButton.icon(
           onPressed: () => _deleteGroup(context, ref),
           icon: const Icon(Icons.delete_outline, size: 16),
-          label: Text('그룹 삭제', semanticsLabel: '${tagGroup.groupName} 그룹 삭제'),
+          label: Text(
+            '${Terms.tagGroup} 삭제',
+            semanticsLabel: '${tagGroup.groupName} ${Terms.tagGroup} 삭제',
+          ),
           style: OutlinedButton.styleFrom(
             foregroundColor: theme.colorScheme.error,
             side: BorderSide(color: theme.colorScheme.error),
@@ -207,11 +214,11 @@ class _GroupActions extends ConsumerWidget {
   Future<void> _deleteGroup(BuildContext context, WidgetRef ref) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: '그룹 삭제',
+      title: '${Terms.tagGroup} 삭제',
       content:
-          '${tagGroup.groupName} 그룹을 삭제하시겠습니까?\n'
+          '${tagGroup.groupName} ${Terms.tagGroup.withJosa('을', '를')} 삭제하시겠습니까?\n'
           '되돌릴 수 없습니다.\n'
-          '그룹에 포함된 모든 태그도 함께 삭제됩니다.',
+          '이 ${Terms.tagGroup}의 모든 태그도 함께 삭제됩니다.',
       confirmText: '삭제',
       destructive: true,
     );
@@ -226,13 +233,16 @@ class _GroupActions extends ConsumerWidget {
         );
 
         if (context.mounted) {
-          showAppSnackBar(context, '${tagGroup.groupName} 그룹이 삭제되었습니다');
+          showAppSnackBar(
+            context,
+            '${tagGroup.groupName} ${Terms.tagGroup.withJosa('이', '가')} 삭제되었습니다',
+          );
         }
       } catch (error) {
         if (context.mounted) {
           showAppSnackBar(
             context,
-            '그룹 삭제에 실패했습니다: $error',
+            '${Terms.tagGroup} 삭제에 실패했습니다: $error',
             kind: AppNoticeKind.error,
           );
         }

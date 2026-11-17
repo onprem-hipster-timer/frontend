@@ -9,20 +9,15 @@ import 'package:momeet/router.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
 import '../../../../helpers/fake_rest_clients.dart';
-import '../../../../helpers/schedule_fixtures.dart';
 import '../../../../helpers/sheet_host.dart';
 
 void main() {
-  late FakeTagsClient tags;
+  late FakeTodosClient todos;
 
   setUp(() {
-    tags = FakeTagsClient([
-      makeTagGroup(id: 'group-work', name: '업무', description: '회사 일'),
-      makeTagGroup(
-        id: 'group-study',
-        name: '학습',
-        tags: [makeTag(groupId: 'group-study')],
-      ),
+    todos = FakeTodosClient(const [], [
+      makeTodoGroup(id: 'group-study', name: '학습'),
+      makeTodoGroup(id: 'group-work', name: '업무', description: '회사 일'),
     ]);
   });
 
@@ -51,54 +46,72 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         retry: appRetry,
-        overrides: [tagsApiProvider.overrideWithValue(tags)],
+        overrides: [
+          todosApiProvider.overrideWithValue(todos),
+          tagsApiProvider.overrideWithValue(FakeTagsClient()),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('그룹을 받은 순서대로 이름·설명 카드로 보이고, 누르면 그 그룹 화면으로 간다', (tester) async {
+  testWidgets('받은 순서(기본 그룹 먼저)대로 카드로 보이고, 누르면 그 그룹 화면으로 간다', (tester) async {
     await pumpPage(tester);
 
-    expect(find.byType(TodoGroupCard), findsNWidgets(2));
-    expect(
-      tester.getTopLeft(find.text('업무')).dx,
-      lessThan(tester.getTopLeft(find.text('학습')).dx),
-    );
+    expect(find.byType(TodoGroupCard), findsNWidgets(3));
+    double left(String name) => tester.getTopLeft(find.text(name)).dx;
+    expect(left('기본'), lessThan(left('업무')));
+    expect(left('업무'), lessThan(left('학습')));
     expect(find.text('회사 일'), findsOneWidget);
 
     await tapVisible(tester, find.text('학습'));
     expect(find.text('그룹 화면 group-study'), findsOneWidget);
   });
 
-  testWidgets('그룹이 없으면 안내를 보이고 첫 그룹 만들기를 연다', (tester) async {
-    tags.groups.clear();
-    await pumpPage(tester);
-
-    expect(find.text('그룹이 없습니다'), findsOneWidget);
-    await tapVisible(tester, find.text('첫 그룹 만들기'));
-    expect(find.text('새 그룹 만들기'), findsWidgets);
-    expect(find.widgetWithText(TextFormField, '그룹 이름'), findsOneWidget);
-  });
-
-  testWidgets('새 그룹 만들기 버튼으로 만든 그룹이 카드로 나타난다', (tester) async {
+  testWidgets('할 일 추가는 기본 그룹에 할 일을 만든다', (tester) async {
     await pumpPage(tester);
     await tapVisible(tester, find.byType(FloatingActionButton));
-    await tester.enterText(find.widgetWithText(TextFormField, '그룹 이름'), '운동');
+    expect(find.text('새 할 일 만들기'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
     await tapVisible(tester, find.text('생성'));
 
-    expect(find.byType(TodoGroupCard), findsNWidgets(3));
+    expect(todos.created.single.title, '정리');
+    expect(todos.created.single.todoGroupId, defaultTodoGroupId);
+  });
+
+  testWidgets('그룹 목록을 받지 못해도 할 일 추가는 그룹 없이 보낸다', (tester) async {
+    todos.groupsReadError = Exception('끊김');
+    await pumpPage(tester);
+    await tapVisible(tester, find.byType(FloatingActionButton));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.text('생성'));
+
+    expect(todos.created.single.todoGroupId, isNull);
+  });
+
+  testWidgets('새 할 일 그룹 카드로 만든 그룹이 카드로 나타난다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.text('새 해야 할 일 목록'));
+    expect(find.text('새 해야 할 일 목록 만들기'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '해야 할 일 목록 이름'),
+      '운동',
+    );
+    await tapVisible(tester, find.text('생성'));
+
+    expect(todos.createdGroups.single.name, '운동');
+    expect(find.byType(TodoGroupCard), findsNWidgets(4));
     expect(find.text('운동'), findsOneWidget);
   });
 
   testWidgets('불러오지 못하면 오류를 보이고 다시 시도하면 카드를 그린다', (tester) async {
-    tags.readError = Exception('끊김');
+    todos.groupsReadError = Exception('끊김');
     await pumpPage(tester);
 
-    expect(find.text('그룹을 불러오지 못했습니다'), findsOneWidget);
-    tags.readError = null;
+    expect(find.text('해야 할 일 목록을 불러오지 못했습니다'), findsOneWidget);
+    todos.groupsReadError = null;
     await tapVisible(tester, find.text('다시 시도'));
-    expect(find.byType(TodoGroupCard), findsNWidgets(2));
+    expect(find.byType(TodoGroupCard), findsNWidgets(3));
   });
 }

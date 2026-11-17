@@ -14,7 +14,7 @@ void main() {
   final todo = TodoRead(
     id: 'todo-1',
     title: '보고서',
-    tagGroupId: 'g1',
+    todoGroupId: 'g1',
     status: TodoStatus.unscheduled,
     createdAt: DateTime(2026, 1, 1),
   );

@@ -170,15 +170,60 @@ class FakeTagsClient extends Fake implements TagsClient {
   }
 }
 
-/// 메모리에 할 일을 들고 있는 [TodosClient]. 받은 요청을 기록한다.
+/// 테스트용 할 일 그룹.
+TodoGroupRead makeTodoGroup({
+  String id = 'group-1',
+  String name = '업무',
+  String color = '#2196F3',
+  String? description,
+  bool isDefault = false,
+}) => TodoGroupRead(
+  id: id,
+  name: name,
+  color: color,
+  description: description,
+  isDefault: isDefault,
+  createdAt: _at,
+  updatedAt: _at,
+);
+
+/// 할 일 그룹 없이 만든 할 일이 들어가는 가짜 기본 그룹 id
+const defaultTodoGroupId = 'group-default';
+
+/// [FakeTodosClient]가 늘 갖는 기본 할 일 그룹
+final defaultTodoGroup = makeTodoGroup(
+  id: defaultTodoGroupId,
+  name: '기본',
+  isDefault: true,
+);
+
+/// 메모리에 할 일과 할 일 그룹을 들고 있는 [TodosClient]. 받은 요청을 기록한다.
+///
+/// 할 일 그룹은 서버처럼 기본 그룹이 늘 있고([groups]에 없으면 [defaultTodoGroup]을 넣는다),
+/// 기본 먼저·이름순으로 준다. 그룹을 지우면 그 그룹의 할 일은 기본 그룹으로 옮겨진다.
+/// 할 일의 그룹을 바꾸면 하위 할 일도 함께 옮겨지고, 상위 할 일이 옛 그룹에 남으면 상위 연결이 풀린다.
 class FakeTodosClient extends Fake implements TodosClient {
-  FakeTodosClient([List<TodoRead> todos = const []]) : todos = [...todos];
+  FakeTodosClient([
+    List<TodoRead> todos = const [],
+    List<TodoGroupRead> groups = const [],
+  ]) : todos = [...todos],
+       groups = [
+         if (!groups.any((g) => g.isDefault)) defaultTodoGroup,
+         ...groups,
+       ];
 
   final List<TodoRead> todos;
+  final List<TodoGroupRead> groups;
 
   final created = <TodoCreate>[];
   final updated = <(String, TodoUpdate, RequestOptions?)>[];
   final deleted = <(String, LinkedSchedulePolicy?, LinkedTimerPolicy?)>[];
+  final createdGroups = <TodoGroupCreate>[];
+  final updatedGroups = <(String, TodoGroupUpdate, RequestOptions?)>[];
+  final deletedGroups = <String>[];
+
+  /// 설정하면 할 일 그룹 목록 조회가 이 오류로 실패한다.
+  Object? groupsReadError;
 
   /// 목록 조회마다 받은 `group_ids` 필터.
   final readGroupIds = <List<String>?>[];
@@ -199,12 +244,12 @@ class FakeTodosClient extends Fake implements TodosClient {
   @override
   Future<List<TodoRead>> readTodosV1TodosGet({
     List<String>? tagIds,
-    List<String>? groupIds,
+    List<String>? todoGroupIds,
     String? timezone,
     ResourceScope? scope = ResourceScope.mine,
     RequestOptions? options,
   }) async {
-    readGroupIds.add(groupIds);
+    readGroupIds.add(todoGroupIds);
     final failures = readFailures;
     if (readError != null && (failures == null || failures > 0)) {
       if (failures != null) readFailures = failures - 1;
@@ -212,7 +257,8 @@ class FakeTodosClient extends Fake implements TodosClient {
     }
     return [
       for (final todo in todos)
-        if (groupIds == null || groupIds.contains(todo.tagGroupId)) todo,
+        if (todoGroupIds == null || todoGroupIds.contains(todo.todoGroupId))
+          todo,
     ];
   }
 
@@ -227,7 +273,7 @@ class FakeTodosClient extends Fake implements TodosClient {
     final todo = TodoRead(
       id: 'todo-new-${created.length}',
       title: body.title,
-      tagGroupId: body.tagGroupId,
+      todoGroupId: body.todoGroupId ?? defaultTodoGroupId,
       parentId: body.parentId,
       description: body.description,
       deadline: body.deadline,
@@ -253,17 +299,61 @@ class FakeTodosClient extends Fake implements TodosClient {
         : TodoRead(
             id: todoId,
             title: '',
-            tagGroupId: '',
+            todoGroupId: '',
             status: TodoStatus.unscheduled,
             createdAt: _at,
           );
-    final next = old.copyWith(
+    var next = old.copyWith(
       title: body.title ?? old.title,
       status: body.status ?? old.status,
       parentId: body.parentId ?? old.parentId,
     );
+    final groupId = body.todoGroupId;
+    if (index >= 0 && groupId != null && groupId != old.todoGroupId) {
+      final moved = _subtreeIds(todoId);
+      for (var i = 0; i < todos.length; i++) {
+        if (moved.contains(todos[i].id)) {
+          todos[i] = todos[i].copyWith(todoGroupId: groupId);
+        }
+      }
+      final parent = todos.where((t) => t.id == next.parentId).firstOrNull;
+      next = next.copyWith(
+        todoGroupId: groupId,
+        parentId: parent?.todoGroupId == groupId ? next.parentId : null,
+      );
+    }
     if (index >= 0) todos[index] = next;
     return next;
+  }
+
+  /// [rootId]와 그 아래 모든 할 일의 id
+  Set<String> _subtreeIds(String rootId) {
+    final ids = {rootId};
+    var grew = true;
+    while (grew) {
+      grew = false;
+      for (final todo in todos) {
+        if (todo.parentId != null &&
+            ids.contains(todo.parentId) &&
+            ids.add(todo.id)) {
+          grew = true;
+        }
+      }
+    }
+    return ids;
+  }
+
+  @override
+  Future<TodoRead> readTodoV1TodosTodoIdGet({
+    required String todoId,
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    if (readError != null) throw readError!;
+    return todos.firstWhere(
+      (t) => t.id == todoId,
+      orElse: () => throw StateError('no todo $todoId'),
+    );
   }
 
   @override
@@ -276,6 +366,72 @@ class FakeTodosClient extends Fake implements TodosClient {
     _failWrite();
     deleted.add((todoId, linkedSchedulePolicy, linkedTimerPolicy));
     todos.removeWhere((t) => t.id == todoId);
+  }
+
+  @override
+  Future<List<TodoGroupRead>> readTodoGroupsV1TodosGroupsGet({
+    RequestOptions? options,
+  }) async {
+    if (groupsReadError != null) throw groupsReadError!;
+    return [
+      ...groups.where((g) => g.isDefault),
+      ...groups.where((g) => !g.isDefault).toList()
+        ..sort((a, b) => a.name.compareTo(b.name)),
+    ];
+  }
+
+  @override
+  Future<TodoGroupRead> createTodoGroupV1TodosGroupsPost({
+    required TodoGroupCreate body,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    createdGroups.add(body);
+    final group = makeTodoGroup(
+      id: 'todo-group-new-${createdGroups.length}',
+      name: body.name,
+      color: body.color,
+      description: body.description,
+    );
+    groups.add(group);
+    return group;
+  }
+
+  @override
+  Future<TodoGroupRead> updateTodoGroupV1TodosGroupsGroupIdPatch({
+    required String groupId,
+    required TodoGroupUpdate body,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    updatedGroups.add((groupId, body, options));
+    final index = groups.indexWhere((g) => g.id == groupId);
+    final old = groups[index];
+    final next = old.copyWith(
+      name: body.name ?? old.name,
+      color: body.color ?? old.color,
+      description: explicitNullFields(options).contains('description')
+          ? null
+          : body.description ?? old.description,
+    );
+    groups[index] = next;
+    return next;
+  }
+
+  @override
+  Future<void> deleteTodoGroupV1TodosGroupsGroupIdDelete({
+    required String groupId,
+    RequestOptions? options,
+  }) async {
+    _failWrite();
+    deletedGroups.add(groupId);
+    groups.removeWhere((g) => g.id == groupId);
+    final defaultId = groups.firstWhere((g) => g.isDefault).id;
+    for (var i = 0; i < todos.length; i++) {
+      if (todos[i].todoGroupId == groupId) {
+        todos[i] = todos[i].copyWith(todoGroupId: defaultId);
+      }
+    }
   }
 }
 
@@ -293,7 +449,7 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   final created = <ScheduleCreate>[];
   final updated = <(String, ScheduleUpdate, RequestOptions?)>[];
   final deleted = <(String, SourceTodoPolicy?, LinkedTimerPolicy?)>[];
-  final convertedToTodo = <(String, String)>[];
+  final convertedToTodo = <(String, String?)>[];
 
   /// 설정하면 조회가 이 오류로 실패한다.
   Object? readError;
@@ -387,11 +543,11 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   @override
   Future<void> createTodoFromScheduleV1SchedulesScheduleIdTodoPost({
     required String scheduleId,
-    required String tagGroupId,
+    String? todoGroupId,
     RequestOptions? options,
   }) async {
     _failWrite();
-    convertedToTodo.add((scheduleId, tagGroupId));
+    convertedToTodo.add((scheduleId, todoGroupId));
   }
 }
 

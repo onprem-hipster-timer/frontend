@@ -27,7 +27,6 @@ abstract class ScheduleRead with _$ScheduleRead {
     @JsonKey(name: 'recurrence_rule') String? recurrenceRule,
     @JsonKey(name: 'recurrence_end') DateTime? recurrenceEnd,
     @JsonKey(name: 'parent_id') String? parentId,
-    @JsonKey(name: 'tag_group_id') String? tagGroupId,
     @JsonKey(name: 'source_todo_id') String? sourceTodoId,
     @JsonKey(name: 'owner_id') String? ownerId,
     @JsonKey(name: 'visibility_level') VisibilityLevel? visibilityLevel,

@@ -14,8 +14,8 @@ part 'todo_create.g.dart';
 abstract class TodoCreate with _$TodoCreate {
   const factory TodoCreate({
     required String title,
-    @JsonKey(name: 'tag_group_id') required String tagGroupId,
     String? description,
+    @JsonKey(name: 'todo_group_id') String? todoGroupId,
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
     DateTime? deadline,
     @JsonKey(name: 'parent_id') String? parentId,
