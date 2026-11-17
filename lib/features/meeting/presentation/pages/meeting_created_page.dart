@@ -5,11 +5,10 @@ import 'package:momeet/app_route.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
 import 'package:momeet/shared/domain/terms.dart';
-import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
-    show ShellMenuButton, ShellScope;
 
-/// 모임을 만든 뒤 화면. 링크를 복사하거나 내 시간을 넣으러 모임 화면(주소도 그 모임 링크)으로 간다
+/// 모임을 만든 뒤 화면(탭 셸 밖). 링크를 복사하거나 내 시간을 넣으러 모임 화면(주소도 그 모임 링크)으로 간다
 class MeetingCreatedPage extends ConsumerWidget {
   const MeetingCreatedPage({super.key, required this.meetingId});
 
@@ -21,7 +20,7 @@ class MeetingCreatedPage extends ConsumerWidget {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        leading: ShellScope.compactOf(context) ? const ShellMenuButton() : null,
+        leading: meetingAppBarLeading(context),
         title: const Text('새 ${Terms.meeting}'),
       ),
       body: Center(

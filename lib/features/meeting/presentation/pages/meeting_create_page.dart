@@ -11,6 +11,7 @@ import 'package:momeet/features/meeting/presentation/providers/meeting_providers
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
@@ -19,10 +20,8 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_timezone_la
 import 'package:momeet/features/meeting/presentation/widgets/meeting_title_field.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
-import 'package:momeet/shared/widgets/scaffold_with_nav.dart'
-    show ShellMenuButton, ShellScope;
 
-/// 모임 만들기 화면('모임' 탭).
+/// 모임 만들기 화면(`/meetings`). 탭 셸 밖의 독립 화면이다.
 ///
 /// 쉬운 입력부터 두고 비용이 큰 제목은 맨 끝 화살표 옆에 둔다: 날짜 → 시간 → 공개·게스트 → 제목.
 /// 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다.
@@ -114,7 +113,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     final name = ref.watch(currentUserProvider.select((user) => user?.name));
     return Scaffold(
       appBar: AppBar(
-        leading: ShellScope.compactOf(context) ? const ShellMenuButton() : null,
+        leading: meetingAppBarLeading(context),
         title: const Text('새 ${Terms.meeting}'),
       ),
       body: _FormLayout(

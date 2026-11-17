@@ -26,7 +26,7 @@ import '../../helpers/fake_rest_clients.dart';
 import '../../helpers/kratos_mocks.dart';
 import 'meeting_fixtures.dart';
 
-/// 실제 라우터(routerProvider)로 모임 탭과 모임 화면의 주소를 연다.
+/// 실제 라우터(routerProvider)로 모임 만들기·만든 뒤·모임 화면의 주소를 연다.
 void main() {
   late KratosTestHarness harness;
   late FakeMeetingsClient meetings;
@@ -290,18 +290,26 @@ void main() {
     });
   });
 
-  testWidgets('모임 탭은 탭 셸 안의 만들기 화면이고 하단 바의 모임을 누르면 간다', (tester) async {
+  testWidgets('하단 바에 모임 탭이 없고, 만들기 화면은 탭 셸 밖에서 처음 화면 단추와 함께 열린다', (
+    tester,
+  ) async {
     final router = await pumpRouter(tester);
+    expect(find.byType(ScaffoldWithNavBar), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('^모임')), findsNothing);
 
-    await tester.tap(find.bySemanticsLabel(RegExp('^모임')));
+    router.go(AppRoute.meetings.path);
     await pumpAWhile(tester);
 
     expect(location(router), AppRoute.meetings.path);
     expect(find.byType(MeetingCreatePage), findsOneWidget);
-    expect(find.byType(ScaffoldWithNavBar), findsOneWidget);
+    expect(find.byType(ScaffoldWithNavBar), findsNothing);
+
+    await tester.tap(find.byTooltip('처음 화면으로'));
+    await pumpAWhile(tester);
+    expect(location(router), AppRoute.calendar.path);
   });
 
-  testWidgets('만든 뒤 화면은 모임 번호를 담은 주소로 탭 셸 안에 열린다', (tester) async {
+  testWidgets('만든 뒤 화면은 모임 번호를 담은 주소로 탭 셸 밖에 열린다', (tester) async {
     final router = await pumpRouter(tester);
 
     router.go('/meetings/meeting-1/created');
@@ -309,7 +317,8 @@ void main() {
 
     expect(find.byType(MeetingCreatedPage), findsOneWidget);
     expect(find.byType(MeetingPage), findsNothing);
-    expect(find.byType(ScaffoldWithNavBar), findsOneWidget);
+    expect(find.byType(ScaffoldWithNavBar), findsNothing);
+    expect(find.byTooltip('처음 화면으로'), findsOneWidget);
 
     await tester.tap(find.text('나의 일정 입력'));
     await pumpAWhile(tester);

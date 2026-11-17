@@ -6,7 +6,6 @@ const shellTabs = [
   (Icons.calendar_month_rounded, '캘린더'),
   (Icons.check_circle_outline_rounded, Terms.todo),
   (Icons.timer_rounded, Terms.timer),
-  (Icons.groups_rounded, Terms.meeting),
   (Icons.label_outline_rounded, '태그'),
   (Icons.person_outline_rounded, '마이페이지'),
 ];

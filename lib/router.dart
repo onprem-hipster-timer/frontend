@@ -189,8 +189,27 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ============================================================
-      // 모임 화면 (공유 링크로 연다. Floating Navigation 없음)
+      // 모임 만들기·만든 뒤·모임 화면 (탭 셸 밖의 독립 화면. Floating Navigation 없음)
+      // 만든 뒤 화면은 만들기 화면 위에 쌓지 않고 바꾼다. 모임 화면은 공유 링크로 연다
       // ============================================================
+      GoRoute(
+        path: AppRoute.meetings.path,
+        name: AppRoute.meetings.name,
+        builder: (context, state) => DeferredWidget(
+          loader: meeting.loadLibrary,
+          builder: (_) => meeting.MeetingCreatePage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoute.meetingCreated.path,
+        name: AppRoute.meetingCreated.name,
+        builder: (context, state) => DeferredWidget(
+          loader: meeting.loadLibrary,
+          builder: (_) => meeting.MeetingCreatedPage(
+            meetingId: state.pathParameters['meetingId']!,
+          ),
+        ),
+      ),
       GoRoute(
         path: AppRoute.meeting.path,
         name: AppRoute.meeting.name,
@@ -301,31 +320,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // 4. 모임 브랜치 (만든 뒤 화면은 만들기 화면 위에 쌓지 않고 바꾼다)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoute.meetings.path,
-                name: AppRoute.meetings.name,
-                builder: (context, state) => DeferredWidget(
-                  loader: meeting.loadLibrary,
-                  builder: (_) => meeting.MeetingCreatePage(),
-                ),
-              ),
-              GoRoute(
-                path: AppRoute.meetingCreated.path,
-                name: AppRoute.meetingCreated.name,
-                builder: (context, state) => DeferredWidget(
-                  loader: meeting.loadLibrary,
-                  builder: (_) => meeting.MeetingCreatedPage(
-                    meetingId: state.pathParameters['meetingId']!,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // 5. 태그 브랜치
+          // 4. 태그 브랜치
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -339,7 +334,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // 6. 마이페이지 브랜치
+          // 5. 마이페이지 브랜치
           StatefulShellBranch(
             routes: [
               GoRoute(
