@@ -44,31 +44,32 @@ class MeetingCreateLayout extends StatelessWidget {
             ],
           ],
         );
-        final box = ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: wide
-              ? Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: content,
-                  ),
-                )
-              : content,
-        );
+        final box = wide
+            ? Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: content,
+                ),
+              )
+            : content;
+        // 폭만 부드럽게 바꾼다. 높이는 내용을 그대로 따라 늘 모두 누를 수 있다
         return SingleChildScrollView(
           padding: EdgeInsets.all(
             wide ? 32 : 16,
           ).add(EdgeInsets.only(top: MediaQuery.paddingOf(context).top)),
           child: Center(
-            child: MediaQuery.disableAnimationsOf(context)
-                ? box
-                : AnimatedSize(
-                    duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeOut,
-                    alignment: Alignment.topCenter,
-                    clipBehavior: Clip.none,
-                    child: box,
-                  ),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: maxWidth),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 240),
+              curve: Curves.easeOut,
+              builder: (context, width, child) => ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: width),
+                child: child,
+              ),
+              child: box,
+            ),
           ),
         );
       },

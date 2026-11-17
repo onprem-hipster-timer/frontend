@@ -15,6 +15,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_create_layo
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_login_prompt.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_questions.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_step_switcher.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_title_field.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -38,9 +39,6 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
   final _title = TextEditingController();
   var _flow = const MeetingFlow();
 
-  /// 처음 보이는 질문(되살린 폼 포함)은 그대로 두고, 답한 뒤 나타나는 질문부터 펼친다
-  var _animate = false;
-
   /// 펼친 폼에서 비공개인데 참여할 사람을 정하지 않고 화살표를 눌렀다(그 칸에 알린다)
   var _accessAsked = false;
 
@@ -62,10 +60,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     super.dispose();
   }
 
-  void _change(MeetingFlow next) => setState(() {
-    _flow = next;
-    _animate = true;
-  });
+  void _change(MeetingFlow next) => setState(() => _flow = next);
 
   Future<void> _submit() async {
     if (ref.read(createMeetingMutation).isPending) return;
@@ -146,26 +141,46 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
       submitting: ref.watch(createMeetingMutation).isPending,
       onSubmit: _submit,
     );
+    final reduce = MediaQuery.disableAnimationsOf(context);
     return MeetingGlassScaffold(
       title: const Text('새 ${Terms.meeting}'),
-      body: _flow.expanded
-          ? MeetingCreateForm(
-              flow: _flow,
-              today: today,
-              accessAsked: _accessAsked,
-              timezone: timezone,
-              titleField: titleField,
-              onChanged: _change,
-            )
-          : MeetingCreateQuestions(
-              flow: _flow,
-              today: today,
-              animate: _animate,
-              timezone: timezone,
-              titleField: titleField,
-              onChanged: _change,
-              onExpand: () => _change(_flow.expand()),
+      // '전체 설정 펼치기'는 질문에서 폼으로 한 번 차분히 겹쳐 넘어간다
+      body: AnimatedSwitcher(
+        duration: reduce ? Duration.zero : Durations.medium2,
+        reverseDuration: reduce ? Duration.zero : Durations.short3,
+        switchInCurve: Easing.emphasizedDecelerate,
+        switchOutCurve: Easing.emphasizedAccelerate,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(0, meetingStepRise * (1 - animation.value)),
+              child: child,
             ),
+            child: child,
+          ),
+        ),
+        child: _flow.expanded
+            ? MeetingCreateForm(
+                key: const ValueKey('form'),
+                flow: _flow,
+                today: today,
+                accessAsked: _accessAsked,
+                timezone: timezone,
+                titleField: titleField,
+                onChanged: _change,
+              )
+            : MeetingCreateQuestions(
+                key: const ValueKey('questions'),
+                flow: _flow,
+                today: today,
+                timezone: timezone,
+                titleField: titleField,
+                onChanged: _change,
+                onExpand: () => _change(_flow.expand()),
+              ),
+      ),
     );
   }
 }

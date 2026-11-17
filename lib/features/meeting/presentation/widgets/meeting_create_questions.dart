@@ -9,17 +9,20 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_create_layo
 import 'package:momeet/features/meeting/presentation/widgets/meeting_current_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_exclusion_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_question_prompt.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_reveal_step.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_presence.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_stagger.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_step_switcher.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 모임 만들기를 한 번에 한 질문씩 묻는 화면([MeetingFlow]). 위에 답한 질문의 요약과 묻지 않고 맞춘 것의 알림,
-/// 그 아래 지금 질문 하나를 둔다. 새 질문은 답한 뒤에만 나타나며 펼쳐진다([animate]).
+/// 그 아래 지금 질문 하나를 둔다. 질문이 바뀌면 앞 질문은 누른 답을 잠깐 보인 뒤 접히며 사라지고 그 답은 요약
+/// 한 줄로 펼쳐지며, 다음 질문은 글부터 차례로 올라오며 나타난다([MeetingStepSwitcher]). 요약을 눌러 다시 물을
+/// 때는 거꾸로 요약의 답이 접히며 질문이 나타난다.
 ///
 /// 날짜(기간·제외)를 묻는 동안은 '언제 모일까요?'와 달력을 둔다. 좁으면 질문 글 → 달력 → 지금 질문 차례로
-/// 쌓고, 넓으면 왼쪽에 글과 질문, 오른쪽에 달력을 둔다. 어느 쪽이든 기간을 고른 뒤 제외를 물을 때 달력 위의 것은
-/// 높이가 같아(안내 줄이 기간 답으로 바뀐다) 달력이 누르던 자리에서 움직이지 않는다. 날짜를 다 물으면 달력 없이
-/// 한 칸으로 좁힌다. 맨 위 오른쪽의 '전체 설정 펼치기'(어느 질문에서나 굴리지 않아도 보인다)로 모든 설정을 한
-/// 폼으로 펼친다([onExpand]).
+/// 쌓고, 넓으면 왼쪽에 글과 질문, 오른쪽에 달력을 둔다. 기간에서 제외로 넘어갈 때는 달력 아래(넓으면 왼쪽)의 질문만
+/// 바뀌어 달력이 누르던 자리에서 움직이지 않는다. 날짜를 다 물으면 달력 없이 한 칸으로 좁힌다. 맨 위 오른쪽의
+/// '전체 설정 펼치기'(어느 질문에서나 굴리지 않아도 보인다)로 모든 설정을 한 폼으로 펼친다([onExpand]).
 ///
 /// 테스트: test/features/meeting/presentation/pages/meeting_create_page_test.dart
 class MeetingCreateQuestions extends StatelessWidget {
@@ -27,7 +30,6 @@ class MeetingCreateQuestions extends StatelessWidget {
     super.key,
     required this.flow,
     required this.today,
-    required this.animate,
     required this.timezone,
     required this.titleField,
     required this.onChanged,
@@ -36,9 +38,6 @@ class MeetingCreateQuestions extends StatelessWidget {
 
   final MeetingFlow flow;
   final DateTime today;
-
-  /// 새로 나타나는 질문을 펼치며 보일지(처음 질문과 되살린 폼은 그대로 보인다)
-  final bool animate;
 
   /// 아직 모르면 null
   final String? timezone;
@@ -56,44 +55,43 @@ class MeetingCreateQuestions extends StatelessWidget {
     final datesAsked =
         current == MeetingQuestion.range ||
         current == MeetingQuestion.exclusions;
-    final above = _Above(flow: flow, onChanged: onChanged);
     final keep = flow.editing == null
         ? null
         : _KeepButton(onPressed: () => onChanged(flow.keep()));
     return MeetingCreateLayout(
       maxWidth: datesAsked ? 880 : 640,
       header: _ExpandLink(onPressed: onExpand),
-      builder: (context, wide) {
-        if (!datesAsked) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              above,
-              _Asked(
-                key: ValueKey(current),
-                question: current,
-                animate: animate,
-                child: MeetingCurrentQuestion(
-                  flow: flow,
-                  timezone: timezone,
-                  titleField: titleField,
-                  onChanged: onChanged,
-                ),
-              ),
-              ?keep,
-            ],
-          );
-        }
-        return _DatesStep(
-          flow: flow,
-          today: today,
-          wide: wide,
-          above: above,
-          keep: keep,
-          animate: animate,
-          onChanged: onChanged,
-        );
-      },
+      builder: (context, wide) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Above(flow: flow, onChanged: onChanged),
+          MeetingStepSwitcher(
+            // 기간과 제외는 달력을 함께 쓰는 한 단계다
+            step: datesAsked ? MeetingQuestion.range : current,
+            announcement: meetingQuestionText(current),
+            child: datesAsked
+                ? _DatesStep(
+                    flow: flow,
+                    today: today,
+                    wide: wide,
+                    keep: keep,
+                    onChanged: onChanged,
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      MeetingCurrentQuestion(
+                        flow: flow,
+                        timezone: timezone,
+                        titleField: titleField,
+                        onChanged: onChanged,
+                      ),
+                      ?keep,
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -105,18 +103,14 @@ class _DatesStep extends StatelessWidget {
     required this.flow,
     required this.today,
     required this.wide,
-    required this.above,
     required this.keep,
-    required this.animate,
     required this.onChanged,
   });
 
   final MeetingFlow flow;
   final DateTime today;
   final bool wide;
-  final Widget above;
   final Widget? keep;
-  final bool animate;
   final ValueChanged<MeetingFlow> onChanged;
 
   static const _calendarWidth = 380.0;
@@ -125,38 +119,45 @@ class _DatesStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final flow = this.flow;
     final ranging = flow.current == MeetingQuestion.range;
-    final calendar = MeetingCalendar(
-      firstDay: today,
-      shownDay:
-          flow.rangeStart ??
-          (flow.draft.dates.isEmpty ? null : flow.draft.dates.first),
-      stateOf: (day) => flow.dayState(day, today: today),
-      onDayTap: (day) => _tapDay(context, day),
+    final calendar = MeetingStagger(
+      order: 2,
+      child: MeetingCalendar(
+        firstDay: today,
+        shownDay:
+            flow.rangeStart ??
+            (flow.draft.dates.isEmpty ? null : flow.draft.dates.first),
+        stateOf: (day) => flow.dayState(day, today: today),
+        onDayTap: (day) => _tapDay(context, day),
+      ),
     );
     final prompt = MeetingQuestionPrompt(
       headline: meetingRangeQuestion,
       guide: ranging ? meetingRangeGuide : meetingRangeAnswer(flow.draft.dates),
       answered: !ranging,
     );
-    final below = _Asked(
-      key: ValueKey(flow.current),
-      question: flow.current,
-      animate: animate,
-      child: ranging
-          ? _RangeHint(start: flow.rangeStart)
-          : MeetingExclusionQuestion(flow: flow, onChanged: onChanged),
+    final below = MeetingStepSwitcher(
+      step: flow.current,
+      announcement: meetingQuestionText(flow.current),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (ranging)
+            _RangeHint(start: flow.rangeStart)
+          else
+            MeetingExclusionQuestion(flow: flow, onChanged: onChanged),
+          ?keep,
+        ],
+      ),
     );
     if (!wide) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          above,
           prompt,
           const SizedBox(height: 16),
           calendar,
           const SizedBox(height: 20),
           below,
-          ?keep,
         ],
       );
     }
@@ -166,7 +167,7 @@ class _DatesStep extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [above, prompt, const SizedBox(height: 24), below, ?keep],
+            children: [prompt, const SizedBox(height: 24), below],
           ),
         ),
         const SizedBox(width: 40),
@@ -210,51 +211,25 @@ class _Above extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (summarized) ...[
-          MeetingAnswerSummary(
-            flow: flow,
-            onEdit: (question) => onChanged(flow.edit(question)),
-          ),
-          const SizedBox(height: 16),
-        ],
-        if (flow.adjusted.isNotEmpty) ...[
-          MeetingAdjustmentNotice(adjusted: flow.adjusted, draft: flow.draft),
-          const SizedBox(height: 20),
-        ],
+        MeetingAnswerSummary(
+          flow: flow,
+          onEdit: (question) => onChanged(flow.edit(question)),
+        ),
+        MeetingPresence(child: summarized ? const SizedBox(height: 12) : null),
+        MeetingPresence(
+          child: flow.adjusted.isEmpty
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: MeetingAdjustmentNotice(
+                    adjusted: flow.adjusted,
+                    draft: flow.draft,
+                  ),
+                ),
+        ),
       ],
     );
   }
-}
-
-/// 지금 질문. 답한 뒤 새로 나타나면 요약이 바뀐 것을 본 뒤 펼쳐지고 스크린 리더에 질문을 알린다
-class _Asked extends StatelessWidget {
-  const _Asked({
-    super.key,
-    required this.question,
-    required this.animate,
-    required this.child,
-  });
-
-  final MeetingQuestion question;
-  final bool animate;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => MeetingRevealStep(
-    animate: animate,
-    delay: const Duration(milliseconds: 120),
-    announcement: switch (question) {
-      MeetingQuestion.range => meetingRangeQuestion,
-      MeetingQuestion.exclusions => meetingExclusionQuestion,
-      MeetingQuestion.mode => meetingModeQuestion,
-      MeetingQuestion.time => meetingHoursQuestion,
-      MeetingQuestion.visibility => meetingVisibilityQuestion,
-      MeetingQuestion.guests => meetingGuestQuestion,
-      MeetingQuestion.access => meetingAccessQuestion,
-      MeetingQuestion.title => meetingTitleQuestion,
-    },
-    child: child,
-  );
 }
 
 /// 기간을 고르는 동안 달력 아래의 안내: 하루만 고르는 법, 시작일을 눌렀으면 끝나는 날을 누르라는 말
@@ -270,29 +245,32 @@ class _RangeHint extends StatelessWidget {
     final color = start == null
         ? theme.colorScheme.onSurfaceVariant
         : theme.colorScheme.primary;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          start == null ? Icons.touch_app_outlined : Icons.east,
-          size: 20,
-          color: color,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            keepWords(
-              start == null
-                  ? meetingRangeOneDayHint
-                  : meetingRangeStartedHint(start),
-            ),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: color,
-              fontWeight: start == null ? null : FontWeight.w600,
+    return MeetingStagger(
+      order: 2,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            start == null ? Icons.touch_app_outlined : Icons.east,
+            size: 20,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              keepWords(
+                start == null
+                    ? meetingRangeOneDayHint
+                    : meetingRangeStartedHint(start),
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: start == null ? null : FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

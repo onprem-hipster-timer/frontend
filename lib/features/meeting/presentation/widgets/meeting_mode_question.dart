@@ -7,6 +7,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_question_pr
 import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_stagger.dart';
 
 /// '어떻게 받을까요?': 시간별·날짜별·요일별을 한 줄 설명과 함께 놓는다. 미리 고른 방식은 없고, 다시 묻는
 /// 질문이면 지금 방식([chosen])을 채운다. 시간별을 받을 수 없으면([hourlyAvailable]이 false) 흐리게 두고
@@ -31,6 +32,9 @@ class _MeetingModeQuestionState extends State<MeetingModeQuestion> {
   /// 고를 수 없는 시간별을 누른 횟수
   var _refusals = 0;
 
+  /// 방금 누른 방식. 다음 질문으로 넘어가는 동안 고른 모양으로 보인다
+  MeetingMode? _pressed;
+
   static const _icons = {
     MeetingMode.hourly: Icons.table_chart_outlined,
     MeetingMode.daily: Icons.calendar_today_outlined,
@@ -53,30 +57,41 @@ class _MeetingModeQuestionState extends State<MeetingModeQuestion> {
       children: [
         const MeetingQuestionPrompt(headline: meetingModeQuestion),
         const SizedBox(height: 16),
-        for (final mode in MeetingMode.$valuesDefined) ...[
-          if (mode != MeetingMode.hourly) const SizedBox(height: 8),
-          if (mode == MeetingMode.hourly && !widget.hourlyAvailable)
-            MeetingShake(
-              count: _refusals,
-              child: _ModeTile(
-                icon: _icons[mode]!,
-                mode: mode,
-                description: meetingHourlyUnavailable,
-                enabled: false,
-                chosen: false,
-                onTap: _refuse,
-              ),
-            )
-          else
-            _ModeTile(
-              icon: _icons[mode]!,
-              mode: mode,
-              description: meetingModeDescription(mode),
-              enabled: true,
-              chosen: mode == widget.chosen,
-              onTap: () => widget.onChoose(mode),
-            ),
-        ],
+        MeetingStagger(
+          order: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final mode in MeetingMode.$valuesDefined) ...[
+                if (mode != MeetingMode.hourly) const SizedBox(height: 8),
+                if (mode == MeetingMode.hourly && !widget.hourlyAvailable)
+                  MeetingShake(
+                    count: _refusals,
+                    child: _ModeTile(
+                      icon: _icons[mode]!,
+                      mode: mode,
+                      description: meetingHourlyUnavailable,
+                      enabled: false,
+                      chosen: false,
+                      onTap: _refuse,
+                    ),
+                  )
+                else
+                  _ModeTile(
+                    icon: _icons[mode]!,
+                    mode: mode,
+                    description: meetingModeDescription(mode),
+                    enabled: true,
+                    chosen: mode == (_pressed ?? widget.chosen),
+                    onTap: () {
+                      setState(() => _pressed = mode);
+                      widget.onChoose(mode);
+                    },
+                  ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

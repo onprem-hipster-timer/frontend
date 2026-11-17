@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_answer_butt
 import 'package:momeet/features/meeting/presentation/widgets/meeting_hours_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_question_prompt.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_stagger.dart';
 
 /// 날짜(기간·제외) 밖의 지금 질문: 받는 방식, 시간, 공개 여부, 게스트(공개) 또는 참여할 사람(비공개), 제목. 다시 묻는 질문이면 지금 답을
 /// 채워 보인다
@@ -90,7 +91,7 @@ class MeetingCurrentQuestion extends StatelessWidget {
             guide: meetingTitleGuide,
           ),
           const SizedBox(height: 16),
-          titleField,
+          MeetingStagger(order: 2, child: titleField),
         ],
       ),
     };
@@ -120,7 +121,10 @@ class _ChoiceQuestion extends StatelessWidget {
       children: [
         MeetingQuestionPrompt(lead: lead, headline: headline, guide: guide),
         const SizedBox(height: 20),
-        MeetingAnswerButtons(answers: answers, selected: selected),
+        MeetingStagger(
+          order: 2,
+          child: MeetingAnswerButtons(answers: answers, selected: selected),
+        ),
       ],
     );
   }

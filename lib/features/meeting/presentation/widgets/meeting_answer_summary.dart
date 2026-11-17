@@ -2,10 +2,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_presence.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 답한 질문의 한 줄 요약: 날짜(기간 · 제외), 방식(방식 · 시간), 공개(공개 여부 · 게스트 또는 참여할 사람). 답마다 누르면 그 질문을
-/// 다시 묻는다([onEdit]). 날짜를 묻는 동안에는 날짜 줄을 두지 않는다(달력 위에 보인다)
+/// 다시 묻는다([onEdit]). 날짜를 묻는 동안에는 날짜 줄을 두지 않는다(달력 위에 보인다). 답과 줄은 펼쳐지며
+/// 나타나고 접히며 사라진다([MeetingPresence]): 답한 질문이 이 한 줄로 접히고, 다시 물으면 이 답이 질문으로 펼쳐진다
 class MeetingAnswerSummary extends StatelessWidget {
   const MeetingAnswerSummary({
     super.key,
@@ -50,19 +52,28 @@ class MeetingAnswerSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final group in _groups)
-          if (group.questions.any(shown.contains))
-            _SummaryRow(
-              icon: group.icon,
-              answers: [
-                for (final question in group.questions)
-                  if (shown.contains(question))
-                    _SummaryChip(
-                      label: _labelOf(question),
-                      text: _textOf(question),
-                      onTap: () => onEdit(question),
-                    ),
-              ],
-            ),
+          MeetingPresence(
+            key: ValueKey(group.icon),
+            child: group.questions.any(shown.contains)
+                ? _SummaryRow(
+                    icon: group.icon,
+                    answers: [
+                      for (final question in group.questions)
+                        MeetingPresence(
+                          key: ValueKey(question),
+                          axis: Axis.horizontal,
+                          child: shown.contains(question)
+                              ? _SummaryChip(
+                                  label: _labelOf(question),
+                                  text: _textOf(question),
+                                  onTap: () => onEdit(question),
+                                )
+                              : null,
+                        ),
+                    ],
+                  )
+                : null,
+          ),
       ],
     );
   }
@@ -114,7 +125,8 @@ class _SummaryRow extends StatelessWidget {
             child: Icon(icon, size: 20, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Wrap(spacing: 4, children: answers)),
+          // 사라진 답의 자리에 틈이 남지 않게 사이는 답마다 끝에 둔다
+          Expanded(child: Wrap(children: answers)),
         ],
       ),
     );
@@ -138,36 +150,39 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Semantics(
-      button: true,
-      label: '$label: $text',
-      hint: '눌러서 바꾸기',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.mdAll,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    text,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 4),
+      child: Semantics(
+        button: true,
+        label: '$label: $text',
+        hint: '눌러서 바꾸기',
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.mdAll,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      text,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.edit_outlined,
-                  size: 16,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

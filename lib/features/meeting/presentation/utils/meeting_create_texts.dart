@@ -91,6 +91,18 @@ const meetingFormWeeklyGuide = '시작하는 날을 누르면 그날부터 7일�
 /// 기간의 시작일만 누르고 만들려 할 때
 const meetingRangeUnfinished = '끝나는 날을 골라 주세요';
 
+/// 질문을 바꿀 때 스크린 리더에 알리는 [question]의 질문 글
+String meetingQuestionText(MeetingQuestion question) => switch (question) {
+  MeetingQuestion.range => meetingRangeQuestion,
+  MeetingQuestion.exclusions => meetingExclusionQuestion,
+  MeetingQuestion.mode => meetingModeQuestion,
+  MeetingQuestion.time => meetingHoursQuestion,
+  MeetingQuestion.visibility => meetingVisibilityQuestion,
+  MeetingQuestion.guests => meetingGuestQuestion,
+  MeetingQuestion.access => meetingAccessQuestion,
+  MeetingQuestion.title => meetingTitleQuestion,
+};
+
 /// 짧은 날짜 ('11.23(월)')
 String meetingShortDay(DateTime day) =>
     '${day.month}.${day.day}(${weekdayName(weekdayNumber(day))})';

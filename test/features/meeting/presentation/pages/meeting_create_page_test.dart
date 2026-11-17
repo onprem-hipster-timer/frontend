@@ -12,6 +12,7 @@ import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -598,46 +599,188 @@ void main() {
     });
   });
 
-  testWidgets('애니메이션을 줄였으면 다음 질문이 기다리지 않고 바로 다 보인다', (tester) async {
-    tester.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(disableAnimations: true);
-    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await pumpPage(tester);
-    await tapDay(tester, 3);
+  /// [finder] 글자에 겹친 투명도: 위의 FadeTransition·Opacity를 모두 곱한다
+  double opacityOf(WidgetTester tester, Finder finder) {
+    var opacity = 1.0;
+    for (final element
+        in find
+            .ancestor(
+              of: finder,
+              matching: find.byWidgetPredicate(
+                (widget) => widget is FadeTransition || widget is Opacity,
+              ),
+            )
+            .evaluate()) {
+      final widget = element.widget;
+      opacity *= widget is FadeTransition
+          ? widget.opacity.value
+          : (widget as Opacity).opacity;
+    }
+    return opacity;
+  }
 
-    await tester.tap(dayCell(nextMonth(5)));
-    await tester.pump();
-    await tester.pump();
+  /// 기간과 제외에 답해 받는 방식 질문까지 간다
+  Future<void> toMode(WidgetTester tester, {Size? size}) async {
+    await pumpPage(tester, size: size ?? const Size(480, 1800));
+    await pickRange(tester, 3, 5);
+    await press(tester, '없어요');
+  }
 
-    final fade = tester.widget<FadeTransition>(
-      find
-          .ancestor(
-            of: plain(exclusionQuestion),
-            matching: find.byType(FadeTransition),
-          )
-          .first,
-    );
-    expect(fade.opacity.value, 1);
-  });
+  group('넘어가는 움직임', () {
+    testWidgets('답하면 앞 질문은 고른 답을 잠깐 보인 뒤 줄어들어 사라지고 다음 질문이 글부터 올라오며 나타난다', (
+      tester,
+    ) async {
+      await toMode(tester);
+      await tester.tap(find.text('날짜별'));
+      await tester.pump();
 
-  testWidgets('새 질문은 펼쳐지며 나타난다', (tester) async {
-    await pumpPage(tester);
-    await tapDay(tester, 3);
+      expect(plain(modeQuestion), findsOneWidget, reason: '앞 질문은 바로 끊기지 않는다');
+      final tile = tester.widget<Material>(
+        find
+            .ancestor(
+              of: find.text('날짜별').last,
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(
+        (tile.shape! as RoundedRectangleBorder).side,
+        isNot(BorderSide.none),
+        reason: '누른 답을 고른 모양으로 보인다',
+      );
+      expect(opacityOf(tester, plain(visibilityQuestion)), lessThan(0.1));
 
-    await tester.tap(dayCell(nextMonth(5)));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 60));
-    FadeTransition fade() => tester.widget<FadeTransition>(
-      find
-          .ancestor(
-            of: plain(exclusionQuestion),
-            matching: find.byType(FadeTransition),
-          )
-          .first,
-    );
-    expect(fade().opacity.value, 0, reason: '요약이 바뀐 것을 먼저 본다');
-    await tester.pumpAndSettle();
-    expect(fade().opacity.value, 1);
+      await tester.pump(const Duration(milliseconds: 160));
+      final headline = opacityOf(tester, plain(visibilityQuestion));
+      final answers = opacityOf(tester, find.text(meetingPublic));
+      expect(headline, greaterThan(answers), reason: '질문 글이 답 단추보다 먼저 나타난다');
+
+      await tester.pump(const Duration(milliseconds: 260));
+      expect(plain(modeQuestion), findsNothing, reason: '400ms 안에 끝난다');
+      expect(opacityOf(tester, plain(visibilityQuestion)), 1);
+      expect(opacityOf(tester, find.text(meetingPublic)), 1);
+      expect(find.text('날짜별'), findsOneWidget, reason: '요약 한 줄이 된다');
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('사라지는 앞 질문은 누를 수 없고 스크린 리더도 읽지 않는다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await toMode(tester);
+      await tester.tap(find.text('날짜별'));
+      await tester.pump(const Duration(milliseconds: 20));
+
+      expect(find.semantics.byLabel(RegExp('요일별')), findsNothing);
+      await tester.tap(find.text('요일별'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('날짜별'), findsOneWidget);
+      expect(find.text('요일별'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('전환 중에 빨리 이어 답해도 끝 상태가 맞다', (tester) async {
+      await toMode(tester);
+      await tester.tap(find.text('날짜별'));
+      await tester.pump(const Duration(milliseconds: 120));
+      await tester.tap(find.text(meetingPublic).last);
+      await tester.pump(const Duration(milliseconds: 120));
+      await tester.tap(find.text('허용').last);
+      await tester.pumpAndSettle();
+
+      expect(plain(titleQuestion), findsOneWidget);
+      for (final question in questions.where((q) => q != titleQuestion)) {
+        expect(plain(question), findsNothing, reason: question);
+      }
+      expect(find.text('날짜별'), findsOneWidget);
+      expect(find.text(meetingPublic), findsOneWidget);
+      expect(find.text('게스트 허용'), findsOneWidget);
+    });
+
+    testWidgets('애니메이션을 줄였으면 한 프레임에 바뀐다', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await toMode(tester);
+      await tester.tap(find.text('날짜별'));
+      await tester.pump();
+
+      expect(plain(modeQuestion), findsNothing);
+      expect(opacityOf(tester, plain(visibilityQuestion)), 1);
+      expect(opacityOf(tester, find.text(meetingPublic)), 1);
+      await tester.pump();
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('기간을 고르면 같은 달력 아래에서 제외 질문이 올라오며 나타난다', (tester) async {
+      await pumpPage(tester);
+      final calendar = tester.getRect(find.byType(MeetingCalendar));
+      await tapDay(tester, 3);
+      await tester.tap(dayCell(nextMonth(5)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.getRect(find.byType(MeetingCalendar)), calendar);
+      expect(opacityOf(tester, plain(exclusionQuestion)), lessThan(1));
+      await tester.pumpAndSettle();
+      expect(opacityOf(tester, plain(exclusionQuestion)), 1);
+      expect(tester.getRect(find.byType(MeetingCalendar)), calendar);
+    });
+
+    testWidgets('요약의 답을 누르면 그 답이 질문으로 펼쳐지고, 그대로 두면 다시 요약으로 접힌다', (
+      tester,
+    ) async {
+      await toMode(tester);
+      await press(tester, '날짜별');
+      final chip = find.text('날짜별');
+
+      await tester.tap(chip);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(chip, findsWidgets, reason: '요약의 답은 바로 끊기지 않고 줄어든다');
+      expect(opacityOf(tester, chip.first), lessThan(1));
+      await tester.pumpAndSettle();
+      expect(plain(modeQuestion), findsOneWidget);
+      expect(plain(visibilityQuestion), findsNothing);
+
+      await tester.tap(find.text(meetingKeepAnswer));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(plain(modeQuestion), findsOneWidget, reason: '질문이 접히는 중이다');
+      await tester.pumpAndSettle();
+      expect(plain(modeQuestion), findsNothing);
+      expect(plain(visibilityQuestion), findsOneWidget);
+      expect(opacityOf(tester, find.text('날짜별')), 1);
+    });
+
+    testWidgets('좁은 화면에서도 전환이 끝나면 새 질문이 화면 안에 든다', (tester) async {
+      await toMode(tester, size: const Size(360, 640));
+      await tester.tap(find.text('날짜별'));
+      await tester.pumpAndSettle();
+
+      final buttons = tester.getRect(find.text(meetingPrivate));
+      expect(buttons.bottom, lessThanOrEqualTo(640));
+      expect(
+        tester.getRect(plain(visibilityQuestion)).top,
+        greaterThanOrEqualTo(0),
+      );
+    });
+
+    testWidgets('전체 설정 펼치기는 질문에서 폼으로 한 번에 차분히 넘어간다', (tester) async {
+      await pumpPage(tester);
+      await pickRange(tester, 3, 5);
+      await tester.tap(find.text('전체 설정 펼치기'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(MeetingModeSelector), findsOneWidget);
+      final form = opacityOf(tester, find.byType(MeetingModeSelector));
+      expect(form, greaterThan(0));
+      expect(form, lessThan(1));
+      await tester.pumpAndSettle();
+      expect(opacityOf(tester, find.byType(MeetingModeSelector)), 1);
+      expect(plain(exclusionQuestion), findsNothing);
+    });
   });
 
   group('전체 설정 펼치기', () {
