@@ -191,7 +191,7 @@ void main() {
       meetings.availability.where((e) => e.participant.isGuest),
       hasLength(1),
     );
-    expect(cellData('3월 1일 (월) 9:00 ~ 9:30').value, contains('내 시간'));
+    expect(cellData('3월 1일 (월) 9:00 ~ 9:30').value, '가능');
   });
 
   testWidgets('로그아웃하면 세션을 끝내고 방문자 화면으로 바뀐다', (tester) async {

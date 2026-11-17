@@ -102,7 +102,7 @@ void main() {
     await tester.tapAt(cellCenter(tester, '3월 1일 (월) 6:00 ~ 6:30'));
     await tester.pump();
     expect(find.text('저장 중'), findsOneWidget);
-    expect(cellData('3월 1일 (월) 6:00 ~ 6:30').value, '내 시간');
+    expect(cellData('3월 1일 (월) 6:00 ~ 6:30').value, '가능');
 
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
@@ -123,7 +123,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
     expect(find.text('저장하지 못했습니다'), findsOneWidget);
-    expect(cellData('3월 1일 (월) 6:00 ~ 6:30').value, '내 시간');
+    expect(cellData('3월 1일 (월) 6:00 ~ 6:30').value, '가능');
 
     await tester.tap(find.text('다시 시도'));
     await tester.pumpAndSettle();

@@ -35,3 +35,17 @@ Map<MeetingCell, MeetingAnswer> brushStroke(
   }
   return changes;
 }
+
+/// 붓으로 [cells](하루 전체 등)를 한 번에 칠한 결과. 모두 이미 [brush]면 지우고, 아니면 [brush]로 칠한다
+Map<MeetingCell, MeetingAnswer> brushAll(
+  MeetingGrid grid,
+  MeetingAnswer Function(MeetingCell cell) answerAt,
+  List<MeetingCell> cells,
+  MeetingAnswer brush,
+) => brushStroke(
+  grid,
+  answerAt,
+  cells,
+  brush,
+  clear: cells.every((cell) => answerAt(cell) == brush),
+);

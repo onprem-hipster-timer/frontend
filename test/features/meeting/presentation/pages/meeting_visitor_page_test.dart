@@ -152,7 +152,7 @@ void main() {
     expect(cellData('3월 1일 (월) 9:00 ~ 9:30').hint, '참여자 2명');
     expect(cellData('3월 1일 (월) 9:30 ~ 10:00').hint, '참여자 3명');
     expect(find.text('참여자 1명'), findsOneWidget, reason: '색 설명');
-    expect(find.text('내 시간'), findsNothing);
+    expect(find.text('불가능'), findsNothing, reason: '붓 고르기가 없다');
 
     for (final name in ['민수', '서연', '하준']) {
       expect(find.textContaining(name), findsNothing);

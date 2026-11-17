@@ -216,7 +216,7 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('스크린 리더는 칸마다 내 시간인지와 다른 참여자 수를 읽고, 누르기로 칠한다', (tester) async {
+    testWidgets('스크린 리더는 칸마다 내 답과 다른 참여자 수를 읽고, 누르기로 칠한다', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpGrid(
         tester,
@@ -232,7 +232,7 @@ void main() {
       );
 
       final mine = cellData('3월 1일 (월) 6:00 ~ 6:30');
-      expect(mine.value, '내 시간');
+      expect(mine.value, '가능');
       expect(mine.hint, '다른 참여자 2명');
       expect(mine.flagsCollection.isSelected, Tristate.isTrue);
       expect(cellData('3월 1일 (월) 7:00 ~ 7:30').value, isEmpty);
@@ -352,18 +352,16 @@ void main() {
         ],
       );
 
-      expect(find.text('내 시간'), findsOneWidget);
       expect(find.text('다른 참여자 1명'), findsOneWidget);
       expect(find.text('3명'), findsOneWidget);
     });
 
-    testWidgets('다른 참여자가 없으면 내 시간만 설명한다', (tester) async {
+    testWidgets('다른 참여자가 없으면 색 설명이 없다', (tester) async {
       await pumpGrid(
         tester,
         availability: [availabilityOf('me', userId: 'user-1')],
       );
 
-      expect(find.text('내 시간'), findsOneWidget);
       expect(find.textContaining('다른 참여자'), findsNothing);
     });
   });
@@ -480,10 +478,9 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('색 설명은 내 시간 없이 참여자 1명부터 모두까지다', (tester) async {
+    testWidgets('색 설명은 참여자 1명부터 모두까지다', (tester) async {
       await pumpLocked(tester);
 
-      expect(find.text('내 시간'), findsNothing);
       expect(find.text('참여자 1명'), findsOneWidget);
       expect(find.text('3명'), findsOneWidget);
     });
@@ -491,7 +488,6 @@ void main() {
     testWidgets('참여자가 없으면 색 설명이 없다', (tester) async {
       await pumpLocked(tester, participants: 0);
 
-      expect(find.text('내 시간'), findsNothing);
       expect(find.textContaining('참여자'), findsNothing);
     });
   });

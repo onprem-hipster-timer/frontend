@@ -136,6 +136,34 @@ void main() {
       );
     });
 
+    test('여러 칸을 한 번에 칠할 때 모두 이미 붓의 답이면 지우고 아니면 칠한다', () {
+      final day = column(1, List.generate(grid.rows, (row) => row));
+
+      expect(
+        brushAll(
+          grid,
+          answers({(1, 0): available}),
+          day,
+          available,
+        ).values.toSet(),
+        {available},
+      );
+      expect(
+        brushAll(
+          grid,
+          answers({
+            for (var row = 0; row < grid.rows; row++) (1, row): available,
+          }),
+          day,
+          available,
+        ).values.toSet(),
+        {unanswered},
+      );
+      expect(brushAll(grid, answers({}), day, unavailable).values.toSet(), {
+        unavailable,
+      });
+    });
+
     test('하루 전체를 칠하면 다른 날은 그대로다', () {
       final day = grid.unitOf(grid.at(2, 7)!);
 

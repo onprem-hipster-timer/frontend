@@ -17,9 +17,10 @@ const _touchDevices = {
 
 /// 격자 칸 자리. 칸을 그리고 칠하기 동작을 받는다.
 ///
-/// 마우스는 누른 채 끌면 바로 칠한다. 터치는 칸을 누르면 그 칸만 바꾸고, 길게 누른 채 끌면 여러 칸을
-/// 칠한다(그냥 끌면 화면이 굴러간다). 칠한 칸에서 시작하면 지운다. 끈 범위는 시작 칸과 지금 칸을
-/// 꼭짓점으로 하는 사각형이고, 손을 떼면 [onPaint]로 넘긴다.
+/// 붓([brush])은 가능 또는 불가능이다([brushStroke]). 마우스는 누른 채 끌면 바로 칠한다. 터치는 칸을 누르면
+/// 그 칸만 바꾸고, 길게 누른 채 끌면 여러 칸을 칠한다(그냥 끌면 화면이 굴러간다). 이미 붓의 답인 칸에서
+/// 시작하면 지운다. 끈 범위는 시작 칸과 지금 칸을 꼭짓점으로 하는 사각형이고, 끄는 동안 결과를 그대로 보이고
+/// 손을 떼면 [onPaint]로 넘긴다. 누르기 등으로 내 칸이 바뀌면 짧게 섞여 바뀐다(애니메이션을 줄였으면 바로).
 ///
 /// [onPaint]가 없으면 칠할 수 없는 격자다. 칸을 누르거나 끌기 시작하면 칠하지 않고 [onLocked]를 부른다.
 class MeetingGridCells extends StatefulWidget {
@@ -28,23 +29,45 @@ class MeetingGridCells extends StatefulWidget {
     required this.shading,
     required this.shape,
     required this.onPaint,
+    this.brush = MeetingAnswer.available,
     this.onLocked,
   });
 
   final MeetingShading shading;
   final MeetingCellShape shape;
   final MeetingPaint? onPaint;
+  final MeetingAnswer brush;
   final VoidCallback? onLocked;
 
   @override
   State<MeetingGridCells> createState() => _MeetingGridCellsState();
 }
 
-class _MeetingGridCellsState extends State<MeetingGridCells> {
+class _MeetingGridCellsState extends State<MeetingGridCells>
+    with SingleTickerProviderStateMixin {
   MeetingGridDrag? _drag;
   var _mouseDown = false;
+  late final _fade = _AnswerFade(this);
 
   MeetingGrid get _grid => widget.shading.grid;
+
+  @override
+  void didUpdateWidget(MeetingGridCells oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.shading != widget.shading) {
+      _fade.changed(
+        oldWidget.shading,
+        widget.shading,
+        animate: !MediaQuery.disableAnimationsOf(context),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
 
   /// [cells]를 붓으로 한 번 칠한 결과
   Map<MeetingCell, MeetingAnswer> _stroke(
@@ -54,13 +77,13 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
     _grid,
     widget.shading.answerAt,
     cells,
-    MeetingAnswer.available,
+    widget.brush,
     clear: clear,
   );
 
   /// [cell]에서 시작하면 지우는지: 이미 붓의 답이면 지운다
   bool _clears(MeetingCell cell) =>
-      widget.shading.answerAt(cell) == MeetingAnswer.available;
+      widget.shading.answerAt(cell) == widget.brush;
 
   Map<MeetingCell, MeetingAnswer>? get _preview {
     final drag = _drag;
@@ -90,6 +113,8 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
   void _end() {
     final preview = _preview;
     if (preview == null) return;
+    // 끄는 동안 이미 보인 결과라 다시 섞지 않는다
+    _fade.shown = preview;
     setState(() => _drag = null);
     widget.onPaint?.call(preview);
   }
@@ -189,6 +214,8 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
                     shading: widget.shading,
                     geometry: geometry,
                     preview: _preview,
+                    transition: _fade.value,
+                    repaint: _fade.controller,
                     colors: colors,
                     textStyle: textStyle,
                     scaler: scaler,
@@ -203,4 +230,53 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
       },
     );
   }
+}
+
+/// 바뀐 내 칸을 이전 답에서 지금 답으로 짧게 섞는다
+class _AnswerFade {
+  _AnswerFade(TickerProvider vsync)
+    : controller = AnimationController(
+        vsync: vsync,
+        duration: const Duration(milliseconds: 180),
+        value: 1,
+      );
+
+  final AnimationController controller;
+
+  /// 섞기 시작한 이전 답(칸 자리마다)
+  List<MeetingAnswer>? _from;
+
+  /// 끄는 동안 이미 보인 결과. 다음 바뀜에서 이 칸은 섞지 않는다
+  Map<MeetingCell, MeetingAnswer>? shown;
+
+  /// [before]에서 [after]로 바뀌었다. 내 답이 바뀐 칸이 있으면 섞는다
+  void changed(
+    MeetingShading before,
+    MeetingShading after, {
+    required bool animate,
+  }) {
+    final shown = this.shown;
+    this.shown = null;
+    if (!animate || before.grid != after.grid) return;
+    final from = [
+      for (final cell in before.grid.cells)
+        shown?[cell] ?? before.answerAt(cell),
+    ];
+    if (!after.grid.cells.any(
+      (cell) => from[cell.index] != after.answerAt(cell),
+    )) {
+      return;
+    }
+    _from = from;
+    controller.forward(from: 0);
+  }
+
+  MeetingGridTransition? value() {
+    final from = _from;
+    return from == null || controller.isCompleted
+        ? null
+        : (from: from, progress: Curves.easeOut.transform(controller.value));
+  }
+
+  void dispose() => controller.dispose();
 }

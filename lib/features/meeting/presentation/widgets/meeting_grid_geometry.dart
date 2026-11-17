@@ -8,6 +8,14 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 칸마다 [changes]의 답으로 칠하거나 지운다
 typedef MeetingPaint = void Function(Map<MeetingCell, MeetingAnswer> changes);
 
+/// 일요일(0)·토요일(6) 글자 색. 평일은 null
+Color? meetingWeekendColor(BuildContext context, int sundayFirstColumn) =>
+    switch (sundayFirstColumn) {
+      0 => AppColors.of(context).holiday,
+      6 => AppColors.of(context).saturday,
+      _ => null,
+    };
+
 /// 칸 모양. 시간별은 날짜마다 이어진 세로 띠, 날짜별·요일별은 떨어진 타일이다
 @immutable
 class MeetingCellShape {
@@ -122,7 +130,8 @@ class MeetingGridDrag {
   final bool clear;
 }
 
-/// 격자 색. 다른 참여자 농도는 내 칸과 같은 색을 옅게 깐다
+/// 격자 색. 다른 참여자 농도는 내 칸과 같은 색을 옅게 깐다. 내 불가능 칸은 그 위를 바탕색으로 덮어 흐리게 하고
+/// 빗금을 긋는다(색 없이도 가려진다)
 @immutable
 class MeetingGridColors {
   const MeetingGridColors({
@@ -131,6 +140,9 @@ class MeetingGridColors {
     required this.line,
     required this.mine,
     required this.onMine,
+    required this.veil,
+    required this.hatch,
+    required this.muted,
     required this.missing,
     required this.text,
     required this.sunday,
@@ -146,6 +158,9 @@ class MeetingGridColors {
       line: scheme.outlineVariant,
       mine: scheme.primary,
       onMine: scheme.onPrimary,
+      veil: scheme.surfaceContainerLowest.withValues(alpha: 0.78),
+      hatch: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+      muted: scheme.onSurfaceVariant,
       missing: scheme.onSurface.withValues(alpha: 0.06),
       text: scheme.onSurface,
       sunday: app.holiday,
@@ -156,8 +171,19 @@ class MeetingGridColors {
   final Color base;
   final Color border;
   final Color line;
+
+  /// 내 가능 칸
   final Color mine;
   final Color onMine;
+
+  /// 내 불가능 칸을 흐리게 덮는 색
+  final Color veil;
+
+  /// 내 불가능 칸의 빗금
+  final Color hatch;
+
+  /// 내 불가능 칸의 글자
+  final Color muted;
 
   /// 일광 절약 시간으로 없는 시각의 자리
   final Color missing;
@@ -172,14 +198,42 @@ class MeetingGridColors {
   Color? shade(int level) =>
       level == 0 ? null : mine.withValues(alpha: _shadeAlphas[level]);
 
+  /// [shape] 안을 내 불가능 칸으로 덮는다: 흐리게 덮고 빗금. [opacity]는 바뀌는 중의 진하기다
+  void paintUnavailable(Canvas canvas, RRect shape, {double opacity = 1}) {
+    if (opacity <= 0) return;
+    final bounds = shape.outerRect;
+    final stroke = Paint()
+      ..color = hatch.withValues(alpha: hatch.a * opacity)
+      ..strokeWidth = 1;
+    canvas
+      ..save()
+      ..clipRRect(shape)
+      ..drawRect(
+        bounds,
+        Paint()..color = veil.withValues(alpha: veil.a * opacity),
+      );
+    // 이웃한 칸의 빗금이 이어지게 화면 좌표의 같은 사선 위에 긋는다
+    const gap = 6.0;
+    final first = ((bounds.left + bounds.top) / gap).floor() * gap;
+    for (var c = first; c < bounds.right + bounds.bottom; c += gap) {
+      canvas.drawLine(
+        Offset(c - bounds.top, bounds.top),
+        Offset(c - bounds.bottom, bounds.bottom),
+        stroke,
+      );
+    }
+    canvas.restore();
+  }
+
   @override
   bool operator ==(Object other) =>
       other is MeetingGridColors &&
       other.base == base &&
       other.border == border &&
       other.mine == mine &&
+      other.veil == veil &&
       other.text == text;
 
   @override
-  int get hashCode => Object.hash(base, border, mine, text);
+  int get hashCode => Object.hash(base, border, mine, veil, text);
 }
