@@ -91,22 +91,28 @@ void main() {
         ),
       ],
     );
+    final scope = ProviderContainer(
+      retry: appRetry,
+      overrides: [
+        ...harness.overrides,
+        meetingsApiProvider.overrideWithValue(meetings),
+        visibilityApiProvider.overrideWithValue(FakeVisibilityClient()),
+        guestsApiProvider.overrideWithValue(guests),
+        usersApiProvider.overrideWithValue(users),
+        timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
+        appOriginProvider.overrideWithValue('https://app.example.com'),
+        if (turnstile)
+          turnstiles.override
+        else
+          turnstileFactoryProvider.overrideWithValue(null),
+      ],
+    );
+    addTearDown(scope.dispose);
+    // 앱의 요청 파이프라인처럼 거절을 인증 상태에 적는다
+    meetings.onRefused = scope.read(authProvider.notifier).guestRefused;
     await tester.pumpWidget(
-      ProviderScope(
-        retry: appRetry,
-        overrides: [
-          ...harness.overrides,
-          meetingsApiProvider.overrideWithValue(meetings),
-          visibilityApiProvider.overrideWithValue(FakeVisibilityClient()),
-          guestsApiProvider.overrideWithValue(guests),
-          usersApiProvider.overrideWithValue(users),
-          timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
-          appOriginProvider.overrideWithValue('https://app.example.com'),
-          if (turnstile)
-            turnstiles.override
-          else
-            turnstileFactoryProvider.overrideWithValue(null),
-        ],
+      UncontrolledProviderScope(
+        container: scope,
         child: MaterialApp.router(routerConfig: router),
       ),
     );

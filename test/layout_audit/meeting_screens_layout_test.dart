@@ -551,10 +551,15 @@ void main() {
   );
 
   /// 게스트 [name]으로 들어온 모임 화면에 바꿔 끼우는 것
-  List<Override> guestOverrides(FakeMeetingsClient meetings, String name) => [
+  List<Override> guestOverrides(
+    FakeMeetingsClient meetings,
+    String name, {
+    GuestDenial? denial,
+  }) => [
     ...meetingOverrides(
       meetings: meetings..guestName = name,
       guest: GuestUser(id: 'g', handle: 'g@guest.invalid', name: name),
+      guestDenial: denial,
     ),
     guestsApiProvider.overrideWithValue(FakeGuestsClient()),
     FakeTurnstiles().override,
@@ -652,6 +657,8 @@ void main() {
         FakeMeetingsClient(meeting: meetingIn('hourly', title: '팀 회의'))
           ..participateError = guestError(428, 'ConsentRequiredError'),
         '민수',
+        // 요청 파이프라인이 거절(428)을 게스트 상태에 적은 상태
+        denial: GuestDenial.consentRequired,
       ),
     ),
     verify: (tester) => expect(find.text('동의하고 계속하기'), findsOneWidget),

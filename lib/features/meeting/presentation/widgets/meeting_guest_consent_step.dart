@@ -13,7 +13,8 @@ import 'package:momeet/shared/ui/ui.dart';
 
 /// 약관이 바뀌어 게스트 경로가 거절됐을 때(428) 다시 동의를 받는다.
 ///
-/// 지금 약관 버전은 게스트의 이름을 찾아(확인 상자의 토큰) 받고, 동의를 기록한 뒤 [onAgreed]를 부른다.
+/// 지금 약관 버전은 게스트의 이름을 찾아(확인 상자의 토큰) 받고, 동의를 기록하면 게스트 상태의 약관 거절을
+/// 지우고 [onAgreed]를 부른다.
 /// 동의하지 않으면 로그아웃한다(게스트 정보는 남는다).
 class MeetingGuestConsentStep extends ConsumerStatefulWidget {
   const MeetingGuestConsentStep({
@@ -64,6 +65,7 @@ class _MeetingGuestConsentStepState
     });
     try {
       await _steps.agree(widget.guest);
+      ref.read(authProvider.notifier).guestDenialCleared();
       widget.onAgreed();
     } catch (error) {
       if (!mounted) return;

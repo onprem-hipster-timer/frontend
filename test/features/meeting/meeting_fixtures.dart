@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
+import 'package:momeet/core/providers/auth_status.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -70,6 +71,18 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
   /// 설정하면 만들기가 이 오류로 실패한다
   Object? createError;
 
+  /// 응답 상태로 거절할 때 먼저 부른다. 앱의 요청 파이프라인(AuthInterceptor)이 거절을 인증 상태에 적는 것을
+  /// 대신한다. 화면 테스트가 `authProvider.notifier.guestRefused`를 넣는다
+  Future<void> Function(int status)? onRefused;
+
+  /// [error]를 던진다. 응답 상태가 있으면 그 전에 [onRefused]에 알린다
+  Future<Never> _raise(Object error) async {
+    final status = error is DioException ? error.response?.statusCode : null;
+    final refused = onRefused;
+    if (status != null && refused != null) await refused(status);
+    throw error;
+  }
+
   /// 설정하면 만들기가 이것이 끝날 때까지 기다린다
   Future<void>? createGate;
 
@@ -108,7 +121,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     RequestOptions? options,
   }) async {
     reads.add(meetingId);
-    if (readError != null) throw readError!;
+    if (readError != null) await _raise(readError!);
     final meeting = this.meeting;
     if (meeting == null) throw StateError('no meeting $meetingId');
     return meeting;
@@ -171,7 +184,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     RequestOptions? options,
   }) async {
     availabilityReads++;
-    if (availabilityError != null) throw availabilityError!;
+    if (availabilityError != null) await _raise(availabilityError!);
     return [...availability];
   }
 
@@ -187,7 +200,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     final error = participateError;
     if (error != null) {
       participateError = null;
-      throw error;
+      await _raise(error);
     }
     if (guestName case final guest?) return _joinAsGuest(meetingId, guest);
     final at = availability.indexWhere(
@@ -225,7 +238,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     final error = putError;
     if (error != null) {
       putError = null;
-      throw error;
+      await _raise(error);
     }
     final slots = [
       for (final (i, slot) in body.indexed)
@@ -430,7 +443,7 @@ AuthUser meetingUser({String? name = '지현'}) => AuthUser(
 
 /// 모임 화면을 띄울 때 바꿔 끼우는 것. 로그인한 사람의 이름은 [name]이고, [signedIn]이 false면 로그인하지
 /// 않은 방문자다. [session]을 주면 그 값이 바뀔 때 로그인 상태가 바뀐다(세션이 끝나는 경우). [guest]를 주면
-/// 회원 대신 그 게스트다
+/// 회원 대신 그 게스트이고, [guestDenial]은 요청 파이프라인이 그 게스트 상태에 적은 거절 까닭이다
 List<Override> meetingOverrides({
   required FakeMeetingsClient meetings,
   FakeVisibilityClient? visibility,
@@ -438,10 +451,12 @@ List<Override> meetingOverrides({
   bool signedIn = true,
   ValueNotifier<AuthUser?>? session,
   GuestUser? guest,
+  GuestDenial? guestDenial,
   String timezone = 'Asia/Seoul',
 }) => [
   meetingsApiProvider.overrideWithValue(meetings),
   currentGuestProvider.overrideWithValue(guest),
+  currentGuestDenialProvider.overrideWithValue(guestDenial),
   visibilityApiProvider.overrideWithValue(visibility ?? FakeVisibilityClient()),
   timezoneProvider.overrideWith(() => FixedTimezone(timezone)),
   appOriginProvider.overrideWithValue('https://app.example.com'),

@@ -60,6 +60,14 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
         .watch(provider)
         .when(
           data: (state) {
+            final guest = widget.guest;
+            final denial = guest == null
+                ? null
+                : ref.watch(currentGuestDenialProvider);
+            // 저장하다 거절되면 파이프라인이 적은 까닭의 화면이다
+            if (guest != null && denial != null) {
+              return _LoadError(meetingId: meetingId, guest: guest);
+            }
             final board = state.board;
             final notifier = ref.read(provider.notifier);
             final availability = MeetingAvailabilitySection(
@@ -70,7 +78,6 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
               onRetry: notifier.retrySave,
               highlight: _highlight,
             );
-            final guest = widget.guest;
             MeetingSlotsPanel slots({bool fill = false}) => MeetingSlotsPanel(
               board: board,
               fill: fill,
@@ -124,36 +131,40 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
   }
 }
 
+/// 거절 까닭을 지우고 모임을 다시 불러온다
+void retryMeetingLoad(WidgetRef ref, String meetingId) {
+  if (ref.read(currentGuestDenialProvider) != null) {
+    ref.read(authProvider.notifier).guestDenialCleared();
+  }
+  ref.invalidate(meetingProvider(meetingId));
+  ref.invalidate(meetingBoardProvider(meetingId));
+}
+
 /// 불러오지 못했을 때. 게스트는 까닭에 맞게([MeetingGuestProblem]), 회원은 찾을 수 없음이나 다시 시도
 class _LoadError extends ConsumerWidget {
-  const _LoadError({
-    required this.meetingId,
-    required this.guest,
-    required this.error,
-  });
+  const _LoadError({required this.meetingId, required this.guest, this.error});
 
   final String meetingId;
   final GuestUser? guest;
-  final Object error;
+
+  /// 불러오기 오류. 저장하다 거절된 게스트는 오류 없이 거절 까닭만으로 온다
+  final Object? error;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void retry() {
-      ref.invalidate(meetingProvider(meetingId));
-      ref.invalidate(meetingBoardProvider(meetingId));
-    }
+    void retry() => retryMeetingLoad(ref, meetingId);
+    final error = this.error;
 
     if (guest case final guest?) {
       return MeetingGuestProblem(
-        // 다시 불러와 또 거절되면 처음부터 다시 본다
-        key: ObjectKey(error),
         meetingId: meetingId,
         guest: guest,
+        denial: ref.watch(currentGuestDenialProvider),
         error: error,
         onRetry: retry,
       );
     }
-    return isMeetingNotFound(error)
+    return error != null && isMeetingNotFound(error)
         ? const MeetingNotFound()
         : AppErrorState(
             title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
