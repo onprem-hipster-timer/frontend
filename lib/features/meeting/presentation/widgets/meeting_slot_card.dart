@@ -302,7 +302,9 @@ class _Names extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 떠 있는 이름 상자는 화면 높이를 받으므로 내용 높이에 맞춘다
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Wrap(
