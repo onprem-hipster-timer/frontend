@@ -56,11 +56,20 @@ body.landing-active {
 }
 
 .nav-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--ink);
   text-decoration: none;
+}
+
+.nav-badge {
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .nav-link {
@@ -629,6 +638,13 @@ body.landing-active #flutter-host {
 }
 
 /* ===== Responsive ===== */
+/* 랜딩 머리띠는 폭 400 이하에서 배지까지 두면 링크가 두 줄이 되어 글자 로고만 둔다 */
+@media (max-width: 400px) {
+  #landing .nav-badge {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .landing-nav {
     padding: 0.75rem 1.25rem;
