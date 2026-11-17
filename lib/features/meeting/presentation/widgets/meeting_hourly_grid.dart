@@ -9,9 +9,12 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.da
 import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_cells.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_hourly_band.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 시간별 격자: 위에 날짜, 왼쪽에 정각 시각, 가운데 칸.
+/// 시간별 격자: 위에 날짜, 왼쪽에 정각 시각, 가운데 칸. 하루 범위 밖의 시간은 칸 위아래에 한 시간 높이의 '받지
+/// 않는 시간' 띠([MeetingHourlyBand])로 보이고, 축에 띠의 위 끝 시각(0:00, 범위의 끝)을 적어 실제 시각을 알린다.
+/// 띠는 칸이 아니라 칠할 수 없고, 칸에서 띠로 끈 붓질은 범위 끝 칸에서 멈춘다.
 ///
 /// 날짜 머리를 누르면 답하지 않은 날은 그날 전체를 되는 칸으로 칠하고, 답한 날은 그날을 지운다([brushDay]).
 /// 날짜 열이 너무 좁아지면 시각은 왼쪽에 둔 채 날짜와 칸을 옆으로 굴린다.
@@ -86,6 +89,25 @@ class MeetingHourlyGrid extends StatelessWidget {
     );
   }
 
+  /// 띠와 칸 사이 틈
+  static const _bandGap = 4.0;
+
+  /// 하루 범위 밖의 띠 글: 위(0시~시작)와 아래(끝~24시). 범위가 그 끝에 닿으면 null
+  static ({String? upper, String? lower, int start, int end}) _bands(
+    MeetingGrid grid,
+  ) {
+    final start = grid.rowMinutes.first;
+    final end = grid.cells.map((cell) => cell.endMinute).fold(start, math.max);
+    String text(int from, int to) =>
+        '${minuteLabel(from)}–${minuteLabel(to)} · 받지 않는 시간';
+    return (
+      upper: start > 0 ? text(0, start) : null,
+      lower: end < minutesPerDay ? text(end, minutesPerDay) : null,
+      start: start,
+      end: end,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final grid = shading.grid;
@@ -105,6 +127,14 @@ class MeetingHourlyGrid extends StatelessWidget {
         scaler.scale(labelStyle.fontSize!) * 1.4 +
         scaler.scale(theme.titleSmall!.fontSize!) * 1.4 +
         4;
+    final bands = _bands(grid);
+    // 띠는 한 시간 덩어리 높이로 줄여 둔다(글이 들어갈 높이는 지킨다)
+    final slot = grid.rowMinutes.length > 1
+        ? grid.rowMinutes[1] - grid.rowMinutes[0]
+        : 60;
+    final bandHeight = math.max(rowHeight * 60 / slot, fontSize * 1.4 + 12);
+    final top = bands.upper == null ? 0.0 : bandHeight + _bandGap;
+    final cellsHeight = grid.rows * rowHeight;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -112,11 +142,18 @@ class MeetingHourlyGrid extends StatelessWidget {
           padding: EdgeInsets.only(top: headHeight + 8),
           child: SizedBox(
             width: labelWidth,
-            height: grid.rows * rowHeight,
+            height:
+                top +
+                cellsHeight +
+                (bands.lower == null ? 0 : _bandGap + bandHeight),
             child: _HourLabels(
-              rows: labelRows,
-              grid: grid,
-              rowHeight: rowHeight,
+              marks: [
+                if (bands.upper != null) (0, minuteLabel(0)),
+                for (final row in labelRows)
+                  (top + row * rowHeight, minuteLabel(grid.rowMinutes[row])),
+                if (bands.lower != null)
+                  (top + cellsHeight + _bandGap, minuteLabel(bands.end)),
+              ],
             ),
           ),
         ),
@@ -138,6 +175,10 @@ class MeetingHourlyGrid extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  if (bands.upper case final text?) ...[
+                    MeetingHourlyBand(text: text, height: bandHeight),
+                    const SizedBox(height: _bandGap),
+                  ],
                   MeetingGridCells(
                     shading: shading,
                     shape: shape,
@@ -146,6 +187,10 @@ class MeetingHourlyGrid extends StatelessWidget {
                     highlight: highlight,
                     onLocked: onLocked,
                   ),
+                  if (bands.lower case final text?) ...[
+                    const SizedBox(height: _bandGap),
+                    MeetingHourlyBand(text: text, height: bandHeight),
+                  ],
                 ],
               );
               if (needed <= constraints.maxWidth) return body;
@@ -196,18 +241,12 @@ class _DayHeads extends StatelessWidget {
   }
 }
 
-/// 시간별 왼쪽의 정각 시각(첫 줄은 정각이 아니어도 둔다)
+/// 시간별 왼쪽의 시각: 띠의 위 끝(0:00), 첫 줄(정각이 아니어도), 정각, 아래 띠의 위 끝(범위의 끝)
 class _HourLabels extends StatelessWidget {
-  const _HourLabels({
-    required this.rows,
-    required this.grid,
-    required this.rowHeight,
-  });
+  const _HourLabels({required this.marks});
 
-  /// 시각을 적는 줄
-  final List<int> rows;
-  final MeetingGrid grid;
-  final double rowHeight;
+  /// 위에서부터의 자리와 시각
+  final List<(double, String)> marks;
 
   @override
   Widget build(BuildContext context) {
@@ -216,9 +255,9 @@ class _HourLabels extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          for (final row in rows)
+          for (final (top, label) in marks)
             Positioned(
-              top: row * rowHeight - 1,
+              top: top - 1,
               left: 0,
               right: 6,
               // 한 줄로 두고, 칸보다 넓은 글꼴이면 칸에 맞춰 줄인다
@@ -226,7 +265,7 @@ class _HourLabels extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
                 child: Text(
-                  minuteLabel(grid.rowMinutes[row]),
+                  label,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
