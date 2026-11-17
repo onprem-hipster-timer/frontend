@@ -7,6 +7,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_participant_removal.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart';
@@ -94,6 +95,7 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
                 board: board,
                 fill: fill,
                 highlight: _highlight,
+                link: meetingLink(context, ref, meetingId),
                 onAddToCalendar: guest != null
                     ? null
                     : (run) => addMeetingRunToCalendar(context, board, run),

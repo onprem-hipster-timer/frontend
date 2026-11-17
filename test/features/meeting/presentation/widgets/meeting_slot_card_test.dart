@@ -15,8 +15,9 @@ import '../../meeting_fixtures.dart';
 /// 서울 2027년 3월 [day]일 [hour]시의 UTC 시각
 DateTime seoul(int day, int hour) => DateTime.utc(2027, 3, day, hour - 9);
 
-/// [mode] 모임: 민수(주인)·서연이 3월 2일(시간별은 10~12시, 그 밖은 2~3일)에 되고 다현은 그때 안 된다
-MeetingBoard boardIn(MeetingMode mode) {
+/// [mode] 모임: 민수(주인)·서연이 3월 2일(시간별은 10~12시, 그 밖은 2~3일)에 되고 다현은 그때 안 된다.
+/// [userId]가 없으면 회원이 아닌 사람(게스트)이 본다
+MeetingBoard boardIn(MeetingMode mode, {String? userId = 'user-1'}) {
   final hourly = mode == MeetingMode.hourly;
   final when = hourly
       ? (seoul(2, 10), seoul(2, 12))
@@ -39,7 +40,7 @@ MeetingBoard boardIn(MeetingMode mode) {
       availabilityOf('b', name: '서연', slots: [when]),
       availabilityOf('d', name: '다현', unavailable: [when]),
     ],
-    userId: 'user-1',
+    userId: userId,
     selfName: '지현',
   );
 }
