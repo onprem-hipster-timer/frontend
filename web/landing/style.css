@@ -79,6 +79,17 @@ body.landing-active {
   color: var(--surface);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-link-plain {
+  border-color: transparent;
+  padding: 0.5rem 0.75rem;
+}
+
 /* ===== Hero ===== */
 .hero {
   display: flex;
@@ -331,6 +342,23 @@ body.landing-active {
 .how-item p {
   font-size: 0.9rem;
   color: var(--ink-light);
+}
+
+/* ===== Meeting ===== */
+.meet {
+  padding: 5rem 2rem;
+  text-align: center;
+}
+
+.meet-inner {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.meet-desc {
+  font-size: 1rem;
+  color: var(--ink-light);
+  margin-bottom: 2rem;
 }
 
 /* ===== CTA ===== */
@@ -631,6 +659,10 @@ body.landing-active #flutter-host {
   }
 
   .how {
+    padding: 4rem 1.5rem;
+  }
+
+  .meet {
     padding: 4rem 1.5rem;
   }
 

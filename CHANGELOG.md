@@ -220,6 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 웹 응답 헤더(`vercel.json`): `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`
 - Cloudflare Turnstile 위젯: 필요할 때 Cloudflare 스크립트(`render=explicit`)를 한 번 불러와 플랫폼 뷰에 그린다. 칸이 300보다 좁으면 compact, 색은 앱 밝기를 따른다. 새 패키지 없이 `dart:js_interop`을 쓴다
   - `index.html`의 인라인 스크립트와 `onclick`을 `web/landing/*.js`, `web/flutter_bootstrap.js`로 옮긴다
+- 랜딩 위쪽 줄의 '로그인' 옆과 기능 소개 아래 모임 소개에 '모임 만들기'(`/#/meetings`)를 둔다. `/meetings` 주소로 열어도 해시 라우트로 바꿔 모임 만들기 화면을 연다(`web/landing/kratos-paths.js`)
 
 #### Tests
 - 레이아웃 점검 테스트 라이브러리(`packages/layout_audit`): 모든 위젯 테스트 끝에 화면에 남은 글자·이미지의 겹침(가린 비율·가리는 위젯 포함), RenderFlex 넘침, 잘라냄, 화면 이탈, 말줄임을 찾아 보고한다
