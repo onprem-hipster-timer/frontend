@@ -8,7 +8,7 @@ typedef MeetingSlotPerson = ({String name, bool owner, bool guest, bool self});
 /// 선택된 일정 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'([onAddToCalendar]가 있을 때).
 ///
 /// 이름은 펼치기 전에는 마우스를 올리면 카드 아래에 떠서 보이고, 카드를 누르면 카드 안에 고정되어
-/// 다시 누를 때까지 남는다.
+/// 다시 누를 때까지 남는다. 그 시간이 안 되는 사람([unavailable])은 이름 아래 한 줄로만 덧붙인다.
 class MeetingSlotCard extends StatefulWidget {
   const MeetingSlotCard({
     super.key,
@@ -16,11 +16,15 @@ class MeetingSlotCard extends StatefulWidget {
     required this.detail,
     required this.people,
     required this.onAddToCalendar,
+    this.unavailable = const [],
   });
 
   final String title;
   final String detail;
   final List<MeetingSlotPerson> people;
+
+  /// 그 시간의 칸 중 하나라도 안 된다고 한 사람의 이름
+  final List<String> unavailable;
   final VoidCallback? onAddToCalendar;
 
   @override
@@ -49,6 +53,7 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
           link: _link,
           width: constraints.maxWidth,
           people: widget.people,
+          unavailable: widget.unavailable,
         ),
         child: CompositedTransformTarget(
           link: _link,
@@ -61,6 +66,7 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
               title: widget.title,
               detail: widget.detail,
               people: widget.people,
+              unavailable: widget.unavailable,
               pinned: _pinned,
               wide: constraints.maxWidth >= _wideFrom,
               onTap: _toggle,
@@ -79,6 +85,7 @@ class _CardFace extends StatelessWidget {
     required this.title,
     required this.detail,
     required this.people,
+    required this.unavailable,
     required this.pinned,
     required this.wide,
     required this.onTap,
@@ -88,6 +95,7 @@ class _CardFace extends StatelessWidget {
   final String title;
   final String detail;
   final List<MeetingSlotPerson> people;
+  final List<String> unavailable;
   final bool pinned;
   final bool wide;
   final VoidCallback onTap;
@@ -145,7 +153,7 @@ class _CardFace extends StatelessWidget {
                 if (pinned)
                   Padding(
                     padding: EdgeInsets.only(top: 8, bottom: wide ? 10 : 0),
-                    child: _Names(people: people),
+                    child: _Names(people: people, unavailable: unavailable),
                   ),
                 if (!wide) actions,
               ],
@@ -237,11 +245,13 @@ class _HoverNames extends StatelessWidget {
     required this.link,
     required this.width,
     required this.people,
+    required this.unavailable,
   });
 
   final LayerLink link;
   final double width;
   final List<MeetingSlotPerson> people;
+  final List<String> unavailable;
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +270,7 @@ class _HoverNames extends StatelessWidget {
               borderRadius: AppRadius.lgAll,
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: _Names(people: people),
+                child: _Names(people: people, unavailable: unavailable),
               ),
             ),
           ),
@@ -270,24 +280,42 @@ class _HoverNames extends StatelessWidget {
   }
 }
 
+/// 되는 사람 칩과, 있으면 그 아래 안 되는 사람 한 줄('불가능 1명 · 다현')
 class _Names extends StatelessWidget {
-  const _Names({required this.people});
+  const _Names({required this.people, required this.unavailable});
 
   final List<MeetingSlotPerson> people;
+  final List<String> unavailable;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final person in people)
-          MeetingNameChip(
-            name: person.name,
-            owner: person.owner,
-            guest: person.guest,
-            self: person.self,
-            dense: true,
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: [
+            for (final person in people)
+              MeetingNameChip(
+                name: person.name,
+                owner: person.owner,
+                guest: person.guest,
+                self: person.self,
+                dense: true,
+              ),
+          ],
+        ),
+        if (unavailable.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              '불가능 ${unavailable.length}명 · ${unavailable.join(', ')}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
       ],
     );

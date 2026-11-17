@@ -103,6 +103,7 @@ class _RunCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = meetingRunText(board.grid, run);
+    final unavailable = board.unavailableIn(run);
     return MeetingSlotCard(
       title: text.title,
       detail: text.detail,
@@ -117,6 +118,11 @@ class _RunCard extends StatelessWidget {
             ),
         if (run.people.contains(MeetingBoard.pendingSelfId))
           (name: board.selfName, owner: false, guest: false, self: true),
+      ],
+      unavailable: [
+        for (final participant in board.participants)
+          if (unavailable.contains(participant.id)) participant.displayName,
+        if (unavailable.contains(MeetingBoard.pendingSelfId)) board.selfName,
       ],
       onAddToCalendar: onAddToCalendar,
     );

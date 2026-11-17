@@ -191,6 +191,41 @@ void main() {
       expect(find.byType(MeetingNameChip), findsNothing);
     });
 
+    testWidgets('펼친 카드와 마우스로 띄운 이름에만 그 시간이 안 되는 사람을 조용히 덧붙인다', (tester) async {
+      await pumpSlots(
+        tester,
+        boardOf([
+          ...threePeople(),
+          availabilityOf(
+            'd',
+            name: '다현',
+            unavailable: [(seoul(1, 10), seoul(1, 11))],
+          ),
+          availabilityOf(
+            'e',
+            name: '은우',
+            unavailable: [(seoul(2, 9), seoul(2, 10))],
+          ),
+        ]),
+      );
+      final card = find.text('3').first;
+
+      expect(find.textContaining('불가능'), findsNothing, reason: '펼치기 전 카드 겉');
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(card));
+      await tester.pumpAndSettle();
+      expect(find.text('불가능 1명 · 다현'), findsOneWidget);
+      await mouse.moveTo(Offset.zero);
+      await tester.pumpAndSettle();
+
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(find.text('불가능 1명 · 다현'), findsOneWidget);
+      expect(find.textContaining('은우'), findsNothing, reason: '다른 날만 안 된다');
+    });
+
     testWidgets('카드의 게스트 이름은 게스트 칩이다', (tester) async {
       final people = threePeople();
       await pumpSlots(
