@@ -66,6 +66,8 @@ enum AppRoute {
   // 모임 만들기 화면과 만든 뒤 화면 (탭 셸 밖). 만들기 화면은 로그인하지 않아도 머물고, 만들 때 로그인을 묻는다
   meetings(path: '/meetings', allowsSignedOut: true),
   meetingCreated(path: '/meetings/:meetingId/created'),
+  // 모임 설정 화면 (탭 셸 밖). 주인만 고치고, 다른 사람에게는 찾을 수 없는 모임이다
+  meetingEdit(path: '/meetings/:meetingId/edit'),
   tags(path: '/tags'),
   mypage(path: '/mypage'),
   // 공유 링크로 여는 모임 화면 (탭 셸 밖). 로그인하지 않아도 머문다(공개 모임만 보인다).

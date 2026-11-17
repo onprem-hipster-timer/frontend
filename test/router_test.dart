@@ -56,6 +56,7 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/todo/abc-123'), true);
         expect(AppRoute.isKnownProtectedPath('/todo/some-group-id'), true);
         expect(AppRoute.isKnownProtectedPath('/meetings/abc-123'), true);
+        expect(AppRoute.isKnownProtectedPath('/meetings/abc-123/edit'), true);
       });
     });
 
@@ -68,6 +69,7 @@ void main() {
           false,
         );
         expect(AppRoute.allowsSignedOutPath('/meetings/a/b'), false);
+        expect(AppRoute.allowsSignedOutPath('/meetings/abc-123/edit'), false);
         expect(AppRoute.allowsSignedOutPath('/todo/abc-123'), false);
         expect(AppRoute.allowsSignedOutPath('/'), false);
       });
@@ -409,6 +411,18 @@ void main() {
         expect(
           result,
           '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1/created')}',
+        );
+      });
+
+      test('미인증 사용자가 모임 설정 화면에 오면 /login으로 리다이렉트한다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: '/meetings/meeting-1/edit',
+        );
+        expect(
+          result,
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1/edit')}',
         );
       });
 
@@ -1300,6 +1314,7 @@ void main() {
         for (final path in [
           '/meetings/meeting-2',
           '/meetings/meeting-1/created',
+          '/meetings/meeting-1/edit',
           AppRoute.meetings.path,
           AppRoute.todo.path,
           AppRoute.mypage.path,

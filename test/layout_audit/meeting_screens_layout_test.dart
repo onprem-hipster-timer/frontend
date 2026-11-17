@@ -26,6 +26,8 @@ import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
+import 'package:momeet/features/meeting/presentation/pages/meeting_edit_page.dart';
+import 'package:momeet/features/meeting/presentation/providers/meeting_edit_providers.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
@@ -43,6 +45,7 @@ import 'package:timezone/data/latest.dart' as tz;
 
 import '../features/meeting/guest_fixtures.dart';
 import '../features/meeting/meeting_fixtures.dart';
+import '../helpers/fake_rest_clients.dart';
 import '../helpers/fake_turnstile.dart';
 import '../helpers/layout_audit_app.dart';
 
@@ -131,6 +134,69 @@ class _PressWhenLoadedState extends ConsumerState<_PressWhenLoaded> {
         );
         (button.evaluate().first.widget as ButtonStyleButton).onPressed!();
       });
+    });
+    return widget.child;
+  }
+}
+
+/// 모임 설정을 불러온 뒤 [steps]를 한 프레임에 하나씩 한 화면. 단계는 글자(같은 글자가 여럿이면 몇 번째인지)의
+/// 단추나 InkWell을 누르거나, null이면 달력에서 고를 수 있는 첫날을 누른다
+class _EditSteps extends ConsumerStatefulWidget {
+  const _EditSteps({required this.steps, required this.child});
+
+  final List<(String, int)?> steps;
+  final Widget child;
+
+  @override
+  ConsumerState<_EditSteps> createState() => _EditStepsState();
+}
+
+class _EditStepsState extends ConsumerState<_EditSteps> {
+  var _started = false;
+
+  void _run(int index) {
+    if (index >= widget.steps.length) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      switch (widget.steps[index]) {
+        case (final label, final at):
+          final target = find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byWidgetPredicate(
+                  (w) => w is ButtonStyleButton || w is InkWell,
+                ),
+              )
+              .evaluate()
+              .elementAt(at)
+              .widget;
+          switch (target) {
+            case ButtonStyleButton(:final onPressed?):
+              onPressed();
+            case InkWell(:final onTap?):
+              onTap();
+          }
+        case null:
+          final cell = find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget.runtimeType == InkResponse &&
+                    (widget as InkResponse).onTap != null,
+              )
+              .evaluate()
+              .first
+              .widget;
+          (cell as InkResponse).onTap!();
+      }
+      _run(index + 1);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(meetingEditSourceProvider('meeting-1'), (_, next) {
+      if (_started || !next.hasValue) return;
+      _started = true;
+      _run(0);
     });
     return widget.child;
   }
@@ -784,6 +850,116 @@ void main() {
       ),
     ),
     verify: (tester) => expect(find.byTooltip('내 닉네임 바꾸기'), findsOneWidget),
+  );
+
+  /// 주인(user-1)의 모임 설정. [audience]는 지금 공개 범위이고, [steps]를 차례로 한 화면이다
+  Widget editOf(
+    MeetingRead meeting, {
+    VisibilityRead? audience,
+    List<AvailabilityRead> availability = const [],
+    List<(String, int)?> steps = const [],
+    Object? updateError,
+  }) {
+    const page = MeetingEditPage(meetingId: 'meeting-1');
+    return routed(
+      steps.isEmpty ? page : _EditSteps(steps: steps, child: page),
+      meetingOverrides(
+        meetings: FakeMeetingsClient(meeting: meeting)
+          ..availability = availability
+          ..updateError = updateError,
+        visibility: FakeVisibilityClient()
+          ..current = audience ?? visibilityOf(VisibilityLevel.public),
+      ),
+    );
+  }
+
+  for (final mode in ['hourly', 'daily', 'weekly']) {
+    testLayoutAudit(
+      'meeting_edit_page_$mode',
+      subject: '모임 제목',
+      build: (text) => editOf(meetingIn(mode, title: text.value)),
+      verify: (tester) => expect(find.text('저장하기'), findsOneWidget),
+    );
+  }
+
+  testLayoutAudit(
+    'meeting_edit_page_private',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => editOf(
+      meetingIn('hourly', title: text.value),
+      audience: visibilityOf(
+        VisibilityLevel.allowedEmails,
+        emails: [_longAccess[0], _longAccess[1]],
+        domains: [_longAccess[2]],
+      ),
+    ),
+    verify: (tester) => expect(_plain('kim@example.com'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_edit_page_notices',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => editOf(
+      meetingIn('hourly', title: text.value),
+      availability: _fivePeople('지현'),
+      steps: [('날짜별', 0), null, null],
+    ),
+    verify: (tester) =>
+        expect(_plain('빠진 날에 넣은 답은 보이지 않아요. 답은 지워지지 않아요'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_edit_page_refused',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => editOf(
+      meetingIn('hourly', title: text.value),
+      steps: [('날짜별', 0), ('저장하기', 0)],
+      updateError: httpError(
+        '/v1/meetings/meeting-1',
+        422,
+        data: {
+          'error_type': 'InvalidMeetingError',
+          'detail': [
+            {
+              'loc': ['body', 'mode'],
+            },
+          ],
+        },
+      ),
+    ),
+    verify: (tester) =>
+        expect(_plain('이 날짜에서는 이 방식으로 바꿀 수 없어요'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_edit_page_partly_saved',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => editOf(
+      meetingIn('hourly', title: text.value),
+      audience: visibilityOf(
+        VisibilityLevel.allowedEmails,
+        emails: ['kim@example.com'],
+      ),
+      steps: [('허용', 0), ('허용', 1), ('저장하기', 0)],
+      updateError: Exception('끊김'),
+    ),
+    verify: (tester) => expect(
+      _plain('공개 범위는 저장했어요. 게스트 로그인은 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요'),
+      findsOneWidget,
+    ),
+  );
+
+  testLayoutAudit(
+    'meeting_edit_page_delete_confirm',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) =>
+        editOf(meetingIn('hourly', title: text.value), steps: [('모임 삭제', 0)]),
+    verify: (tester) => expect(find.text('삭제하기'), findsOneWidget),
   );
 
   for (final mode in ['hourly', 'daily', 'weekly']) {

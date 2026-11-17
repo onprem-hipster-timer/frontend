@@ -1,8 +1,10 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/meeting/domain/meeting_edit.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_layout.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_field_refusal.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_form_access.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_form_settings.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
@@ -16,7 +18,11 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 안의 날을 빼거나 되돌린다. 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다. 공개를 끄면
 /// 참여할 사람(이메일·도메인 또는 나만 보기)을 정해야 만든다([MeetingFormAccess]).
 ///
-/// 테스트: test/features/meeting/presentation/pages/meeting_create_page_test.dart
+/// 모임 설정도 이 폼으로 고친다. 그때는 [titleField] 자리에 제목과 저장하기를, [footer]에 모임 삭제를 두고, 서버가
+/// 거절한 것은 그 자리 아래에 알린다([refusals]).
+///
+/// 테스트: test/features/meeting/presentation/pages/meeting_create_page_test.dart,
+/// test/features/meeting/presentation/pages/meeting_edit_page_test.dart
 class MeetingCreateForm extends StatefulWidget {
   const MeetingCreateForm({
     super.key,
@@ -26,9 +32,14 @@ class MeetingCreateForm extends StatefulWidget {
     required this.timezone,
     required this.titleField,
     required this.onChanged,
+    this.accessRequiredText = meetingFormAccessRequired,
+    this.refusals = const {},
+    this.footer,
   });
 
   final MeetingFlow flow;
+
+  /// 고를 수 있는 첫날
   final DateTime today;
 
   /// 비공개인데 참여할 사람을 정하지 않고 화살표를 눌렀다
@@ -37,10 +48,19 @@ class MeetingCreateForm extends StatefulWidget {
   /// 아직 모르면 null
   final String? timezone;
 
-  /// 제목 칸과 만들기 화살표
+  /// 제목 칸과 만들기 화살표(모임 설정이면 저장하기)
   final Widget titleField;
 
   final ValueChanged<MeetingFlow> onChanged;
+
+  /// 참여할 사람을 정하지 않고 화살표를 눌렀을 때의 알림
+  final String accessRequiredText;
+
+  /// 서버가 거절한 것과 그 까닭
+  final Map<MeetingEditPart, String> refusals;
+
+  /// 내용 맨 아래 오른쪽
+  final Widget? footer;
 
   @override
   State<MeetingCreateForm> createState() => _MeetingCreateFormState();
@@ -87,6 +107,7 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
   Widget build(BuildContext context) {
     final flow = _flow;
     return MeetingCreateLayout(
+      footer: widget.footer,
       builder: (context, wide) {
         final dates = _FormDates(
           excluding: _excludingNow,
@@ -95,6 +116,7 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
           canExcludeWeekends:
               _excludingNow &&
               flow.draft.dates.weekendsInside.any(flow.draft.dates.contains),
+          refusal: widget.refusals[MeetingEditPart.dates],
           onExcludingChanged: (value) => setState(() => _excluding = value),
           onExcludeWeekends: () => widget.onChanged(
             flow.withDraft(
@@ -124,9 +146,11 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
               guestShakes: _guestShakes,
               onChanged: (draft) => widget.onChanged(flow.withDraft(draft)),
               onPublicChanged: _setPublic,
+              refusals: widget.refusals,
               access: MeetingFormAccess(
                 draft: flow.draft,
                 asked: widget.accessAsked,
+                requiredText: widget.accessRequiredText,
                 onChanged: (draft) => widget.onChanged(flow.withDraft(draft)),
               ),
             ),
@@ -153,13 +177,14 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
   }
 }
 
-/// 펼친 폼의 '모임 날짜': 기간 / 제외할 날 고르기, 주말 제외, 달력
+/// 펼친 폼의 '모임 날짜': 기간 / 제외할 날 고르기, 주말 제외, 달력, 서버가 거절했으면 그 까닭
 class _FormDates extends StatelessWidget {
   const _FormDates({
     required this.excluding,
     required this.canExclude,
     required this.weekly,
     required this.canExcludeWeekends,
+    required this.refusal,
     required this.onExcludingChanged,
     required this.onExcludeWeekends,
     required this.calendar,
@@ -169,6 +194,7 @@ class _FormDates extends StatelessWidget {
   final bool canExclude;
   final bool weekly;
   final bool canExcludeWeekends;
+  final String? refusal;
   final ValueChanged<bool> onExcludingChanged;
   final VoidCallback onExcludeWeekends;
   final Widget calendar;
@@ -220,6 +246,7 @@ class _FormDates extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         calendar,
+        if (refusal case final text?) MeetingFieldRefusal(text),
       ],
     );
   }

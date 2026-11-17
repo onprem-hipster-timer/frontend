@@ -13,6 +13,7 @@ import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
+import 'package:momeet/features/meeting/presentation/pages/meeting_edit_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_visitor_body.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -156,6 +157,33 @@ void main() {
     expect(
       location(router),
       '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1')}',
+    );
+  });
+
+  testWidgets('모임 설정 주소는 탭 셸 밖에서 주인의 설정 화면을 연다', (tester) async {
+    meetings.meeting = makeMeeting(ownerId: testUser.id);
+    final router = await pumpRouter(tester);
+
+    router.go('/meetings/meeting-1/edit');
+    await pumpAWhile(tester);
+
+    expect(location(router), '/meetings/meeting-1/edit');
+    expect(find.byType(MeetingEditPage), findsOneWidget);
+    expect(find.text('저장하기'), findsOneWidget);
+    expect(find.byType(ScaffoldWithNavBar), findsNothing);
+  });
+
+  testWidgets('로그인하지 않았으면 모임 설정 화면은 로그인으로 보낸다', (tester) async {
+    harness = await KratosTestHarness.create(authenticated: false);
+    harness.stubCreateFlow(KratosFlowType.login, 'flow-login');
+    final router = await pumpRouter(tester);
+
+    router.go('/meetings/meeting-1/edit');
+    await pumpAWhile(tester);
+
+    expect(
+      location(router),
+      '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1/edit')}',
     );
   });
 

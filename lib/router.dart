@@ -211,6 +211,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: AppRoute.meetingEdit.path,
+        name: AppRoute.meetingEdit.name,
+        builder: (context, state) => DeferredWidget(
+          loader: meeting.loadLibrary,
+          builder: (_) => meeting.MeetingEditPage(
+            meetingId: state.pathParameters['meetingId']!,
+          ),
+        ),
+      ),
+      GoRoute(
         path: AppRoute.meeting.path,
         name: AppRoute.meeting.name,
         builder: (context, state) => DeferredWidget(

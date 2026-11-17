@@ -7,18 +7,20 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_access_note
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
 
 /// 펼친 폼에서 공개를 끄면 보이는 '참여할 사람': 이메일·도메인 칸과 '지금은 나만 볼게요'. 대신 정해 주지 않으므로
-/// 둘 다 없이 화살표를 눌렀으면([asked]) 그 아래에 정해야 만들 수 있다고 알린다
+/// 둘 다 없이 화살표(모임 설정이면 저장하기)를 눌렀으면([asked]) 그 아래에 [requiredText]로 알린다
 class MeetingFormAccess extends StatelessWidget {
   const MeetingFormAccess({
     super.key,
     required this.draft,
     required this.asked,
     required this.onChanged,
+    this.requiredText = meetingFormAccessRequired,
   });
 
   final MeetingDraft draft;
   final bool asked;
   final ValueChanged<MeetingDraft> onChanged;
+  final String requiredText;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,7 @@ class MeetingFormAccess extends StatelessWidget {
           Semantics(
             liveRegion: true,
             child: Text(
-              keepWords(meetingFormAccessRequired),
+              keepWords(requiredText),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.error,
               ),

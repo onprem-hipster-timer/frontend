@@ -5,4 +5,5 @@
 // Pages
 export 'presentation/pages/meeting_create_page.dart';
 export 'presentation/pages/meeting_created_page.dart';
+export 'presentation/pages/meeting_edit_page.dart';
 export 'presentation/pages/meeting_page.dart';
