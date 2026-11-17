@@ -178,6 +178,34 @@ void main() {
       expect(find.text('링크를 복사했습니다'), findsOneWidget);
     });
 
+    testWidgets('글은 가운데이고 양옆 선의 길이가 같다', (tester) async {
+      await pumpPage(tester);
+
+      for (final text in ['또는 QR로 공유하기', 'QR 가리기']) {
+        final lines = tester
+            .widgetList<Divider>(
+              find.descendant(of: toggle(text), matching: find.byType(Divider)),
+            )
+            .toList();
+        expect(lines, hasLength(2));
+        final rects = [
+          for (final line
+              in find
+                  .descendant(of: toggle(text), matching: find.byType(Divider))
+                  .evaluate())
+            tester.getRect(find.byWidget(line.widget)),
+        ];
+        expect(rects[0].width, closeTo(rects[1].width, 1), reason: text);
+        final row = tester.getRect(toggle(text));
+        expect(
+          tester.getCenter(find.text(text)).dx,
+          closeTo(row.center.dx, 1),
+          reason: text,
+        );
+        if (text == '또는 QR로 공유하기') await showQr(tester);
+      }
+    });
+
     testWidgets('QR 가리기를 누르면 달력 그림으로 돌아온다', (tester) async {
       await pumpPage(tester);
       await showQr(tester);

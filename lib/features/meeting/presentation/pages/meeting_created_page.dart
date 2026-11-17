@@ -178,25 +178,29 @@ class _QrToggle extends StatelessWidget {
         borderRadius: AppRadius.mdAll,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
-          child: Row(
-            children: [
-              const Expanded(child: Divider()),
-              // 좁은 화면·큰 글자에서는 글을 줄 바꿔 선이 짧아진다
-              Flexible(
-                flex: 3,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    showing ? 'QR 가리기' : '또는 QR로 공유하기',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              children: [
+                const Expanded(child: Divider()),
+                // 글은 폭의 60%까지 쓰고 넘으면 줄을 바꾼다. 남는 폭은 양옆 선이 똑같이 나눈다
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.6,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      showing ? 'QR 가리기' : '또는 QR로 공유하기',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const Expanded(child: Divider()),
-            ],
+                const Expanded(child: Divider()),
+              ],
+            ),
           ),
         ),
       ),
