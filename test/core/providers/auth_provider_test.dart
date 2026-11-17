@@ -684,6 +684,33 @@ void main() {
       expect(harness.prefs.getString(guestMeetingKey), isNull);
     });
 
+    test('게스트 세션 중에 같은 게스트로 다시 로그인하면 토큰을 새 세션 것으로 바꾸고 이전 세션은 끝낸다', () async {
+      final container = await bootGuest(remembered: 'guest-uid meeting-1');
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+      harness.stubCreateFlow(KratosFlowType.login, 'f1');
+      harness.stubSubmit(
+        KratosFlowType.login,
+        const KratosSubmitResult(sessionToken: 'ory_st_guest_2'),
+      );
+
+      await container
+          .read(authProvider.notifier)
+          .signInAsGuest(
+            meetingId: 'meeting-1',
+            handle: testGuest.handle,
+            password: '1234',
+            turnstileToken: 'turnstile-1',
+          );
+      await pumpEventQueue();
+
+      expect(await harness.storedSessionToken(), 'ory_st_guest_2');
+      expect(container.read(currentGuestProvider)?.meetingId, 'meeting-1');
+      verify(
+        () => harness.kratos.logout(KratosTestHarness.sessionToken),
+      ).called(1);
+      verifyNever(() => harness.kratos.logout('ory_st_guest_2'));
+    });
+
     test('게스트 이름은 설정 플로우에 handle 그대로와 새 이름을 내고 JWT를 다시 받는다', () async {
       final container = await bootGuest(remembered: 'guest-uid meeting-1');
       harness.stubCreateFlow(KratosFlowType.settings, 's1');

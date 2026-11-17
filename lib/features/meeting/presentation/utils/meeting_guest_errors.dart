@@ -33,6 +33,9 @@ enum GuestRefusal {
   /// 이름에 쓸 수 없는 글자가 있다
   invalidName,
 
+  /// 들어온 지 오래된 세션이라 이름을 바꾸려면 다시 로그인해야 한다 (Kratos session_refresh_required)
+  reauthRequired,
+
   network,
   unknown;
 
@@ -51,6 +54,7 @@ enum GuestRefusal {
       'guest_verification_failed' => verificationFailed,
       'guest_verification_unavailable' => verificationUnavailable,
       'guest_name_taken' => nameTaken,
+      'session_refresh_required' => reauthRequired,
       _ when error.statusCode >= 500 => verificationUnavailable,
       _ => switch (error.messageId) {
         4000006 => wrongPassword,
@@ -103,6 +107,7 @@ String guestRefusalText(Object error) => switch (GuestRefusal.of(error)) {
     null => '요청이 너무 많습니다. 잠시 뒤 다시 시도해 주세요',
   },
   GuestRefusal.invalidName => '이름에 쓸 수 없는 글자가 있습니다',
+  GuestRefusal.reauthRequired => '들어온 지 오래되어 비밀번호를 한 번 더 확인합니다',
   GuestRefusal.network => '네트워크 연결을 확인해 주세요',
   GuestRefusal.unknown => '처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요',
 };

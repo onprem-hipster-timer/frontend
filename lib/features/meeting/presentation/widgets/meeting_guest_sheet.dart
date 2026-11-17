@@ -9,6 +9,7 @@ import 'package:momeet/features/meeting/presentation/providers/meeting_guest_ste
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_leave.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_password_field.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -31,8 +32,9 @@ Future<void> showMeetingGuestSheet(
 
 /// 게스트의 이름 바꾸기와 게스트 계정 지우기. 둘 다 확인 상자의 새 토큰을 쓴다.
 ///
-/// 이름은 Kratos 설정 플로우로 바꾼다. 지우기는 토큰을 받아 시트를 닫으며 돌려준다(보내기는 되돌리기를
-/// 기다린 뒤다).
+/// 이름은 Kratos 설정 플로우로 바꾼다. 들어온 지 오래된 세션이라 거절되면(session_refresh_required) 이
+/// 시트에서 비밀번호를 받아 게스트 로그인을 다시 하고(새 세션이 지금 세션을 대신한다) 입력한 이름으로 다시
+/// 바꾼다. 지우기는 토큰을 받아 시트를 닫으며 돌려준다(보내기는 되돌리기를 기다린 뒤다).
 class MeetingGuestSheet extends ConsumerStatefulWidget {
   const MeetingGuestSheet({
     super.key,
@@ -60,13 +62,30 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
     auth: ref.read(authProvider.notifier),
   );
 
+  final _password = TextEditingController();
+  final _passwordFocus = FocusNode();
+
   var _busy = false;
+
+  /// 바꾸기 전에 비밀번호로 다시 로그인해야 하면 그 까닭. 비밀번호 칸 아래에 보인다
+  String? _reauth;
   String? _nameError;
+  String? _passwordError;
   String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _password.addListener(() {
+      if (_passwordError != null) setState(() => _passwordError = null);
+    });
+  }
 
   @override
   void dispose() {
     _name.dispose();
+    _password.dispose();
+    _passwordFocus.dispose();
     _turnstile.dispose();
     super.dispose();
   }
@@ -81,25 +100,46 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
     setState(() {
       _busy = true;
       _nameError = null;
+      _passwordError = null;
       _message = null;
     });
     try {
+      if (_reauth != null) {
+        await _steps.signIn(
+          handle: widget.guest.handle,
+          password: _password.text,
+        );
+        if (mounted) setState(() => _reauth = null);
+      }
       await _steps.rename(widget.guest, name);
       await board.reload();
       navigator.pop();
       messenger.showAppSnackBar('이름을 바꿨습니다', kind: AppNoticeKind.success);
     } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        if (GuestRefusal.of(error) == GuestRefusal.nameTaken) {
-          _nameError = guestRefusalText(error);
-        } else {
-          _message = guestRefusalText(error);
-        }
-      });
+      if (mounted) _refused(error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _refused(Object error) {
+    final text = guestRefusalText(error);
+    setState(() {
+      switch (GuestRefusal.of(error)) {
+        case GuestRefusal.nameTaken:
+          _nameError = text;
+        case GuestRefusal.wrongPassword:
+          _passwordError = text;
+        case GuestRefusal.reauthRequired:
+          _reauth = text;
+          _password.clear();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _passwordFocus.requestFocus();
+          });
+        case _:
+          _message = text;
+      }
+    });
   }
 
   /// 지우기에 쓸 토큰을 받아 시트를 닫으며 돌려준다
@@ -143,12 +183,23 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
             errorMaxLines: 3,
           ),
           validator: (value) => meetingNameError(guestName(value ?? '')),
-          textInputAction: TextInputAction.done,
+          textInputAction: _reauth == null
+              ? TextInputAction.done
+              : TextInputAction.next,
           onChanged: (_) {
             if (_nameError != null) setState(() => _nameError = null);
           },
-          onFieldSubmitted: (_) => _save(),
+          onFieldSubmitted: (_) =>
+              _reauth == null ? _save() : _passwordFocus.requestFocus(),
         ),
+        if (_reauth case final reason?)
+          MeetingGuestPasswordField(
+            controller: _password,
+            focusNode: _passwordFocus,
+            helper: reason,
+            errorText: _passwordError,
+            onSubmitted: _save,
+          ),
         TurnstileField(controller: _turnstile),
         if (message != null)
           Text(

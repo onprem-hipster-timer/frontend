@@ -439,6 +439,191 @@ void main() {
       expect(find.text('이름을 바꿨습니다'), findsOneWidget);
     });
 
+    group('들어온 지 오래되어 이름 바꾸기가 거절되면(403 session_refresh_required)', () {
+      const refreshed = 'ory_st_refreshed';
+      const reason = '들어온 지 오래되어 비밀번호를 한 번 더 확인합니다';
+
+      Finder passwordField() => find.widgetWithText(TextFormField, '비밀번호');
+
+      /// 지금 세션으로는 거절되고, 다시 로그인한 세션으로는 [name]으로 바뀐다.
+      /// 로그인은 [passwords] 차례로 답한다: 맞으면 새 세션, 틀리면 비밀번호 오류
+      void stubRefresh(String name, {List<bool> passwords = const [true]}) {
+        when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+        harness.stubCreateFlow(KratosFlowType.settings, 's1');
+        harness.stubCreateFlow(KratosFlowType.login, 'l1');
+        var logins = 0;
+        when(
+          () => harness.kratos.submit(
+            KratosFlowType.login,
+            any(),
+            any(),
+            sessionToken: any(named: 'sessionToken'),
+            turnstileToken: any(named: 'turnstileToken'),
+          ),
+        ).thenAnswer((_) async {
+          if (!passwords[logins++]) throw kratosError(4000006);
+          return const KratosSubmitResult(sessionToken: refreshed);
+        });
+        when(
+          () => harness.kratos.submit(
+            KratosFlowType.settings,
+            any(),
+            any(),
+            sessionToken: any(named: 'sessionToken'),
+            turnstileToken: any(named: 'turnstileToken'),
+          ),
+        ).thenAnswer((invocation) async {
+          if (invocation.namedArguments[#sessionToken] != refreshed) {
+            throw const KratosException(
+              statusCode: 403,
+              errorId: 'session_refresh_required',
+            );
+          }
+          harness.stubGuestSession(
+            GuestUser(id: testGuest.id, handle: testGuest.handle, name: name),
+          );
+          return const KratosSubmitResult();
+        });
+      }
+
+      Future<void> renameTo(WidgetTester tester, String name) async {
+        await openEdit(tester);
+        await tester.enterText(find.byType(TextFormField).first, name);
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('그 자리에서 비밀번호를 받아 다시 로그인하고 새 세션과 새 토큰으로 이름을 바꾼다', (
+        tester,
+      ) async {
+        stubRefresh('철수');
+        await pumpGuest(tester);
+        await renameTo(tester, '철수');
+
+        expect(find.text(reason), findsOneWidget);
+        expect(passwordField(), findsOneWidget);
+        expect(find.widgetWithText(TextFormField, '철수'), findsOneWidget);
+        expect(find.text('이름을 바꿨습니다'), findsNothing);
+
+        await tester.enterText(passwordField(), '1234');
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => harness.kratos.submit(KratosFlowType.login, 'l1', {
+            'method': 'password',
+            'identifier': testGuest.handle,
+            'password': '1234',
+          }, turnstileToken: 'token-2'),
+        ).called(1);
+        verify(
+          () => harness.kratos.submit(
+            KratosFlowType.settings,
+            's1',
+            {
+              'method': 'profile',
+              'traits': {'handle': testGuest.handle, 'name': '철수'},
+            },
+            sessionToken: refreshed,
+            turnstileToken: 'token-3',
+          ),
+        ).called(1);
+        expect(turnstiles.last.issued, ['token-1', 'token-2', 'token-3']);
+        verify(
+          () => harness.kratos.logout(KratosTestHarness.sessionToken),
+        ).called(1);
+        expect(await harness.storedSessionToken(), refreshed);
+        expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+        expect(find.text('게스트 철수로 진행 중입니다'), findsOneWidget);
+        expect(
+          container(tester).read(currentGuestProvider)?.meetingId,
+          'meeting-1',
+        );
+      });
+
+      testWidgets('비밀번호가 틀리면 비밀번호 칸에 알리고 바꾸지 않으며, 맞게 다시 내면 바꾼다', (
+        tester,
+      ) async {
+        stubRefresh('철수', passwords: [false, true]);
+        await pumpGuest(tester);
+        await renameTo(tester, '철수');
+
+        await tester.enterText(passwordField(), 'wrong');
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('비밀번호가 맞지 않습니다'), findsOneWidget);
+        expect(find.widgetWithText(TextFormField, '철수'), findsOneWidget);
+        verifyNever(
+          () => harness.kratos.submit(
+            KratosFlowType.settings,
+            any(),
+            any(),
+            sessionToken: refreshed,
+            turnstileToken: any(named: 'turnstileToken'),
+          ),
+        );
+        verifyNever(() => harness.kratos.logout(any()));
+        expect(
+          await harness.storedSessionToken(),
+          KratosTestHarness.sessionToken,
+        );
+
+        await tester.enterText(passwordField(), '1234');
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+
+        expect(turnstiles.last.issued, [
+          'token-1',
+          'token-2',
+          'token-3',
+          'token-4',
+        ]);
+        expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+        expect(await harness.storedSessionToken(), refreshed);
+      });
+
+      testWidgets('비워 두고 저장하면 보내지 않고 비밀번호를 입력하라고 한다', (tester) async {
+        stubRefresh('철수');
+        await pumpGuest(tester);
+        await renameTo(tester, '철수');
+
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('비밀번호를 입력해 주세요'), findsOneWidget);
+        expect(turnstiles.last.issued, ['token-1']);
+      });
+
+      testWidgets('다시 로그인한 뒤 같은 이름이 있으면 이름 칸에 알리고 비밀번호는 다시 묻지 않는다', (
+        tester,
+      ) async {
+        stubRefresh('철수');
+        await pumpGuest(tester);
+        await renameTo(tester, '서연');
+        when(
+          () => harness.kratos.submit(
+            KratosFlowType.settings,
+            any(),
+            any(),
+            sessionToken: refreshed,
+            turnstileToken: any(named: 'turnstileToken'),
+          ),
+        ).thenThrow(
+          const KratosException(statusCode: 409, errorId: 'guest_name_taken'),
+        );
+
+        await tester.enterText(passwordField(), '1234');
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('이 모임에 같은 이름이 있습니다. 다른 이름을 입력해 주세요'), findsOneWidget);
+        expect(passwordField(), findsNothing);
+        expect(find.text(reason), findsNothing);
+        expect(await harness.storedSessionToken(), refreshed);
+      });
+    });
+
     testWidgets('이름을 그대로 두고 저장하면 보내지 않고 닫는다', (tester) async {
       await pumpGuest(tester);
       await openEdit(tester);
