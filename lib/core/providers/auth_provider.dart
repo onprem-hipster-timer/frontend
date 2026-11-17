@@ -15,6 +15,7 @@ import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/kept_guest_session_store.dart';
 import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
@@ -56,6 +57,7 @@ class AuthNotifier extends _$AuthNotifier {
   KratosClient get _kratos => ref.read(kratosClientProvider);
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
   SessionTokenStore get _tokenStore => ref.read(sessionTokenStoreProvider);
+  KeptGuestSessionStore get _kept => ref.read(keptGuestSessionStoreProvider);
   String? get _sessionToken => _tokenStore.token;
 
   @override

@@ -12,6 +12,7 @@ import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/kept_guest_session_store.dart';
 import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
 
@@ -1175,6 +1176,170 @@ void main() {
         ),
       );
       expect(container.read(authProvider), isA<AuthUnauthenticated>());
+    });
+  });
+
+  group('회원으로 옮기려고 따로 둔 게스트 세션', () {
+    const kept = '${keptGuestSessionKeyPrefix}meeting-1';
+
+    Future<ProviderContainer> bootGuest() async {
+      harness = await KratosTestHarness.create();
+      harness.stubGuestSession();
+      await harness.prefs.setString(guestMeetingKey, 'guest-uid meeting-1');
+      when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+      return boot();
+    }
+
+    Future<String?> stored(String key) =>
+        const FlutterSecureStorage().read(key: key);
+
+    test('모임의 게스트 세션 토큰을 그 모임 칸에 따로 두고, 게스트 세션은 끝내지 않은 채 미인증이 된다', () async {
+      final container = await bootGuest();
+
+      expect(
+        await container.read(authProvider.notifier).keepGuestForImport(),
+        isTrue,
+      );
+
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      expect(await harness.storedSessionToken(), isNull);
+      expect(await stored(kept), KratosTestHarness.sessionToken);
+      expect(harness.prefs.getString(guestMeetingKey), isNull);
+      verifyNever(() => harness.kratos.logout(any()));
+    });
+
+    test('게스트가 아니거나 모임을 모르면 따로 두지 않는다', () async {
+      harness = await KratosTestHarness.create();
+      final member = await boot();
+      expect(
+        await member.read(authProvider.notifier).keepGuestForImport(),
+        isFalse,
+      );
+      expect(member.read(authProvider), isA<AuthAuthenticated>());
+
+      harness = await KratosTestHarness.create();
+      harness.stubGuestSession();
+      final unknown = await boot();
+      expect(
+        await unknown.read(authProvider.notifier).keepGuestForImport(),
+        isFalse,
+      );
+      expect(unknown.read(authProvider), isA<AuthGuest>());
+    });
+
+    test('따로 둔 뒤 회원으로 로그인해도 게스트 세션은 끝내지 않는다', () async {
+      final container = await bootGuest();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.keepGuestForImport();
+      harness.stubCreateFlow(KratosFlowType.login, 'f1');
+      harness.stubSubmit(
+        KratosFlowType.login,
+        const KratosSubmitResult(sessionToken: 'ory_st_member'),
+      );
+      when(() => harness.kratos.whoami('ory_st_member')).thenAnswer(
+        (_) async =>
+            KratosSession(user: testUser, accessToken: harness.accessToken),
+      );
+
+      await notifier.signInWithEmail(email: 'user@example.com', password: 'pw');
+      await pumpEventQueue();
+
+      expect(container.read(authProvider), isA<AuthAuthenticated>());
+      expect(await harness.storedSessionToken(), 'ory_st_member');
+      expect(await stored(kept), KratosTestHarness.sessionToken);
+      verifyNever(() => harness.kratos.logout(any()));
+    });
+
+    test('따로 둔 세션으로 게스트 JWT를 새로 받고, 세션이 끝났거나 게스트가 아니면 null이다', () async {
+      final container = await bootGuest();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.keepGuestForImport();
+      final guestJwt = testJwt();
+      when(
+        () => harness.kratos.whoami(KratosTestHarness.sessionToken),
+      ).thenAnswer(
+        (_) async =>
+            KratosSession.guest(guest: testGuest, accessToken: guestJwt),
+      );
+
+      expect(await notifier.keptGuestAccessToken('meeting-1'), guestJwt);
+      expect(
+        container.read(authProvider),
+        isA<AuthUnauthenticated>(),
+        reason: '인증 상태는 그대로',
+      );
+      expect(await notifier.keptGuestAccessToken('meeting-2'), isNull);
+
+      when(
+        () => harness.kratos.whoami(KratosTestHarness.sessionToken),
+      ).thenAnswer((_) async => null);
+      expect(await notifier.keptGuestAccessToken('meeting-1'), isNull);
+    });
+
+    test('따로 둔 세션을 받는 중 연결이 끊기면 그 오류를 던지고 따로 둔 것은 둔다', () async {
+      final container = await bootGuest();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.keepGuestForImport();
+      when(
+        () => harness.kratos.whoami(KratosTestHarness.sessionToken),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      await expectLater(
+        notifier.keptGuestAccessToken('meeting-1'),
+        throwsA(isA<DioException>()),
+      );
+      expect(await stored(kept), KratosTestHarness.sessionToken);
+    });
+
+    test('따로 둔 것을 지우면서 게스트 세션도 끝내고, 끝내지 못해도 지운다', () async {
+      final container = await bootGuest();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.keepGuestForImport();
+      when(() => harness.kratos.logout(any())).thenThrow(Exception('끊김'));
+
+      await notifier.dropKeptGuest('meeting-1', endSession: true);
+
+      verify(
+        () => harness.kratos.logout(KratosTestHarness.sessionToken),
+      ).called(1);
+      expect(await stored(kept), isNull);
+    });
+
+    test('게스트로 계속하기는 따로 둔 세션을 한 칸에 되돌려 그 모임의 게스트가 되고 따로 둔 것을 지운다', () async {
+      final container = await bootGuest();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.keepGuestForImport();
+
+      expect(await notifier.continueAsKeptGuest('meeting-1'), isTrue);
+
+      expect(container.read(currentGuestProvider)?.meetingId, 'meeting-1');
+      expect(
+        await harness.storedSessionToken(),
+        KratosTestHarness.sessionToken,
+      );
+      expect(await stored(kept), isNull);
+      expect(
+        await notifier.continueAsKeptGuest('meeting-1'),
+        isFalse,
+        reason: '한 번만',
+      );
+    });
+
+    test('따로 둔 세션이 끝났으면 게스트로 계속하기는 미인증으로 두고 따로 둔 것을 지운다', () async {
+      final container = await bootGuest();
+      final notifier = container.read(authProvider.notifier);
+      await notifier.keepGuestForImport();
+      when(() => harness.kratos.whoami(any())).thenAnswer((_) async => null);
+
+      expect(await notifier.continueAsKeptGuest('meeting-1'), isFalse);
+
+      expect(container.read(authProvider), isA<AuthUnauthenticated>());
+      expect(await stored(kept), isNull);
     });
   });
 }

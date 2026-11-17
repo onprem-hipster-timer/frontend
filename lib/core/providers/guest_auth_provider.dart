@@ -7,7 +7,8 @@ const guestMeetingKey = 'momeet.guest_meeting';
 
 /// 게스트 세션: 회원과 같은 Kratos 세션·JWT지만 모임 하나에 속하고 이메일이 없다.
 ///
-/// 세션 토큰 저장소는 회원과 한 칸을 같이 쓴다. 게스트가 회원으로 로그인하면 게스트 세션은 끝낸다.
+/// 세션 토큰 저장소는 회원과 한 칸을 같이 쓴다. 게스트가 회원으로 로그인하면 게스트 세션은 끝낸다. 다만
+/// '안전한 정규 유저로 바꾸기'를 고르면 게스트 세션을 모임마다 따로 두고([KeptGuestSessionStore]) 끝내지 않는다.
 extension GuestAuth on AuthNotifier {
   /// 모임 [meetingId]의 게스트로 로그인한다. 회원과 같은 Kratos 로그인 플로우에 [handle]과 [password]를
   /// 내고, 받은 세션으로 JWT를 받는다. [turnstileToken]은 이 제출에만 쓴다.
@@ -135,6 +136,57 @@ extension GuestAuth on AuthNotifier {
       return meetingId;
     }
     return null;
+  }
+
+  /// '안전한 정규 유저로 바꾸기': 모임 게스트의 세션 토큰을 그 모임 칸에 따로 두고, 게스트 세션은 끝내지 않은 채
+  /// 미인증이 된다(그 뒤 회원으로 로그인해도 따로 둔 게스트 세션은 그대로다). 모임 게스트가 아니면 false
+  Future<bool> keepGuestForImport() async {
+    final current = _status;
+    final meetingId = current is AuthGuest ? current.guest.meetingId : null;
+    final sessionToken = _sessionToken;
+    if (meetingId == null || sessionToken == null) return false;
+    await _kept.keep(meetingId, sessionToken);
+    await _tokenStore.clear();
+    await _prefs.remove(guestMeetingKey);
+    // 기다리던 whoami가 이 세션을 되살리지 않게 한다
+    _signOuts++;
+    _status = const AuthStatus.unauthenticated();
+    return true;
+  }
+
+  /// 모임 [meetingId]에 따로 둔 게스트 세션으로 새로 받은 게스트 JWT. 없거나 세션이 끝났거나 게스트 세션이
+  /// 아니면 null이다. 인증 상태는 바꾸지 않는다. 연결 오류는 그대로 던진다
+  Future<String?> keptGuestAccessToken(String meetingId) async {
+    final sessionToken = await _kept.read(meetingId);
+    if (sessionToken == null) return null;
+    final session = await _kratos.whoami(sessionToken);
+    return session?.guest == null ? null : session!.accessToken;
+  }
+
+  /// 모임 [meetingId]에 따로 둔 게스트 세션을 지운다. [endSession]이면 그 Kratos 세션도 끝낸다(끝내지 못해도 지운다)
+  Future<void> dropKeptGuest(
+    String meetingId, {
+    bool endSession = false,
+  }) async {
+    final sessionToken = await _kept.read(meetingId);
+    await _kept.drop(meetingId);
+    if (!endSession || sessionToken == null) return;
+    try {
+      await _kratos.logout(sessionToken);
+    } catch (_) {}
+  }
+
+  /// '게스트로 계속하기': 모임 [meetingId]에 따로 둔 게스트 세션을 세션 토큰 칸에 되돌려 그 모임의 게스트가 된다.
+  /// 따로 둔 것은 지운다. 없거나 세션이 끝났으면 false(세션이 끝났으면 미인증이다)
+  Future<bool> continueAsKeptGuest(String meetingId) async {
+    final sessionToken = await _kept.read(meetingId);
+    if (sessionToken == null) return false;
+    await _kept.drop(meetingId);
+    final accessToken = await _authenticateWith(
+      sessionToken,
+      guestMeetingId: meetingId,
+    );
+    return accessToken != null && _status is AuthGuest;
   }
 
   /// 지금의 게스트 세션을 끝낸다(기다리지 않는다). 세션 토큰 한 칸을 [next]로 바꾸기 직전에 부른다
