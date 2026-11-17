@@ -516,7 +516,7 @@ void main() {
     texts: const [StressTexts.koreanLong],
     build: (text) => createFrom(
       _pendingCreate(answered: _allAnswered),
-      wrap: (page) => _TapOnStart(label: '공개', child: page),
+      wrap: (page) => _TapOnStart(label: '링크로 공유하기(공개)', child: page),
     ),
     verify: (tester) => expect(find.text('그대로 둘게요'), findsOneWidget),
   );

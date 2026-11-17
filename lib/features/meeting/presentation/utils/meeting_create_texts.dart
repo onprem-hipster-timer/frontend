@@ -51,7 +51,7 @@ final meetingVisibilityExplain =
     '공개하면 링크가 있는 누구나 로그인하지 않고 이 ${Terms.meeting.withJosa('과', '와')} 참여 인원을 '
     '볼 수 있어요. 이름은 참여한 뒤에 보여요.';
 const meetingVisibilityQuestion = '어떻게 할까요?';
-const meetingPublic = '공개';
+const meetingPublic = '링크로 공유하기(공개)';
 const meetingPrivate = '비공개';
 
 const meetingGuestQuestion = '게스트를 허용할까요?';

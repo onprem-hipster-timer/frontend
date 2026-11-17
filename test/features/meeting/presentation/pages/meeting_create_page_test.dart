@@ -174,7 +174,7 @@ void main() {
     if (from != to) await press(tester, '없어요');
     await press(tester, mode);
     if (mode == '시간별') await press(tester, '예');
-    await press(tester, public ? '공개' : '비공개');
+    await press(tester, public ? '링크로 공유하기(공개)' : '비공개');
     if (public) await press(tester, guests ? '허용' : '허용 안 함');
   }
 
@@ -254,14 +254,14 @@ void main() {
       expect(plainContaining('로그인하지 않고'), findsOneWidget);
       expect(find.text('6:00–18:00'), findsOneWidget);
 
-      await press(tester, '공개');
+      await press(tester, '링크로 공유하기(공개)');
       expectOnly(guestQuestion);
       expect(plainContaining('안전하지 않아요'), findsOneWidget);
 
       await press(tester, '허용');
       expectOnly(titleQuestion);
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('공개'), findsOneWidget);
+      expect(find.text('링크로 공유하기(공개)'), findsOneWidget);
       expect(find.text('게스트 허용'), findsOneWidget);
     });
 
@@ -278,7 +278,7 @@ void main() {
       }
       await press(tester, '날짜별');
 
-      for (final label in ['공개', '비공개']) {
+      for (final label in ['링크로 공유하기(공개)', '비공개']) {
         expect(
           tester.getSemantics(find.text(label)),
           isNot(isSemantics(isSelected: true)),
@@ -465,10 +465,10 @@ void main() {
       await pumpPage(tester);
       await answerAll(tester);
 
-      await press(tester, '공개');
+      await press(tester, '링크로 공유하기(공개)');
       expectOnly(visibilityQuestion);
       expect(
-        tester.getSemantics(find.text('공개').last),
+        tester.getSemantics(find.text('링크로 공유하기(공개)').last),
         isSemantics(isSelected: true),
         reason: '지금 답',
       );
@@ -476,7 +476,7 @@ void main() {
       expectOnly(titleQuestion);
       expect(find.text('게스트 허용'), findsOneWidget);
 
-      await press(tester, '공개');
+      await press(tester, '링크로 공유하기(공개)');
       await press(tester, '비공개');
       expectOnly(titleQuestion);
       expect(find.text('게스트 허용'), findsNothing);
@@ -902,7 +902,7 @@ void main() {
       await press(tester, '다 골랐어요');
       await press(tester, '시간별');
       await press(tester, '예');
-      await press(tester, '공개');
+      await press(tester, '링크로 공유하기(공개)');
       await press(tester, '허용 안 함');
       await tester.enterText(find.byType(TextField), '스터디');
       await submit(tester);
