@@ -60,7 +60,7 @@ class MeetingDateBadge extends StatelessWidget {
   }
 }
 
-/// 달력 윗부분의 띠와 고리
+/// 달력 윗부분의 띠와 고리. 달력 화면의 오늘 표시와 같은 강조색이다
 class _Binding extends StatelessWidget {
   const _Binding();
 
@@ -69,7 +69,7 @@ class _Binding extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.tertiaryContainer,
+        color: scheme.primary,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppRadius.xl),
         ),
@@ -85,7 +85,7 @@ class _Binding extends StatelessWidget {
                 height: 18,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: scheme.onTertiaryContainer,
+                    color: scheme.onPrimary,
                     borderRadius: AppRadius.pillAll,
                   ),
                 ),

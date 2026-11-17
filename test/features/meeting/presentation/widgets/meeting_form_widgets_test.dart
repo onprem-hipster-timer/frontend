@@ -3,11 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_help_icon.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_time_range.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_title_field.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 Future<void> pumpBody(WidgetTester tester, Widget child) => tester.pumpWidget(
   MaterialApp(
@@ -278,5 +280,31 @@ void main() {
 
       expect(controller.text.length, 200);
     });
+  });
+
+  testWidgets('첫날 달력 그림의 윗띠는 달력의 강조색(primary)이고 고리는 그 위 글자색이다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(body: MeetingDateBadge(day: DateTime.utc(2027, 3, 1))),
+      ),
+    );
+    final scheme = Theme.of(
+      tester.element(find.byType(MeetingDateBadge)),
+    ).colorScheme;
+    final fills = [
+      for (final box in tester.widgetList<DecoratedBox>(
+        find.descendant(
+          of: find.byType(MeetingDateBadge),
+          matching: find.byType(DecoratedBox),
+        ),
+      ))
+        if (box.decoration case BoxDecoration(:final color?)) color,
+    ];
+
+    expect(fills, contains(scheme.primary));
+    expect(fills.where((color) => color == scheme.onPrimary), hasLength(4));
+    expect(fills, isNot(contains(scheme.tertiaryContainer)));
+    expect(fills, isNot(contains(scheme.onTertiaryContainer)));
   });
 }
