@@ -208,46 +208,160 @@ void main() {
     };
 
     test('기본(인원 많은 순)은 인원이 같으면 긴 순, 그다음 빠른 날짜 순이다', () {
-      expect(sortMeetingRuns(runs, MeetingRunOrder.people).map(name), [
-        'C',
-        'E',
-        'A',
-        'B',
-        'D',
-        'F',
-      ]);
+      expect(
+        sortMeetingRuns(
+          runs,
+          MeetingRunOrder.people,
+          mode: MeetingMode.hourly,
+        ).map(name),
+        ['C', 'E', 'A', 'B', 'D', 'F'],
+      );
     });
 
     test('시간 긴 순은 길이가 같으면 인원 많은 순, 그다음 빠른 날짜 순이다', () {
-      expect(sortMeetingRuns(runs, MeetingRunOrder.length).map(name), [
-        'C',
-        'E',
-        'B',
-        'D',
-        'A',
-        'F',
-      ]);
+      expect(
+        sortMeetingRuns(
+          runs,
+          MeetingRunOrder.length,
+          mode: MeetingMode.hourly,
+        ).map(name),
+        ['C', 'E', 'B', 'D', 'A', 'F'],
+      );
     });
 
     test('날짜 순은 화면 순서다', () {
-      expect(sortMeetingRuns(runs, MeetingRunOrder.date).map(name), [
-        'A',
-        'B',
-        'C',
-        'D',
-        'E',
-        'F',
-      ]);
+      expect(
+        sortMeetingRuns(
+          runs,
+          MeetingRunOrder.date,
+          mode: MeetingMode.hourly,
+        ).map(name),
+        ['A', 'B', 'C', 'D', 'E', 'F'],
+      );
     });
 
     test('들어온 순서가 달라도 결과가 같다', () {
       final reversed = runs.reversed.toList();
       for (final order in MeetingRunOrder.values) {
         expect(
-          sortMeetingRuns(reversed, order).map(name),
-          sortMeetingRuns(runs, order).map(name),
+          sortMeetingRuns(reversed, order, mode: MeetingMode.hourly).map(name),
+          sortMeetingRuns(runs, order, mode: MeetingMode.hourly).map(name),
         );
       }
+    });
+  });
+
+  group('모모밋 추천', () {
+    Set<String> people(int count) => {for (var i = 0; i < count; i++) 'p$i'};
+
+    // 3월 1~4일, 칸은 30분: C 2명×4시간, A 5명×1시간, D 4명×2시간, B 3명×3시간
+    late List<MeetingRun> runs;
+    setUp(() {
+      runs = findMeetingRuns(
+        hourly(),
+        peopleBy({
+          for (var row = 0; row < 8; row++) (0, row): people(2),
+          for (var row = 0; row < 2; row++) (1, row): people(5),
+          for (var row = 0; row < 4; row++) (2, row): people(4),
+          for (var row = 0; row < 6; row++) (3, row): people(3),
+        }),
+      );
+    });
+
+    String name(MeetingRun run) => switch (run.first.column) {
+      0 => 'C',
+      1 => 'A',
+      2 => 'D',
+      3 => 'B',
+      _ => '?',
+    };
+
+    List<String> sorted(MeetingRunOrder order, [List<MeetingRun>? from]) =>
+        sortMeetingRuns(
+          from ?? runs,
+          order,
+          mode: MeetingMode.hourly,
+        ).map(name).toList();
+
+    test('점수는 인원 × 길이다(시간별은 시간)', () {
+      expect(
+        {
+          for (final run in runs)
+            name(run): meetingRunScore(run, MeetingMode.hourly),
+        },
+        {'C': 8, 'A': 5, 'D': 8, 'B': 9},
+      );
+    });
+
+    test('점수가 높은 순이고, 같으면 인원 많은 순이다', () {
+      expect(sorted(MeetingRunOrder.recommended), ['B', 'D', 'C', 'A']);
+    });
+
+    test('네 가지 정렬이 모두 다르다', () {
+      expect(sorted(MeetingRunOrder.people), ['A', 'D', 'B', 'C']);
+      expect(sorted(MeetingRunOrder.length), ['C', 'B', 'D', 'A']);
+      expect(sorted(MeetingRunOrder.date), ['C', 'A', 'D', 'B']);
+    });
+
+    test('들어온 순서가 달라도 결과가 같다', () {
+      expect(sorted(MeetingRunOrder.recommended, runs.reversed.toList()), [
+        'B',
+        'D',
+        'C',
+        'A',
+      ]);
+    });
+
+    test('점수가 같으면 인원 많은 순, 그다음 빠른 날짜 순이다', () {
+      // 2명×2시간(1일)과 4명×1시간(2일·3일)은 점수 4로 같다. 4명×1시간 둘은 날짜로 가른다
+      final tied = findMeetingRuns(
+        hourly(),
+        peopleBy({
+          for (var row = 0; row < 4; row++) (0, row): people(2),
+          for (var row = 0; row < 2; row++) (1, row): people(4),
+          for (var row = 0; row < 2; row++) (2, row): people(4),
+          for (var row = 0; row < 8; row++) (3, row): people(1),
+        }),
+      );
+      expect(
+        sortMeetingRuns(
+          tied,
+          MeetingRunOrder.recommended,
+          mode: MeetingMode.hourly,
+        ).map((run) => run.first.column),
+        [1, 2, 0],
+      );
+    });
+
+    test('날짜별·요일별은 날로 센다', () {
+      final daily = MeetingGrid.of(
+        makeMeeting(
+          mode: MeetingMode.daily,
+          startTime: '00:00:00',
+          endTime: '00:00:00',
+        ),
+      );
+      // 3월 1~3일 2명(3일), 3월 5일 5명(1일)
+      final dayRuns = findMeetingRuns(
+        daily,
+        (cell) => switch (cell.index) {
+          0 || 1 || 2 => people(2),
+          4 => people(5),
+          _ => const {},
+        },
+      );
+      expect(
+        [for (final run in dayRuns) meetingRunScore(run, MeetingMode.daily)],
+        [6, 5],
+      );
+      expect(
+        sortMeetingRuns(
+          dayRuns,
+          MeetingRunOrder.recommended,
+          mode: MeetingMode.daily,
+        ).map((run) => run.first.index),
+        [0, 4],
+      );
     });
   });
 }

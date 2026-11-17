@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 /// 같은 사람들이 되는 이어진 칸 묶음. 선택된 일정 카드 하나다
 @immutable
@@ -54,8 +55,11 @@ List<MeetingRun> findMeetingRuns(
   return runs;
 }
 
-/// 선택된 일정의 첫 정렬 기준
+/// 추천 시간의 첫 정렬 기준
 enum MeetingRunOrder {
+  /// 모모밋 추천: 많이 모이면서 오래 되는 순([meetingRunScore]가 높은 순)
+  recommended,
+
   /// 빠른 날짜(요일별은 월요일부터)
   date,
 
@@ -66,15 +70,28 @@ enum MeetingRunOrder {
   length,
 }
 
-/// [first] 기준으로 정렬한다. 같으면 인원 많은 순 → 긴 순 → 빠른 날짜 순의 남은 기준을 차례로 본다
+/// 모모밋 추천 점수: 되는 인원 × 길이. 길이는 시간별이면 시간, 날짜별·요일별이면 날 수다
+double meetingRunScore(MeetingRun run, MeetingMode mode) {
+  final length = mode == MeetingMode.hourly
+      ? run.length.inMinutes / 60
+      : run.cells.length.toDouble();
+  return run.people.length * length;
+}
+
+/// [first] 기준으로 정렬한다. 같으면 인원 많은 순 → 긴 순 → 빠른 날짜 순의 남은 기준을 차례로 본다.
+/// 모모밋 추천의 점수는 [mode]의 길이로 센다
 List<MeetingRun> sortMeetingRuns(
   Iterable<MeetingRun> runs,
-  MeetingRunOrder first,
-) {
+  MeetingRunOrder first, {
+  required MeetingMode mode,
+}) {
   int byDate(MeetingRun a, MeetingRun b) => a.first.index - b.first.index;
   int byPeople(MeetingRun a, MeetingRun b) => b.people.length - a.people.length;
   int byLength(MeetingRun a, MeetingRun b) => b.length.compareTo(a.length);
+  int byScore(MeetingRun a, MeetingRun b) =>
+      meetingRunScore(b, mode).compareTo(meetingRunScore(a, mode));
   final keys = switch (first) {
+    MeetingRunOrder.recommended => [byScore, byPeople, byLength, byDate],
     MeetingRunOrder.people => [byPeople, byLength, byDate],
     MeetingRunOrder.length => [byLength, byPeople, byDate],
     MeetingRunOrder.date => [byDate, byPeople, byLength],

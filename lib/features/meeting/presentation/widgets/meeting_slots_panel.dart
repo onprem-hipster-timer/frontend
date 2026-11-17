@@ -9,7 +9,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart'
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
-/// '추천 시간': 두 명 이상 함께 되는 이어진 시간 카드와 정렬 고르기(기본 인원 많은 순).
+/// '추천 시간': 두 명 이상 함께 되는 이어진 시간 카드와 정렬 고르기(기본 모모밋 추천).
 ///
 /// [onAddToCalendar]가 없으면(게스트는 달력이 없다) 카드에 '내 달력에 일정 만들기'가 없다. [fill]이면 받은
 /// 높이를 채우고 제목 줄은 둔 채 카드 목록만 상자 안에서 굴린다(넓은 화면 옆 칸).
@@ -35,7 +35,7 @@ class MeetingSlotsPanel extends StatefulWidget {
 }
 
 class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
-  var _order = MeetingRunOrder.people;
+  var _order = MeetingRunOrder.recommended;
   final _scroll = ScrollController();
 
   @override
@@ -73,7 +73,9 @@ class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
           );
     return MeetingPanel(
       title: '추천 시간',
-      help: '여러 사람이 함께 되는 시간을 인원과 길이 순으로 보여 줘요',
+      help:
+          '여러 사람이 함께 되는 시간을 보여 줘요. '
+          '모모밋 추천은 사람이 많이 모이면서 오래 되는 시간을 먼저 보여 줘요',
       color: scheme.primaryContainer,
       foreground: scheme.onPrimaryContainer,
       fill: widget.fill,
@@ -212,12 +214,14 @@ class _OrderMenu extends StatelessWidget {
   final ValueChanged<MeetingRunOrder> onChanged;
 
   static const _orders = [
+    MeetingRunOrder.recommended,
     MeetingRunOrder.people,
     MeetingRunOrder.date,
     MeetingRunOrder.length,
   ];
 
   String _label(MeetingRunOrder order) => switch (order) {
+    MeetingRunOrder.recommended => '모모밋 추천',
     MeetingRunOrder.date => mode == MeetingMode.weekly ? '요일 순' : '날짜 순',
     MeetingRunOrder.people => '인원 많은 순',
     MeetingRunOrder.length => mode == MeetingMode.hourly ? '시간 긴 순' : '기간 긴 순',

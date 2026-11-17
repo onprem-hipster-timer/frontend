@@ -123,10 +123,12 @@ void main() {
       return [for (final (text, _) in texts) text];
     }
 
-    testWidgets('두 명 이상 되는 이어진 시간을 인원 많은 순, 같으면 날짜 순으로 보인다', (tester) async {
+    testWidgets('처음 열면 모모밋 추천이고 많이 모이며 오래 되는 시간부터, 같으면 날짜 순으로 보인다', (
+      tester,
+    ) async {
       await pumpSlots(tester, boardOf(threePeople()));
 
-      expect(find.text('인원 많은 순'), findsOneWidget);
+      expect(find.text('모모밋 추천'), findsOneWidget);
       expect(detailsInOrder(tester), [
         '10:00 ~ 11:00',
         '9:00 ~ 10:00',
@@ -138,10 +140,42 @@ void main() {
       expect(find.text('2'), findsNWidgets(3));
     });
 
+    testWidgets('정렬 목록은 모모밋 추천이 맨 위이고 그다음 인원 많은 순·날짜 순·시간 긴 순이다', (
+      tester,
+    ) async {
+      await pumpSlots(tester, boardOf(threePeople()));
+
+      await tester.tap(find.text('모모밋 추천'));
+      await tester.pumpAndSettle();
+
+      final labels = ['모모밋 추천', '인원 많은 순', '날짜 순', '시간 긴 순'];
+      final tops = [
+        for (final label in labels) tester.getTopLeft(find.text(label).last).dy,
+      ];
+      expect(tops, [...tops]..sort());
+    });
+
+    testWidgets('인원 많은 순을 골라도 그 순서로 보인다', (tester) async {
+      await pumpSlots(tester, boardOf(threePeople()));
+
+      await tester.tap(find.text('모모밋 추천'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('인원 많은 순').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('인원 많은 순'), findsOneWidget);
+      expect(detailsInOrder(tester), [
+        '10:00 ~ 11:00',
+        '9:00 ~ 10:00',
+        '11:00 ~ 12:00',
+        '10:00 ~ 11:00',
+      ]);
+    });
+
     testWidgets('정렬을 날짜 순으로 바꾸면 화면 순서다', (tester) async {
       await pumpSlots(tester, boardOf(threePeople()));
 
-      await tester.tap(find.text('인원 많은 순'));
+      await tester.tap(find.text('모모밋 추천'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('날짜 순').last);
       await tester.pumpAndSettle();
@@ -163,7 +197,7 @@ void main() {
         endTime: '00:00:00',
       );
       await pumpSlots(tester, boardOf(const [], meeting: meeting));
-      await tester.tap(find.text('인원 많은 순'));
+      await tester.tap(find.text('모모밋 추천'));
       await tester.pumpAndSettle();
 
       expect(find.text('요일 순'), findsOneWidget);

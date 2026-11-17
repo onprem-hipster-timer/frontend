@@ -189,7 +189,7 @@ class MeetingBoard implements MeetingShading {
 
   /// 두 명 이상 되는 이어진 칸 묶음, [order] 순
   List<MeetingRun> runs(MeetingRunOrder order) =>
-      sortMeetingRuns(findMeetingRuns(grid, peopleAt), order);
+      sortMeetingRuns(findMeetingRuns(grid, peopleAt), order, mode: grid.mode);
 
   bool isSelf(String id) => id == pendingSelfId || id == me?.id;
 
