@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_form.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_login_choice.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 좁은 화면의 방문자가 칠하려 하거나 '내 시간 입력하기'를 누르면 올리는 요청 시트를 연다. 애니메이션을

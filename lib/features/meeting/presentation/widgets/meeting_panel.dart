@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_quiet_panels.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 모임 화면 옆(좁으면 아래)의 상자. 제목 줄과 내용.
@@ -84,15 +85,4 @@ class MeetingPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 아래의 [MeetingPanel]을 상자 없는 조용한 모양으로 그린다
-class MeetingQuietPanels extends InheritedWidget {
-  const MeetingQuietPanels({super.key, required super.child});
-
-  static bool of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<MeetingQuietPanels>() != null;
-
-  @override
-  bool updateShouldNotify(MeetingQuietPanels oldWidget) => false;
 }

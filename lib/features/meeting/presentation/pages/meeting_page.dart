@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
@@ -39,7 +40,7 @@ class MeetingPage extends ConsumerWidget {
           );
     return Scaffold(
       appBar: AppBar(
-        leading: meetingAppBarLeading(context),
+        leading: context.canPop() ? null : const MeetingHomeButton(),
         title: Text(title ?? Terms.meeting),
       ),
       body: signedIn

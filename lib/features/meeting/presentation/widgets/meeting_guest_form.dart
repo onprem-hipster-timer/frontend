@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
-import 'package:momeet/core/text/nfc.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/core/turnstile/turnstile_field.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
@@ -140,10 +139,6 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
       if (found.handle == null) {
         // 처음 쓰는 이름이면 약관에 동의한 뒤에 만든다. 비밀번호가 짧으면 아무것도 보내지 않는다
         if (!_agreed) return;
-        if (nfc(_password.text).characters.length < guestPasswordMinChars) {
-          setState(() => _passwordError = guestPasswordTooShortText);
-          return;
-        }
         final created = await _steps.create(
           name: found.name,
           password: _password.text,

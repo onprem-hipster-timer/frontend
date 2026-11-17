@@ -44,6 +44,7 @@ enum GuestRefusal {
 
   /// [error]가 어느 거절인지 가린다. `/v1/guests/*`(DioException), `/auth`(KratosException), 확인 위젯
   static GuestRefusal of(Object error) => switch (error) {
+    GuestPasswordTooShort() => passwordTooShort,
     TurnstileException(status: TurnstileStatus.failed) => verificationFailed,
     TurnstileException() => verificationUnavailable,
     KratosException() => _ofKratos(error),
@@ -98,6 +99,11 @@ enum GuestRefusal {
 
 /// 새 게스트 비밀번호의 최소 글자 수(눈에 보이는 글자, NFC로 센다). 이미 있는 게스트의 로그인에는 쓰지 않는다
 const guestPasswordMinChars = 4;
+
+/// 새 게스트 비밀번호가 [guestPasswordMinChars]글자보다 짧아 보내지 않았다
+class GuestPasswordTooShort implements Exception {
+  const GuestPasswordTooShort();
+}
 
 /// 새 게스트 비밀번호가 짧을 때 비밀번호 칸에 보이는 말
 const guestPasswordTooShortText = '비밀번호는 $guestPasswordMinChars글자 이상이어야 해요';

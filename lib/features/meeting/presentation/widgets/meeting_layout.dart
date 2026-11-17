@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_quiet_panels.dart';
 
 /// 모임 화면의 배치. 넓으면 왼쪽에 [main](격자), 오른쪽 칸에 [side]를 위에서부터 둔다(상자 모양).
 ///
@@ -35,7 +35,15 @@ class MeetingLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (narrow(constraints.maxWidth)) return _narrow(context);
+        if (narrow(constraints.maxWidth)) {
+          return _NarrowLayout(
+            header: header,
+            main: main,
+            secondary: secondary,
+            tertiary: tertiary,
+            bottom: bottom,
+          );
+        }
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Center(
@@ -66,8 +74,26 @@ class MeetingLayout extends StatelessWidget {
       },
     );
   }
+}
 
-  Widget _narrow(BuildContext context) {
+/// 좁은 배치: 중요한 순서로 쌓고 [bottom]은 화면 아래에 붙인다
+class _NarrowLayout extends StatelessWidget {
+  const _NarrowLayout({
+    required this.header,
+    required this.main,
+    required this.secondary,
+    required this.tertiary,
+    required this.bottom,
+  });
+
+  final Widget? header;
+  final Widget main;
+  final List<Widget> secondary;
+  final List<Widget> tertiary;
+  final Widget? bottom;
+
+  @override
+  Widget build(BuildContext context) {
     final header = this.header;
     final bottom = this.bottom;
     final content = SingleChildScrollView(

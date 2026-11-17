@@ -36,7 +36,7 @@ class _MeetingCreatedPageState extends ConsumerState<MeetingCreatedPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        leading: meetingAppBarLeading(context),
+        leading: context.canPop() ? null : const MeetingHomeButton(),
         title: const Text('새 ${Terms.meeting}'),
       ),
       body: Center(

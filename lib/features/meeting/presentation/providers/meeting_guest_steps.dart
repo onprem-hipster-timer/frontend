@@ -3,6 +3,8 @@ import 'package:momeet/core/network/turnstile_request.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/text/nfc.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
+import 'package:material_ui/material_ui.dart' show StringCharacters;
 import 'package:momeet/shared/api/rest/export.dart';
 
 /// 게스트 이름의 정규형: NFC로 바꾸고, 이어진 공백을 한 칸으로 줄이고, 앞뒤 공백을 뗀다(backend와 같다)
@@ -42,12 +44,26 @@ class MeetingGuestSteps {
     ),
   );
 
-  /// 새 게스트를 만든다. [consentVersion]은 이름 찾기가 준 약관 버전이고, 세 항목에 동의한 것으로 보낸다
+  /// 새 게스트를 만든다. [consentVersion]은 이름 찾기가 준 약관 버전이고, 세 항목에 동의한 것으로 보낸다.
+  ///
+  /// 비밀번호가 눈에 보이는 글자로 [guestPasswordMinChars]글자보다 짧으면 토큰도 쓰지 않고
+  /// [GuestPasswordTooShort]로 끝난다
   Future<GuestRead> create({
     required String name,
     required String password,
     required String consentVersion,
-  }) => turnstile.send(
+  }) {
+    if (nfc(password).characters.length < guestPasswordMinChars) {
+      return Future.error(const GuestPasswordTooShort());
+    }
+    return _create(name, password, consentVersion);
+  }
+
+  Future<GuestRead> _create(
+    String name,
+    String password,
+    String consentVersion,
+  ) => turnstile.send(
     (token) => _guests.createGuestV1GuestsPost(
       body: GuestCreate(
         resourceType: ResourceType.meeting,

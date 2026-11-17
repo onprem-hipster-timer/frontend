@@ -12,6 +12,7 @@ import 'package:momeet/features/meeting/presentation/providers/pending_meeting_s
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_create_login_prompt.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
@@ -93,7 +94,11 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
       return;
     }
     if (ref.read(currentUserProvider) == null) {
-      if (await _askLogin(context) && mounted) await _goToLogin();
+      final wide =
+          MediaQuery.sizeOf(context).width >= _FormLayout.twoColumnsFrom;
+      if (await askLoginToCreateMeeting(context, wide: wide) && mounted) {
+        await _goToLogin();
+      }
       return;
     }
     final typed = _title.text.trim();
@@ -149,7 +154,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     final name = ref.watch(currentUserProvider.select((user) => user?.name));
     return Scaffold(
       appBar: AppBar(
-        leading: meetingAppBarLeading(context),
+        leading: context.canPop() ? null : const MeetingHomeButton(),
         title: const Text('새 ${Terms.meeting}'),
       ),
       body: _FormLayout(
@@ -194,7 +199,7 @@ class _FormLayout extends StatelessWidget {
   });
 
   /// 이 폭부터 두 칸
-  static const _twoColumnsFrom = 720.0;
+  static const twoColumnsFrom = 720.0;
 
   final Widget dates;
   final Widget time;
@@ -205,7 +210,7 @@ class _FormLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= _twoColumnsFrom;
+        final wide = constraints.maxWidth >= twoColumnsFrom;
         final settings = [
           time,
           const SizedBox(height: 24),
@@ -387,83 +392,4 @@ class _SharingSection extends StatelessWidget {
       ],
     );
   }
-}
-
-/// 로그인하지 않은 사람이 만들려 할 때 묻는다. 좁으면 하단 시트, 넓으면 대화상자다. 로그인하러 가면 true
-Future<bool> _askLogin(BuildContext context) async {
-  final reason = '${Terms.meeting.withJosa('을', '를')} 만들고 나중에 고치려면 로그인이 필요해요';
-  const reassurance = '입력한 내용은 그대로 남아요';
-  const login = '로그인하고 계속하기';
-  if (MediaQuery.sizeOf(context).width >= _FormLayout._twoColumnsFrom) {
-    final chosen = await showAppDialog<bool>(
-      context,
-      builder: (context) => AlertDialog(
-        title: Text(reason),
-        content: const Text(reassurance),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('닫기'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(login),
-          ),
-        ],
-      ),
-    );
-    return chosen ?? false;
-  }
-  final chosen = await showAppSheet<bool>(
-    context,
-    animationStyle: MediaQuery.disableAnimationsOf(context)
-        ? AnimationStyle.noAnimation
-        : null,
-    builder: (context) {
-      final theme = Theme.of(context);
-      return SafeArea(
-        top: false,
-        // 낮은 화면·큰 글자에서는 시트 안에서 굴린다
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                reason,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                reassurance,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
-                ),
-                child: const Text(login),
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: const Text('닫기'),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-  return chosen ?? false;
 }
