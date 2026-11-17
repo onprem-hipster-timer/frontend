@@ -103,6 +103,27 @@ class MeetingGridGeometry {
     cellHeight,
   );
 
+  /// 시간별의 시 묶음: 같은 정시(벽시계 시)에 드는 줄들의 처음과 끝, 위에서부터. 하루 범위가 정시에 시작하거나
+  /// 끝나지 않으면 처음·끝 묶음은 한 시간보다 짧고, 슬롯이 15분이면 네 줄, 60분이면 한 줄이 한 묶음이다
+  List<(int, int)> hourBlocks() {
+    final blocks = <(int, int)>[];
+    for (var row = 0; row < grid.rowMinutes.length; row++) {
+      final hour = grid.rowMinutes[row] ~/ 60;
+      if (blocks.isNotEmpty && grid.rowMinutes[blocks.last.$1] ~/ 60 == hour) {
+        blocks.last = (blocks.last.$1, row);
+      } else {
+        blocks.add((row, row));
+      }
+    }
+    return blocks;
+  }
+
+  /// [column] 열의 [block] 시 묶음 모양: 모서리를 조금 둥글린 사각형. 이웃한 묶음과 틈 없이 맞닿는다
+  RRect hourBlock(int column, (int, int) block) => RRect.fromRectAndRadius(
+    rectOf(column, block.$1).expandToInclude(rectOf(column, block.$2)),
+    const Radius.circular(AppRadius.sm),
+  );
+
   /// 칸 자리 [first]~[last](이어진 칸)를 두르는 사각형들: 시간별은 열마다, 날짜별·요일별은 줄마다 하나
   List<Rect> runRects(int first, int last) {
     final groups = <int, Rect>{};

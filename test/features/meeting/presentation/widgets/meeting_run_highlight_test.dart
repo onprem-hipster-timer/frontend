@@ -85,6 +85,39 @@ void main() {
     });
   });
 
+  group('시간별 정시 묶음', () {
+    List<(int, int)> blocksOf(MeetingRead meeting) => MeetingGridGeometry(
+      MeetingGrid.of(meeting),
+      MeetingCellShape.hourly(
+        slotMinutes: meeting.timeSlotMinutes,
+        columnGap: 6,
+      ),
+      700,
+      TextScaler.noScaling,
+    ).hourBlocks();
+
+    test('30분 칸은 두 줄씩 한 시간 묶음이다', () {
+      final blocks = blocksOf(makeMeeting());
+      expect(blocks, hasLength(12));
+      expect(blocks.first, (0, 1));
+      expect(blocks.last, (22, 23));
+    });
+
+    test('15분 칸은 네 줄, 60분 칸은 한 줄이 한 묶음이다', () {
+      expect(blocksOf(makeMeeting(timeSlotMinutes: 15)).first, (0, 3));
+      expect(blocksOf(makeMeeting(timeSlotMinutes: 60)), [
+        for (var row = 0; row < 12; row++) (row, row),
+      ]);
+    });
+
+    test('정시에 시작하지 않는 하루 범위는 처음 묶음이 한 시간보다 짧다', () {
+      final blocks = blocksOf(
+        makeMeeting(startTime: '09:30:00', endTime: '12:00:00'),
+      );
+      expect(blocks, [(0, 0), (1, 2), (3, 4)]);
+    });
+  });
+
   group('카드와 격자', () {
     late MeetingRunHighlight highlight;
     late MeetingBoard board;

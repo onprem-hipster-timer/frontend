@@ -67,7 +67,7 @@ class MeetingGridPainter extends CustomPainter {
     if (highlighted != null) _paintHighlight(canvas, highlighted);
   }
 
-  /// [key]의 칸을 두른다: 그 밖의 칸은 옅게 덮고, 이어진 칸 묶음(시간별은 열, 날짜별·요일별은 줄)마다 바깥은
+  /// [key]의 칸을 두른다: 그 밖의 칸은 옅게 덮고(시간별은 정시 묶음 모양 안에서), 이어진 칸 묶음(시간별은 열, 날짜별·요일별은 줄)마다 바깥은
   /// 진하게, 안쪽은 밝게 두 겹 테두리를 긋는다(색 없이도 모양으로 보인다)
   void _paintHighlight(Canvas canvas, MeetingRunKey key) {
     if (key.last >= grid.cells.length) return;
@@ -75,12 +75,30 @@ class MeetingGridPainter extends CustomPainter {
       geometry.shape.continuous ? AppRadius.sm : AppRadius.md,
     );
     final dim = Paint()..color = colors.dim;
-    for (final cell in grid.cells) {
-      if (cell.index < key.first || cell.index > key.last) {
+    bool outside(MeetingCell cell) =>
+        cell.index < key.first || cell.index > key.last;
+    if (geometry.shape.continuous) {
+      // 정시 묶음 모양 안에서만 덮는다
+      for (var column = 0; column < grid.columns; column++) {
+        for (final block in geometry.hourBlocks()) {
+          canvas
+            ..save()
+            ..clipRRect(geometry.hourBlock(column, block));
+          for (var row = block.$1; row <= block.$2; row++) {
+            final cell = grid.at(column, row);
+            if (cell != null && outside(cell)) {
+              canvas.drawRect(geometry.rectOf(column, row), dim);
+            }
+          }
+          canvas.restore();
+        }
+      }
+    } else {
+      for (final cell in grid.cells.where(outside)) {
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             geometry.rectOf(cell.column, cell.row),
-            geometry.shape.continuous ? Radius.zero : radius,
+            radius,
           ),
           dim,
         );
@@ -143,57 +161,50 @@ class MeetingGridPainter extends CustomPainter {
     }
   }
 
-  /// 시간별: 날짜마다 둥근 띠 하나에 칸을 채우고 정각은 실선, 그 밖의 칸 경계는 점선
+  /// 시간별: 날짜마다 정시 묶음([MeetingGridGeometry.hourBlocks])을 모서리가 조금 둥근 덩어리로 맞닿게 쌓는다.
+  /// 칸은 그 덩어리 모양으로 잘라 칠하고, 덩어리 안의 칸 경계는 점선이다
   void _paintColumns(Canvas canvas, MeetingGridTransition? transition) {
     final line = Paint()
       ..color = colors.line
       ..strokeWidth = 1;
+    final border = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = colors.border;
+    final blocks = geometry.hourBlocks();
     for (var column = 0; column < grid.columns; column++) {
-      final band = Rect.fromLTWH(
-        geometry.rectOf(column, 0).left,
-        0,
-        geometry.cellWidth,
-        geometry.size.height,
-      );
-      final rounded = RRect.fromRectAndRadius(
-        band,
-        const Radius.circular(AppRadius.sm),
-      );
-      canvas
-        ..save()
-        ..clipRRect(rounded)
-        ..drawRect(band, Paint()..color = colors.base);
-      for (var row = 0; row < grid.rows; row++) {
-        final cell = grid.at(column, row);
-        final rect = RRect.fromRectAndRadius(
-          geometry.rectOf(column, row),
-          Radius.zero,
-        );
-        if (cell == null) {
-          canvas.drawRRect(rect, Paint()..color = colors.missing);
-        } else {
-          _paintCell(canvas, rect, cell, transition);
+      for (final block in blocks) {
+        final shape = geometry.hourBlock(column, block);
+        canvas
+          ..save()
+          ..clipRRect(shape)
+          ..drawRect(shape.outerRect, Paint()..color = colors.base);
+        for (var row = block.$1; row <= block.$2; row++) {
+          final cell = grid.at(column, row);
+          final rect = RRect.fromRectAndRadius(
+            geometry.rectOf(column, row),
+            Radius.zero,
+          );
+          if (cell == null) {
+            canvas.drawRRect(rect, Paint()..color = colors.missing);
+          } else {
+            _paintCell(canvas, rect, cell, transition);
+          }
         }
+        for (var row = block.$1 + 1; row <= block.$2; row++) {
+          final y = geometry.rectOf(column, row).top;
+          final band = shape.outerRect;
+          for (var x = band.left + 2; x < band.right; x += 7) {
+            canvas.drawLine(
+              Offset(x, y),
+              Offset(math.min(x + 4, band.right), y),
+              line,
+            );
+          }
+        }
+        canvas
+          ..restore()
+          ..drawRRect(shape, border);
       }
-      for (var row = 1; row < grid.rows; row++) {
-        final y = row * geometry.cellHeight;
-        if (grid.rowMinutes[row] % 60 == 0) {
-          canvas.drawLine(Offset(band.left, y), Offset(band.right, y), line);
-          continue;
-        }
-        for (var x = band.left + 2; x < band.right; x += 7) {
-          final end = math.min(x + 4, band.right);
-          canvas.drawLine(Offset(x, y), Offset(end, y), line);
-        }
-      }
-      canvas
-        ..restore()
-        ..drawRRect(
-          rounded,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..color = colors.border,
-        );
     }
   }
 
