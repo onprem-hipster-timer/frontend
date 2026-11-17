@@ -82,13 +82,17 @@ class _ConsentFormState extends ConsumerState<_ConsentForm> {
     _analytics = value;
   });
 
+  /// 약관 동의와 선택한 사용성 분석 동의를 한 요청으로 보낸다. 계정에 저장되면 이 브라우저에도 그 값을 둔다
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    ref
-        .read(analyticsConsentProvider.notifier)
-        .set(_analytics ? AnalyticsConsent.granted : AnalyticsConsent.denied);
+    final analytics = _analytics;
     try {
-      await ref.read(myProfileProvider.notifier).agree(widget.version);
+      await ref
+          .read(myProfileProvider.notifier)
+          .agree(widget.version, analytics: analytics);
+      ref
+          .read(analyticsConsentProvider.notifier)
+          .set(AnalyticsConsent.of(analytics));
     } on DioException catch (e) {
       if (!mounted) return;
       if (e.response?.statusCode == 409) {

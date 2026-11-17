@@ -23,11 +23,18 @@ class MeetingGuestSteps {
     required this.turnstile,
     required GuestsClient guests,
     required AuthNotifier auth,
+    this.analytics = _notChosen,
   }) : _guests = guests,
        _auth = auth;
 
   final String meetingId;
   final TurnstileController turnstile;
+
+  /// 이 브라우저의 사용성 분석 동의(고르지 않았으면 null). 게스트 동의 본문에 함께 담는다(서버는 읽어 돌려주지
+  /// 않고, 게스트는 이 브라우저 값만 쓴다)
+  final bool? Function() analytics;
+
+  static bool? _notChosen() => null;
   final GuestsClient _guests;
   final AuthNotifier _auth;
 
@@ -74,6 +81,7 @@ class MeetingGuestSteps {
           ageOver14: true,
           terms: true,
           privacy: true,
+          analytics: analytics(),
         ),
       ),
       options: turnstileRequest(token),
@@ -109,6 +117,7 @@ class MeetingGuestSteps {
         ageOver14: true,
         terms: true,
         privacy: true,
+        analytics: analytics(),
       ),
     );
   }

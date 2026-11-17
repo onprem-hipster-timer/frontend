@@ -4,6 +4,7 @@ import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/core/turnstile/turnstile_field.dart';
+import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent.dart';
@@ -43,6 +44,7 @@ class _MeetingGuestConsentStepState
     turnstile: _turnstile,
     guests: ref.read(guestsApiProvider),
     auth: ref.read(authProvider.notifier),
+    analytics: () => ref.read(analyticsConsentProvider).asBool,
   );
 
   GuestConsentChecks _consent = (age: false, terms: false, privacy: false);

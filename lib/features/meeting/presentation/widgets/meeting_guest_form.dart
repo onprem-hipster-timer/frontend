@@ -6,6 +6,7 @@ import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/core/turnstile/turnstile_field.dart';
+import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
@@ -44,8 +45,8 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
     turnstile: _turnstile,
     guests: ref.read(guestsApiProvider),
     auth: ref.read(authProvider.notifier),
+    analytics: () => ref.read(analyticsConsentProvider).asBool,
   );
-
   _Found? _found;
 
   /// 찾는 중인 이름과 그 결과

@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
@@ -61,6 +62,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(1280, 900),
     bool turnstile = true,
+    AnalyticsConsent? browser,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -92,6 +94,9 @@ void main() {
           timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
           appOriginProvider.overrideWithValue('https://app.example.com'),
           analytics.asOverride,
+          analyticsConsentBridgeProvider.overrideWithValue(
+            InMemoryAnalyticsConsentBridge(browser),
+          ),
           if (turnstile)
             turnstiles.override
           else
@@ -228,12 +233,25 @@ void main() {
         ],
         [true, true, true],
       );
+      expect(created.consent.analytics, isNull, reason: '이 브라우저가 고르지 않았다');
       verifyGuestLogin(handle: 'g1@guest.invalid', token: 'token-3');
       expect(turnstiles.issued, ['token-1', 'token-2', 'token-3']);
       expect(turnstiles.last.resets, 3, reason: '응답마다 다시 확인');
       final guest = container(tester).read(currentGuestProvider)!;
       expect(guest.meetingId, 'meeting-1');
       expect(await harness.storedSessionToken(), 'ory_st_guest');
+    });
+
+    testWidgets('이 브라우저가 사용성 분석을 골랐으면 게스트 동의 본문에 함께 담는다', (tester) async {
+      await pumpVisitor(tester, browser: AnalyticsConsent.granted);
+      await openGuest(tester);
+
+      await enterName(tester, '민수');
+      await agreeAll(tester);
+      await tester.enterText(passwordField(), '1234');
+      await press(tester, '참여하기');
+
+      expect(guests.creates.single.$1.consent.analytics, isTrue);
     });
 
     testWidgets('약관 세 항목을 하나씩 모두 체크해야 참여할 수 있다', (tester) async {

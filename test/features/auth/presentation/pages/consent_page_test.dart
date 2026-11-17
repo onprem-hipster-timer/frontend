@@ -148,8 +148,10 @@ void main() {
   });
 
   group('제출', () {
-    testWidgets('프로필이 알려 준 약관 버전으로 세 항목 동의를 보낸다', (tester) async {
-      users = FakeUsersClient(consentVersion: '2027-01-01');
+    testWidgets('프로필이 알려 준 약관 버전으로 세 항목 동의와 사용성 분석 선택을 한 요청으로 보낸다', (
+      tester,
+    ) async {
+      users = FakeUsersClient(consentVersion: '2026-11-19');
       final container = await pumpConsent(tester);
 
       await checkRequired(tester);
@@ -157,31 +159,46 @@ void main() {
 
       expect(users.agreed, [
         const ConsentCreate(
-          version: '2027-01-01',
+          version: '2026-11-19',
           ageOver14: true,
           terms: true,
           privacy: true,
+          analytics: false,
         ),
       ]);
       expect(container.read(consentRequiredProvider), isFalse);
     });
 
-    testWidgets('선택 항목을 체크하지 않고 시작하면 사용성 분석을 거부한 것으로 저장한다', (tester) async {
+    testWidgets('선택 항목을 체크하지 않고 시작하면 계정에 거부로 보내고 이 브라우저도 거부한다', (tester) async {
       await pumpConsent(tester);
 
       await checkRequired(tester);
       await tapText(tester, _submit);
 
+      expect(users.agreed.single.analytics, isFalse);
+      expect(users.profile.analyticsConsent, isFalse);
       expect(analytics.current, AnalyticsConsent.denied);
     });
 
-    testWidgets('선택 항목을 체크하고 시작하면 사용성 분석을 허용한다', (tester) async {
+    testWidgets('선택 항목을 체크하고 시작하면 계정에 허용으로 보내고 이 브라우저도 허용한다', (tester) async {
       await pumpConsent(tester);
 
       await tapText(tester, _all);
       await tapText(tester, _submit);
 
+      expect(users.agreed.single.analytics, isTrue);
       expect(analytics.current, AnalyticsConsent.granted);
+    });
+
+    testWidgets('동의를 저장하지 못하면 이 브라우저의 사용성 분석 값도 바꾸지 않는다', (tester) async {
+      users.consentError = Exception('끊김');
+      await pumpConsent(tester);
+
+      await tapText(tester, _all);
+      await tapText(tester, _submit);
+
+      expect(users.agreed, hasLength(1));
+      expect(analytics.current, isNull);
     });
 
     testWidgets('이미 사용성 분석을 허용했으면 선택 항목이 체크된 채로 시작한다', (tester) async {

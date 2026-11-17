@@ -279,6 +279,32 @@ void main() {
       expect(await kept(), isNull);
     });
 
+    testWidgets('바뀐 약관에 동의해야 하면(428) 따로 둔 것을 두고, 동의하고 모임으로 돌아오면 다시 옮긴다', (
+      tester,
+    ) async {
+      meetings.responses.addAll([
+        refused(428, 'ConsentRequiredError'),
+        refused(428, 'ConsentRequiredError'),
+        refused(428, 'ConsentRequiredError'),
+      ]);
+      await pumpPage(tester);
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(meetings.tokens, hasLength(3));
+      expect(await kept(), keptToken);
+
+      // 앱은 약관 동의 화면으로 갔다가 동의하면 모임으로 돌아온다
+      router.go(AppRoute.login.path);
+      await tester.pumpAndSettle();
+      meetings.responses.add(mergedMember());
+      router.go('/meetings/meeting-1');
+      await tester.pumpAndSettle();
+
+      expect(meetings.tokens, hasLength(4));
+      expect(find.text(moved), findsOneWidget);
+      expect(await kept(), isNull);
+    });
+
     testWidgets('같은 때 다른 요청과 겹치면(409) 잠시 뒤 다시 해 옮긴다', (tester) async {
       meetings.responses.addAll([
         refused(409, 'GuestImportConflictError'),
