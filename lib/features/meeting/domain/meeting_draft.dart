@@ -47,6 +47,36 @@ class MeetingDraft {
   /// 게스트 로그인을 받는지. 공개가 아니면 늘 false다
   final bool allowGuests;
 
+  /// 이 기기에 두었던 폼 값을 폼의 규칙으로 다시 만든다. 폼이 저절로 맞추는 값(시간별 기간,
+  /// 요일별 7일, 비공개의 게스트 로그인, 시작보다 늦은 끝)은 같은 규칙으로 맞추고, 폼이 만들 수 없는 값(알 수 없는
+  /// 방식, 0~24시 밖의 시각, [today]보다 앞의 날, 3개월을 넘는 기간)이면 null이다
+  static MeetingDraft? restore({
+    required MeetingMode mode,
+    required Iterable<DateTime> days,
+    required int startHour,
+    required int endHour,
+    required bool isPublic,
+    required bool allowGuests,
+    required DateTime today,
+  }) {
+    final dates = MeetingDates.of(days);
+    if (mode == MeetingMode.$unknown ||
+        startHour < 0 ||
+        startHour > 23 ||
+        endHour < 1 ||
+        endHour > 24 ||
+        !dates.withinMaxPeriod ||
+        (!dates.isEmpty && dates.first.isBefore(calendarDay(today)))) {
+      return null;
+    }
+    return MeetingDraft(
+      mode: MeetingMode.daily,
+      dates: dates,
+      endHour: endHour,
+      allowGuests: allowGuests,
+    ).withStartHour(startHour).withPublic(isPublic).withMode(mode);
+  }
+
   /// 고른 기간이 시간별에 들어가는지
   bool get hourlyAvailable => dates.span <= hourlyMaxDays;
 

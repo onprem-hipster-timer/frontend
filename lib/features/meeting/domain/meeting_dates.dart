@@ -81,11 +81,9 @@ class MeetingDates {
   }
 
   /// [day]를 더해도 기간이 상한([meetingMaxPeriodMonths])을 넘지 않는지
-  bool canAdd(DateTime day) {
-    if (isEmpty) return true;
-    final target = calendarDay(day);
-    final start = target.isBefore(first) ? target : first;
-    final end = target.isAfter(last) ? target : last;
-    return !end.isAfter(addMonthsClamped(start, meetingMaxPeriodMonths));
-  }
+  bool canAdd(DateTime day) => MeetingDates.of([...days, day]).withinMaxPeriod;
+
+  /// 기간이 상한([meetingMaxPeriodMonths]) 안인지
+  bool get withinMaxPeriod =>
+      isEmpty || !last.isAfter(addMonthsClamped(first, meetingMaxPeriodMonths));
 }

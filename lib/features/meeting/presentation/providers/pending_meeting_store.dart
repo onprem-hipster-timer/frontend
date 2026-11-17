@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
-import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_title_field.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,30 +42,35 @@ class PendingMeetingStore {
     );
   }
 
-  /// 둔 폼을 꺼내고 지운다. 없거나, 읽을 수 없거나, 첫날이 [today]보다 앞이면 null
+  /// 둔 폼을 꺼내고 지운다. 폼의 규칙으로 다시 만들고([MeetingDraft.restore]) 제목은 제목 칸처럼 자른다.
+  /// 없거나, 읽을 수 없거나, 폼이 만들 수 없는 값이면 null
   PendingMeeting? take({required DateTime today}) {
     final raw = _prefs.getString(key);
     if (raw == null) return null;
     unawaited(_prefs.remove(key));
     try {
       final json = jsonDecode(raw) as Map<String, Object?>;
-      final dates = MeetingDates.of([
-        for (final day in json['days']! as List) DateTime.parse(day as String),
-      ]);
-      if (!dates.isEmpty && dates.first.isBefore(calendarDay(today))) {
-        return null;
-      }
-      return (
-        draft: MeetingDraft(
-          mode: MeetingMode.values.byName(json['mode']! as String),
-          dates: dates,
-          startHour: json['start_hour']! as int,
-          endHour: json['end_hour']! as int,
-          isPublic: json['public']! as bool,
-          allowGuests: json['guests']! as bool,
-        ),
-        title: json['title']! as String,
+      final draft = MeetingDraft.restore(
+        mode: MeetingMode.values.byName(json['mode']! as String),
+        days: [
+          for (final day in json['days']! as List)
+            DateTime.parse(day as String),
+        ],
+        startHour: json['start_hour']! as int,
+        endHour: json['end_hour']! as int,
+        isPublic: json['public']! as bool,
+        allowGuests: json['guests']! as bool,
+        today: today,
       );
+      if (draft == null) return null;
+      final title =
+          LengthLimitingTextInputFormatter(MeetingTitleField.maxLength)
+              .formatEditUpdate(
+                TextEditingValue.empty,
+                TextEditingValue(text: json['title']! as String),
+              )
+              .text;
+      return (draft: draft, title: title);
     } on Object {
       return null;
     }
