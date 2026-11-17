@@ -137,9 +137,23 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     calls.add('update ${body.toJson()}');
     updates.add((meetingId, body));
     if (updateError != null) throw updateError!;
-    return makeMeeting(
-      id: meetingId,
-    ).copyWith(allowGuests: body.allowGuests ?? false);
+    final stored = meeting;
+    if (stored == null || stored.id != meetingId) {
+      return makeMeeting(
+        id: meetingId,
+      ).copyWith(allowGuests: body.allowGuests ?? false);
+    }
+    // 조회하는 미팅이면 backend처럼 보낸 칸만 바꿔 둔다
+    return meeting = stored.copyWith(
+      title: body.title ?? stored.title,
+      startDate: body.startDate ?? stored.startDate,
+      endDate: body.endDate ?? stored.endDate,
+      excludedDates: body.excludedDates ?? stored.excludedDates,
+      mode: body.mode ?? stored.mode,
+      startTime: body.startTime ?? stored.startTime,
+      endTime: body.endTime ?? stored.endTime,
+      allowGuests: body.allowGuests ?? stored.allowGuests,
+    );
   }
 
   @override
@@ -400,6 +414,26 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
   /// 설정하면 공개 범위 저장이 이 오류로 실패한다
   Object? setError;
 
+  /// 조회가 돌려주는 공개 범위. 없으면 404다(정한 적이 없다). 저장하면 backend처럼 바뀐다
+  VisibilityRead? current;
+
+  /// 설정하면 공개 범위 조회가 이 오류로 실패한다
+  Object? getError;
+
+  /// 공개 범위 조회 횟수
+  var reads = 0;
+
+  @override
+  Future<VisibilityRead> getVisibilityV1VisibilityResourceTypeResourceIdGet({
+    required ResourceType resourceType,
+    required String resourceId,
+    RequestOptions? options,
+  }) async {
+    reads++;
+    if (getError != null) throw getError!;
+    return current ?? (throw notFound('VisibilityNotFoundError'));
+  }
+
   @override
   Future<VisibilityRead> setVisibilityV1VisibilityResourceTypeResourceIdPut({
     required ResourceType resourceType,
@@ -410,17 +444,32 @@ class FakeVisibilityClient extends Fake implements VisibilityClient {
     calls.add('visibility ${body.level.name}');
     if (setError != null) throw setError!;
     updates.add((resourceType, resourceId, body));
-    return VisibilityRead(
-      id: 'visibility-${updates.length}',
-      resourceType: resourceType,
+    return current = visibilityOf(
+      body.level,
       resourceId: resourceId,
-      ownerId: 'owner-1',
-      level: body.level,
-      createdAt: _at,
-      updatedAt: _at,
+      emails: body.allowedEmails ?? current?.allowedEmails ?? const [],
+      domains: body.allowedDomains ?? current?.allowedDomains ?? const [],
     );
   }
 }
+
+/// 미팅 [resourceId]의 공개 범위 [level]
+VisibilityRead visibilityOf(
+  VisibilityLevel level, {
+  String resourceId = 'meeting-1',
+  List<String> emails = const [],
+  List<String> domains = const [],
+}) => VisibilityRead(
+  id: 'visibility-$resourceId',
+  resourceType: ResourceType.meeting,
+  resourceId: resourceId,
+  ownerId: 'owner-1',
+  level: level,
+  createdAt: _at,
+  updatedAt: _at,
+  allowedEmails: emails,
+  allowedDomains: domains,
+);
 
 /// 정한 값을 돌려주는 앱 시간대
 class FixedTimezone extends TimezoneNotifier {
