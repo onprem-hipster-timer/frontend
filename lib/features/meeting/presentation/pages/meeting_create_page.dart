@@ -27,9 +27,9 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 쉬운 입력부터 두고 비용이 큰 제목은 맨 끝 화살표 옆에 둔다: 날짜 → 시간 → 공개·게스트 → 제목.
 /// 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다.
 ///
-/// 로그인하지 않아도 모두 넣을 수 있다. 화살표를 누르면 그때 로그인이 필요한 까닭과 로그인을 제목 아래에
-/// 보인다. 로그인하러 가는 동안 폼을 이 기기에 두고([PendingMeetingStore]), 로그인해 돌아오면 넣은 그대로
-/// 열려 화살표 한 번으로 만든다.
+/// 로그인하지 않아도 모두 넣을 수 있고, 그동안 로그인 말은 없다. 화살표를 누르면 그때 로그인이 필요한 까닭을
+/// 묻는 창(좁으면 하단 시트, 넓으면 대화상자)을 연다. 로그인하러 가는 동안 폼을 이 기기에 두고
+/// ([PendingMeetingStore]), 로그인해 돌아오면 넣은 그대로 열려 화살표 한 번으로 만든다.
 class MeetingCreatePage extends ConsumerStatefulWidget {
   const MeetingCreatePage({super.key});
 
@@ -40,10 +40,6 @@ class MeetingCreatePage extends ConsumerStatefulWidget {
 class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
   final _title = TextEditingController();
   var _draft = const MeetingDraft();
-  final _loginRequest = GlobalKey();
-
-  /// 로그인하지 않은 사람이 화살표를 눌렀다
-  var _askLogin = false;
 
   /// 시간별에서 날짜별로 저절로 바뀐 횟수
   var _modeShakes = 0;
@@ -97,19 +93,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
       return;
     }
     if (ref.read(currentUserProvider) == null) {
-      setState(() => _askLogin = true);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final request = _loginRequest.currentContext;
-        if (request == null || !request.mounted) return;
-        Scrollable.ensureVisible(
-          request,
-          duration: MediaQuery.disableAnimationsOf(request)
-              ? Duration.zero
-              : const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-        );
-      });
+      if (await _askLogin(context) && mounted) await _goToLogin();
       return;
     }
     final typed = _title.text.trim();
@@ -163,9 +147,6 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     final draft = _draft;
     final today = calendarDay(DateTime.now());
     final name = ref.watch(currentUserProvider.select((user) => user?.name));
-    final signedIn = ref.watch(
-      currentUserProvider.select((user) => user != null),
-    );
     return Scaffold(
       appBar: AppBar(
         leading: meetingAppBarLeading(context),
@@ -198,9 +179,6 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
           submitting: ref.watch(createMeetingMutation).isPending,
           onSubmit: _submit,
         ),
-        loginRequest: _askLogin && !signedIn
-            ? _LoginRequest(key: _loginRequest, onLogin: _goToLogin)
-            : null,
       ),
     );
   }
@@ -213,7 +191,6 @@ class _FormLayout extends StatelessWidget {
     required this.time,
     required this.sharing,
     required this.title,
-    required this.loginRequest,
   });
 
   /// 이 폭부터 두 칸
@@ -223,9 +200,6 @@ class _FormLayout extends StatelessWidget {
   final Widget time;
   final Widget sharing;
   final Widget title;
-
-  /// 제목 아래에 두는 로그인 요청. 로그인하지 않은 사람이 화살표를 눌렀을 때만 있다
-  final Widget? loginRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -238,10 +212,6 @@ class _FormLayout extends StatelessWidget {
           sharing,
           const SizedBox(height: 28),
           title,
-          if (loginRequest case final request?) ...[
-            const SizedBox(height: 12),
-            request,
-          ],
         ];
         return SingleChildScrollView(
           padding: EdgeInsets.all(wide ? 32 : 16),
@@ -419,68 +389,81 @@ class _SharingSection extends StatelessWidget {
   }
 }
 
-/// 로그인하지 않은 사람이 만들려 할 때 제목 아래에 보이는 요청: 까닭, 넣은 것이 남는다는 것, 로그인
-class _LoginRequest extends StatelessWidget {
-  const _LoginRequest({super.key, required this.onLogin});
-
-  final VoidCallback onLogin;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Semantics(
-      liveRegion: true,
-      container: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh,
-          borderRadius: AppRadius.lgAll,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+/// 로그인하지 않은 사람이 만들려 할 때 묻는다. 좁으면 하단 시트, 넓으면 대화상자다. 로그인하러 가면 true
+Future<bool> _askLogin(BuildContext context) async {
+  final reason = '${Terms.meeting.withJosa('을', '를')} 만들고 나중에 고치려면 로그인이 필요해요';
+  const reassurance = '입력한 내용은 그대로 남아요';
+  const login = '로그인하고 계속하기';
+  if (MediaQuery.sizeOf(context).width >= _FormLayout._twoColumnsFrom) {
+    final chosen = await showAppDialog<bool>(
+      context,
+      builder: (context) => AlertDialog(
+        title: Text(reason),
+        content: const Text(reassurance),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('닫기'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(login),
+          ),
+        ],
+      ),
+    );
+    return chosen ?? false;
+  }
+  final chosen = await showAppSheet<bool>(
+    context,
+    animationStyle: MediaQuery.disableAnimationsOf(context)
+        ? AnimationStyle.noAnimation
+        : null,
+    builder: (context) {
+      final theme = Theme.of(context);
+      return SafeArea(
+        top: false,
+        // 낮은 화면·큰 글자에서는 시트 안에서 굴린다
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.lock_outline, size: 20, color: scheme.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${Terms.meeting.withJosa('을', '를')} 만들고 나중에 고치려면 로그인이 필요해요',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '입력한 내용은 그대로 남아요',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: onLogin,
-                  child: const Text('로그인하고 계속하기'),
+              Text(
+                reason,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                reassurance,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                child: const Text(login),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                child: const Text('닫기'),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
+  return chosen ?? false;
 }

@@ -9,6 +9,7 @@ import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
+import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,8 +46,9 @@ void main() {
     String? name = '지현',
     bool signedIn = true,
     bool nextMonthShown = true,
+    Size size = const Size(480, 1800),
   }) async {
-    tester.view.physicalSize = const Size(480, 1800);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     router = GoRouter(
@@ -428,29 +430,81 @@ void main() {
   });
 
   group('로그인하지 않았으면', () {
-    testWidgets('날짜·시간·공개·제목을 다 넣을 수 있고, 화살표를 누르면 만들지 않고 까닭과 로그인을 그 아래에 보인다', (
-      tester,
-    ) async {
+    testWidgets(
+      '날짜·시간·공개·제목을 다 넣는 동안 로그인 말이 없고, 화살표를 누르면 만들지 않고 그때 로그인을 묻는 시트를 연다',
+      (tester) async {
+        await pumpPage(tester, signedIn: false);
+        await tapDays(tester, [3, 4]);
+        await tester.tap(find.text('비허용').last);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), '스터디');
+        expect(find.text(loginReason), findsNothing);
+        expect(find.text('로그인하고 계속하기'), findsNothing);
+
+        await submit(tester);
+
+        expect(meetings.created, isEmpty);
+        expect(calls, isEmpty);
+        expect(location(), AppRoute.meetings.path);
+        final sheet = find.byType(BottomSheet);
+        expect(sheet, findsOneWidget);
+        for (final text in [loginReason, '입력한 내용은 그대로 남아요']) {
+          expect(
+            find.descendant(of: sheet, matching: find.text(text)),
+            findsOneWidget,
+          );
+        }
+        expect(
+          find.descendant(
+            of: sheet,
+            matching: find.widgetWithText(FilledButton, '로그인하고 계속하기'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('닫기로 시트를 닫으면 넣은 그대로의 폼으로 돌아온다', (tester) async {
       await pumpPage(tester, signedIn: false);
-      expect(find.text(loginReason), findsNothing);
-      await tapDays(tester, [3, 4]);
-      await tester.tap(find.text('비허용').last);
-      await tester.pumpAndSettle();
+      await tapDays(tester, [3]);
       await tester.enterText(find.byType(TextField), '스터디');
+      await submit(tester);
+
+      await tester.tap(find.widgetWithText(TextButton, '닫기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text(loginReason), findsNothing);
+      expect(find.text('스터디'), findsOneWidget);
+      expect(
+        tester.getSemantics(dayCell(nextMonth(3))),
+        isSemantics(isSelected: true),
+      );
+      expect(location(), AppRoute.meetings.path);
+      expect(prefs.getString(PendingMeetingStore.key), isNull);
+    });
+
+    testWidgets('넓은 화면에서는 같은 내용을 대화상자로 묻는다', (tester) async {
+      await pumpPage(tester, signedIn: false, size: const Size(1280, 900));
+      await tapDays(tester, [3]);
 
       await submit(tester);
 
-      expect(meetings.created, isEmpty);
-      expect(calls, isEmpty);
-      expect(location(), AppRoute.meetings.path);
-      expect(find.text(loginReason), findsOneWidget);
-      expect(find.text('입력한 내용은 그대로 남아요'), findsOneWidget);
-      final login = find.widgetWithText(FilledButton, '로그인하고 계속하기');
-      expect(login, findsOneWidget);
+      final dialog = find.byType(AlertDialog);
+      expect(dialog, findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
       expect(
-        tester.getTopLeft(login).dy,
-        greaterThan(tester.getBottomLeft(find.byType(TextField)).dy),
+        find.descendant(of: dialog, matching: find.text(loginReason)),
+        findsOneWidget,
       );
+      expect(
+        find.descendant(of: dialog, matching: find.text('입력한 내용은 그대로 남아요')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(FilledButton, '로그인하고 계속하기'));
+      await tester.pumpAndSettle();
+      expect(location(), AppRoute.login.path);
     });
 
     testWidgets('날짜를 고르지 않았으면 로그인보다 날짜를 먼저 고르라고 한다', (tester) async {
