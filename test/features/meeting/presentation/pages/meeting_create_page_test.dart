@@ -242,7 +242,7 @@ void main() {
 
       await press(tester, '없어요');
       expectOnly(modeQuestion);
-      expect(find.text('제외 없음'), findsOneWidget);
+      expect(find.text('제외할 날 고르기'), findsOneWidget);
       expect(find.byType(MeetingCalendar), findsNothing, reason: '날짜를 다 물었다');
 
       await press(tester, '시간별');
@@ -292,7 +292,7 @@ void main() {
       await pickRange(tester, 3, 3);
 
       expectOnly(modeQuestion);
-      expect(find.text('제외 없음'), findsNothing);
+      expect(find.text('제외할 날 고르기'), findsNothing);
     });
 
     testWidgets('날짜별은 시간을, 비공개는 게스트를 묻지 않고 제목으로 간다', (tester) async {
@@ -338,7 +338,7 @@ void main() {
       expect(find.text('없어요'), findsOneWidget, reason: '다시 누르면 되돌린다');
       await tapDay(tester, 5);
       await press(tester, '다 골랐어요');
-      expect(find.text('1일 제외'), findsOneWidget);
+      expect(find.text('제외한 날 다시 고르기'), findsOneWidget);
 
       await press(tester, '날짜별');
       await press(tester, '비공개');
@@ -418,7 +418,7 @@ void main() {
 
       expect(plainContaining('요일별은 7일로 받아서 기간을'), findsOneWidget);
       expect(plain('요일별이라 제외한 날짜를 되돌렸어요'), findsOneWidget);
-      expect(find.text('1일 제외'), findsNothing);
+      expect(find.text('제외한 날 다시 고르기'), findsNothing);
       expectOnly(visibilityQuestion);
       await press(tester, '비공개');
       expect(plainContaining('요일별은 7일로'), findsNothing, reason: '다음 답에서 지운다');
@@ -494,14 +494,14 @@ void main() {
       await press(tester, '날짜별');
       await press(tester, '비공개');
 
-      await press(tester, '2일 제외');
+      await press(tester, '제외한 날 다시 고르기');
       expectOnly(exclusionQuestion);
       await press(tester, '기간 다시 고르기');
       await pickRange(tester, 3, 5);
 
       expect(plain('새 기간에 들지 않는 제외 날짜는 뺐어요'), findsOneWidget);
       expectOnly(titleQuestion);
-      expect(find.text('1일 제외'), findsOneWidget);
+      expect(find.text('제외한 날 다시 고르기'), findsOneWidget);
     });
 
     testWidgets('기간을 시간별로 받을 수 없게 바꾸면 날짜별로 바꾸고 알린다', (tester) async {
@@ -919,7 +919,7 @@ void main() {
 
       expectOnly(titleQuestion);
       expect(find.text('스터디'), findsOneWidget);
-      expect(find.text('1일 제외'), findsOneWidget);
+      expect(find.text('제외한 날 다시 고르기'), findsOneWidget);
       expect(find.text('6:00–18:00'), findsOneWidget);
       expect(find.text('게스트 안 받음'), findsOneWidget);
       await submit(tester);

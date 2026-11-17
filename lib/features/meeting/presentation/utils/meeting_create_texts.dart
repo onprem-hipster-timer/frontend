@@ -93,9 +93,9 @@ String meetingRangeAnswer(MeetingDates dates) =>
 String meetingExcludedList(List<DateTime> days) =>
     '제외: ${days.map(meetingShortDay).join(', ')}';
 
-/// 요약의 제외 ('제외 없음', '2일 제외')
+/// 요약의 제외. 누르면 제외할 날을 다시 고른다 ('제외할 날 고르기', '제외한 날 다시 고르기')
 String meetingExclusionSummary(MeetingDates dates) =>
-    dates.excluded.isEmpty ? '제외 없음' : '${dates.excluded.length}일 제외';
+    dates.excluded.isEmpty ? '제외할 날 고르기' : '제외한 날 다시 고르기';
 
 /// 요약의 시간 ('6:00–18:00')
 String meetingHoursSummary(MeetingDraft draft) =>
