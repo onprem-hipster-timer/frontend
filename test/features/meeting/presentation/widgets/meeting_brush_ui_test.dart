@@ -83,7 +83,7 @@ void main() {
     final semantics = tester.ensureSemantics();
     await pumpSection(tester);
 
-    expect(find.text("바쁜 날은 '가능'으로, 한가한 날은 '불가능'으로 칠하세요"), findsOneWidget);
+    expect(find.text("바쁜 날은 '가능'만, 한가한 날은 '불가능'만 칠하세요"), findsOneWidget);
     expect(tester.getSemantics(find.text('가능')), isSemantics(isSelected: true));
     await pickBrush(tester, '불가능');
     expect(

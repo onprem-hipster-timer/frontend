@@ -103,7 +103,7 @@ class _MeetingAvailabilitySectionState
           ),
           const _Hint(
             icon: Icons.brush_outlined,
-            text: "바쁜 날은 '가능'으로, 한가한 날은 '불가능'으로 칠하세요",
+            text: "바쁜 날은 '가능'만, 한가한 날은 '불가능'만 칠하세요",
           ),
         ],
         if (!locked) ...[

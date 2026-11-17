@@ -158,7 +158,7 @@ class MeetingGridColors {
       line: scheme.outlineVariant,
       mine: scheme.primary,
       onMine: scheme.onPrimary,
-      veil: scheme.surfaceContainerLowest.withValues(alpha: 0.78),
+      veil: scheme.surfaceContainerLowest.withValues(alpha: 0.5),
       hatch: scheme.onSurfaceVariant.withValues(alpha: 0.5),
       muted: scheme.onSurfaceVariant,
       missing: scheme.onSurface.withValues(alpha: 0.06),
