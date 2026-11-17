@@ -118,7 +118,8 @@ Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 
 
 ### 라우팅
 
-SPA(Single Page Application) 라우팅을 위해 모든 경로를 `index.html`로 폴백합니다.
+`/privacy`·`/terms`·`/meet`(모임 소개)는 정적 페이지 `privacy.html`·`terms.html`·`meet.html`로 보냅니다.
+그 밖의 경로는 SPA(Single Page Application) 라우팅을 위해 파일이 없으면 `index.html`로 폴백합니다.
 `flutter_service_worker.js`는 캐시 무효화를 위해 `Cache-Control: no-cache`로 설정합니다.
 
 ### 보안 헤더

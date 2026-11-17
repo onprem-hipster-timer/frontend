@@ -1,0 +1,62 @@
+/* /meet 모임 소개 페이지. 랜딩(/landing/style.css)의 머리띠·버튼·섹션을 그대로 쓰고 이 페이지에만 있는 것을 둔다 */
+
+body.meet-page {
+  margin: 0;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, 'Helvetica Neue', 'Noto Sans KR', sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+  line-height: 1.65;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 섹션 장식(.bento::before)이 오른쪽으로 넘쳐도 가로로 굴러가지 않게 한다 */
+.meet-page main {
+  overflow-x: hidden;
+}
+
+/* 한국어는 낱말 단위로 줄을 바꾼다 */
+.meet-page h1,
+.meet-page h2,
+.meet-page h3,
+.meet-page p {
+  word-break: keep-all;
+}
+
+.meet-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.meet-mode-art {
+  display: block;
+  margin-bottom: 1.25rem;
+}
+
+.meet-guest .bento-title {
+  margin: 0 auto 1rem;
+}
+
+.meet-note {
+  font-size: 0.9rem;
+  color: var(--ink-light);
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin: 0;
+}
+
+.meet-mascot {
+  display: block;
+  width: 160px;
+  height: auto;
+  margin: 0 auto 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .meet-modes {
+    grid-template-columns: 1fr;
+  }
+}
