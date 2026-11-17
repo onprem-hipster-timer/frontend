@@ -604,6 +604,25 @@ void main() {
         expect(await harness.storedSessionToken(), refreshed);
       });
 
+      testWidgets('다시 확인하는 비밀번호에는 길이 제한이 없다(예전에 만든 짧은 비밀번호)', (tester) async {
+        stubRefresh('철수');
+        await pumpGuest(tester);
+        await renameTo(tester, '철수');
+
+        await tester.enterText(passwordField(), '12');
+        await tester.tap(find.text('저장'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => harness.kratos.submit(KratosFlowType.login, 'l1', {
+            'method': 'password',
+            'identifier': testGuest.handle,
+            'password': '12',
+          }, turnstileToken: 'token-2'),
+        ).called(1);
+        expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+      });
+
       testWidgets('비워 두고 저장하면 보내지 않고 비밀번호를 입력하라고 한다', (tester) async {
         stubRefresh('철수');
         await pumpGuest(tester);

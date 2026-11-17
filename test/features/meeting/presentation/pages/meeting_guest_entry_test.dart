@@ -19,6 +19,7 @@ import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
+import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/fake_turnstile.dart';
 import '../../../../helpers/kratos_mocks.dart';
 import '../../guest_fixtures.dart';
@@ -359,6 +360,110 @@ void main() {
     });
   });
 
+  group('처음 쓰는 이름의 비밀번호 길이', () {
+    const tooShort = '비밀번호는 4글자 이상이어야 해요';
+
+    Future<void> tryCreate(WidgetTester tester, String password) async {
+      await pumpVisitor(tester);
+      await openGuest(tester);
+      await enterName(tester, '민수');
+      await agreeAll(tester);
+      await tester.enterText(passwordField(), password);
+      await press(tester, '참여하기');
+    }
+
+    for (final (label, password) in [
+      ('세 글자', '123'),
+      ('한글 세 글자', '가나다'),
+      ('이모지 세 글자(코드 단위로는 여럿)', '👨‍👩‍👧👍🏽🇰🇷'),
+      ('조합형 세 글자(NFC로 줄이면 셋)', 'e\u0301e\u0301e\u0301'),
+    ]) {
+      testWidgets('4글자보다 짧으면($label) 비밀번호 칸에 알리고 아무것도 보내지 않는다', (tester) async {
+        await tryCreate(tester, password);
+
+        expect(find.text(tooShort), findsOneWidget);
+        expect(guests.creates, isEmpty);
+        expect(turnstiles.issued, ['token-1'], reason: '이름 찾기에 쓴 토큰뿐이다');
+        verifyNever(
+          () => harness.kratos.submit(
+            KratosFlowType.login,
+            any(),
+            any(),
+            turnstileToken: any(named: 'turnstileToken'),
+          ),
+        );
+      });
+    }
+
+    testWidgets('눈에 보이는 글자로 네 글자면 이모지라도 만든다', (tester) async {
+      await tryCreate(tester, '👨‍👩‍👧👍🏽🇰🇷🙂');
+
+      expect(find.text(tooShort), findsNothing);
+      expect(guests.creates, hasLength(1));
+    });
+
+    testWidgets('고치면 알림이 사라지고 네 글자로 다시 내면 만든다', (tester) async {
+      await tryCreate(tester, '123');
+
+      await tester.enterText(passwordField(), '1234');
+      await tester.pumpAndSettle();
+      expect(find.text(tooShort), findsNothing);
+      await press(tester, '참여하기');
+
+      expect(guests.creates.single.$1.password, '1234');
+      expect(guests.creates.single.$2, 'token-2');
+    });
+
+    testWidgets('서버가 짧은 비밀번호로 거절하면(422) 같은 알림을 비밀번호 칸에 보이고 로그인하지 않는다', (
+      tester,
+    ) async {
+      guests.createError = httpError(
+        '/v1/guests',
+        422,
+        data: {
+          'detail': [
+            {
+              'type': 'value_error',
+              'loc': ['body', 'password'],
+              'msg': 'Value error, too short',
+            },
+          ],
+        },
+      );
+      await tryCreate(tester, '1234');
+
+      expect(find.text(tooShort), findsOneWidget);
+      verifyNever(
+        () => harness.kratos.submit(
+          KratosFlowType.login,
+          any(),
+          any(),
+          turnstileToken: any(named: 'turnstileToken'),
+        ),
+      );
+    });
+
+    testWidgets('이름이 거절되면(422) 이름 알림이다', (tester) async {
+      guests.createError = httpError(
+        '/v1/guests',
+        422,
+        data: {
+          'detail': [
+            {
+              'type': 'value_error',
+              'loc': ['body', 'name'],
+              'msg': 'Value error',
+            },
+          ],
+        },
+      );
+      await tryCreate(tester, '1234');
+
+      expect(find.text('이름에 쓸 수 없는 글자가 있습니다'), findsOneWidget);
+      expect(find.text(tooShort), findsNothing);
+    });
+  });
+
   group('이미 참여한 이름', () {
     setUp(() => guests.guests['민수'] = 'g7@guest.invalid');
 
@@ -380,6 +485,24 @@ void main() {
         container(tester).read(currentGuestProvider)?.meetingId,
         'meeting-1',
       );
+    });
+
+    testWidgets('예전에 만든 짧은 비밀번호로도 들어간다', (tester) async {
+      await pumpVisitor(tester);
+      await openGuest(tester);
+      await enterName(tester, '민수');
+
+      await tester.enterText(passwordField(), '12');
+      await press(tester, '들어가기');
+
+      expect(find.text('비밀번호는 4글자 이상이어야 해요'), findsNothing);
+      verify(
+        () => harness.kratos.submit(KratosFlowType.login, 'flow-guest', {
+          'method': 'password',
+          'identifier': 'g7@guest.invalid',
+          'password': '12',
+        }, turnstileToken: 'token-2'),
+      ).called(1);
     });
 
     testWidgets('비밀번호가 틀리면 비밀번호 칸에 알리고 다시 보낼 때는 새 토큰이다', (tester) async {

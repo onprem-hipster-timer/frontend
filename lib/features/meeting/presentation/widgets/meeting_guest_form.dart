@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/text/nfc.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/core/turnstile/turnstile_field.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
@@ -16,7 +17,8 @@ import 'package:momeet/shared/providers/api_providers.dart';
 /// 찾은 이름. [handle]이 없으면 처음 쓰는 이름이다. [consentVersion]은 지금 약관 버전이다
 typedef _Found = ({String name, String? handle, String consentVersion});
 
-/// 게스트로 들어가는 폼: 이름 → 비밀번호 → (처음 쓰는 이름이면) 약관 동의 → 들어가기.
+/// 게스트로 들어가는 폼: 이름 → 비밀번호 → (처음 쓰는 이름이면) 약관 동의 → 들어가기. 처음 쓰는 이름의
+/// 비밀번호는 [guestPasswordMinChars]글자 이상이어야 하고, 이미 있는 이름의 로그인에는 길이를 보지 않는다.
 ///
 /// 이름 칸을 벗어나면(글자마다가 아니라) 그 이름을 찾는다. 이미 참여한 이름이면 로그인이 되고 약관은 묻지
 /// 않는다. 처음 쓰는 이름이면 비밀번호를 바꾸거나 찾을 수 없다고 알리고 약관 동의를 받는다. 들어가면 인증
@@ -136,8 +138,12 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
       var found = await _find();
       if (!mounted || found == null || found.name != _typedName) return;
       if (found.handle == null) {
-        // 처음 쓰는 이름이면 약관에 동의한 뒤에 만든다
+        // 처음 쓰는 이름이면 약관에 동의한 뒤에 만든다. 비밀번호가 짧으면 아무것도 보내지 않는다
         if (!_agreed) return;
+        if (nfc(_password.text).characters.length < guestPasswordMinChars) {
+          setState(() => _passwordError = guestPasswordTooShortText);
+          return;
+        }
         final created = await _steps.create(
           name: found.name,
           password: _password.text,
@@ -161,7 +167,8 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
 
   Future<void> _refused(Object error) async {
     final refusal = GuestRefusal.of(error);
-    if (refusal == GuestRefusal.wrongPassword) {
+    if (refusal == GuestRefusal.wrongPassword ||
+        refusal == GuestRefusal.passwordTooShort) {
       return setState(() => _passwordError = guestRefusalText(error));
     }
     if (refusal != GuestRefusal.nameTaken &&

@@ -33,6 +33,9 @@ enum GuestRefusal {
   /// 이름에 쓸 수 없는 글자가 있다
   invalidName,
 
+  /// 새 게스트의 비밀번호가 [guestPasswordMinChars]글자보다 짧다
+  passwordTooShort,
+
   /// 들어온 지 오래된 세션이라 이름을 바꾸려면 다시 로그인해야 한다 (Kratos session_refresh_required)
   reauthRequired,
 
@@ -86,10 +89,29 @@ enum GuestRefusal {
       (_, 'GuestLimitReachedError') => full,
       (_, 'ConsentVersionMismatchError') => consentChanged,
       (503, _) => verificationUnavailable,
+      (422, _) when _rejectsField(data, 'password') => passwordTooShort,
       (422, _) => invalidName,
       _ => unknown,
     };
   }
+}
+
+/// 새 게스트 비밀번호의 최소 글자 수(눈에 보이는 글자, NFC로 센다). 이미 있는 게스트의 로그인에는 쓰지 않는다
+const guestPasswordMinChars = 4;
+
+/// 새 게스트 비밀번호가 짧을 때 비밀번호 칸에 보이는 말
+const guestPasswordTooShortText = '비밀번호는 $guestPasswordMinChars글자 이상이어야 해요';
+
+/// 검사 오류(422) 본문 [data]의 `detail`에 [field] 칸의 거절이 있는지
+bool _rejectsField(Object? data, String field) {
+  final detail = data is Map ? data['detail'] : null;
+  return detail is List &&
+      detail.any(
+        (item) =>
+            item is Map &&
+            item['loc'] is List &&
+            (item['loc'] as List).last == field,
+      );
 }
 
 /// [error]를 게스트에게 보일 한 문장으로 바꾼다. 429면 다시 보낼 수 있을 때까지의 초를 함께 쓴다
@@ -107,6 +129,7 @@ String guestRefusalText(Object error) => switch (GuestRefusal.of(error)) {
     null => '요청이 너무 많습니다. 잠시 뒤 다시 시도해 주세요',
   },
   GuestRefusal.invalidName => '이름에 쓸 수 없는 글자가 있습니다',
+  GuestRefusal.passwordTooShort => guestPasswordTooShortText,
   GuestRefusal.reauthRequired => '들어온 지 오래되어 비밀번호를 한 번 더 확인합니다',
   GuestRefusal.network => '네트워크 연결을 확인해 주세요',
   GuestRefusal.unknown => '처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요',
