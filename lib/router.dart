@@ -22,13 +22,13 @@ import 'package:momeet/features/todo/todo.dart' deferred as todo;
 import 'package:momeet/features/tag/tag.dart' deferred as tag;
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
     deferred as mypage;
-import 'package:momeet/features/meeting/meeting.dart' deferred as meeting;
 import 'package:momeet/shared/widgets/deferred_widget.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/auth_redirect.dart';
 import 'package:momeet/core/landing/static_landing_page.dart';
+import 'package:momeet/meeting_routes.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
 export 'package:momeet/app_route.dart';
@@ -188,48 +188,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ============================================================
-      // 모임 만들기·만든 뒤·모임 화면 (탭 셸 밖의 독립 화면. Floating Navigation 없음)
-      // 만든 뒤 화면은 만들기 화면 위에 쌓지 않고 바꾼다. 모임 화면은 공유 링크로 연다
-      // ============================================================
-      GoRoute(
-        path: AppRoute.meetings.path,
-        name: AppRoute.meetings.name,
-        builder: (context, state) => DeferredWidget(
-          loader: meeting.loadLibrary,
-          builder: (_) => meeting.MeetingCreatePage(),
-        ),
-      ),
-      GoRoute(
-        path: AppRoute.meetingCreated.path,
-        name: AppRoute.meetingCreated.name,
-        builder: (context, state) => DeferredWidget(
-          loader: meeting.loadLibrary,
-          builder: (_) => meeting.MeetingCreatedPage(
-            meetingId: state.pathParameters['meetingId']!,
-          ),
-        ),
-      ),
-      GoRoute(
-        path: AppRoute.meetingEdit.path,
-        name: AppRoute.meetingEdit.name,
-        builder: (context, state) => DeferredWidget(
-          loader: meeting.loadLibrary,
-          builder: (_) => meeting.MeetingEditPage(
-            meetingId: state.pathParameters['meetingId']!,
-          ),
-        ),
-      ),
-      GoRoute(
-        path: AppRoute.meeting.path,
-        name: AppRoute.meeting.name,
-        builder: (context, state) => DeferredWidget(
-          loader: meeting.loadLibrary,
-          builder: (_) => meeting.MeetingPage(
-            meetingId: state.pathParameters['meetingId']!,
-          ),
-        ),
-      ),
+      // 모임 화면들 (탭 셸 밖의 독립 화면)
+      ...meetingRoutes,
 
       // ============================================================
       // 메인 앱 (Floating Navigation 포함)
