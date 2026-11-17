@@ -66,7 +66,7 @@ void main() {
       ).tapDay(march(3));
       expect(draft.dates.first, march(3));
       expect(draft.dates.last, march(9));
-      expect(draft.dates.weekdays, [0, 1, 2, 3, 4, 5, 6]);
+      expect(draft.dates.days, hasLength(7));
     });
 
     test('다른 날을 누르면 그날부터 7일로 옮긴다', () {
@@ -242,6 +242,19 @@ void main() {
       expect(body.mode, MeetingMode.weekly);
       expect(body.startTime, '00:00:00');
       expect(body.endTime, '00:00:00');
+    });
+
+    test('떨어진 날을 고르면 그 날들만 미팅 날짜가 되게 사이의 날을 모두 제외 날짜로 보낸다', () {
+      final body = tapAll(const MeetingDraft(), [
+        1,
+        15,
+      ]).toMeetingCreate(title: '격주', timezone: timezone);
+      expect(body.mode, MeetingMode.daily);
+      expect(body.startDate, march(1));
+      expect(body.endDate, march(15));
+      expect(body.excludedDates, [
+        for (var day = 2; day <= 14; day++) march(day),
+      ]);
     });
 
     test('날짜는 시각 없는 자정 값으로 직렬화한다', () {

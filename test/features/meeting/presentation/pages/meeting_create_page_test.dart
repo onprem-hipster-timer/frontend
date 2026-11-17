@@ -320,6 +320,25 @@ void main() {
     expect(location(), '/meetings/meeting-new-1/created');
   });
 
+  testWidgets('2주 떨어진 두 날을 고르면 그 두 날만 미팅 날짜로 보낸다', (tester) async {
+    await pumpPage(tester);
+    await tapDays(tester, [1, 15]);
+
+    expect(
+      tester.getSemantics(dayCell(nextMonth(8))),
+      isSemantics(isSelected: false),
+    );
+    await submit(tester);
+
+    final body = meetings.created.single;
+    expect(body.mode, MeetingMode.daily);
+    expect(body.startDate, nextMonth(1));
+    expect(body.endDate, nextMonth(15));
+    expect(body.excludedDates, [
+      for (var day = 2; day <= 14; day++) nextMonth(day),
+    ]);
+  });
+
   testWidgets('날짜별·요일별은 하루 전체로, 요일별은 누른 날부터 7일로 보낸다', (tester) async {
     await pumpPage(tester);
     await tester.tap(find.text('요일별'));

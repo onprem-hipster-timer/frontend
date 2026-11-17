@@ -21,12 +21,9 @@ DateTime addMonthsClamped(DateTime day, int months) {
 /// 미팅 기간의 상한(달). 첫날에서 이만큼 뒤의 같은 날까지 고를 수 있다
 const meetingMaxPeriodMonths = 3;
 
-/// 모임 후보 날짜.
+/// 모임 후보 날짜: 고른 날 그대로다.
 ///
-/// backend 미팅은 날짜를 기간(start_date~end_date)과 요일(available_days)로만 담는다. 그래서 고른 날짜는
-/// 늘 "첫날부터 마지막 날까지 중 고른 요일에 드는 날 전부"라는 모양을 지킨다. 기간 밖의 날을 더하면 그 사이의
-/// 같은 요일 날이 함께 들어오고, 기간 가운데의 날을 빼면 기간 안의 같은 요일 날이 함께 빠진다.
-/// 7일 안에서는 요일마다 날이 하나뿐이라 고른 날만 들고 난다.
+/// backend 미팅은 첫날~마지막 날 기간과 그 사이의 제외 날짜([excluded])로 담는다.
 @immutable
 class MeetingDates {
   const MeetingDates._(this.days);
@@ -34,9 +31,9 @@ class MeetingDates {
   /// 고른 날짜가 없다
   static const none = MeetingDates._([]);
 
-  /// [days]를 담는 가장 작은 모양
+  /// [days]를 날짜로 맞춰 겹치지 않게 담는다
   factory MeetingDates.of(Iterable<DateTime> days) =>
-      MeetingDates._(_shape(days.map(calendarDay)));
+      MeetingDates._({...days.map(calendarDay)}.toList()..sort());
 
   /// [start]부터 이어지는 [length]일
   factory MeetingDates.period(DateTime start, int length) {
@@ -58,10 +55,6 @@ class MeetingDates {
   /// 첫날부터 마지막 날까지의 날 수(고르지 않은 날 포함). 고른 날이 없으면 0
   int get span => isEmpty ? 0 : last.difference(first).inDays + 1;
 
-  /// 고른 날의 backend 요일 번호, 오름차순
-  List<int> get weekdays =>
-      {for (final day in days) weekdayNumber(day)}.toList()..sort();
-
   /// 첫날부터 마지막 날까지 중 고르지 않은 날, 오름차순. 첫날과 마지막 날은 늘 고른 날이다
   List<DateTime> get excluded {
     final picked = days.toSet();
@@ -74,21 +67,17 @@ class MeetingDates {
 
   bool contains(DateTime day) => days.contains(calendarDay(day));
 
-  /// [day]를 고르거나 뺀다. 모양을 지키려고 같은 요일의 날이 함께 들고 날 수 있다
+  /// [day]를 고르거나 뺀다
   MeetingDates toggle(DateTime day) {
     final target = calendarDay(day);
-    if (!contains(target)) return MeetingDates.of([...days, target]);
-    final rest = [
-      for (final d in days)
-        if (d != target) d,
-    ];
-    final shaped = MeetingDates.of(rest);
-    if (shaped.days.length == rest.length) return shaped;
-    final weekday = weekdayNumber(target);
-    return MeetingDates.of([
-      for (final d in days)
-        if (weekdayNumber(d) != weekday) d,
-    ]);
+    return MeetingDates.of(
+      contains(target)
+          ? [
+              for (final d in days)
+                if (d != target) d,
+            ]
+          : [...days, target],
+    );
   }
 
   /// [day]를 더해도 기간이 상한([meetingMaxPeriodMonths])을 넘지 않는지
@@ -98,19 +87,5 @@ class MeetingDates {
     final start = target.isBefore(first) ? target : first;
     final end = target.isAfter(last) ? target : last;
     return !end.isAfter(addMonthsClamped(start, meetingMaxPeriodMonths));
-  }
-
-  static List<DateTime> _shape(Iterable<DateTime> days) {
-    final sorted = {...days}.toList()..sort();
-    if (sorted.isEmpty) return const [];
-    final weekdays = {for (final day in sorted) weekdayNumber(day)};
-    final span = sorted.last.difference(sorted.first).inDays + 1;
-    return [
-      for (var i = 0; i < span; i++)
-        if (weekdays.contains(
-          weekdayNumber(sorted.first.add(Duration(days: i))),
-        ))
-          sorted.first.add(Duration(days: i)),
-    ];
   }
 }
