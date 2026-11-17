@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -227,17 +228,68 @@ void main() {
     expect(rows, orderedEquals([...rows]..sort()));
   });
 
-  testWidgets('좁으면 계정, 격자, 선택된 일정, 일정 참여자, 링크 순서로 쌓는다', (tester) async {
-    await pumpMeeting(tester, size: const Size(360, 800));
+  group('좁은 화면', () {
+    const narrow = Size(360, 800);
 
-    final order = [
-      for (final title in ['로그인', '내 시간 선택하기', '선택된 일정', '일정 참여자', '링크'])
-        tester.getTopLeft(find.text(title, skipOffstage: false)),
-    ];
-    for (var i = 1; i < order.length; i++) {
-      expect(order[i].dy, greaterThan(order[i - 1].dy));
-      expect(order[i].dx, lessThan(40));
-    }
+    double fontSize(WidgetTester tester, Finder text) =>
+        tester.renderObject<RenderParagraph>(text).text.style!.fontSize!;
+
+    testWidgets('조용한 계정 줄 다음 바로 격자이고, 선택된 일정·일정 참여자·링크 순서다', (tester) async {
+      await pumpMeeting(tester, size: narrow);
+
+      final order = [
+        for (final title in [
+          'user@example.com 계정으로 진행 중입니다',
+          '내 시간 선택하기',
+          '선택된 일정',
+          '일정 참여자',
+          '링크',
+        ])
+          tester.getTopLeft(find.text(title, skipOffstage: false)),
+      ];
+      for (var i = 1; i < order.length; i++) {
+        expect(order[i].dy, greaterThan(order[i - 1].dy));
+        expect(order[i].dx, lessThan(40));
+      }
+      expect(find.text('로그인'), findsNothing, reason: '계정은 상자 제목 없이 한 줄이다');
+    });
+
+    testWidgets('계정 줄은 상자가 아닌 작은 글씨다', (tester) async {
+      await pumpMeeting(tester, size: narrow);
+
+      final account = find.text('user@example.com 계정으로 진행 중입니다');
+      expect(
+        find.ancestor(of: account, matching: find.byType(Card)),
+        findsNothing,
+      );
+      expect(
+        fontSize(tester, account),
+        lessThan(fontSize(tester, find.text('내 시간 선택하기'))),
+      );
+    });
+
+    testWidgets('격자 → 선택된 일정 → 일정 참여자·링크로 갈수록 제목이 작아지고 끝의 둘은 상자가 아니다', (
+      tester,
+    ) async {
+      await pumpMeeting(tester, size: narrow);
+
+      double size(String title) =>
+          fontSize(tester, find.text(title, skipOffstage: false));
+      expect(size('내 시간 선택하기'), greaterThanOrEqualTo(size('선택된 일정')));
+      expect(size('선택된 일정'), greaterThan(size('일정 참여자')));
+      expect(size('일정 참여자'), size('링크'));
+      for (final title in ['일정 참여자', '링크']) {
+        expect(
+          find.ancestor(
+            of: find.text(title, skipOffstage: false),
+            matching: find.byType(Card),
+          ),
+          findsNothing,
+          reason: title,
+        );
+      }
+      expect(find.text('내 시간 입력하기'), findsNothing, reason: '로그인했으면 바로 칠한다');
+    });
   });
 
   testWidgets('불러오지 못하면 알리고 다시 시도하면 다시 받는다', (tester) async {

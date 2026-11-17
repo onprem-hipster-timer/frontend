@@ -134,6 +134,27 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('좁으면 게스트 줄은 격자 앞의 상자 없는 한 줄이고 로그아웃이 그 줄 끝에 있다', (tester) async {
+    when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
+    await pumpGuest(tester, size: const Size(360, 800));
+
+    final line = find.text('게스트 민수로 진행 중입니다');
+    expect(find.ancestor(of: line, matching: find.byType(Card)), findsNothing);
+    expect(
+      tester.getTopLeft(line).dy,
+      lessThan(tester.getTopLeft(find.text('내 시간 선택하기')).dy),
+    );
+    final signOut = find.text('로그아웃');
+    expect(
+      (tester.getCenter(signOut).dy - tester.getCenter(line).dy).abs(),
+      lessThan(8),
+    );
+
+    await tester.tap(signOut);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('민수'), findsNothing);
+  });
+
   testWidgets('선택된 일정 카드에 내 달력에 일정 만들기가 없다', (tester) async {
     await pumpGuest(tester);
 

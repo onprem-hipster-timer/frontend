@@ -21,10 +21,10 @@ import 'package:momeet/shared/ui/ui.dart';
 
 /// 로그인한 회원·게스트의 모임 화면 본문: 지금 계정, 내 시간 격자, 링크, 일정 참여자, 선택된 일정.
 ///
-/// 지금 계정('OO 계정으로 진행 중입니다')은 방문자의 로그인 상자 자리(넓으면 오른쪽 칸 맨 위, 좁으면 격자 위)다.
-/// 넓으면 격자 오른쪽에 계정 → 링크 → 일정 참여자 → 선택된 일정, 좁으면 계정 → 격자 → 선택된 일정 → 일정
-/// 참여자 → 링크 순서다(칠하기가 이 화면의 일이고, 그 결과가 바로 아래에 보이게). 볼 수 없는 모임은 없는
-/// 모임과 같다.
+/// 넓으면 격자 오른쪽에 계정('OO 계정으로 진행 중입니다', 방문자의 로그인 상자 자리) → 링크 → 일정 참여자
+/// → 선택된 일정을 상자로 둔다. 좁으면 계정은 격자 앞의 조용한 한 줄이고, 격자 → 선택된 일정 → 일정 참여자
+/// → 링크 순서로 뒤로 갈수록 덜 눈에 띈다(칠하기가 이 화면의 일이고, 그 결과가 바로 아래에 보이게). 볼 수
+/// 없는 모임은 없는 모임과 같다.
 ///
 /// [guest]면 게스트 이름과 로그아웃을 보이고, 달력이 없어 카드에 '내 달력에 일정 만들기'가 없다. '편집'은
 /// 게스트의 이름 바꾸기와 게스트 계정 지우기([showMeetingGuestSheet])다. 불러오지
@@ -87,7 +87,9 @@ class MeetingMemberBody extends ConsumerWidget {
             return MeetingLayout(
               main: availability,
               side: [account, link, participants, slots],
-              stacked: [account, availability, slots, participants, link],
+              header: account,
+              secondary: [slots],
+              tertiary: [participants, link],
             );
           },
           loading: () => const AppLoading(),

@@ -4,15 +4,18 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// 루트 내비게이터 위에 띄워 하단 내비게이션까지 덮는다. 손잡이·배경·모서리는
 /// 테마를 따르고, 키보드가 올라오면 그만큼 내용을 올린다. 높이는 내용만큼이다.
+/// [animationStyle]을 주면 시트가 그 움직임으로 오르내린다(예: 움직임 없음).
 Future<T?> showAppSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
+  AnimationStyle? animationStyle,
 }) => showModalBottomSheet<T>(
   context: context,
   useRootNavigator: true,
   useSafeArea: true,
   isScrollControlled: true,
   showDragHandle: true,
+  sheetAnimationStyle: animationStyle,
   builder: (context) => Padding(
     padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
     child: builder(context),

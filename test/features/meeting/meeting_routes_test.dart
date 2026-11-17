@@ -14,7 +14,7 @@ import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_visitor_body.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
@@ -145,10 +145,12 @@ void main() {
     expect(location(router), '/meetings/meeting-1');
     expect(find.byType(MeetingPage), findsOneWidget);
     expect(find.text('팀 회의'), findsOneWidget);
-    expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    expect(find.byType(MeetingVisitorBody), findsOneWidget);
     expect(meetings.resultReads, 1);
     expect(meetings.reads, isEmpty);
 
+    await tester.tap(find.widgetWithText(FilledButton, '내 시간 입력하기'));
+    await pumpAWhile(tester);
     await tester.tap(find.widgetWithText(FilledButton, '로그인'));
     await pumpAWhile(tester);
     expect(
@@ -176,7 +178,7 @@ void main() {
     router.go('/meetings/meeting-1');
     await pumpAWhile(tester);
     expect(find.text('내 시간 선택하기'), findsOneWidget);
-    expect(find.byType(MeetingLoginPanel), findsNothing);
+    expect(find.byType(MeetingVisitorBody), findsNothing);
 
     when(() => harness.kratos.whoami(any())).thenAnswer((_) async => null);
     final container = ProviderScope.containerOf(
@@ -188,7 +190,7 @@ void main() {
     await pumpAWhile(tester);
 
     expect(location(router), '/meetings/meeting-1');
-    expect(find.byType(MeetingLoginPanel), findsOneWidget);
+    expect(find.byType(MeetingVisitorBody), findsOneWidget);
     expect(meetings.resultReads, 1);
   });
 
@@ -205,7 +207,7 @@ void main() {
       );
 
       expect(location(router), '/meetings/meeting-1');
-      expect(find.byType(MeetingLoginPanel), findsOneWidget);
+      expect(find.byType(MeetingVisitorBody), findsOneWidget);
     });
 
     testWidgets('로그인해야 보는 화면에 있었으면 처음 화면으로 간다', (tester) async {

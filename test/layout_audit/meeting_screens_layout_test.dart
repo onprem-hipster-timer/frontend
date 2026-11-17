@@ -29,6 +29,8 @@ import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_login_request.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -106,11 +108,12 @@ class _PressWhenLoadedState extends ConsumerState<_PressWhenLoaded> {
   }
 }
 
-/// 방문자 모임 화면을 불러온 뒤 'Guest'를 눌러 게스트 폼을 열고, 이름 [name]을 넣어 찾은 화면
+/// 방문자 모임 화면에서 로그인 요청을 연 화면. 좁으면 요청 시트를 바로 올리고(넓으면 로그인 상자가 이미 옆에
+/// 있다), [name]을 주면 'Guest'를 눌러 게스트 폼을 열고 이름을 넣어 찾는다
 class _GuestFormOpened extends ConsumerStatefulWidget {
-  const _GuestFormOpened({required this.name, required this.child});
+  const _GuestFormOpened({this.name, required this.child});
 
-  final String name;
+  final String? name;
   final Widget child;
 
   @override
@@ -123,23 +126,47 @@ class _GuestFormOpenedState extends ConsumerState<_GuestFormOpened> {
   void _afterFrame(VoidCallback action) =>
       WidgetsBinding.instance.addPostFrameCallback((_) => action());
 
+  void _openGuest() {
+    final name = widget.name;
+    if (name == null) return;
+    // 시트는 처음 한 프레임을 화면 밖에서 그린다
+    final guest = find
+        .widgetWithText(FilledButton, 'Guest', skipOffstage: false)
+        .evaluate()
+        .first;
+    (guest.widget as FilledButton).onPressed!();
+    _afterFrame(() {
+      final field = find.byType(EditableText).evaluate().first;
+      final editable = field.widget as EditableText;
+      editable.controller.text = name;
+      editable.focusNode.requestFocus();
+      // 이름 칸을 벗어나면 그 이름을 찾는다
+      _afterFrame(editable.focusNode.unfocus);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _afterFrame(() {
+      if (!MeetingLayout.narrow(MediaQuery.sizeOf(context).width)) return;
+      _opened = true;
+      showMeetingLoginRequest(
+        context,
+        meetingId: 'meeting-1',
+        guests: true,
+        onLogin: () {},
+      );
+      _afterFrame(_openGuest);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(meetingHeadcountProvider('meeting-1'), (_, next) {
       if (_opened || !next.hasValue) return;
       _opened = true;
-      _afterFrame(() {
-        final guest = find.widgetWithText(FilledButton, 'Guest');
-        (guest.evaluate().first.widget as FilledButton).onPressed!();
-        _afterFrame(() {
-          final field = find.byType(EditableText).evaluate().first;
-          final editable = field.widget as EditableText;
-          editable.controller.text = widget.name;
-          editable.focusNode.requestFocus();
-          // 이름 칸을 벗어나면 그 이름을 찾는다
-          _afterFrame(editable.focusNode.unfocus);
-        });
-      });
+      _afterFrame(_openGuest);
     });
     return widget.child;
   }
@@ -400,6 +427,30 @@ void main() {
     guestsApiProvider.overrideWithValue(FakeGuestsClient()),
     FakeTurnstiles().override,
   ];
+
+  testLayoutAudit(
+    'meeting_page_visitor_login_request',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      _GuestFormOpened(child: const MeetingPage(meetingId: 'meeting-1')),
+      [
+        ...meetingOverrides(
+          signedIn: false,
+          meetings: FakeMeetingsClient(
+            meeting: meetingIn(
+              'hourly',
+              title: text.value,
+            ).copyWith(allowGuests: true),
+          ),
+        ),
+        guestsApiProvider.overrideWithValue(FakeGuestsClient()),
+        FakeTurnstiles().override,
+      ],
+    ),
+    verify: (tester) =>
+        expect(find.text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요'), findsOneWidget),
+  );
 
   for (final returning in [false, true]) {
     testLayoutAudit(

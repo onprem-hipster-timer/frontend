@@ -79,7 +79,7 @@ class MeetingAvailabilitySection extends StatelessWidget {
         const SizedBox(height: 4),
         MeetingTimezoneLabel(meeting.timezone),
         if (locked)
-          const _Hint(icon: Icons.lock_outline, text: '로그인하면 내 시간을 칠할 수 있습니다')
+          const _Hint(icon: Icons.lock_outline, text: '로그인하면 내 시간을 칠할 수 있어요')
         else if (status == MeetingSaveStatus.idle)
           _Hint(
             icon: touch ? Icons.touch_app_outlined : Icons.mouse_outlined,

@@ -555,14 +555,17 @@ void main() {
     });
   });
 
-  testWidgets('애니메이션을 줄였으면 게스트 폼을 연 채 칠하려 해도 떨지 않고 폼을 보이게 올린다', (tester) async {
+  testWidgets('넓은 화면에서 애니메이션을 줄였으면 게스트 폼을 연 채 칠하려 해도 떨지 않고 폼을 보이게 올린다', (
+    tester,
+  ) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await pumpVisitor(tester, size: const Size(360, 800));
+    await pumpVisitor(tester, size: const Size(1280, 500));
     await openGuest(tester);
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
     await tester.pumpAndSettle();
+    expect(tester.getBottomLeft(nameField()).dy, lessThan(0));
     final rest = tester.getTopLeft(find.byType(MeetingLoginPanel)).dx;
 
     await tester.tapAt(cellCenter(tester, '3월 2일 (화) 14:00 ~ 14:30'));
@@ -574,13 +577,78 @@ void main() {
     expect(guests.lookups, isEmpty);
   });
 
-  testWidgets('좁은 화면에서도 게스트 폼은 격자 위 로그인 상자 자리에서 열린다', (tester) async {
-    await pumpVisitor(tester, size: const Size(360, 800));
-    await openGuest(tester);
+  group('좁은 화면의 요청 시트', () {
+    Finder inSheet(Finder finder) =>
+        find.descendant(of: find.byType(BottomSheet), matching: finder);
 
-    expect(
-      tester.getTopLeft(nameField()).dy,
-      lessThan(tester.getTopLeft(find.text('내 시간 선택하기')).dy),
+    Future<void> openRequest(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(FilledButton, '내 시간 입력하기'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('게스트를 받는 모임이면 로그인 옆에 Guest와 이름·비밀번호만 있으면 된다는 말을 둔다', (
+      tester,
+    ) async {
+      await pumpVisitor(tester, size: const Size(360, 800));
+      expect(find.byType(MeetingLoginPanel), findsNothing);
+
+      await openRequest(tester);
+
+      expect(inSheet(find.text('로그인하면 내 시간을 칠할 수 있어요')), findsOneWidget);
+      expect(
+        inSheet(find.widgetWithText(FilledButton, 'Guest')),
+        findsOneWidget,
+      );
+      expect(inSheet(find.text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요')), findsOneWidget);
+    });
+
+    testWidgets(
+      'Guest는 시트 안에서 이름 → 비밀번호 → 약관 → 확인 상자 → 참여하기 순서의 폼을 열고, 들어가면 시트를 닫고 게스트 화면이 된다',
+      (tester) async {
+        await pumpVisitor(tester, size: const Size(360, 800));
+        await openRequest(tester);
+
+        await tester.tap(inSheet(find.widgetWithText(FilledButton, 'Guest')));
+        await tester.pumpAndSettle();
+        expect(inSheet(find.text('게스트로 참여')), findsOneWidget);
+        expect(inSheet(nameField()), findsOneWidget);
+
+        await enterName(tester, '민수');
+        await agreeAll(tester);
+        await tester.enterText(passwordField(), '1234');
+        final order = [
+          nameField(),
+          passwordField(),
+          find.text('전체 동의'),
+          find.bySemanticsLabel('사람인지 확인하는 상자'),
+          submit('참여하기'),
+        ].map((finder) => tester.getTopLeft(finder).dy).toList();
+        expect(order, orderedEquals([...order]..sort()));
+
+        await press(tester, '참여하기');
+
+        verifyGuestLogin(handle: 'g1@guest.invalid', token: 'token-3');
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(find.text('게스트 민수로 진행 중입니다'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, '내 시간 입력하기'), findsNothing);
+      },
     );
+
+    testWidgets('게스트 폼에서 뒤로 가면 로그인·Guest 고르기로 돌아간다', (tester) async {
+      await pumpVisitor(tester, size: const Size(360, 800));
+      await openRequest(tester);
+      await tester.tap(inSheet(find.widgetWithText(FilledButton, 'Guest')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(inSheet(find.byTooltip('뒤로')));
+      await tester.pumpAndSettle();
+
+      expect(nameField(), findsNothing);
+      expect(
+        inSheet(find.widgetWithText(FilledButton, 'Guest')),
+        findsOneWidget,
+      );
+      expect(turnstiles.last.disposed, isTrue);
+    });
   });
 }
