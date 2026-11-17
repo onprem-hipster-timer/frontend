@@ -1,4 +1,7 @@
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/app_route.dart';
+import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart' show ShellScope;
 import 'package:momeet/shared/widgets/shell_tab_list.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -33,6 +36,7 @@ class CalendarPage extends StatelessWidget {
           ),
         ),
         actions: [
+          const _MeetingAction(),
           IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: '필터',
@@ -80,6 +84,25 @@ class CalendarPage extends StatelessWidget {
       builder: (context, scrollController) =>
           _FilterSheetContent(scrollController: scrollController),
     );
+  }
+}
+
+/// 새 일정(+)과 나란한 '모임 만들기'. 달력 내용을 덮지 않게 앱바에 두고, 만들기 화면을 위에 열어 뒤로 가면
+/// 달력이다. 좁은 화면(600 미만)은 제목을 밀어내지 않게 '모임'으로 줄여 쓰고 이름 전체는 도움말·스크린 리더로 읽힌다
+class _MeetingAction extends StatelessWidget {
+  const _MeetingAction();
+
+  static const _label = '${Terms.meeting} 만들기';
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final button = TextButton.icon(
+      icon: const Icon(Icons.groups_outlined),
+      label: Text(compact ? Terms.meeting : _label, semanticsLabel: _label),
+      onPressed: () => context.pushNamed(AppRoute.meetings.name),
+    );
+    return compact ? Tooltip(message: _label, child: button) : button;
   }
 }
 

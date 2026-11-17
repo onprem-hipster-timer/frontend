@@ -98,4 +98,76 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     expect(find.text('둘'), findsNothing);
   });
+
+  group('되돌리기 알림', () {
+    late BuildContext page;
+    late List<bool> results;
+
+    Future<void> open(WidgetTester tester, {bool screenReader = false}) async {
+      results = [];
+      await pumpSheetHost(tester, open: (context) => page = context);
+      tester.platformDispatcher.accessibilityFeaturesTestValue = screenReader
+          ? const FakeAccessibilityFeatures(accessibleNavigation: true)
+          : const FakeAccessibilityFeatures();
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pump();
+    }
+
+    void show(String message) => ScaffoldMessenger.of(
+      page,
+    ).showAppUndoSnackBar(message).then(results.add);
+
+    testWidgets('되돌리기를 누르면 true로 끝난다', (tester) async {
+      await open(tester);
+      show('민수를 뺐습니다');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+
+      expect(results, [true]);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('시간이 다 되면 false로 끝나고 그 전에는 끝나지 않는다', (tester) async {
+      await open(tester);
+      show('민수를 뺐습니다');
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(seconds: 4));
+      expect(results, isEmpty);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(results, [false]);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('새 알림이 덮으면 이전 것은 false로 끝난다', (tester) async {
+      await open(tester);
+      show('민수를 뺐습니다');
+      await tester.pumpAndSettle();
+
+      show('서연을 뺐습니다');
+      await tester.pumpAndSettle();
+      expect(results, [false]);
+
+      await tester.tap(find.text('되돌리기'));
+      await tester.pumpAndSettle();
+      expect(results, [false, true]);
+    });
+
+    testWidgets('스크린 리더를 쓰는 중에는 저절로 닫히지 않는다', (tester) async {
+      await open(tester, screenReader: true);
+      show('민수를 뺐습니다');
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(results, isEmpty);
+      expect(find.text('되돌리기'), findsOneWidget);
+    });
+  });
 }

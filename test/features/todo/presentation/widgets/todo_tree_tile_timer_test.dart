@@ -160,12 +160,12 @@ void main() {
       });
     }
 
-    testWidgets('누르면 이 할 일을 고른 새 작업 시작 다이얼로그를 기본 집중 시간으로 연다', (tester) async {
+    testWidgets('누르면 이 할 일을 고른 새 타이머 시트를 기본 집중 시간으로 연다', (tester) async {
       await pumpTile(tester, todo());
 
       await openDialog(tester);
 
-      expect(find.text('새 작업 시작'), findsOneWidget);
+      expect(StartSheet.sheet, findsOneWidget);
       expect(
         find.descendant(
           of: StartSheet.todoField,

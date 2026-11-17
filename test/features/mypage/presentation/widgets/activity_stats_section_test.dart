@@ -15,7 +15,7 @@ void main() {
   TodoRead todo(String id, TodoStatus status) => TodoRead(
     id: id,
     title: id,
-    tagGroupId: 'group-1',
+    todoGroupId: 'group-1',
     status: status,
     createdAt: DateTime.utc(2026, 1, 1),
   );

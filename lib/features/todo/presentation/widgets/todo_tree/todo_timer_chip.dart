@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/router.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 남은 시간을 mm:ss로, 한 시간 이상이면 h:mm:ss로 쓴다
 String _formatRemaining(Duration remaining) {
@@ -45,7 +46,7 @@ class TodoTimerChip extends ConsumerWidget {
           fontFamily: 'monospace',
           fontWeight: FontWeight.bold,
         ),
-        tooltip: '타이머로 이동',
+        tooltip: '${Terms.timer.withJosa('으로', '로')} 이동',
         visualDensity: VisualDensity.compact,
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         onPressed: () => context.go(AppRoute.timer.path),

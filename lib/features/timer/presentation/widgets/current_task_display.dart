@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 현재 작업 표시 위젯
 ///
@@ -24,7 +25,7 @@ class CurrentTaskDisplay extends StatelessWidget {
 
     if (timer == null) {
       return Text(
-        '진행 중인 작업이 없습니다',
+        '진행 중인 ${Terms.timer.withJosa('이', '가')} 없습니다',
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
         ),
@@ -35,7 +36,7 @@ class CurrentTaskDisplay extends StatelessWidget {
         timer!.title ??
         timer!.todo?.title ??
         timer!.schedule?.title ??
-        '알 수 없는 작업';
+        '제목 없는 ${Terms.timer}';
     final todo = timer!.todo;
 
     return Row(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -268,6 +270,30 @@ void main() {
     ];
 
     setUp(() => redirected = []);
+
+    testWidgets('켜졌는지 묻는 동안 같은 자리에 막힌 버튼을 두어 답이 와도 화면이 움직이지 않는다', (
+      tester,
+    ) async {
+      final answer = Completer<bool>();
+      await tester.pumpWidget(
+        pumpAuthFlow(
+          initialLocation: '/login',
+          overrides: [
+            ...harness.overrides,
+            googleSignInAvailableProvider.overrideWith((ref) => answer.future),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('잠시만 기다려 주세요'), findsOneWidget);
+      final button = tester.getRect(find.byType(OutlinedButton));
+
+      answer.complete(true);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Google 계정으로 계속하기'), findsOneWidget);
+      expect(tester.getRect(find.byType(OutlinedButton)), button);
+    });
 
     testWidgets('서버가 Google을 켜지 않았으면 버튼이 없다', (tester) async {
       await tester.pumpWidget(

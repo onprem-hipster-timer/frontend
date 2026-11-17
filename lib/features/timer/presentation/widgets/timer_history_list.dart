@@ -6,6 +6,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/friend_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/shared_timer_item.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_history_item.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 타이머 히스토리 목록
 ///
@@ -33,14 +34,14 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppSectionHeader('타이머 목록'),
+          const AppSectionHeader('${Terms.timer} 목록'),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: SegmentedButton<bool>(
               segments: const [
-                ButtonSegment(value: false, label: Text('내 타이머')),
-                ButtonSegment(value: true, label: Text('친구 타이머')),
+                ButtonSegment(value: false, label: Text('내 ${Terms.timer}')),
+                ButtonSegment(value: true, label: Text('친구 ${Terms.timer}')),
               ],
               selected: {_shared},
               showSelectedIcon: false,
@@ -56,10 +57,11 @@ class _TimerHistoryListState extends ConsumerState<TimerHistoryList> {
                 ? _SharedTimerList(scrollController: widget.scrollController)
                 : historyAsync.when(
                     data: (timers) => timers.isEmpty
-                        ? const AppEmptyState(
+                        ? AppEmptyState(
                             icon: Icons.history,
-                            title: '타이머가 없습니다',
-                            message: '새 작업을 시작해보세요',
+                            title: '${Terms.timer.withJosa('이', '가')} 없습니다',
+                            message:
+                                '새 ${Terms.timer.withJosa('을', '를')} 시작해보세요',
                           )
                         : _TimerHistoryByDate(
                             timers: timers,
@@ -154,7 +156,7 @@ class _SharedTimerList extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          '공유받은 타이머가 없습니다',
+                          '공유받은 ${Terms.timer.withJosa('이', '가')} 없습니다',
                           style: theme.textTheme.bodyLarge,
                         ),
                       ],
@@ -189,7 +191,7 @@ class _SharedTimerList extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '공유받은 타이머를 불러올 수 없습니다',
+                    '공유받은 ${Terms.timer.withJosa('을', '를')} 불러올 수 없습니다',
                     style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 8),

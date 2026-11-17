@@ -23,6 +23,18 @@ enum AnalyticsConsent {
     'denied' => denied,
     _ => null,
   };
+
+  /// 계정의 동의 값(`analytics`, true·false)
+  static AnalyticsConsent of(bool value) => value ? granted : denied;
+}
+
+/// 계정에 보내는 동의 값. 고르지 않았으면 null
+extension AnalyticsConsentValue on AnalyticsConsent? {
+  bool? get asBool => switch (this) {
+    AnalyticsConsent.granted => true,
+    AnalyticsConsent.denied => false,
+    null => null,
+  };
 }
 
 /// 동의를 저장하는 곳
@@ -35,6 +47,9 @@ abstract interface class AnalyticsConsentBridge {
 
   /// 값이 바뀔 때마다(앱 밖의 동의 배너에서 고른 것도) 새 값
   Stream<AnalyticsConsent?> get changes;
+
+  /// 처음 방문 동의 배너를 보이거나 숨긴다. 보이게 해도 이미 고른 값이 있으면 보이지 않는다
+  void showBanner(bool visible);
 }
 
 /// 메모리에만 두는 [AnalyticsConsentBridge]. 웹이 아닐 때 쓴다.
@@ -55,6 +70,12 @@ class InMemoryAnalyticsConsentBridge implements AnalyticsConsentBridge {
 
   @override
   Stream<AnalyticsConsent?> get changes => _changes.stream;
+
+  /// 마지막으로 정한 배너. 아직 정하지 않았으면 null
+  bool? bannerVisible;
+
+  @override
+  void showBanner(bool visible) => bannerVisible = visible;
 }
 
 /// 실행 환경의 [AnalyticsConsentBridge]. 테스트에서 덮어쓴다.

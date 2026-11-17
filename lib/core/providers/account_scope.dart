@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 
-/// 로그인 상태에서 벗어나면(로그아웃, 세션 만료) [createContainer]로 컨테이너를 새로 만든다.
+/// 로그인 상태(회원·게스트)에서 벗어나면(로그아웃, 세션 만료, 게스트 삭제) [createContainer]로 컨테이너를 새로 만든다.
 ///
 /// 모든 provider가 처음 상태로 돌아가므로 앞 계정의 데이터가 남지 않는다. 로그인과 JWT 갱신에는
 /// 컨테이너를 그대로 둔다. 아래 트리는 새 컨테이너로 다시 만들어지므로, 로그아웃 뒤에도 남아야 하는
@@ -38,11 +38,12 @@ class _AccountScopeState extends State<AccountScope> {
   void _attach(ProviderContainer container) {
     _container = container;
     _auth = container.listen(authProvider, (previous, next) {
-      if (previous is AuthAuthenticated && next is! AuthAuthenticated) {
-        _reset();
-      }
+      if (_signedIn(previous) && !_signedIn(next)) _reset();
     });
   }
+
+  static bool _signedIn(AuthStatus? status) =>
+      status is AuthAuthenticated || status is AuthGuest;
 
   void _reset() {
     final old = _container;

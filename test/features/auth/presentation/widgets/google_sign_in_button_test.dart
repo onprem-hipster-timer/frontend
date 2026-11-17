@@ -1,6 +1,8 @@
 // Google 브랜딩 가이드라인의 버튼 규격을 지키는지 확인한다
 // https://developers.google.com/identity/branding-guidelines
 
+import 'dart:async';
+
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,5 +95,113 @@ void main() {
     expect(style.fontWeight, FontWeight.w500);
     expect(style.fontSize, 14);
     expect(style.fontSize! * style.height!, 20);
+  });
+
+  group('서버에 묻는 동안·그 뒤', () {
+    /// [available]이 끝나기 전(로딩)과 끝난 뒤를 차례로 보도록 버튼을 띄운다
+    Future<Completer<bool>> pumpPending(
+      WidgetTester tester, {
+      Brightness brightness = Brightness.light,
+    }) async {
+      final answer = Completer<bool>();
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: appRetry,
+          overrides: [
+            googleSignInAvailableProvider.overrideWith((ref) => answer.future),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(brightness: brightness),
+            home: Scaffold(
+              body: Column(
+                children: [
+                  GoogleSignInButton(onError: (_) {}),
+                  const Text('아래 내용'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      return answer;
+    }
+
+    testWidgets('묻는 동안에는 구분선과 로고를 둔 채 잠시만 기다려 달라는 막힌 버튼이다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpPending(tester);
+
+      expect(find.text('또는'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.text('잠시만 기다려 주세요'), findsOneWidget);
+      expect(
+        tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+        isNull,
+      );
+      expect(
+        tester.getSemantics(find.byType(OutlinedButton)),
+        isSemantics(
+          label: '잠시만 기다려 주세요',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          isFocusable: false,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('켜져 있으면 같은 자리·크기에서 누를 수 있는 버튼이 되어 아래 내용이 움직이지 않는다', (
+      tester,
+    ) async {
+      final answer = await pumpPending(tester);
+      final loading = tester.getRect(find.byType(OutlinedButton));
+      final below = tester.getTopLeft(find.text('아래 내용'));
+
+      answer.complete(true);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Google 계정으로 계속하기'), findsOneWidget);
+      expect(tester.getRect(find.byType(OutlinedButton)), loading);
+      expect(tester.getTopLeft(find.text('아래 내용')), below);
+      expect(
+        tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('꺼져 있거나 묻지 못하면 구분선과 버튼을 치운다', (tester) async {
+      final off = await pumpPending(tester);
+      off.complete(false);
+      await tester.pumpAndSettle();
+      expect(find.text('또는'), findsNothing);
+      expect(find.byType(OutlinedButton), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      final failed = await pumpPending(tester);
+      failed.completeError(StateError('끊김'));
+      await tester.pumpAndSettle();
+      expect(find.text('또는'), findsNothing);
+      expect(find.byType(OutlinedButton), findsNothing);
+    });
+
+    for (final brightness in Brightness.values) {
+      testWidgets('${brightness.name} 테마의 막힌 버튼은 가이드라인의 비활성 색이다', (
+        tester,
+      ) async {
+        await pumpPending(tester, brightness: brightness);
+        final style = styleOf(tester);
+        const disabled = {WidgetState.disabled};
+
+        final text = style.foregroundColor!.resolve(disabled)!;
+        expect(text.a, closeTo(0.38, 0.01));
+        expect(style.side!.resolve(disabled)!.color.a, closeTo(0.12, 0.01));
+        expect(
+          style.backgroundColor!.resolve(disabled)!.a,
+          closeTo(0.61, 0.01),
+        );
+        expect(style.shape!.resolve(disabled), isA<StadiumBorder>());
+      });
+    }
   });
 }

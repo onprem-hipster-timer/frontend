@@ -4,6 +4,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'time_slot_kind.dart';
+
 part 'time_slot_read.freezed.dart';
 part 'time_slot_read.g.dart';
 
@@ -13,9 +15,9 @@ abstract class TimeSlotRead with _$TimeSlotRead {
   const factory TimeSlotRead({
     required String id,
     @JsonKey(name: 'participant_id') required String participantId,
-    @JsonKey(name: 'slot_date') required DateTime slotDate,
-    @JsonKey(name: 'start_time') required String startTime,
-    @JsonKey(name: 'end_time') required String endTime,
+    @JsonKey(name: 'start_time') required DateTime startTime,
+    @JsonKey(name: 'end_time') required DateTime endTime,
+    required TimeSlotKind kind,
   }) = _TimeSlotRead;
 
   factory TimeSlotRead.fromJson(Map<String, Object?> json) =>

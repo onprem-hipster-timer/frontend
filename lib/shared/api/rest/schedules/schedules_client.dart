@@ -82,15 +82,22 @@ abstract class SchedulesClient {
 
   /// Read Schedule.
   ///
-  /// ID로 일정 조회 (공유된 일정 포함).
+  /// ID로 일정 조회 (공유된 일정, 반복 일정 인스턴스 포함).
   ///
   /// 본인 소유 일정 또는 공유 접근 권한이 있는 일정을 조회합니다.
-  /// 접근 권한이 없으면 403 Forbidden을 반환합니다.
+  /// 없거나 접근 권한이 없으면 404를 반환합니다.
+  ///
+  /// 반복 일정 인스턴스: schedule_id를 parent_id로 사용하고 instance_start를 쿼리 파라미터로 전송.
+  /// 목록의 인스턴스와 같은 모양(parent_id, 회차 시간, 예외 반영)을 반환하며,.
+  /// 규칙에 해당 회차가 없거나 삭제된 회차면 404, 반복 일정이 아니면 400을 반환합니다.
+  ///
+  /// [instanceStart] - 반복 일정 인스턴스 시작 시간 (ISO 8601 형식).
   ///
   /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @GET('/v1/schedules/{schedule_id}')
   Future<ScheduleRead> readScheduleV1SchedulesScheduleIdGet({
     @Path('schedule_id') required String scheduleId,
+    @Query('instance_start') DateTime? instanceStart,
     @Query('timezone') String? timezone,
     @DioOptions() RequestOptions? options,
   });
@@ -195,17 +202,17 @@ abstract class SchedulesClient {
   ///
   /// 제약사항:.
   /// - 이미 Todo와 연결된 Schedule에서는 호출 불가 (400 에러).
-  /// - tag_group_id는 필수 파라미터.
+  /// - todo_group_id가 남의 그룹이면 404.
   ///
   /// :param schedule_id: Schedule ID.
-  /// :param tag_group_id: Todo가 속할 TagGroup ID.
+  /// :param todo_group_id: Todo가 속할 할 일 그룹 ID (없으면 기본 그룹).
   /// :return: 생성된 Todo.
   ///
-  /// [tagGroupId] - Todo가 속할 TagGroup ID (필수).
+  /// [todoGroupId] - Todo가 속할 할 일 그룹 ID. 없으면 기본 그룹.
   @POST('/v1/schedules/{schedule_id}/todo')
   Future<void> createTodoFromScheduleV1SchedulesScheduleIdTodoPost({
     @Path('schedule_id') required String scheduleId,
-    @Query('tag_group_id') required String tagGroupId,
+    @Query('todo_group_id') String? todoGroupId,
     @DioOptions() RequestOptions? options,
   });
 }

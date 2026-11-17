@@ -34,6 +34,12 @@
     document.dispatchEvent(new CustomEvent('analytics-consent', { detail: value }));
   }
 
-  window.__momeetAnalytics = { get: read, set: set };
+  // 처음 방문 동의 배너를 보이거나 숨기라고 알린다(landing/consent-banner.js가 받는다). 로그인한 회원은 계정 값을
+  // 따르므로 앱이 숨긴다
+  function banner(visible) {
+    document.dispatchEvent(new CustomEvent('analytics-banner', { detail: visible === true }));
+  }
+
+  window.__momeetAnalytics = { get: read, set: set, banner: banner };
   if (read() === 'granted') load();
 })();

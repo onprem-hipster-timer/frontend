@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/app_route.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -295,6 +297,72 @@ void main() {
     await tapVisible(tester, find.text('초기화'));
 
     expect(container.read(calendarFilterProvider).showCancelled, isNot(shown));
+  });
+
+  testWidgets('앱바의 모임 만들기는 만들기 화면을 위에 열고 뒤로 가면 달력이다', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (context, state) => const CalendarPage()),
+        GoRoute(
+          path: AppRoute.meetings.path,
+          name: AppRoute.meetings.name,
+          builder: (context, state) => const Scaffold(body: Text('모임 만들기 화면')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          schedulesApiProvider.overrideWithValue(FakeSchedulesClient()),
+          calendarSettingsProvider.overrideWith(_FixedSettings.new),
+          currentHolidaysProvider.overrideWith((ref) async => const []),
+        ],
+        child: MaterialApp.router(
+          locale: const Locale('ko', 'KR'),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final entry = find.widgetWithText(TextButton, '모임');
+    expect(entry, findsOneWidget, reason: '좁은 화면은 줄여 쓴다');
+    expect(find.byTooltip('모임 만들기'), findsOneWidget);
+    expect(find.bySemanticsLabel('모임 만들기'), findsOneWidget);
+    expect(
+      find.descendant(of: entry, matching: find.byIcon(Icons.groups_outlined)),
+      findsOneWidget,
+    );
+    expect(
+      find.byType(FloatingActionButton),
+      findsOneWidget,
+      reason: '새 일정은 그대로',
+    );
+
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+    expect(find.text('모임 만들기 화면'), findsOneWidget);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('달력'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1280, 800);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextButton, '모임 만들기'), findsOneWidget);
   });
 }
 

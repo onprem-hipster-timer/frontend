@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/providers/session_token_store.dart';
@@ -21,6 +22,13 @@ final testUser = AuthUser(
   email: 'user@example.com',
   emailVerified: true,
   createdAt: DateTime.utc(2024, 1, 1),
+);
+
+/// 테스트용 게스트 (모임 meeting-1)
+const testGuest = GuestUser(
+  id: 'guest-uid',
+  handle: '0b9c@guest.invalid',
+  name: '민수',
 );
 
 var _testJwtSeq = 0;
@@ -88,6 +96,13 @@ class KratosTestHarness {
     return harness;
   }
 
+  /// whoami가 [guest]의 게스트 세션으로 성공하게 한다
+  void stubGuestSession([GuestUser guest = testGuest]) {
+    when(() => kratos.whoami(any())).thenAnswer(
+      (_) async => KratosSession.guest(guest: guest, accessToken: accessToken),
+    );
+  }
+
   List<Override> get overrides => [
     kratosClientProvider.overrideWithValue(kratos),
     sharedPreferencesProvider.overrideWithValue(prefs),
@@ -119,6 +134,7 @@ class KratosTestHarness {
         any(),
         any(),
         sessionToken: any(named: 'sessionToken'),
+        turnstileToken: any(named: 'turnstileToken'),
       ),
     ).thenAnswer((_) async => result);
   }
@@ -154,6 +170,7 @@ class KratosTestHarness {
         any(),
         any(),
         sessionToken: any(named: 'sessionToken'),
+        turnstileToken: any(named: 'turnstileToken'),
       ),
     ).thenThrow(error);
   }

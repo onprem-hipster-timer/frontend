@@ -19,6 +19,9 @@ class ScheduleFormSheet extends ConsumerStatefulWidget {
   /// 초기 종료 시간 (선택사항)
   final DateTime? initialEndTime;
 
+  /// 초기 제목 (선택사항)
+  final String? initialTitle;
+
   /// 수정할 기존 일정 (수정 모드인 경우)
   final ScheduleRead? existingSchedule;
 
@@ -26,6 +29,7 @@ class ScheduleFormSheet extends ConsumerStatefulWidget {
     super.key,
     this.initialStartTime,
     this.initialEndTime,
+    this.initialTitle,
     this.existingSchedule,
   });
 
@@ -45,7 +49,7 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
   void initState() {
     super.initState();
 
-    _titleController = TextEditingController();
+    _titleController = TextEditingController(text: widget.initialTitle);
     _descriptionController = TextEditingController();
 
     // 기존 일정 데이터가 있으면 사용, 없으면 초기값 설정
@@ -71,11 +75,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
       );
 
       final start = widget.initialStartTime ?? roundedNow;
-      _range = (
-        start: start,
-        end: widget.initialEndTime ?? start.add(const Duration(hours: 1)),
-        allDay: false,
-      );
+      final end = widget.initialEndTime ?? start.add(const Duration(hours: 1));
+      // 받은 시각이 그날 00:00부터 마지막 날 23:59까지면 종일로 연다
+      _range = (start: start, end: end, allDay: fmt.isAllDay(start, end));
     }
   }
 
@@ -246,6 +248,7 @@ Future<void> showScheduleFormSheet(
   DateTime? initialStartTime,
   DateTime? initialEndTime,
   DateTime? initialDate, // 특정 날짜 클릭 시 사용
+  String? initialTitle,
 }) {
   // initialDate가 제공되면 해당 날짜의 다음 정각으로 시작 시간 설정
   DateTime? defaultStartTime = initialStartTime;
@@ -272,6 +275,7 @@ Future<void> showScheduleFormSheet(
     builder: (context) => ScheduleFormSheet(
       initialStartTime: defaultStartTime,
       initialEndTime: defaultEndTime,
+      initialTitle: initialTitle,
     ),
   );
 }

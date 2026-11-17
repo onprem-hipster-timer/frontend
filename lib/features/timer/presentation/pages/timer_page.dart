@@ -8,6 +8,7 @@ import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_history_list.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 타이머 대시보드 페이지
 ///
@@ -33,7 +34,7 @@ class _TimerPageState extends ConsumerState<TimerPage> {
       focusActions: [
         IconButton(
           icon: const Icon(Icons.history),
-          tooltip: '타이머 목록',
+          tooltip: '${Terms.timer} 목록',
           onPressed: () => _showHistorySheet(context),
         ),
       ],
@@ -61,14 +62,14 @@ class _TimerPageState extends ConsumerState<TimerPage> {
           appBar: focus
               ? null
               : AppBar(
-                  title: const Text('타이머'),
+                  title: const Text(Terms.timer),
                   elevation: 0,
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   actions: [
                     if (!wide)
                       IconButton(
                         icon: const Icon(Icons.history),
-                        tooltip: '타이머 목록',
+                        tooltip: '${Terms.timer} 목록',
                         onPressed: () => _showHistorySheet(context),
                       ),
                   ],
@@ -125,14 +126,15 @@ String friendActivityMessage(TimerWsTimerEvent event) {
   final friendName = actorName == null || actorName.isEmpty ? '친구' : actorName;
   final timerTitle = event.payload.timer?.title?.trim();
   final target = timerTitle == null || timerTitle.isEmpty
-      ? '타이머'
-      : '$timerTitle 타이머';
+      ? Terms.timer
+      : '$timerTitle ${Terms.timer}';
 
   return switch (event.payload.action) {
     'start' => '$friendName님이 $target를 시작했습니다',
-    'pause' => '$friendName님이 $target를 일시정지했습니다',
+    'pause' => '$friendName님이 ${target.withJosa('을', '를')} 일시정지했습니다',
     'resume' => '$friendName님이 $target를 재개했습니다',
-    'stop' => '$friendName님이 $target를 정지했습니다',
-    _ => '$friendName님의 타이머 상태가 변경되었습니다',
+    'stop' =>
+      '$friendName님이 ${target.withJosa('을', '를')} ${Terms.complete}했습니다',
+    _ => '$friendName님의 ${Terms.timer} 상태가 변경되었습니다',
   };
 }

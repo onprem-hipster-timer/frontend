@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/auth/auth_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -23,14 +24,23 @@ class _Auth extends AuthNotifier {
   );
 }
 
-/// 계정마다 다른 태그 통계를 돌려주는 [FakeTodosClient].
+/// 계정마다 다른 태그 통계를 돌려주고 할 일 그룹 조회 수를 세는 [FakeTodosClient].
 class _TodosClient extends FakeTodosClient {
   List<TagStat> byTag = const [];
   int statsReads = 0;
+  int groupReads = 0;
+
+  @override
+  Future<List<TodoGroupRead>> readTodoGroupsV1TodosGroupsGet({
+    RequestOptions? options,
+  }) {
+    groupReads++;
+    return super.readTodoGroupsV1TodosGroupsGet(options: options);
+  }
 
   @override
   Future<TodoStats> getTodoStatsV1TodosStatsGet({
-    String? groupId,
+    String? todoGroupId,
     RequestOptions? options,
   }) async {
     statsReads++;
@@ -49,7 +59,7 @@ TodoRead _todo(String id, {TodoStatus status = TodoStatus.unscheduled}) =>
     TodoRead(
       id: id,
       title: id,
-      tagGroupId: 'g1',
+      todoGroupId: 'g1',
       status: status,
       createdAt: DateTime.utc(2024, 1, 1),
     );
@@ -79,8 +89,12 @@ void main() {
       await container.read(allTodoTreeProvider.future);
       await container.read(todoStatisticsProvider.future);
       await container.read(tagUsageStatisticsProvider.future);
+      // 화면이 보고 있는 동안처럼 붙잡아 둔다(자동 해제 provider)
+      container.listen(todoGroupsProvider, (_, _) {});
+      await container.read(todoGroupsProvider.future);
       final todoReads = api.readGroupIds.length;
       final statsReads = api.statsReads;
+      final groupReads = api.groupReads;
 
       final userChanges = <AuthUser?>[];
       container.listen(currentUserProvider, (_, next) => userChanges.add(next));
@@ -93,8 +107,10 @@ void main() {
       await container.read(allTodoTreeProvider.future);
       await container.read(todoStatisticsProvider.future);
       await container.read(tagUsageStatisticsProvider.future);
+      await container.read(todoGroupsProvider.future);
       expect(api.readGroupIds.length, todoReads);
       expect(api.statsReads, statsReads);
+      expect(api.groupReads, groupReads);
     });
   });
 }

@@ -47,8 +47,13 @@
 
   <div id="landing">
     <nav class="landing-nav">
-      <a href="/#/landing" class="nav-logo">mo.momeet</a>
-      <a href="/#/login" class="nav-link">로그인</a>
+      <a href="/#/landing" class="nav-logo"><img class="nav-badge" src="/landing/img/momo-badge-64.webp"
+          srcset="/landing/img/momo-badge-64.webp 64w, /landing/img/momo-badge-128.webp 128w" sizes="28px"
+          width="28" height="28" alt="" loading="eager" decoding="async">mo.momeet</a>
+      <div class="nav-actions">
+        <a href="/meet" class="nav-link nav-link-plain">모임 만들기</a>
+        <a href="/#/login" class="nav-link">로그인</a>
+      </div>
     </nav>
 
     <section class="hero">
@@ -110,6 +115,15 @@
             </div>
           </li>
         </ol>
+      </div>
+    </section>
+
+    <section class="meet">
+      <div class="meet-inner">
+        <p class="bento-label">Meeting</p>
+        <h2 class="bento-title">모임 시간은 링크 하나로 맞추세요</h2>
+        <p class="meet-desc">날짜를 고르고 링크를 보내면 각자 되는 시간을 칠하고, 모두가 되는 시간이 한눈에 보입니다.</p>
+        <a href="/#/meetings" class="btn-primary">모임 만들기</a>
       </div>
     </section>
 
@@ -179,12 +193,10 @@
   <script src="/landing/script.js"></script>
 
   <div id="consent-banner" class="consent-banner" role="dialog" aria-labelledby="consent-banner-title" hidden>
-    <p id="consent-banner-title" class="consent-banner-title">사용성 분석 쿠키</p>
+    <p id="consent-banner-title" class="consent-banner-title">더 편한 화면을 만드는 데 도움을 주시겠어요?</p>
     <p class="consent-banner-text">
-      허용하면 화면을 개선하기 위해 방문·클릭·스크롤과 화면 재현 정보가
-      Microsoft Clarity(미국)로 전송됩니다. 화면 재현 정보는 30일,
-      클릭·히트맵 등 집계 정보는 9개월 보관됩니다.
-      입력한 내용은 가려지며, 거부해도 이용에 제한이 없습니다.
+      입력한 내용은 가려지고, 거부해도 그대로 쓸 수 있어요. 허용하면 화면 이용 기록이
+      Microsoft Clarity(미국)로 전송되어 최대 9개월 보관됩니다.
       <a href="/privacy" target="_blank" rel="noopener">개인정보처리방침</a>
     </p>
     <div class="consent-banner-actions">

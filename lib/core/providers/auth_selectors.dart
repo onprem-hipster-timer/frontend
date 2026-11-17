@@ -2,11 +2,12 @@
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 
 part 'auth_selectors.g.dart';
 
-/// 현재 로그인 중인 사용자
+/// 현재 로그인 중인 회원. 게스트 세션이면 null이다
 @riverpod
 AuthUser? currentUser(Ref ref) {
   return ref
@@ -14,7 +15,23 @@ AuthUser? currentUser(Ref ref) {
       .whenOrNull(authenticated: (user, accessToken) => user);
 }
 
-/// 현재 백엔드용 JWT
+/// 현재 게스트 세션의 게스트. 회원이거나 로그인하지 않았으면 null이다
+@riverpod
+GuestUser? currentGuest(Ref ref) {
+  return ref
+      .watch(authProvider)
+      .whenOrNull(guest: (guest, accessToken, denial) => guest);
+}
+
+/// 지금 게스트 요청이 거절된 까닭. 게스트가 아니거나 거절되지 않았으면 null이다
+@riverpod
+GuestDenial? currentGuestDenial(Ref ref) {
+  return ref
+      .watch(authProvider)
+      .whenOrNull(guest: (guest, accessToken, denial) => denial);
+}
+
+/// 현재 회원의 백엔드용 JWT
 @riverpod
 String? accessToken(Ref ref) {
   return ref
@@ -22,7 +39,7 @@ String? accessToken(Ref ref) {
       .whenOrNull(authenticated: (user, accessToken) => accessToken);
 }
 
-/// 인증 여부 확인
+/// 회원으로 로그인했는지. 게스트 세션은 false다
 @riverpod
 bool isAuthenticated(Ref ref) {
   return ref

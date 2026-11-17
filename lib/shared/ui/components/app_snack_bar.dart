@@ -38,7 +38,8 @@ void showAppSnackBar(
 
 /// 시트를 닫은 뒤처럼 [BuildContext]가 사라진 다음에도 미리 잡아 둔 messenger로 띄운다.
 extension AppSnackBarMessenger on ScaffoldMessengerState {
-  void showAppSnackBar(
+  /// 알림을 띄우고 그 알림의 controller를 돌려준다(닫힐 때를 알 수 있다)
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
     String message, {
     AppNoticeKind kind = AppNoticeKind.info,
     String? actionLabel,
@@ -46,7 +47,7 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
   }) {
     final (background, foreground) = _colors(context, kind);
     hideCurrentSnackBar();
-    showSnackBar(
+    return showSnackBar(
       SnackBar(
         content: Text(message, style: TextStyle(color: foreground)),
         backgroundColor: background,
@@ -59,6 +60,26 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
             : null,
       ),
     );
+  }
+
+  /// '되돌리기'가 있는 알림을 [duration] 동안 띄운다. 이전 알림은 닫는다.
+  ///
+  /// 되돌리기를 눌러 닫히면 true, 그 밖에(시간이 다 되거나, 다른 알림이 덮거나, 밀어서) 닫히면 false로 끝난다.
+  /// 스크린 리더를 쓰는 중에는 저절로 닫히지 않는다.
+  Future<bool> showAppUndoSnackBar(
+    String message, {
+    Duration duration = const Duration(seconds: 5),
+  }) async {
+    hideCurrentSnackBar();
+    final controller = showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: duration,
+        persist: MediaQuery.accessibleNavigationOf(context),
+        action: SnackBarAction(label: '되돌리기', onPressed: () {}),
+      ),
+    );
+    return await controller.closed == SnackBarClosedReason.action;
   }
 }
 

@@ -5,6 +5,7 @@
 // 앱 메인 위젯
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/core/analytics/analytics_account_sync.dart';
 import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
@@ -27,6 +28,8 @@ class MoMeetApp extends ConsumerWidget {
     // (routerProvider 내부에서 authProvider를 listen하여 redirect를 자동 재평가)
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeProvider);
+    // 회원이면 계정의 사용성 분석 동의를 이 브라우저에 맞춘다
+    ref.watch(analyticsAccountSyncProvider);
 
     return MaterialApp.router(
       title: AppConfig.appName,

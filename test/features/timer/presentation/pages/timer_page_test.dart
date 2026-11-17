@@ -40,10 +40,18 @@ import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/timer_fixtures.dart';
 import '../../../../helpers/timer_gallery_finders.dart';
 import '../../../../helpers/start_timer_sheet_driver.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
-const _confirmTitle = '작업 완료';
-const _confirmContent =
-    '작업을 완료하시겠습니까?\n완료한 타이머는 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
+final _confirmTitle = '${Terms.timer} ${Terms.complete}';
+final _confirmContent =
+    '${Terms.timer.withJosa('을', '를')} ${Terms.complete}하시겠습니까?\n${Terms.complete}한 ${Terms.timer.withJosa('은', '는')} 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
+
+/// 타이머를 완료한 뒤의 알림
+final _completedNotice =
+    '${Terms.timer.withJosa('을', '를')} ${Terms.complete}했습니다';
+
+/// 진행 중인 타이머가 없을 때의 대시보드 문구
+final _noRunningTimer = '진행 중인 ${Terms.timer.withJosa('이', '가')} 없습니다';
 
 void main() {
   TimerWsTimerEvent activity({
@@ -113,7 +121,7 @@ void main() {
       test('stop', () {
         expect(
           friendActivityMessage(activity(action: 'stop', displayName: '철수')),
-          '철수님이 타이머를 정지했습니다',
+          '철수님이 타이머를 완료했습니다',
         );
       });
     });
@@ -223,7 +231,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('철수님이 집중 타이머를 정지했습니다'), findsOneWidget);
+      expect(find.text('철수님이 집중 타이머를 완료했습니다'), findsOneWidget);
 
       // 정지 알림이 사라진 뒤에도 시간 종료 알림은 뜨지 않는다
       await tester.pumpAndSettle();
@@ -281,7 +289,7 @@ void main() {
       expect(controller.stopCalled, isTrue);
       // 확인 시점에 캡처한 활성 타이머 id로 정지해야 한다 (async race 방지).
       expect(controller.stoppedTimerId, 'timer-1');
-      expect(find.text('작업을 완료했습니다'), findsOneWidget);
+      expect(find.text(_completedNotice), findsOneWidget);
       expect(find.text('새 타이머 시작'), findsOneWidget);
     });
 
@@ -727,19 +735,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.calls, ['list', 'update:timer-1']);
-      expect(find.text('작업을 완료했습니다'), findsNothing);
+      expect(find.text(_completedNotice), findsNothing);
 
       patched.complete();
       await tester.pump();
 
       expect(repository.calls, ['list', 'update:timer-1', 'stop:timer-1']);
-      expect(find.text('작업을 완료했습니다'), findsNothing);
+      expect(find.text(_completedNotice), findsNothing);
 
       stopped.complete();
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('작업을 완료했습니다'), findsOneWidget);
+      expect(find.text(_completedNotice), findsOneWidget);
       expect(repository.calls, ['list', 'update:timer-1', 'stop:timer-1']);
       expect(_dashboardFabByIcon(Icons.play_arrow), findsOneWidget);
     });
@@ -915,9 +923,9 @@ void main() {
   });
 
   // ============================================================
-  // TimerPage — 새 작업 시작 다이얼로그의 집중 시간
+  // TimerPage — 새 타이머 시트의 집중 시간
   // ============================================================
-  group('새 작업 시작 집중 시간', () {
+  group('새 타이머 시트의 집중 시간', () {
     testWidgets('기본은 25분이고 그대로 시작하면 25분으로 시작한다', (tester) async {
       final controller = _FakeTimerController();
 
@@ -1026,7 +1034,7 @@ void main() {
     });
   });
 
-  group('새 작업 시작 할 일 연결', () {
+  group('새 타이머 시트의 할 일 연결', () {
     testWidgets('할 일을 골라 시작하면 그 할 일을 연결하고 할 일 제목으로 시작한다', (tester) async {
       final controller = _FakeTimerController();
       final todo = makeTodo().copyWith(title: '보고서 쓰기');
@@ -1081,7 +1089,7 @@ void main() {
       final meeting = makeTodo(id: 'todo-2').copyWith(title: '회의 준비');
       final review = makeTodo(id: 'todo-3').copyWith(title: '코드 리뷰');
 
-      /// 새 작업 시작에서 [labels] 할 일을 체크해 고르고 [minutes]분 칩을 골라 시작한다
+      /// 새 타이머 시트에서 [labels] 할 일을 체크해 고르고 [minutes]분 칩을 골라 시작한다
       Future<void> startWith(
         WidgetTester tester,
         List<String> labels, {
@@ -1138,7 +1146,7 @@ void main() {
     });
   });
 
-  group('새 작업 시작 할 일 연결 경계', () {
+  group('새 타이머 시트의 할 일 연결 경계', () {
     final report = makeTodo().copyWith(title: '보고서 쓰기');
     final todoField = StartSheet.todoField;
 
@@ -1432,7 +1440,7 @@ void main() {
         expect(controller.startedAllocatedDurationSeconds, 754);
       });
 
-      testWidgets('새 작업 시작에서 칩을 누르면 분 단위로 돌아간다', (tester) async {
+      testWidgets('새 타이머 시트에서 칩을 누르면 분 단위로 돌아간다', (tester) async {
         final controller = _FakeTimerController();
         await _pumpTimerPage(tester, timer: null, controller: controller);
         await openPicker(tester);
@@ -1449,7 +1457,7 @@ void main() {
         expect(controller.startedAllocatedDurationSeconds, 15 * 60);
       });
 
-      testWidgets('새 작업 시작의 변경으로 시간 정하기를 다시 열어 바꾼다', (tester) async {
+      testWidgets('새 타이머 시트의 변경으로 시간 정하기를 다시 열어 바꾼다', (tester) async {
         final controller = _FakeTimerController();
         await _pumpTimerPage(tester, timer: null, controller: controller);
         await openPicker(tester);
@@ -1572,7 +1580,7 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('활성 타이머가 없으면 다이얼을 끌어 고른 시간으로 새 작업을 연다', (tester) async {
+    testWidgets('활성 타이머가 없으면 다이얼을 끌어 고른 시간으로 새 타이머 시트를 연다', (tester) async {
       final controller = _FakeTimerController();
 
       await _pumpTimerPage(tester, timer: null, controller: controller);
@@ -1668,7 +1676,7 @@ void main() {
       expect(color.withValues(alpha: 1), cs.primary.withValues(alpha: 1));
     });
 
-    testWidgets('새 작업 다이얼로그를 취소해도 고른 시간이 남는다', (tester) async {
+    testWidgets('새 타이머 시트를 취소해도 고른 시간이 남는다', (tester) async {
       await _pumpTimerPage(
         tester,
         timer: null,
@@ -1806,7 +1814,7 @@ void main() {
       await dragDialTo9(tester);
       expect(_clockText(tester), '00:45:00');
 
-      await tester.tap(_mode('작업'));
+      await tester.tap(_mode(Terms.focus));
       await tester.pumpAndSettle();
       expect(_clockText(tester), '00:25:00');
 
@@ -2233,7 +2241,7 @@ void main() {
           expect(dial(tester).color, cs.tertiary);
           expect(clockColor(tester), idleClock);
 
-          await tester.tap(_mode('작업'));
+          await tester.tap(_mode(Terms.focus));
           await tester.pumpAndSettle();
 
           expect(dial(tester).color, cs.primary);
@@ -2243,7 +2251,7 @@ void main() {
       testWidgets('고른 칸을 다시 눌러도 선택이 풀리지 않는다', (tester) async {
         await pump(tester);
 
-        await tester.tap(_mode('작업'));
+        await tester.tap(_mode(Terms.focus));
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
@@ -2263,7 +2271,7 @@ void main() {
         await chooseBreak(tester);
         await dragDialTo9(tester);
 
-        await tester.tap(_mode('작업'));
+        await tester.tap(_mode(Terms.focus));
         await tester.pumpAndSettle();
         await tester.tap(_dashboardFabByIcon(Icons.play_arrow));
         await tester.pumpAndSettle();
@@ -2877,7 +2885,7 @@ void main() {
 
         expectOrder(
           tester,
-          header: find.text('진행 중인 작업이 없습니다'),
+          header: find.text(_noRunningTimer),
           modes: find.byWidgetPredicate((widget) => widget is SegmentedButton),
           fab: _dashboardFabByIcon(Icons.play_arrow),
         );
@@ -3048,9 +3056,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('좁은 화면의 대기 상태는 다이얼을 끌 수 있고 새 작업 다이얼로그가 넘치지 않는다', (
-      tester,
-    ) async {
+    testWidgets('좁은 화면의 대기 상태는 다이얼을 끌 수 있고 새 타이머 시트가 넘치지 않는다', (tester) async {
       setSize(tester, const Size(360, 800));
       await _pumpTimerPage(
         tester,
@@ -3059,7 +3065,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('진행 중인 작업이 없습니다'), findsOneWidget);
+      expect(find.text(_noRunningTimer), findsOneWidget);
       await dragTo9(tester);
       expect(_clockText(tester), '00:45:00');
 
@@ -3392,7 +3398,7 @@ void main() {
         expect(clock.width, lessThan(dial.width));
         expect(find.byTooltip('새 타이머'), findsOneWidget);
         expect(find.widgetWithText(ActionChip, '새 타이머'), findsNothing);
-        // 앱바 없이 작업명 줄이 화면 이동·목록 버튼을 맡는다
+        // 앱바 없이 타이머 제목 줄이 화면 이동·목록 버튼을 맡는다
         expect(find.byType(AppBar), findsNothing);
         expect(find.byTooltip('화면 이동'), findsOneWidget);
         expect(find.byTooltip('타이머 목록'), findsOneWidget);
@@ -3472,7 +3478,7 @@ void main() {
             await tester.tap(find.byTooltip('타이머 목록'));
             await tester.pumpAndSettle();
           }
-          await expectShown('새 작업을 시작해보세요');
+          await expectShown('새 ${Terms.timer.withJosa('을', '를')} 시작해보세요');
 
           await tester.tap(find.text('친구 타이머'));
           await tester.pumpAndSettle();
@@ -4022,7 +4028,7 @@ void main() {
       for (final (id, title, owner, status, time) in [
         ('shared-1', '보고서 쓰기', '영희', '진행 중', '00:20:00'),
         ('shared-2', '할 일 제목', '이름 없는 친구', '일시정지', '00:15:00'),
-        ('shared-3', '알 수 없는 작업', '다른 사용자', '완료', '00:25:00'),
+        ('shared-3', '제목 없는 ${Terms.timer}', '다른 사용자', '완료', '00:25:00'),
       ]) {
         for (final text in [title, owner, status, time]) {
           expect(inItem(id, find.text(text)), findsOneWidget, reason: text);
@@ -4283,7 +4289,7 @@ void main() {
     Finder inDashboard(Finder finder) =>
         find.descendant(of: find.byType(TimerDashboard), matching: finder);
 
-    /// 대시보드의 작업 제목
+    /// 대시보드의 타이머 제목
     Finder title(String text) => find.descendant(
       of: find.byType(CurrentTaskDisplay),
       matching: find.text(text),
@@ -4829,7 +4835,7 @@ void main() {
         expect(title('B 작업'), findsOneWidget);
       });
 
-      testWidgets('새 타이머 칩은 다른 타이머가 실행 중이어도 새 작업 시작을 열고 시작한 타이머의 쪽으로 넘어간다', (
+      testWidgets('새 타이머 칩은 다른 타이머가 실행 중이어도 새 타이머 시트를 열고 시작한 타이머의 쪽으로 넘어간다', (
         tester,
       ) async {
         await pumpLive(tester, [runningA, pausedB]);
@@ -4845,7 +4851,7 @@ void main() {
 
         await tester.tap(addChip());
         await tester.pumpAndSettle();
-        expect(find.text('새 작업 시작'), findsOneWidget);
+        expect(StartSheet.sheet, findsOneWidget);
         await tester.enterText(StartSheet.titleField, '새 작업');
         await tester.startFromSheet();
 
@@ -4900,7 +4906,7 @@ void main() {
 
         await tester.tap(addChip());
         await tester.pumpAndSettle();
-        expect(find.text('새 작업 시작'), findsOneWidget);
+        expect(StartSheet.sheet, findsOneWidget);
       });
 
       testWidgets('가로 휴대폰은 갤러리를 왼쪽에 두고 새 타이머 칩은 오른쪽 칸 맨 위에서 굴리지 않는다', (
@@ -5051,7 +5057,7 @@ List<Override> _timerOverrides({
   List<TimerRead>? active,
 }) {
   return [
-    // 새 작업 시작에서 고를 할 일
+    // 새 타이머 시트에서 고를 할 일
     allTodosProvider.overrideWith((ref) async => todos),
     // 친구 활동 리스너가 실제 WS/auth 체인을 건드리지 않도록 테스트가 준 스트림(기본은 빈 스트림)으로 격리
     timerFriendActivityProvider.overrideWith((ref) => friendActivity),

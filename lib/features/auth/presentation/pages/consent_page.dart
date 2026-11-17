@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
-import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/my_profile_provider.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_heading.dart';
+import 'package:momeet/features/auth/presentation/widgets/consent_check_tile.dart';
 
 /// 로그인 뒤 약관 동의. 필수 항목에 모두 동의해야 앱을 쓸 수 있다.
 ///
@@ -82,13 +82,17 @@ class _ConsentFormState extends ConsumerState<_ConsentForm> {
     _analytics = value;
   });
 
+  /// 약관 동의와 선택한 사용성 분석 동의를 한 요청으로 보낸다. 계정에 저장되면 이 브라우저에도 그 값을 둔다
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    ref
-        .read(analyticsConsentProvider.notifier)
-        .set(_analytics ? AnalyticsConsent.granted : AnalyticsConsent.denied);
+    final analytics = _analytics;
     try {
-      await ref.read(myProfileProvider.notifier).agree(widget.version);
+      await ref
+          .read(myProfileProvider.notifier)
+          .agree(widget.version, analytics: analytics);
+      ref
+          .read(analyticsConsentProvider.notifier)
+          .set(AnalyticsConsent.of(analytics));
     } on DioException catch (e) {
       if (!mounted) return;
       if (e.response?.statusCode == 409) {
@@ -134,34 +138,35 @@ class _ConsentFormState extends ConsumerState<_ConsentForm> {
                 subtitle: 'momeet을 이용하려면 아래 항목에 동의해 주세요',
               ),
               const SizedBox(height: 32),
-              _AllConsentTile(
+              ConsentCheckTile(
+                label: ConsentLabels.all,
+                emphasized: true,
                 value: _requiredChecked && _analytics,
                 onChanged: _setAll,
               ),
               const Divider(height: 1),
-              _ConsentItem(
-                label: '[필수] 만 14세 이상입니다',
+              ConsentCheckTile(
+                label: ConsentLabels.ageOver14,
                 value: _ageOver14,
                 onChanged: (value) => setState(() => _ageOver14 = value),
               ),
-              _ConsentItem(
-                label: '[필수] 이용약관 동의',
+              ConsentCheckTile(
+                label: ConsentLabels.terms,
                 link: LegalLinks.terms,
                 value: _terms,
                 onChanged: (value) => setState(() => _terms = value),
               ),
-              _ConsentItem(
-                label: '[필수] 개인정보 수집·이용 동의',
+              ConsentCheckTile(
+                label: ConsentLabels.privacy,
                 link: LegalLinks.privacy,
                 value: _privacy,
                 onChanged: (value) => setState(() => _privacy = value),
               ),
-              _ConsentItem(
-                label: '[선택] 사용성 분석(Microsoft Clarity) 동의',
+              ConsentCheckTile(
+                label: '[선택] 화면 개선을 위한 사용성 분석 동의',
                 description:
-                    '방문·클릭·스크롤·화면 재현 정보가 Microsoft(미국)로 전송되어 '
-                    '화면 재현 정보는 30일, 클릭 등 집계 정보는 9개월 보관됩니다. '
-                    '거부해도 이용에 제한이 없습니다.',
+                    '화면 이용 기록이 Microsoft Clarity(미국)로 전송되어 최대 9개월 보관됩니다. '
+                    '입력한 내용은 가려지고, 거부해도 이용에 제한이 없습니다.',
                 value: _analytics,
                 onChanged: (value) => setState(() => _analytics = value),
               ),
@@ -178,29 +183,6 @@ class _ConsentFormState extends ConsumerState<_ConsentForm> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// 모든 항목(선택 포함)을 한 번에 켜고 끈다
-class _AllConsentTile extends StatelessWidget {
-  const _AllConsentTile({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return CheckboxListTile(
-      value: value,
-      onChanged: (checked) => onChanged(checked ?? false),
-      controlAffinity: ListTileControlAffinity.leading,
-      title: Text(
-        '전체 동의',
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -228,47 +210,6 @@ class _Decline extends StatelessWidget {
         ),
         TextButton(onPressed: onPressed, child: const Text('동의하지 않고 로그아웃')),
       ],
-    );
-  }
-}
-
-/// 동의 항목 하나. [link]를 주면 옆에 '보기'를 둔다
-class _ConsentItem extends ConsumerWidget {
-  const _ConsentItem({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.link,
-    this.description,
-  });
-
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final Uri? link;
-  final String? description;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final link = this.link;
-    final description = this.description;
-    return CheckboxListTile(
-      value: value,
-      onChanged: (checked) => onChanged(checked ?? false),
-      controlAffinity: ListTileControlAffinity.leading,
-      title: Text(label),
-      subtitle: description == null ? null : Text(description),
-      secondary: link == null
-          ? null
-          : TextButton(
-              onPressed: () => ref.read(openLinkProvider)(link),
-              // 항목 글자가 쓸 폭을 남기도록 기본 최소 폭(64) 대신 터치 영역(48)만 둔다
-              style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-              child: const Text('보기'),
-            ),
     );
   }
 }

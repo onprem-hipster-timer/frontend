@@ -22,7 +22,6 @@ abstract class ScheduleCreate with _$ScheduleCreate {
     @JsonKey(name: 'recurrence_rule') String? recurrenceRule,
     @JsonKey(name: 'recurrence_end') DateTime? recurrenceEnd,
     @JsonKey(name: 'tag_ids') List<String>? tagIds,
-    @JsonKey(name: 'tag_group_id') String? tagGroupId,
     @JsonKey(name: 'create_todo_options') CreateTodoOptions? createTodoOptions,
   }) = _ScheduleCreate;
 

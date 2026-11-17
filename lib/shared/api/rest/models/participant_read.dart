@@ -15,6 +15,8 @@ abstract class ParticipantRead with _$ParticipantRead {
     @JsonKey(name: 'meeting_id') required String meetingId,
     @JsonKey(name: 'display_name') required String displayName,
     @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'is_owner') @Default(false) bool isOwner,
+    @JsonKey(name: 'is_guest') @Default(false) bool isGuest,
     @JsonKey(name: 'user_id') String? userId,
   }) = _ParticipantRead;
 

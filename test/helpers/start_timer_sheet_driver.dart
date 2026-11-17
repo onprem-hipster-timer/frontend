@@ -2,16 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
-/// 새 작업 시작 시트와 할 일 고르기 화면에서 찾을 것들.
+/// 새 타이머 시트와 할 일 고르기 화면에서 찾을 것들.
 ///
 /// 화면 구조가 바뀌면 이 파일만 고친다. 테스트 본문은 아래 이름으로 무엇을 하는지만 쓴다.
 abstract final class StartSheet {
   /// 시트가 열려 있으면 하나
-  static final sheet = find.widgetWithText(AppFormSheet, '새 작업 시작');
+  static final sheet = find.widgetWithText(AppFormSheet, '새 ${Terms.timer}');
 
-  static final titleField = find.widgetWithText(TextField, '작업 제목');
-  static final todoField = find.widgetWithText(AppPickerField, '할 일');
+  static final titleField = find.widgetWithText(TextField, '${Terms.timer} 제목');
+  static final todoField = find.widgetWithText(AppPickerField, Terms.todo);
   static final minutesField = find.widgetWithText(TextField, '직접 입력');
 
   /// 초까지 정한 집중 시간 칸
@@ -62,7 +63,7 @@ abstract final class StartSheet {
   );
 }
 
-/// 새 작업 시작 시트에서 하는 일
+/// 새 타이머 시트에서 하는 일
 extension StartSheetActions on WidgetTester {
   String startSheetTitle() =>
       widget<TextField>(StartSheet.titleField).controller!.text;

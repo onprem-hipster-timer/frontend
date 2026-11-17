@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
+import 'package:momeet/core/providers/my_profile_provider.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/theme/theme_provider.dart';
@@ -147,9 +149,27 @@ class _TimezoneTile extends ConsumerWidget {
   }
 }
 
-/// 사용성 분석(Microsoft Clarity) 허용. 언제든 켜고 끌 수 있다
+/// 사용성 분석(Microsoft Clarity) 허용. 언제든 켜고 끌 수 있다. 계정의 동의로 저장하고(지금 약관 버전의 동의를
+/// 그 값과 함께 다시 보낸다), 저장되면 이 브라우저에도 그 값을 둔다. 저장하지 못하면 알리고 그대로 둔다
 class _AnalyticsTile extends ConsumerWidget {
   const _AnalyticsTile();
+
+  Future<void> _set(BuildContext context, WidgetRef ref, bool value) async {
+    try {
+      await ref.read(myProfileProvider.notifier).setAnalytics(value);
+      ref
+          .read(analyticsConsentProvider.notifier)
+          .set(AnalyticsConsent.of(value));
+    } on Object {
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          '사용성 분석 설정을 저장하지 못했습니다',
+          kind: AppNoticeKind.error,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -161,13 +181,9 @@ class _AnalyticsTile extends ConsumerWidget {
         color: theme.colorScheme.onSurface,
       ),
       title: const Text('사용성 분석 허용'),
-      subtitle: const Text('방문·클릭·스크롤·화면 재현 정보를 Microsoft Clarity(미국)로 보냅니다'),
+      subtitle: const Text('화면 개선을 위해 화면 이용 기록을 Microsoft Clarity(미국)로 보냅니다'),
       value: consent == AnalyticsConsent.granted,
-      onChanged: (value) {
-        ref
-            .read(analyticsConsentProvider.notifier)
-            .set(value ? AnalyticsConsent.granted : AnalyticsConsent.denied);
-      },
+      onChanged: (value) => _set(context, ref, value),
     );
   }
 }

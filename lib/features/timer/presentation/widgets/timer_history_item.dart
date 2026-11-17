@@ -9,6 +9,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/features/timer/presentation/utils/timer_actions.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_status_chip.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 타이머 목록 항목에서 버튼 말고 한 줄에 필요한 폭 (여백, 상태 아이콘, 제목, 남은 시간). 글자 배율만큼 늘린다
 const _historyItemBaseWidth = 280.0;
@@ -37,7 +38,7 @@ class TimerHistoryItem extends ConsumerWidget {
         timer.title ??
         timer.todo?.title ??
         timer.schedule?.title ??
-        '알 수 없는 작업';
+        '제목 없는 ${Terms.timer}';
 
     final isActive =
         timer.status == TimerStatus.running ||
@@ -156,7 +157,7 @@ class _ActionButton extends ConsumerWidget {
       _Action.extend => (Icons.add, '5분 연장', colorScheme.primary),
       _Action.pause => (Icons.pause, '일시정지', colorScheme.secondary),
       _Action.resume => (Icons.play_arrow, '재개', colorScheme.primary),
-      _Action.stop => (Icons.check, '완료', colorScheme.error),
+      _Action.stop => (Icons.check, Terms.complete, colorScheme.error),
     };
     return IconButton(
       icon: Icon(icon),

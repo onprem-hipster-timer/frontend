@@ -68,7 +68,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('마이페이지 화면'), findsOneWidget);
     final selected = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    expect(selected.selectedIndex, 4);
+    expect(selected.selectedIndex, _tabs.indexOf('마이페이지'));
   });
 
   testWidgets('창 높이가 바뀌면 그 자리에서 내비 모양을 바꾸고 탭을 유지한다', (tester) async {

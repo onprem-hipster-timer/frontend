@@ -11,7 +11,7 @@ import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/start_timer_sheet_driver.dart';
 import '../../../../helpers/timer_fixtures.dart';
 
-/// 새 작업 시작 다이얼로그의 경계. 기본 동작은 start_timer_dialog_test.dart
+/// 새 타이머 시트의 경계. 기본 동작은 start_timer_dialog_test.dart
 void main() {
   TodoRead todo(
     String id,

@@ -8,6 +8,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../../../helpers/fake_timer_repository.dart';
 import '../../../../helpers/timer_fixtures.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 void main() {
   late FakeTimerRepository repository;
@@ -38,7 +39,7 @@ void main() {
 
     expect(repository.calls, ['create']);
     expect(repository.created?.todoId, 'todo-1');
-    expect(repository.created?.title, '새 작업');
+    expect(repository.created?.title, '새 ${Terms.timer}');
     expect(repository.created?.allocatedDuration, 25 * 60);
   });
 

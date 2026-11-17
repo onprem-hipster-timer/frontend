@@ -123,7 +123,7 @@ abstract class TimersClient {
   /// 타이머 조회 (공유된 타이머 포함).
   ///
   /// 본인 소유 타이머 또는 공유 접근 권한이 있는 타이머를 조회합니다.
-  /// 접근 권한이 없으면 403 Forbidden을 반환합니다.
+  /// 없거나 접근 권한이 없으면 404를 반환합니다.
   ///
   /// [includeSchedule] - Schedule 정보 포함 여부 (기본값: false).
   ///

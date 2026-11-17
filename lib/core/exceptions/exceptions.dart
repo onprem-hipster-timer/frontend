@@ -75,7 +75,7 @@ class NotFoundException extends AppException {
 /// 권한 부족
 class PermissionException extends AppException {
   PermissionException({String? message, super.originalError})
-    : super(message: message ?? _l('이 작업을 수행할 권한이 없습니다', 'Permission denied'));
+    : super(message: message ?? _l('권한이 없습니다', 'Permission denied'));
 }
 
 /// 알 수 없는 오류

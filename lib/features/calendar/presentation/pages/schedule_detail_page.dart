@@ -10,8 +10,9 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_in
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
-import 'package:momeet/features/todo/presentation/pages/tag_group_selector_page.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
@@ -25,7 +26,7 @@ class ScheduleDetailPage extends ConsumerStatefulWidget {
 }
 
 /// 상세 페이지에서 진행 중인 mutation 종류 — 버튼별 로딩 표시를 구분하기 위함.
-enum _PendingAction { convert, delete }
+enum _PendingAction { convert, openLinked, delete }
 
 class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   _PendingAction? _pendingAction;
@@ -33,9 +34,10 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
   @override
   Widget build(BuildContext context) {
     final scheduleAsync = ref.watch(scheduleDetailProvider(widget.scheduleId));
-    final isMutating =
+    final isBusy =
         ref.watch(deleteScheduleMutation).isPending ||
-        ref.watch(convertToTodoMutation).isPending;
+        ref.watch(convertToTodoMutation).isPending ||
+        _pendingAction != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -59,19 +61,26 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
               const SizedBox(height: 16),
               _TodoConversionButton(
                 linked: schedule.sourceTodoId != null,
-                converting: _pendingAction == _PendingAction.convert,
-                onOpenLinked: () => _navigateToLinkedTodo(context, schedule),
-                onConvert: isMutating
+                busy:
+                    _pendingAction == _PendingAction.convert ||
+                    _pendingAction == _PendingAction.openLinked,
+                onOpenLinked: isBusy
+                    ? null
+                    : () => _navigateToLinkedTodo(
+                        context,
+                        schedule.sourceTodoId!,
+                      ),
+                onConvert: isBusy
                     ? null
                     : () => _handleConvertToTodo(context, ref, schedule),
               ),
               const SizedBox(height: 16),
               _EditDeleteButtons(
                 deleting: _pendingAction == _PendingAction.delete,
-                onEdit: isMutating
+                onEdit: isBusy
                     ? null
                     : () => showScheduleEditSheet(context, schedule),
-                onDelete: isMutating
+                onDelete: isBusy
                     ? null
                     : () => _handleDelete(context, ref, schedule),
               ),
@@ -88,36 +97,27 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     );
   }
 
-  /// tagGroupId가 없으면 사용자에게 선택하게 한 뒤 TODO로 변환
+  /// 일정을 할 일로 바꾼다. 할 일은 기본 할 일 그룹에 들어간다
   Future<void> _handleConvertToTodo(
     BuildContext context,
     WidgetRef ref,
     ScheduleRead schedule,
   ) async {
-    String? tagGroupId = schedule.tagGroupId;
-
-    if (tagGroupId == null) {
-      final selected = await Navigator.of(context).push<TagGroupRead>(
-        MaterialPageRoute(builder: (_) => const TagGroupSelectorPage()),
-      );
-      if (selected == null || !context.mounted) return;
-      tagGroupId = selected.id;
-    }
-
-    // 클로저 내부에선 재할당 가능한 지역변수의 null 승격이 풀리므로, 승격된 값을
-    // final 지역변수로 캡처해 전달한다.
-    final resolvedGroupId = tagGroupId;
     setState(() => _pendingAction = _PendingAction.convert);
     try {
       await convertToTodoMutation.run(
         ref,
         (tsx) => tsx
             .get(scheduleMutationsProvider.notifier)
-            .convertToTodo(schedule.id, resolvedGroupId),
+            .convertToTodo(schedule.id),
       );
 
       if (context.mounted) {
-        showAppSnackBar(context, 'TODO로 변환되었습니다', kind: AppNoticeKind.success);
+        showAppSnackBar(
+          context,
+          '${Terms.todo.withJosa('으로', '로')} 변환되었습니다',
+          kind: AppNoticeKind.success,
+        );
       }
     } catch (error) {
       if (context.mounted) {
@@ -132,15 +132,32 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     }
   }
 
-  void _navigateToLinkedTodo(BuildContext context, ScheduleRead schedule) {
-    final tagGroupId = schedule.tagGroupId;
-    if (tagGroupId != null) {
+  /// 연결된 할 일이 있는 할 일 그룹으로 간다. 할 일을 받지 못하면 할 일 탭으로 간다
+  Future<void> _navigateToLinkedTodo(
+    BuildContext context,
+    String todoId,
+  ) async {
+    final provider = todoByIdProvider(todoId);
+    setState(() => _pendingAction = _PendingAction.openLinked);
+    // 받는 동안 autoDispose 프로바이더를 붙잡아 둔다
+    final keepAlive = ref.listenManual(provider, (_, _) {});
+    String? groupId;
+    try {
+      groupId = (await ref.read(provider.future)).todoGroupId;
+    } catch (_) {
+      groupId = null;
+    } finally {
+      keepAlive.close();
+      if (mounted) setState(() => _pendingAction = null);
+    }
+    if (!context.mounted) return;
+    if (groupId == null) {
+      context.goNamed(AppRoute.todo.name);
+    } else {
       context.goNamed(
         AppRoute.todoGroupDetail.name,
-        pathParameters: {'groupId': tagGroupId},
+        pathParameters: {'groupId': groupId},
       );
-    } else {
-      context.goNamed(AppRoute.todo.name);
     }
   }
 
@@ -152,7 +169,7 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: '일정 삭제',
-      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+      content: '"${schedule.title}" 일정을 삭제하시겠습니까?\n되돌릴 수 없습니다.',
       confirmText: '삭제',
       destructive: true,
     );
@@ -243,14 +260,18 @@ class _ScheduleTitle extends StatelessWidget {
 class _TodoConversionButton extends StatelessWidget {
   const _TodoConversionButton({
     required this.linked,
-    required this.converting,
+    required this.busy,
     required this.onOpenLinked,
     required this.onConvert,
   });
 
   final bool linked;
-  final bool converting;
-  final VoidCallback onOpenLinked;
+
+  /// 할 일로 바꾸는 중이거나 연결된 할 일을 받는 중이다
+  final bool busy;
+
+  /// null이면 다른 작업이 진행 중이라 누를 수 없다
+  final VoidCallback? onOpenLinked;
 
   /// null이면 다른 작업이 진행 중이라 누를 수 없다
   final VoidCallback? onConvert;
@@ -262,8 +283,14 @@ class _TodoConversionButton extends StatelessWidget {
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: onOpenLinked,
-          icon: const Icon(Icons.link),
-          label: const Text('연결된 TODO 보기'),
+          icon: busy
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.link),
+          label: const Text('연결된 ${Terms.todo} 보기'),
           style: _actionButtonStyle,
         ),
       );
@@ -274,18 +301,18 @@ class _TodoConversionButton extends StatelessWidget {
       child: FilledButton.tonal(
         onPressed: onConvert,
         style: _actionButtonStyle,
-        child: converting
+        child: busy
             ? const SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Row(
+            : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.transform, size: 18),
-                  SizedBox(width: 8),
-                  Text('TODO로 변환'),
+                  const Icon(Icons.transform, size: 18),
+                  const SizedBox(width: 8),
+                  Text('${Terms.todo.withJosa('으로', '로')} 변환'),
                 ],
               ),
       ),

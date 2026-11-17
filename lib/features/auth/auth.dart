@@ -13,6 +13,7 @@ export 'presentation/pages/verification_page.dart';
 export 'presentation/pages/auth_error_page.dart';
 export 'presentation/pages/consent_page.dart';
 export 'presentation/pages/account_deletion_pending_page.dart';
+export 'presentation/pages/guest_session_page.dart';
 
 // Widgets
 export 'presentation/widgets/auth_button.dart';

@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 
-const _stopTimerConfirmTitle = '작업 완료';
-const _stopTimerConfirmContent =
-    '작업을 완료하시겠습니까?\n완료한 타이머는 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
+const _stopTimerConfirmTitle = '${Terms.timer} ${Terms.complete}';
+final _stopTimerConfirmContent =
+    '${Terms.timer.withJosa('을', '를')} ${Terms.complete}하시겠습니까?\n${Terms.complete}한 ${Terms.timer.withJosa('은', '는')} 다시 시작할 수 없습니다.\n잠시 멈추려면 일시정지를 이용해 주세요.';
 
 /// 타이머 완료 확인 다이얼로그. 사용자가 완료를 확인하면 true.
 Future<bool> confirmStopTimer(BuildContext context) {
@@ -14,7 +15,7 @@ Future<bool> confirmStopTimer(BuildContext context) {
     context,
     title: _stopTimerConfirmTitle,
     content: _stopTimerConfirmContent,
-    confirmText: '완료',
+    confirmText: Terms.complete,
     destructive: true,
   );
 }
@@ -41,7 +42,7 @@ Future<void> startTimerFromSheet(
     );
     if (!context.mounted) return;
     if (failed.isEmpty) {
-      showAppSnackBar(context, '타이머를 시작했습니다');
+      showAppSnackBar(context, '${Terms.timer.withJosa('을', '를')} 시작했습니다');
     } else {
       showAppSnackBar(
         context,
@@ -58,11 +59,15 @@ Future<void> startTimerFromSheet(
       allocatedDurationSeconds: input.duration.inSeconds,
     );
     if (context.mounted) {
-      showAppSnackBar(context, '타이머를 시작했습니다');
+      showAppSnackBar(context, '${Terms.timer.withJosa('을', '를')} 시작했습니다');
     }
   } catch (e) {
     if (context.mounted) {
-      showAppSnackBar(context, '타이머 시작 실패: $e', kind: AppNoticeKind.error);
+      showAppSnackBar(
+        context,
+        '${Terms.timer} 시작 실패: $e',
+        kind: AppNoticeKind.error,
+      );
     }
   }
 }

@@ -32,6 +32,10 @@ final friendsApiProvider = Provider<FriendsClient>((ref) {
   return ref.watch(moMeetClientProvider).friends;
 });
 
+final meetingsApiProvider = Provider<MeetingsClient>((ref) {
+  return ref.watch(moMeetClientProvider).meetings;
+});
+
 final visibilityApiProvider = Provider<VisibilityClient>((ref) {
   return ref.watch(moMeetClientProvider).visibility;
 });
@@ -46,4 +50,8 @@ final healthApiProvider = Provider<HealthClient>((ref) {
 
 final usersApiProvider = Provider<UsersClient>((ref) {
   return ref.watch(moMeetClientProvider).users;
+});
+
+final guestsApiProvider = Provider<GuestsClient>((ref) {
+  return ref.watch(moMeetClientProvider).guests;
 });

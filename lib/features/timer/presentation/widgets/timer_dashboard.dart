@@ -17,6 +17,7 @@ import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_contr
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_layout.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_model.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart' show ShellScope;
+import 'package:momeet/shared/domain/terms.dart';
 
 /// 이 폭보다 좁으면 다이얼만 두고 타이머 목록은 바텀 시트로 연다
 const timerWideLayoutMinWidth = 600.0;
@@ -81,7 +82,7 @@ class _TimerDashboardState extends ConsumerState<TimerDashboard> {
           model: model,
           pending: pending,
           color: dialColor,
-          label: _breakSelected ? '휴식 시간' : '집중 시간',
+          label: _breakSelected ? '${Terms.rest} 시간' : '${Terms.focus} 시간',
           onPreview: (duration) => setState(() => _dragPreview = duration),
           onChanged: _setPending,
         );
@@ -293,13 +294,13 @@ class _AddTimerChip extends ConsumerWidget {
     if (icon) {
       return IconButton(
         icon: const Icon(Icons.add_circle_outline),
-        tooltip: '새 타이머',
+        tooltip: '새 ${Terms.timer}',
         onPressed: onPressed,
       );
     }
     return ActionChip(
       avatar: const Icon(Icons.add),
-      label: const Text('새 타이머'),
+      label: const Text('새 ${Terms.timer}'),
       onPressed: onPressed,
     );
   }
@@ -316,7 +317,7 @@ class _DashboardHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (onBreak) {
       return Text(
-        '휴식',
+        Terms.rest,
         style: Theme.of(
           context,
         ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w500),

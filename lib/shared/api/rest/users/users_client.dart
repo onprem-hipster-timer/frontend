@@ -26,9 +26,10 @@ abstract class UsersClient {
 
   /// Put My Consent.
   ///
-  /// 만 14세 이상 확인, 이용약관, 개인정보처리방침 동의 기록.
+  /// 만 14세 이상 확인, 이용약관, 개인정보처리방침 동의 기록. 사용성 분석 동의(`analytics`)는 선택이다.
   ///
   /// `version`은 응답 전에 받은 현재 약관 시행일이어야 한다(다르면 409).
+  /// 같은 버전에 다시 보내면 `analytics`만 바꾼다(빠졌거나 null이거나 저장된 값과 같으면 그대로).
   @PUT('/v1/users/me/consent')
   Future<MyProfileRead> putMyConsentV1UsersMeConsentPut({
     @Body() required ConsentCreate body,
