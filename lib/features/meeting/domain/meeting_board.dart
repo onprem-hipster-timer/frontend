@@ -6,7 +6,7 @@ import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/domain/time_span.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
-/// 모임 화면의 값: 미팅과 격자, 참여자, 칸마다 되는 다른 참여자, 내 가능 시간.
+/// 모임 화면의 값: 미팅과 격자, 참여자, 칸마다 되는·안 되는 다른 참여자, 내 시간.
 ///
 /// 나는 회원이면 [userId]가 같은 참여자, 게스트면 참여해 받은 참여자 id([selfId])다(게스트가 받는 응답에는 회원
 /// id가 없다). 아직 참여하지 않았어도 칠하면 내 칸은 [selfName]의 [pendingSelfId]로 사람 수와 후보에 든다.
@@ -43,24 +43,28 @@ class MeetingBoard implements MeetingShading {
     required Set<String> removing,
   }) {
     ParticipantRead? me;
-    var mySlots = const <TimeSpan>[];
+    var mine = MyAvailability();
     final others = [for (final _ in grid.cells) <String>{}];
+    final othersUnavailable = [for (final _ in grid.cells) <String>{}];
     for (final entry in availability) {
       final participant = entry.participant;
-      final slots = mergeSpans([
+      List<TimeSpan> spansOf(TimeSlotKind kind) => mergeSpans([
         for (final slot in entry.timeSlots)
-          if (slot.kind == TimeSlotKind.available)
-            TimeSpan(slot.startTime, slot.endTime),
+          if (slot.kind == kind) TimeSpan(slot.startTime, slot.endTime),
       ]);
+      final yes = spansOf(TimeSlotKind.available);
+      final no = spansOf(TimeSlotKind.unavailable);
       if ((userId != null && participant.userId == userId) ||
           (selfId != null && participant.id == selfId)) {
         me = participant;
-        mySlots = slots;
+        mine = MyAvailability(available: yes, unavailable: no);
         continue;
       }
       for (final cell in grid.cells) {
-        if (spansCover(slots, cell.span)) {
+        if (spansCover(yes, cell.span)) {
           others[cell.index].add(participant.id);
+        } else if (spansCover(no, cell.span)) {
+          othersUnavailable[cell.index].add(participant.id);
         }
       }
     }
@@ -72,7 +76,13 @@ class MeetingBoard implements MeetingShading {
       ]),
       me: me,
       others: others,
-      mine: edits?.withSaved(mySlots) ?? MyAvailability(saved: mySlots),
+      othersUnavailable: othersUnavailable,
+      mine:
+          edits?.withSaved(
+            available: mine.available,
+            unavailable: mine.unavailable,
+          ) ??
+          mine,
       userId: userId,
       selfId: selfId,
       selfName: selfName,
@@ -86,6 +96,7 @@ class MeetingBoard implements MeetingShading {
     required List<ParticipantRead> participants,
     required this.me,
     required List<Set<String>> others,
+    required List<Set<String>> othersUnavailable,
     required this.mine,
     required String? userId,
     required String? selfId,
@@ -99,6 +110,7 @@ class MeetingBoard implements MeetingShading {
                  if (!removing.contains(participant.id)) participant,
              ],
        _others = others,
+       _othersUnavailable = othersUnavailable,
        _userId = userId,
        _selfId = selfId;
 
@@ -118,7 +130,7 @@ class MeetingBoard implements MeetingShading {
   /// 나의 참여자. 아직 참여하지 않았으면 null
   final ParticipantRead? me;
 
-  /// 내 가능 시간(저장된 것 + 이 화면에서 칠하고 지운 것)
+  /// 내 시간(저장된 것 + 이 화면에서 칠하고 지운 것)
   final MyAvailability mine;
 
   /// 참여하지 않았을 때 쓰는 내 이름
@@ -127,6 +139,7 @@ class MeetingBoard implements MeetingShading {
   /// 빼는 중인 참여자도 든 참여자
   final List<ParticipantRead> _all;
   final List<Set<String>> _others;
+  final List<Set<String>> _othersUnavailable;
   final String? _userId;
   final String? _selfId;
 
@@ -148,13 +161,30 @@ class MeetingBoard implements MeetingShading {
   @override
   int othersCountAt(MeetingCell cell) => othersAt(cell).length;
 
-  @override
-  bool isMine(MeetingCell cell) => mine.has(cell.span);
+  /// [cell]이 안 된다고 한 다른 참여자
+  Set<String> othersUnavailableAt(MeetingCell cell) => removing.isEmpty
+      ? _othersUnavailable[cell.index]
+      : _othersUnavailable[cell.index].difference(removing);
 
-  /// [cell]에서 되는 사람. 내 칸이면 나도 든다
+  @override
+  int othersUnavailableCountAt(MeetingCell cell) =>
+      othersUnavailableAt(cell).length;
+
+  @override
+  MeetingAnswer answerAt(MeetingCell cell) => mine.answerAt(cell.span);
+
+  /// [cell]에서 되는 사람. 내 칸이 가능이면 나도 든다
   Set<String> peopleAt(MeetingCell cell) => {
     ...othersAt(cell),
-    if (isMine(cell)) me?.id ?? pendingSelfId,
+    if (answerAt(cell) == MeetingAnswer.available) me?.id ?? pendingSelfId,
+  };
+
+  /// [run]의 칸 중 하나라도 안 된다고 한 사람. 내 칸이 불가능이면 나도 든다
+  Set<String> unavailableIn(MeetingRun run) => {
+    for (final cell in run.cells) ...[
+      ...othersUnavailableAt(cell),
+      if (answerAt(cell) == MeetingAnswer.unavailable) me?.id ?? pendingSelfId,
+    ],
   };
 
   /// 두 명 이상 되는 이어진 칸 묶음, [order] 순
@@ -213,6 +243,7 @@ class MeetingBoard implements MeetingShading {
     participants: participants ?? _all,
     me: me ?? this.me,
     others: _others,
+    othersUnavailable: _othersUnavailable,
     mine: mine ?? this.mine,
     userId: _userId,
     selfId: _selfId,

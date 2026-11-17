@@ -127,6 +127,14 @@ class MeetingGrid {
     ];
   }
 
+  /// [cell]이 든 답하기 단위: 시간별은 그날(같은 열)의 칸, 날짜별·요일별은 격자의 모든 칸. 화면 순서다
+  List<MeetingCell> unitOf(MeetingCell cell) => mode == MeetingMode.hourly
+      ? [
+          for (final other in cells)
+            if (other.column == cell.column) other,
+        ]
+      : cells;
+
   /// 이어지는 칸들([cells]의 일부)이 뜻하는 실제 구간. 요일별은 첫 칸의 날부터 칸 수만큼의 날로 잡는다
   TimeSpan spanOf(List<MeetingCell> cells) {
     final first = cells.first;

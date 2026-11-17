@@ -11,6 +11,7 @@ import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -93,9 +94,10 @@ class MeetingBoardState {
   }) => MeetingBoardState(board ?? this.board, status: status ?? this.status);
 }
 
-/// 모임 화면: 미팅과 모든 참여자의 가능 시간(GET), 내 가능 시간 칠하기와 저장.
+/// 모임 화면: 미팅과 모든 참여자의 가능 시간(GET), 내 시간 칠하기와 저장.
 ///
-/// 칠하면 잠시 뒤 `PUT /availability`로 저장한다([MeetingAutosave]). 회원은 아직 참여하지 않았으면 저장 전에
+/// 칠하면 잠시 뒤 `PUT /availability`로 되는 구간과 안 되는 구간(`kind`)을 겹치지 않게 함께 저장한다
+/// ([MeetingAutosave]). 서버가 거절하면(겹침 422 포함) 저장하지 못한 상태로 두고 다시 보낸다. 회원은 아직 참여하지 않았으면 저장 전에
 /// 계정 이름으로 참여하고, 게스트는 처음 불러올 때 게스트 이름으로 참여한다(이미 참여했으면 그 참여자를
 /// 돌려받는다). 저장한 뒤에는 가능 시간을 다시 받아 다른 참여자의 변경도 반영한다.
 /// 저장하지 못한 것이 있는 동안에는 화면을 떠나도 값을 버리지 않고, 기다리던 저장은 그대로 보낸다.
@@ -163,14 +165,15 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
   /// 가능 시간을 다시 받는다(게스트가 이름을 바꾼 뒤 참여자 이름을 새로 보인다)
   Future<void> reload() => _refresh();
 
-  /// [cells]를 칠하거나([available]) 지우고 저장을 맡긴다
-  void paint(List<MeetingCell> cells, {required bool available}) {
-    if (cells.isEmpty || state.value == null) return;
+  /// 칸마다 [changes]의 답으로 칠하거나 지우고 저장을 맡긴다
+  void paint(Map<MeetingCell, MeetingAnswer> changes) {
+    if (changes.isEmpty || state.value == null) return;
     _updateBoard(
       (board) => board.withMine(
-        board.mine.paint([
-          for (final cell in cells) cell.span,
-        ], available: available),
+        board.mine.paint({
+          for (final MapEntry(key: cell, value: answer) in changes.entries)
+            cell.span: answer,
+        }),
       ),
     );
     _hold ??= ref.keepAlive();
@@ -274,12 +277,19 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
             );
         _updateBoard((board) => board.withSelf(joined));
       }
+      final slots = state.requireValue.board.mine.slots;
       await api.setAvailabilityV1MeetingsMeetingIdAvailabilityPut(
         meetingId: meetingId,
         participantId: me.id,
         body: [
-          for (final slot in state.requireValue.board.mine.slots)
+          for (final slot in slots.available)
             TimeSlotCreate(startTime: slot.start, endTime: slot.end),
+          for (final slot in slots.unavailable)
+            TimeSlotCreate(
+              startTime: slot.start,
+              endTime: slot.end,
+              kind: TimeSlotKind.unavailable,
+            ),
         ],
       );
     } on DioException catch (error) {

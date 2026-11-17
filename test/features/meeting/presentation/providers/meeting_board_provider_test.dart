@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart'
+    show DioException, DioExceptionType, RequestOptions, Response;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -29,6 +32,17 @@ List<(DateTime, DateTime)> slotsOf(List<TimeSlotCreate> body) => [
 List<MeetingCell> cells(MeetingBoardState state, Iterable<int> rows) => [
   for (final row in rows) state.board.grid.at(0, row)!,
 ];
+
+const available = MeetingAnswer.available;
+const unavailable = MeetingAnswer.unavailable;
+const unanswered = MeetingAnswer.unanswered;
+
+/// 3월 1일 열의 [rows]줄 칸을 [answer]로
+Map<MeetingCell, MeetingAnswer> answers(
+  MeetingBoardState state,
+  Iterable<int> rows,
+  MeetingAnswer answer,
+) => {for (final cell in cells(state, rows)) cell: answer};
 
 void main() {
   setUpAll(tz.initializeTimeZones);
@@ -75,12 +89,12 @@ void main() {
     fakeAsync((async) {
       final (container, _) = open(async);
       final notifier = container.read(provider.notifier);
-      notifier.paint(cells(read(container), [6, 7, 8]), available: true);
+      notifier.paint(answers(read(container), [6, 7, 8], available));
 
       expect(read(container).status, MeetingSaveStatus.saving);
       expect(
-        read(container).board.isMine(read(container).board.grid.at(0, 7)!),
-        isTrue,
+        read(container).board.answerAt(read(container).board.grid.at(0, 7)!),
+        available,
       );
       expect(meetings.participations, isEmpty);
 
@@ -95,12 +109,75 @@ void main() {
     });
   });
 
+  test('불가능으로 칠한 칸은 unavailable로, 가능 칸과 겹치지 않게 함께 저장한다', () {
+    fakeAsync((async) {
+      meetings.availability.add(
+        availabilityOf(
+          'participant-user-1',
+          userId: 'user-1',
+          slots: [(seoul(6), seoul(8))],
+        ),
+      );
+      final (container, _) = open(async);
+      container
+          .read(provider.notifier)
+          .paint(answers(read(container), [1, 2], unavailable));
+      async.elapse(wait);
+
+      final body = meetings.puts.single.$2;
+      List<(DateTime, DateTime)> of(TimeSlotKind kind) => slotsOf([
+        for (final slot in body)
+          if (slot.kind == kind) slot,
+      ]);
+      expect(of(TimeSlotKind.available), [
+        (seoul(6), seoul(6, 30)),
+        (seoul(7, 30), seoul(8)),
+      ]);
+      expect(of(TimeSlotKind.unavailable), [(seoul(6, 30), seoul(7, 30))]);
+      expect(body.map((slot) => slot.toJson()['kind']).toSet(), {
+        'available',
+        'unavailable',
+      });
+      container.dispose();
+    });
+  });
+
+  test('겹친다고 거절되면(422) 저장하지 못한 상태로 두고 다시 시도하면 다시 보낸다', () {
+    fakeAsync((async) {
+      final request = RequestOptions(
+        path: '/v1/meetings/meeting-1/availability',
+      );
+      meetings.putError = DioException(
+        requestOptions: request,
+        type: DioExceptionType.badResponse,
+        response: Response(requestOptions: request, statusCode: 422),
+      );
+      final (container, _) = open(async);
+      final notifier = container.read(provider.notifier);
+      notifier.paint(answers(read(container), [0], unavailable));
+      async.elapse(wait);
+
+      expect(read(container).status, MeetingSaveStatus.failed);
+      expect(
+        read(container).board.answerAt(read(container).board.grid.at(0, 0)!),
+        unavailable,
+      );
+
+      notifier.retrySave();
+      async.flushMicrotasks();
+      expect(meetings.puts, hasLength(2));
+      expect(meetings.puts.last.$2, meetings.puts.first.$2);
+      expect(read(container).status, MeetingSaveStatus.saved);
+      container.dispose();
+    });
+  });
+
   test('계정 이름이 없으면 참여자로 참여한다', () {
     fakeAsync((async) {
       final (container, _) = open(async, name: null);
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [0]), available: true);
+          .paint(answers(read(container), [0], available));
       async.elapse(wait);
 
       expect(meetings.participations, ['참여자']);
@@ -120,7 +197,7 @@ void main() {
       final (container, _) = open(async);
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [2]), available: true);
+          .paint(answers(read(container), [2], available));
       async.elapse(wait);
 
       expect(meetings.participations, isEmpty);
@@ -137,10 +214,10 @@ void main() {
       final (container, _) = open(async);
       final notifier = container.read(provider.notifier);
       for (final row in [0, 1, 2, 3]) {
-        notifier.paint(cells(read(container), [row]), available: true);
+        notifier.paint(answers(read(container), [row], available));
         async.elapse(const Duration(milliseconds: 200));
       }
-      notifier.paint(cells(read(container), [1]), available: false);
+      notifier.paint(answers(read(container), [1], unanswered));
       async.elapse(wait);
 
       expect(meetings.participations, hasLength(1));
@@ -165,7 +242,7 @@ void main() {
       final (container, _) = open(async);
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [0, 1]), available: false);
+          .paint(answers(read(container), [0, 1], unanswered));
       async.elapse(wait);
 
       expect(meetings.puts.single.$2, isEmpty);
@@ -178,14 +255,14 @@ void main() {
       meetings.participateError = StateError('끊김');
       final (container, _) = open(async);
       final notifier = container.read(provider.notifier);
-      notifier.paint(cells(read(container), [0]), available: true);
+      notifier.paint(answers(read(container), [0], available));
       async.elapse(wait);
 
       expect(read(container).status, MeetingSaveStatus.failed);
       expect(meetings.puts, isEmpty);
       expect(
-        read(container).board.isMine(read(container).board.grid.at(0, 0)!),
-        isTrue,
+        read(container).board.answerAt(read(container).board.grid.at(0, 0)!),
+        available,
       );
 
       notifier.retrySave();
@@ -202,11 +279,11 @@ void main() {
       meetings.putError = StateError('끊김');
       final (container, _) = open(async);
       final notifier = container.read(provider.notifier);
-      notifier.paint(cells(read(container), [0]), available: true);
+      notifier.paint(answers(read(container), [0], available));
       async.elapse(wait);
       expect(read(container).status, MeetingSaveStatus.failed);
 
-      notifier.paint(cells(read(container), [1]), available: true);
+      notifier.paint(answers(read(container), [1], available));
       async.elapse(wait);
 
       expect(meetings.participations, hasLength(1));
@@ -222,7 +299,7 @@ void main() {
       meetings.availabilityError = Exception('끊김');
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [0]), available: true);
+          .paint(answers(read(container), [0], available));
       async.elapse(wait);
 
       expect(read(container).status, MeetingSaveStatus.saved);
@@ -236,7 +313,7 @@ void main() {
       final (container, subscription) = open(async);
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [0]), available: true);
+          .paint(answers(read(container), [0], available));
       subscription.close();
       async.flushMicrotasks();
       expect(container.exists(provider), isTrue);
@@ -255,7 +332,7 @@ void main() {
       final (container, subscription) = open(async);
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [0]), available: true);
+          .paint(answers(read(container), [0], available));
       async.elapse(wait);
       subscription.close();
       async.elapse(wait);
@@ -295,7 +372,7 @@ void main() {
       final (container, _) = open(async);
       container
           .read(provider.notifier)
-          .paint(cells(read(container), [0]), available: true);
+          .paint(answers(read(container), [0], available));
 
       final board = read(container).board;
       expect(board.peopleAt(board.grid.at(0, 0)!), {
@@ -465,7 +542,7 @@ void main() {
         final (container, subscription) = open(async);
         final notifier = container.read(provider.notifier)
           ..remove('a')
-          ..paint(cells(read(container), [0]), available: true);
+          ..paint(answers(read(container), [0], available));
         subscription.close();
         async.elapse(wait);
 

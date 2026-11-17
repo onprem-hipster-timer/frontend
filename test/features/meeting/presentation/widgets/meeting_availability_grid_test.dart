@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_grid.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -58,8 +59,10 @@ void main() {
                 const SizedBox(height: 200),
                 MeetingAvailabilityGrid(
                   shading: board,
-                  onPaint: (cells, {required available}) =>
-                      painted.add((cells.map(nameOf).join(', '), available)),
+                  onPaint: (changes) => painted.add((
+                    changes.keys.map(nameOf).join(', '),
+                    changes.values.first == MeetingAnswer.available,
+                  )),
                 ),
                 const SizedBox(height: 1200),
               ],

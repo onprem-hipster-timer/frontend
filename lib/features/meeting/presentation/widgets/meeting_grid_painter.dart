@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -16,7 +17,7 @@ class MeetingGridPainter extends CustomPainter {
   MeetingGridPainter({
     required this.shading,
     required this.geometry,
-    required this.drag,
+    required this.preview,
     required this.colors,
     required this.textStyle,
     required this.scaler,
@@ -26,7 +27,9 @@ class MeetingGridPainter extends CustomPainter {
 
   final MeetingShading shading;
   final MeetingGridGeometry geometry;
-  final MeetingGridDrag? drag;
+
+  /// 끄는 중이면 그 붓질로 바뀔 칸의 답
+  final Map<MeetingCell, MeetingAnswer>? preview;
   final MeetingGridColors colors;
   final TextStyle textStyle;
   final TextScaler scaler;
@@ -35,12 +38,8 @@ class MeetingGridPainter extends CustomPainter {
 
   MeetingGrid get grid => shading.grid;
 
-  bool _mine(MeetingCell cell) {
-    final drag = this.drag;
-    return drag != null && drag.covers(cell)
-        ? drag.available
-        : shading.isMine(cell);
-  }
+  bool _mine(MeetingCell cell) =>
+      (preview?[cell] ?? shading.answerAt(cell)) == MeetingAnswer.available;
 
   Color? _fill(MeetingCell cell) => _mine(cell)
       ? colors.mine
@@ -162,6 +161,9 @@ class MeetingGridPainter extends CustomPainter {
     painter.dispose();
   }
 
+  bool _answered(MeetingCell cell) =>
+      shading.answerAt(cell) == MeetingAnswer.available;
+
   @override
   SemanticsBuilderCallback get semanticsBuilder {
     final others = shading.hasSelf ? '다른 참여자' : '참여자';
@@ -172,12 +174,12 @@ class MeetingGridPainter extends CustomPainter {
           rect: geometry.rectOf(cell.column, cell.row),
           properties: SemanticsProperties(
             label: meetingCellLabel(grid, cell),
-            value: shading.isMine(cell) ? '내 시간' : null,
+            value: _answered(cell) ? '내 시간' : null,
             hint: switch (shading.othersCountAt(cell)) {
               0 => null,
               final count => '$others $count명',
             },
-            selected: shading.hasSelf ? shading.isMine(cell) : null,
+            selected: shading.hasSelf ? _answered(cell) : null,
             button: onToggle != null,
             onTap: onToggle == null ? null : () => onToggle(cell),
             textDirection: direction,
@@ -190,7 +192,7 @@ class MeetingGridPainter extends CustomPainter {
   bool shouldRepaint(MeetingGridPainter oldDelegate) =>
       oldDelegate.shading != shading ||
       oldDelegate.geometry != geometry ||
-      oldDelegate.drag != drag ||
+      oldDelegate.preview != preview ||
       oldDelegate.colors != colors ||
       oldDelegate.scaler != scaler;
 

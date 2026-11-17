@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/meeting/domain/meeting_brush.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_painter.dart';
 
@@ -44,18 +46,35 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
 
   MeetingGrid get _grid => widget.shading.grid;
 
+  /// [cells]를 붓으로 한 번 칠한 결과
+  Map<MeetingCell, MeetingAnswer> _stroke(
+    List<MeetingCell> cells, {
+    required bool clear,
+  }) => brushStroke(
+    _grid,
+    widget.shading.answerAt,
+    cells,
+    MeetingAnswer.available,
+    clear: clear,
+  );
+
+  /// [cell]에서 시작하면 지우는지: 이미 붓의 답이면 지운다
+  bool _clears(MeetingCell cell) =>
+      widget.shading.answerAt(cell) == MeetingAnswer.available;
+
+  Map<MeetingCell, MeetingAnswer>? get _preview {
+    final drag = _drag;
+    return drag == null
+        ? null
+        : _stroke(_grid.within(drag.anchor, drag.current), clear: drag.clear);
+  }
+
   void _begin(MeetingGridGeometry geometry, Offset position) {
     final place = geometry.placeAt(position);
     final cell = _grid.at(place.$1, place.$2);
     if (cell == null) return;
     if (widget.onPaint == null) return widget.onLocked?.call();
-    setState(
-      () => _drag = MeetingGridDrag(
-        place,
-        place,
-        available: !widget.shading.isMine(cell),
-      ),
-    );
+    setState(() => _drag = MeetingGridDrag(place, place, clear: _clears(cell)));
   }
 
   void _move(MeetingGridGeometry geometry, Offset position) {
@@ -64,22 +83,15 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
     final place = geometry.placeAt(position);
     if (place == drag.current) return;
     setState(
-      () => _drag = MeetingGridDrag(
-        drag.anchor,
-        place,
-        available: drag.available,
-      ),
+      () => _drag = MeetingGridDrag(drag.anchor, place, clear: drag.clear),
     );
   }
 
   void _end() {
-    final drag = _drag;
-    if (drag == null) return;
+    final preview = _preview;
+    if (preview == null) return;
     setState(() => _drag = null);
-    widget.onPaint?.call(
-      _grid.within(drag.anchor, drag.current),
-      available: drag.available,
-    );
+    widget.onPaint?.call(preview);
   }
 
   void _cancel() {
@@ -89,7 +101,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
   void _toggle(MeetingCell cell) {
     final onPaint = widget.onPaint;
     if (onPaint == null) return widget.onLocked?.call();
-    onPaint([cell], available: !widget.shading.isMine(cell));
+    onPaint(_stroke([cell], clear: _clears(cell)));
   }
 
   void _tapAt(MeetingGridGeometry geometry, Offset position) {
@@ -176,7 +188,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells> {
                   painter: MeetingGridPainter(
                     shading: widget.shading,
                     geometry: geometry,
-                    drag: _drag,
+                    preview: _preview,
                     colors: colors,
                     textStyle: textStyle,
                     scaler: scaler,

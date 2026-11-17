@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_crown.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.dart';
@@ -233,7 +234,9 @@ void main() {
     testWidgets('참여하기 전에 칠한 칸도 계정 이름으로 카드에 든다', (tester) async {
       var board = boardOf([threePeople()[1]]);
       final cell = board.grid.at(1, 8)!;
-      board = board.withMine(board.mine.paint([cell.span], available: true));
+      board = board.withMine(
+        board.mine.paint({cell.span: MeetingAnswer.available}),
+      );
       await pumpSlots(tester, board);
 
       await tester.tap(find.text('2'));

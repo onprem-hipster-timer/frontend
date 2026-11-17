@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -103,7 +104,10 @@ void main() {
 
     expect(headcount.hasSelf, isFalse);
     expect(headcount.othersTotal, 3);
-    expect(headcount.isMine(headcount.grid.at(0, 0)!), isFalse);
+    expect(
+      headcount.answerAt(headcount.grid.at(0, 0)!),
+      MeetingAnswer.unanswered,
+    );
   });
 
   test('참여자가 없으면 모든 칸이 0이다', () {

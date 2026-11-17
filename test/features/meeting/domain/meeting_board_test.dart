@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -69,13 +70,48 @@ void main() {
     expect([for (final p in board.participants) p.id], ['b', 'g', 'a']);
   });
 
-  test('안 되는 구간은 되는 사람으로 세지 않는다', () {
+  test('안 되는 구간은 되는 사람으로 세지 않고 안 되는 사람으로 센다', () {
     final board = boardOf([
       availabilityOf('a', unavailable: [(seoul(6), seoul(7))]),
       availabilityOf('b', slots: [(seoul(6), seoul(7))]),
     ]);
+    final cell = board.grid.at(0, 0)!;
 
-    expect(board.othersAt(board.grid.at(0, 0)!), {'b'});
+    expect(board.othersAt(cell), {'b'});
+    expect(board.othersCountAt(cell), 1);
+    expect(board.othersUnavailableAt(cell), {'a'});
+    expect(board.othersUnavailableCountAt(cell), 1);
+  });
+
+  test('내 안 되는 구간은 불가능 칸이고 되는 사람에 들지 않는다', () {
+    final board = boardOf([
+      availabilityOf('a', slots: [(seoul(6), seoul(7))]),
+      availabilityOf(
+        'me',
+        userId: 'user-1',
+        slots: [(seoul(7), seoul(8))],
+        unavailable: [(seoul(6), seoul(7))],
+      ),
+    ]);
+    final cell = board.grid.at(0, 0)!;
+
+    expect(board.answerAt(cell), MeetingAnswer.unavailable);
+    expect(board.answerAt(board.grid.at(0, 2)!), MeetingAnswer.available);
+    expect(board.peopleAt(cell), {'a'});
+  });
+
+  test('묶음의 칸 중 하나라도 안 되는 사람은 안 되는 사람이다(빼는 중인 참여자는 빼고)', () {
+    final board = boardOf([
+      availabilityOf('a', slots: [(seoul(6), seoul(7))]),
+      availabilityOf('b', slots: [(seoul(6), seoul(7))]),
+      availabilityOf('c', unavailable: [(seoul(6, 30), seoul(7))]),
+      availabilityOf('d', unavailable: [(seoul(6), seoul(6, 30))]),
+      availabilityOf('e', unavailable: [(seoul(9), seoul(10))]),
+    ]).withRemoving({'d'});
+    final run = board.runs(MeetingRunOrder.people).single;
+
+    expect(run.people, {'a', 'b'});
+    expect(board.unavailableIn(run), {'c'});
   });
 
   test('로그인한 사람의 참여자가 나이고 그 가능 시간이 내 칸이다', () {
@@ -86,8 +122,8 @@ void main() {
 
     expect(board.me?.id, 'me');
     expect(board.othersTotal, 1);
-    expect(board.isMine(board.grid.at(0, 6)!), isTrue);
-    expect(board.isMine(board.grid.at(0, 0)!), isFalse);
+    expect(board.answerAt(board.grid.at(0, 6)!), MeetingAnswer.available);
+    expect(board.answerAt(board.grid.at(0, 0)!), MeetingAnswer.unanswered);
   });
 
   test('칸마다 되는 다른 참여자는 칸을 모두 덮은 사람만이고 나는 빠진다', () {
@@ -108,7 +144,9 @@ void main() {
       availabilityOf('a', slots: [(seoul(6), seoul(7))]),
     ]);
     final cell = board.grid.at(0, 0)!;
-    board = board.withMine(board.mine.paint([cell.span], available: true));
+    board = board.withMine(
+      board.mine.paint({cell.span: MeetingAnswer.available}),
+    );
 
     expect(board.me, isNull);
     expect(board.peopleAt(cell), {'a', MeetingBoard.pendingSelfId});
@@ -120,9 +158,9 @@ void main() {
   test('참여자가 나 하나면 칸이 진해지지 않고 후보도 없다', () {
     var board = boardOf([availabilityOf('me', userId: 'user-1')]);
     board = board.withMine(
-      board.mine.paint([
-        for (final cell in board.grid.cells) cell.span,
-      ], available: true),
+      board.mine.paint({
+        for (final cell in board.grid.cells) cell.span: MeetingAnswer.available,
+      }),
     );
 
     expect(board.othersTotal, 0);
@@ -184,9 +222,10 @@ void main() {
     final first = board.grid.at(0, 0)!;
     final third = board.grid.at(0, 2)!;
     board = board.withMine(
-      board.mine.paint([first.span], available: false).paint([
-        third.span,
-      ], available: true),
+      board.mine.paint({
+        first.span: MeetingAnswer.unanswered,
+        third.span: MeetingAnswer.available,
+      }),
     );
 
     board = board.withAvailability([
@@ -196,9 +235,9 @@ void main() {
 
     expect(board.othersTotal, 1);
     expect(board.othersAt(first), {'b'});
-    expect(board.isMine(first), isFalse);
-    expect(board.isMine(board.grid.at(0, 1)!), isTrue);
-    expect(board.isMine(third), isTrue);
+    expect(board.answerAt(first), MeetingAnswer.unanswered);
+    expect(board.answerAt(board.grid.at(0, 1)!), MeetingAnswer.available);
+    expect(board.answerAt(third), MeetingAnswer.available);
   });
 
   test('게스트는 회원 id 없이 참여해 받은 참여자 id로 나를 찾는다', () {
@@ -219,7 +258,7 @@ void main() {
     );
 
     expect(board.me?.id, 'g');
-    expect(board.isMine(board.grid.cells[6]), isTrue);
+    expect(board.answerAt(board.grid.cells[6]), MeetingAnswer.available);
     expect(board.othersCountAt(board.grid.cells[6]), 1);
     expect(board.ownedByMe, isFalse);
     expect(

@@ -2,11 +2,11 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
+import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// [cells]를 칠하거나([available]) 지운다
-typedef MeetingPaint =
-    void Function(List<MeetingCell> cells, {required bool available});
+/// 칸마다 [changes]의 답으로 칠하거나 지운다
+typedef MeetingPaint = void Function(Map<MeetingCell, MeetingAnswer> changes);
 
 /// 칸 모양. 시간별은 날짜마다 이어진 세로 띠, 날짜별·요일별은 떨어진 타일이다
 @immutable
@@ -112,23 +112,14 @@ class MeetingGridGeometry {
   int get hashCode => Object.hash(grid, width, cellHeight);
 }
 
-/// 끄는 중인 사각형(시작 자리와 지금 자리)과 칠할지 지울지
+/// 끄는 중인 사각형(시작 자리와 지금 자리)과 지우는지(시작 칸이 이미 붓의 답이면 지운다)
 @immutable
 class MeetingGridDrag {
-  const MeetingGridDrag(this.anchor, this.current, {required this.available});
+  const MeetingGridDrag(this.anchor, this.current, {required this.clear});
 
   final (int, int) anchor;
   final (int, int) current;
-  final bool available;
-
-  bool covers(MeetingCell cell) {
-    final (c0, r0) = anchor;
-    final (c1, r1) = current;
-    return cell.column >= math.min(c0, c1) &&
-        cell.column <= math.max(c0, c1) &&
-        cell.row >= math.min(r0, r1) &&
-        cell.row <= math.max(r0, r1);
-  }
+  final bool clear;
 }
 
 /// 격자 색. 다른 참여자 농도는 내 칸과 같은 색을 옅게 깐다
