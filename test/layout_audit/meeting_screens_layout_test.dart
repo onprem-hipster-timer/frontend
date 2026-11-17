@@ -387,6 +387,25 @@ void main() {
   );
 
   testLayoutAudit(
+    'meeting_page_legacy_hourly_long',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const MeetingPage(meetingId: 'meeting-1'),
+      meetingOverrides(
+        meetings: FakeMeetingsClient(
+          meeting: makeMeeting(
+            title: text.value,
+            ownerId: 'user-1',
+            startDate: DateTime.utc(2027, 3, 1),
+            endDate: DateTime.utc(2027, 3, 21),
+          ),
+        )..availability = _fivePeople(text.value),
+      ),
+    ),
+  );
+
+  testLayoutAudit(
     'meeting_page_owner_editing',
     subject: '참여자 이름',
     build: (text) => routed(
