@@ -1,13 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 
 /// 모임 만들기 화면의 틀: 유리 머리띠 아래에서 시작하는 굴림 영역 가운데에 폭 [maxWidth]까지 내용을 놓는다.
-/// 넓으면(폭 [wideFrom] 이상) 카드에 담는다. [footer]는 내용 맨 아래 오른쪽에 둔다. [maxWidth]가 바뀌면 폭이
+/// 넓으면(폭 [wideFrom] 이상) 카드에 담는다. [header]는 내용 맨 위 오른쪽에 한 줄로, [footer]는 내용 맨 아래
+/// 오른쪽에 둔다. [maxWidth]가 바뀌면 폭이
 /// 부드럽게 바뀐다(애니메이션을 줄였으면 바로)
 class MeetingCreateLayout extends StatelessWidget {
   const MeetingCreateLayout({
     super.key,
     required this.builder,
     this.maxWidth = 880,
+    this.header,
     this.footer,
   });
 
@@ -18,10 +20,12 @@ class MeetingCreateLayout extends StatelessWidget {
   final Widget Function(BuildContext context, bool wide) builder;
 
   final double maxWidth;
+  final Widget? header;
   final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
+    final header = this.header;
     final footer = this.footer;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -29,6 +33,10 @@ class MeetingCreateLayout extends StatelessWidget {
         final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (header != null) ...[
+              Align(alignment: AlignmentDirectional.centerEnd, child: header),
+              const SizedBox(height: 8),
+            ],
             builder(context, wide),
             if (footer != null) ...[
               const SizedBox(height: 16),

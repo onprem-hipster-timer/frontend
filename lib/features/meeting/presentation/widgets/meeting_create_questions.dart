@@ -18,7 +18,8 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 날짜(기간·제외)를 묻는 동안은 '언제 모일까요?'와 달력을 둔다. 좁으면 질문 글 → 달력 → 지금 질문 차례로
 /// 쌓고, 넓으면 왼쪽에 글과 질문, 오른쪽에 달력을 둔다. 어느 쪽이든 기간을 고른 뒤 제외를 물을 때 달력 위의 것은
 /// 높이가 같아(안내 줄이 기간 답으로 바뀐다) 달력이 누르던 자리에서 움직이지 않는다. 날짜를 다 물으면 달력 없이
-/// 한 칸으로 좁힌다. 맨 아래 오른쪽의 '전체 설정 펼치기'로 모든 설정을 한 폼으로 펼친다([onExpand]).
+/// 한 칸으로 좁힌다. 맨 위 오른쪽의 '전체 설정 펼치기'(어느 질문에서나 굴리지 않아도 보인다)로 모든 설정을 한
+/// 폼으로 펼친다([onExpand]).
 ///
 /// 테스트: test/features/meeting/presentation/pages/meeting_create_page_test.dart
 class MeetingCreateQuestions extends StatelessWidget {
@@ -61,7 +62,7 @@ class MeetingCreateQuestions extends StatelessWidget {
         : _KeepButton(onPressed: () => onChanged(flow.keep()));
     return MeetingCreateLayout(
       maxWidth: datesAsked ? 880 : 640,
-      footer: _ExpandLink(onPressed: onExpand),
+      header: _ExpandLink(onPressed: onExpand),
       builder: (context, wide) {
         if (!datesAsked) {
           return Column(

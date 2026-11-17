@@ -641,6 +641,36 @@ void main() {
   });
 
   group('전체 설정 펼치기', () {
+    testWidgets('질문마다 내용 맨 위 오른쪽에 있어 굴리지 않아도 보이고 질문 글과 겹치지 않는다', (
+      tester,
+    ) async {
+      await pumpPage(tester, size: const Size(360, 800));
+      final link = find.text('전체 설정 펼치기');
+
+      void expectAtTopRight(String headline) {
+        final rect = tester.getRect(link);
+        final question = tester.getRect(plain(headline));
+        expect(rect.top, greaterThanOrEqualTo(0));
+        expect(rect.bottom, lessThanOrEqualTo(800));
+        expect(rect.bottom, lessThanOrEqualTo(question.top), reason: headline);
+        expect(rect.right, greaterThan(360 / 2), reason: '오른쪽에 둔다');
+        final button = tester.getSize(
+          find.ancestor(of: link, matching: find.byType(TextButton)),
+        );
+        expect(button.height, greaterThanOrEqualTo(48));
+      }
+
+      expectAtTopRight(rangeQuestion);
+      await pickRange(tester, 3, 5);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+      expectAtTopRight(rangeQuestion);
+      await press(tester, '없어요');
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+      expectAtTopRight(modeQuestion);
+    });
+
     testWidgets('답하지 않은 설정을 기본값(시간별 6~18시, 공개, 게스트 허용)으로 채운 폼을 보이고 화살표로 만든다', (
       tester,
     ) async {
