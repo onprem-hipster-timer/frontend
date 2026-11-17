@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_crown.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_participants_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_save_indicator.dart';
@@ -97,7 +98,11 @@ void main() {
     Future<void> pumpSlots(WidgetTester tester, MeetingBoard board) =>
         pumpPanel(
           tester,
-          MeetingSlotsPanel(board: board, onAddToCalendar: added.add),
+          MeetingSlotsPanel(
+            board: board,
+            onAddToCalendar: added.add,
+            highlight: MeetingRunHighlight(),
+          ),
         );
 
     /// 카드의 둘째 줄(시각)을 화면 위에서 아래 순서로

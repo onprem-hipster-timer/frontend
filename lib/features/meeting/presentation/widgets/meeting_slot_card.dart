@@ -5,10 +5,11 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 카드에 보이는 참여자 한 명
 typedef MeetingSlotPerson = ({String name, bool owner, bool guest, bool self});
 
-/// 선택된 일정 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'([onAddToCalendar]가 있을 때).
+/// 추천 시간 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'([onAddToCalendar]가 있을 때).
 ///
-/// 이름은 펼치기 전에는 마우스를 올리면 카드 아래에 떠서 보이고, 카드를 누르면 카드 안에 고정되어
-/// 다시 누를 때까지 남는다. 그 시간이 안 되는 사람([unavailable])은 이름 아래 한 줄로만 덧붙인다.
+/// 이름은 고정하기 전에는 마우스를 올리면 카드 아래에 떠서 보이고([onHoverChanged]도 부른다), 카드를 누르면
+/// ([onTap]) 고정되어([pinned]) 카드 안에 남는다. 고정은 카드 밖(목록)이 한 번에 하나로 정한다. 그 시간이 안
+/// 되는 사람([unavailable])은 이름 아래 한 줄로만 덧붙인다.
 class MeetingSlotCard extends StatefulWidget {
   const MeetingSlotCard({
     super.key,
@@ -16,8 +17,15 @@ class MeetingSlotCard extends StatefulWidget {
     required this.detail,
     required this.people,
     required this.onAddToCalendar,
+    required this.pinned,
+    required this.onTap,
+    this.onHoverChanged,
     this.unavailable = const [],
   });
+
+  final bool pinned;
+  final VoidCallback onTap;
+  final ValueChanged<bool>? onHoverChanged;
 
   final String title;
   final String detail;
@@ -37,11 +45,10 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
 
   final _link = LayerLink();
   final _hover = OverlayPortalController();
-  var _pinned = false;
 
   void _toggle() {
     _hover.hide();
-    setState(() => _pinned = !_pinned);
+    widget.onTap();
   }
 
   @override
@@ -59,15 +66,19 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
           link: _link,
           child: MouseRegion(
             onEnter: (_) {
-              if (!_pinned) _hover.show();
+              if (!widget.pinned) _hover.show();
+              widget.onHoverChanged?.call(true);
             },
-            onExit: (_) => _hover.hide(),
+            onExit: (_) {
+              _hover.hide();
+              widget.onHoverChanged?.call(false);
+            },
             child: _CardFace(
               title: widget.title,
               detail: widget.detail,
               people: widget.people,
               unavailable: widget.unavailable,
-              pinned: _pinned,
+              pinned: widget.pinned,
               wide: constraints.maxWidth >= _wideFrom,
               onTap: _toggle,
               onAddToCalendar: widget.onAddToCalendar,
@@ -118,6 +129,7 @@ class _CardFace extends StatelessWidget {
         onTap: onTap,
         child: Semantics(
           expanded: pinned,
+          selected: pinned,
           child: Padding(
             padding: EdgeInsets.fromLTRB(14, wide ? 8 : 12, 8, 2),
             child: Column(

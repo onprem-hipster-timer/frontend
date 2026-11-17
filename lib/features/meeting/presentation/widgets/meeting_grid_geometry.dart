@@ -103,6 +103,21 @@ class MeetingGridGeometry {
     cellHeight,
   );
 
+  /// 칸 자리 [first]~[last](이어진 칸)를 두르는 사각형들: 시간별은 열마다, 날짜별·요일별은 줄마다 하나
+  List<Rect> runRects(int first, int last) {
+    final groups = <int, Rect>{};
+    for (var i = first; i <= last && i < grid.cells.length; i++) {
+      final cell = grid.cells[i];
+      final rect = rectOf(cell.column, cell.row);
+      groups.update(
+        shape.continuous ? cell.column : cell.row,
+        (r) => r.expandToInclude(rect),
+        ifAbsent: () => rect,
+      );
+    }
+    return groups.values.toList();
+  }
+
   /// [position]이 든 자리. 칸 사이 틈은 앞 칸, 격자 밖은 가장자리 자리다
   (int, int) placeAt(Offset position) => (
     (position.dx / (cellWidth + shape.columnGap)).floor().clamp(
@@ -146,6 +161,9 @@ class MeetingGridColors {
     required this.veil,
     required this.hatch,
     required this.muted,
+    required this.ring,
+    required this.ringInner,
+    required this.dim,
     required this.missing,
     required this.text,
     required this.sunday,
@@ -164,6 +182,9 @@ class MeetingGridColors {
       veil: scheme.surfaceContainerLowest.withValues(alpha: 0.5),
       hatch: scheme.onSurfaceVariant.withValues(alpha: 0.5),
       muted: scheme.onSurfaceVariant,
+      ring: scheme.onSurface,
+      ringInner: scheme.surface,
+      dim: scheme.surface.withValues(alpha: 0.35),
       missing: scheme.onSurface.withValues(alpha: 0.06),
       text: scheme.onSurface,
       sunday: app.holiday,
@@ -187,6 +208,11 @@ class MeetingGridColors {
 
   /// 내 불가능 칸의 글자
   final Color muted;
+
+  /// 강조한 추천 시간의 테두리(바깥 진한 줄과 안쪽 밝은 줄)와, 그 밖의 칸을 옅게 덮는 색
+  final Color ring;
+  final Color ringInner;
+  final Color dim;
 
   /// 일광 절약 시간으로 없는 시각의 자리
   final Color missing;

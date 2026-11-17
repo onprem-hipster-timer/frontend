@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_cells.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
@@ -26,6 +27,7 @@ class MeetingHourlyGrid extends StatelessWidget {
     this.onBlocked,
     this.onResetDay,
     this.dayShakes = const {},
+    this.highlight,
   });
 
   final MeetingShading shading;
@@ -39,6 +41,9 @@ class MeetingHourlyGrid extends StatelessWidget {
 
   /// 날짜 열마다 날짜 머리를 떤 횟수(그날을 다른 방식으로 표시해 칠하지 못했을 때)
   final Map<int, int> dayShakes;
+
+  /// 강조할 추천 시간 카드
+  final MeetingRunHighlight? highlight;
 
   static const _columnGap = 6.0;
 
@@ -148,6 +153,7 @@ class MeetingHourlyGrid extends StatelessWidget {
                     brush: brush,
                     onPaint: onPaint,
                     onBlocked: onBlocked,
+                    highlight: highlight,
                     onLocked: onLocked,
                   ),
                 ],

@@ -5,8 +5,10 @@ import 'package:momeet/features/meeting/domain/meeting_brush.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_painter.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 const _touchDevices = {
   PointerDeviceKind.touch,
@@ -32,6 +34,7 @@ class MeetingGridCells extends StatefulWidget {
     required this.onPaint,
     this.brush = MeetingAnswer.available,
     this.onBlocked,
+    this.highlight,
     this.onLocked,
   });
 
@@ -40,6 +43,9 @@ class MeetingGridCells extends StatefulWidget {
   final MeetingPaint? onPaint;
   final MeetingAnswer brush;
   final MeetingBlocked? onBlocked;
+
+  /// 강조할 추천 시간 카드. 고정하면 그 칸이 보이게 굴리고, 칠하기 시작하면 고정을 푼다
+  final MeetingRunHighlight? highlight;
   final VoidCallback? onLocked;
 
   @override
@@ -108,6 +114,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
     final cell = _grid.at(place.$1, place.$2);
     if (cell == null) return;
     if (widget.onPaint == null) return widget.onLocked?.call();
+    widget.highlight?.unpin();
     setState(() => _drag = MeetingGridDrag(place, place, clear: _clears(cell)));
   }
 
@@ -141,6 +148,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
 
   void _toggle(MeetingCell cell) {
     if (widget.onPaint == null) return widget.onLocked?.call();
+    widget.highlight?.unpin();
     _commit(_stroke([cell], clear: _clears(cell)));
   }
 
@@ -164,37 +172,6 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
     _mouseDown = false;
     cancelled ? _cancel() : _end();
   }
-
-  /// 터치의 누르기(한 칸)와 길게 누른 뒤 끌기(여러 칸)
-  Map<Type, GestureRecognizerFactory> _touchGestures(
-    MeetingGridGeometry geometry,
-  ) => {
-    TapGestureRecognizer:
-        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-          () => TapGestureRecognizer(supportedDevices: _touchDevices),
-          (recognizer) =>
-              recognizer.onTapUp = (details) =>
-                  _tapAt(geometry, details.localPosition),
-        ),
-    LongPressGestureRecognizer:
-        GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
-          () => LongPressGestureRecognizer(supportedDevices: _touchDevices),
-          (recognizer) {
-            recognizer
-              ..onLongPressStart = (details) {
-                HapticFeedback.selectionClick();
-                _begin(geometry, details.localPosition);
-              }
-              ..onLongPressMoveUpdate = (details) {
-                _move(geometry, details.localPosition);
-              }
-              ..onLongPressEnd = (_) {
-                _end();
-              }
-              ..onLongPressCancel = _cancel;
-          },
-        ),
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -221,21 +198,35 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
             onPointerCancel: (_) => _pointerUp(cancelled: true),
             child: RawGestureDetector(
               excludeFromSemantics: true,
-              gestures: _touchGestures(geometry),
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  size: geometry.size,
-                  painter: MeetingGridPainter(
-                    shading: widget.shading,
-                    geometry: geometry,
-                    preview: _preview,
-                    transition: _fade.value,
-                    repaint: _fade.controller,
-                    colors: colors,
-                    textStyle: textStyle,
-                    scaler: scaler,
-                    direction: direction,
-                    onToggle: widget.onPaint == null ? null : _toggle,
+              gestures: _touchGestures(
+                onTap: (at) => _tapAt(geometry, at),
+                onStart: (at) => _begin(geometry, at),
+                onMove: (at) => _move(geometry, at),
+                onEnd: _end,
+                onCancel: _cancel,
+              ),
+              child: _RevealPinned(
+                highlight: widget.highlight,
+                geometry: geometry,
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    size: geometry.size,
+                    painter: MeetingGridPainter(
+                      shading: widget.shading,
+                      geometry: geometry,
+                      preview: _preview,
+                      transition: _fade.value,
+                      highlighted: () => widget.highlight?.shown,
+                      repaint: Listenable.merge([
+                        _fade.controller,
+                        widget.highlight,
+                      ]),
+                      colors: colors,
+                      textStyle: textStyle,
+                      scaler: scaler,
+                      direction: direction,
+                      onToggle: widget.onPaint == null ? null : _toggle,
+                    ),
                   ),
                 ),
               ),
@@ -245,6 +236,96 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
       },
     );
   }
+}
+
+/// 터치의 누르기(한 칸)와 길게 누른 뒤 끌기(여러 칸)
+Map<Type, GestureRecognizerFactory> _touchGestures({
+  required ValueChanged<Offset> onTap,
+  required ValueChanged<Offset> onStart,
+  required ValueChanged<Offset> onMove,
+  required VoidCallback onEnd,
+  required VoidCallback onCancel,
+}) => {
+  TapGestureRecognizer:
+      GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+        () => TapGestureRecognizer(supportedDevices: _touchDevices),
+        (recognizer) =>
+            recognizer.onTapUp = (details) => onTap(details.localPosition),
+      ),
+  LongPressGestureRecognizer:
+      GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+        () => LongPressGestureRecognizer(supportedDevices: _touchDevices),
+        (recognizer) => recognizer
+          ..onLongPressStart = (details) {
+            HapticFeedback.selectionClick();
+            onStart(details.localPosition);
+          }
+          ..onLongPressMoveUpdate = (details) {
+            onMove(details.localPosition);
+          }
+          ..onLongPressEnd = (_) {
+            onEnd();
+          }
+          ..onLongPressCancel = onCancel,
+      ),
+};
+
+/// 추천 시간 카드를 고정하면 그 칸이 화면에 보이게 굴린다(애니메이션을 줄였으면 바로). 마우스를 올린 것만으로는
+/// 굴리지 않는다
+class _RevealPinned extends StatefulWidget {
+  const _RevealPinned({
+    required this.highlight,
+    required this.geometry,
+    required this.child,
+  });
+
+  final MeetingRunHighlight? highlight;
+  final MeetingGridGeometry geometry;
+  final Widget child;
+
+  @override
+  State<_RevealPinned> createState() => _RevealPinnedState();
+}
+
+class _RevealPinnedState extends State<_RevealPinned> {
+  MeetingRunKey? _pinned;
+
+  @override
+  void initState() {
+    super.initState();
+    _pinned = widget.highlight?.pinned;
+    widget.highlight?.addListener(_changed);
+  }
+
+  @override
+  void didUpdateWidget(_RevealPinned oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.highlight != widget.highlight) {
+      oldWidget.highlight?.removeListener(_changed);
+      widget.highlight?.addListener(_changed);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.highlight?.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    final pinned = widget.highlight?.pinned;
+    if (pinned == _pinned) return;
+    _pinned = pinned;
+    final grid = widget.geometry.grid;
+    if (pinned == null || pinned.last >= grid.cells.length) return;
+    final rect = widget.geometry
+        .runRects(pinned.first, pinned.last)
+        .reduce((a, b) => a.expandToInclude(b));
+    showAppRect(context, rect.inflate(16));
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// 바뀐 내 칸을 이전 답에서 지금 답으로 짧게 섞는다

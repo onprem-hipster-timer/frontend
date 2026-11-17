@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -12,16 +13,21 @@ import 'package:momeet/shared/api/rest/export.dart';
 ///
 /// [onAddToCalendar]가 없으면(게스트는 달력이 없다) 카드에 '내 달력에 일정 만들기'가 없다. [fill]이면 받은
 /// 높이를 채우고 제목 줄은 둔 채 카드 목록만 상자 안에서 굴린다(넓은 화면 옆 칸).
+///
+/// 카드에 마우스를 올리거나 누르면 [highlight]에 알려 격자의 그 칸을 강조한다. 누른 카드는 고정되어 이름을
+/// 펼치고, 고정은 한 번에 하나다. 고정한 카드가 목록에서 없어지면 고정을 푼다.
 class MeetingSlotsPanel extends StatefulWidget {
   const MeetingSlotsPanel({
     super.key,
     required this.board,
     required this.onAddToCalendar,
+    required this.highlight,
     this.fill = false,
   });
 
   final MeetingBoard board;
   final ValueChanged<MeetingRun>? onAddToCalendar;
+  final MeetingRunHighlight highlight;
   final bool fill;
 
   @override
@@ -43,6 +49,12 @@ class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
     final board = widget.board;
     final scheme = Theme.of(context).colorScheme;
     final runs = board.runs(_order);
+    final pinned = widget.highlight.pinned;
+    if (pinned != null && !runs.any((run) => meetingRunKey(run) == pinned)) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => widget.highlight.unpin(),
+      );
+    }
     final Widget list = runs.isEmpty
         ? Text(
             '두 명 이상 함께 되는 시간이 생기면 여기에 추천해 드려요',
@@ -50,10 +62,14 @@ class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
               context,
             ).textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
           )
-        : _RunList(
-            board: board,
-            runs: runs,
-            onAddToCalendar: widget.onAddToCalendar,
+        : ListenableBuilder(
+            listenable: widget.highlight,
+            builder: (context, _) => _RunList(
+              board: board,
+              runs: runs,
+              highlight: widget.highlight,
+              onAddToCalendar: widget.onAddToCalendar,
+            ),
           );
     return MeetingPanel(
       title: '추천 시간',
@@ -87,11 +103,13 @@ class _RunList extends StatelessWidget {
   const _RunList({
     required this.board,
     required this.runs,
+    required this.highlight,
     required this.onAddToCalendar,
   });
 
   final MeetingBoard board;
   final List<MeetingRun> runs;
+  final MeetingRunHighlight highlight;
   final ValueChanged<MeetingRun>? onAddToCalendar;
 
   static const _minCardWidth = 168.0;
@@ -117,6 +135,7 @@ class _RunList extends StatelessWidget {
                   key: ValueKey(run.first.index),
                   board: board,
                   run: run,
+                  highlight: highlight,
                   onAddToCalendar: switch (onAddToCalendar) {
                     final add? => () => add(run),
                     null => null,
@@ -136,18 +155,26 @@ class _RunCard extends StatelessWidget {
     super.key,
     required this.board,
     required this.run,
+    required this.highlight,
     required this.onAddToCalendar,
   });
 
   final MeetingBoard board;
   final MeetingRun run;
+  final MeetingRunHighlight highlight;
   final VoidCallback? onAddToCalendar;
 
   @override
   Widget build(BuildContext context) {
     final text = meetingRunText(board.grid, run);
     final unavailable = board.unavailableIn(run);
+    final key = meetingRunKey(run);
     return MeetingSlotCard(
+      pinned: highlight.pinned == key,
+      onTap: () => highlight.toggle(key),
+      onHoverChanged: (inside) => highlight.hover(
+        inside ? key : (highlight.hovered == key ? null : highlight.hovered),
+      ),
       title: text.title,
       detail: text.detail,
       people: [

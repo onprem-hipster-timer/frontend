@@ -5,6 +5,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_participant_removal.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_account_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
@@ -30,14 +31,30 @@ import 'package:momeet/shared/ui/ui.dart';
 /// [guest]면 게스트 이름과 로그아웃을 보이고, 달력이 없어 카드에 '내 달력에 일정 만들기'가 없다. '편집'은
 /// 게스트의 이름 바꾸기와 게스트 계정 지우기([showMeetingGuestSheet])다. 불러오지
 /// 못하면 [MeetingGuestProblem]이 까닭(약관 동의, 게스트를 받지 않음, 지워진 게스트)에 맞게 보인다.
-class MeetingMemberBody extends ConsumerWidget {
+///
+/// 추천 시간 카드에 마우스를 올리거나 누르면 격자의 그 칸을 강조한다([MeetingRunHighlight]).
+class MeetingMemberBody extends ConsumerStatefulWidget {
   const MeetingMemberBody({super.key, required this.meetingId, this.guest});
 
   final String meetingId;
   final GuestUser? guest;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MeetingMemberBody> createState() => _MeetingMemberBodyState();
+}
+
+class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
+  final _highlight = MeetingRunHighlight();
+
+  @override
+  void dispose() {
+    _highlight.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final MeetingMemberBody(:meetingId) = widget;
     final provider = meetingBoardProvider(meetingId);
     return ref
         .watch(provider)
@@ -51,11 +68,13 @@ class MeetingMemberBody extends ConsumerWidget {
               status: state.status,
               onPaint: notifier.paint,
               onRetry: notifier.retrySave,
+              highlight: _highlight,
             );
-            final guest = this.guest;
+            final guest = widget.guest;
             MeetingSlotsPanel slots({bool fill = false}) => MeetingSlotsPanel(
               board: board,
               fill: fill,
+              highlight: _highlight,
               onAddToCalendar: guest != null
                   ? null
                   : (run) => addMeetingRunToCalendar(context, board, run),
@@ -96,8 +115,11 @@ class MeetingMemberBody extends ConsumerWidget {
             );
           },
           loading: () => const AppLoading(),
-          error: (error, _) =>
-              _LoadError(meetingId: meetingId, guest: guest, error: error),
+          error: (error, _) => _LoadError(
+            meetingId: meetingId,
+            guest: widget.guest,
+            error: error,
+          ),
         );
   }
 }

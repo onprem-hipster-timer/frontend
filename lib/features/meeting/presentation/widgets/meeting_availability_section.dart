@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.
 import 'package:momeet/features/meeting/presentation/utils/meeting_answer_reset.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_brush_texts.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_grid.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_brush_zone.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
@@ -31,6 +32,7 @@ class MeetingAvailabilitySection extends StatefulWidget {
     this.onPaint,
     this.onRetry,
     this.onLocked,
+    this.highlight,
   });
 
   final MeetingRead meeting;
@@ -39,6 +41,9 @@ class MeetingAvailabilitySection extends StatefulWidget {
   final MeetingPaint? onPaint;
   final VoidCallback? onRetry;
   final VoidCallback? onLocked;
+
+  /// 강조할 추천 시간 카드
+  final MeetingRunHighlight? highlight;
 
   @override
   State<MeetingAvailabilitySection> createState() =>
@@ -173,6 +178,7 @@ class _MeetingAvailabilitySectionState
           onBlocked: _blocked,
           onResetDay: _resetDay,
           dayShakes: _dayShakes,
+          highlight: widget.highlight,
           onLocked: onLocked,
         ),
       ],
