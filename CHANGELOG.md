@@ -109,6 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 레이아웃 점검(`test/layout_audit`의 화면 전수 점검과 위젯 테스트마다의 점검)은 CI에서 main으로 가는 PR에서만 한다. 그 밖에는 `--exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false`로 돌린다
 
 #### Auth
+- 로그인·회원가입 화면은 서버에 Google 로그인이 켜졌는지 묻는 동안 '또는' 구분선과 같은 자리·크기의 막힌 Google 버튼(로고, '잠시만 기다려 주세요', 가이드라인의 비활성 색: 바탕 61%·테두리 12%·글자와 로고 38%)을 둔다. 켜져 있으면 그 자리에서 누를 수 있는 'Google 계정으로 계속하기'가 되어 화면이 움직이지 않고, 꺼져 있거나 묻지 못하면 구분선과 함께 치운다. 막힌 동안 스크린 리더는 '잠시만 기다려 주세요'를 읽고 초점은 가지 않는다
 - Kratos 세션 토큰을 `flutter_secure_storage`(Android Keystore, iOS Keychain, 웹 WebCrypto 암호화)에 둔다. 앱 시작 때 한 번 읽어 두고 로그아웃하면 지운다. 백엔드 JWT는 지금처럼 메모리에만 둔다
   - 이전 버전이 SharedPreferences에 둔 토큰은 첫 실행에 보안 저장소로 옮기고 지운다. 업데이트 뒤에도 로그인이 유지된다
   - 보안 저장소를 읽지 못하면 미인증으로 시작한다

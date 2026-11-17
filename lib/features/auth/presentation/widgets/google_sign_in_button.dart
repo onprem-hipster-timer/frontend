@@ -1,7 +1,8 @@
 // "Google 계정으로 계속하기" 버튼 (로그인·회원가입 화면 공용)
 //
-// 서버(Kratos)가 Google 로그인을 켰을 때만 보인다. 누르면 브라우저가 Google로 갔다가
-// 로그인 화면(/login)으로 돌아오고, 로그인 화면이 돌아온 code로 로그인을 마친다.
+// 서버(Kratos)에 Google 로그인이 켜졌는지 묻는 동안에는 같은 자리·크기의 막힌 버튼('잠시만 기다려 주세요')을
+// 두어 화면이 움직이지 않게 하고, 켜져 있으면 누를 수 있는 버튼이, 꺼져 있거나 묻지 못하면 구분선과 함께 사라진다.
+// 누르면 브라우저가 Google로 갔다가 로그인 화면(/login)으로 돌아오고, 로그인 화면이 돌아온 code로 로그인을 마친다.
 //
 // 모양·색·로고·글꼴은 Google 브랜딩 가이드라인을 따르므로 앱 테마로 바꾸지 않는다.
 // https://developers.google.com/identity/branding-guidelines
@@ -57,12 +58,15 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
 
   @override
   Widget build(BuildContext context) {
-    final available = ref.watch(googleSignInAvailableProvider).value ?? false;
-    if (!available) return const SizedBox.shrink();
+    final availability = ref.watch(googleSignInAvailableProvider);
+    final waiting = availability.isLoading && !availability.hasValue;
+    if (!waiting && availability.value != true) return const SizedBox.shrink();
 
     final colors = Theme.of(context).brightness == Brightness.dark
         ? _GoogleButtonColors.dark
         : _GoogleButtonColors.light;
+    // 묻는 동안은 가이드라인의 비활성 색(바탕 61%, 테두리 12%, 글자·로고 38%)이다
+    final idle = waiting ? colors.disabled : colors;
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -81,15 +85,15 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
           ),
           const SizedBox(height: 16),
           OutlinedButton(
-            onPressed: _starting ? null : _start,
+            onPressed: waiting || _starting ? null : _start,
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(40),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               backgroundColor: colors.fill,
-              disabledBackgroundColor: colors.fill,
+              disabledBackgroundColor: idle.fill,
               foregroundColor: colors.text,
-              disabledForegroundColor: colors.text,
-              side: BorderSide(color: colors.stroke),
+              disabledForegroundColor: idle.text,
+              side: BorderSide(color: idle.stroke),
               shape: const StadiumBorder(),
               textStyle: const TextStyle(
                 fontFamily: 'Google Sans',
@@ -109,15 +113,18 @@ class _GoogleSignInButtonState extends ConsumerState<GoogleSignInButton> {
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset(
-                        'assets/google_g_logo.webp',
-                        width: 20,
-                        height: 20,
+                      Opacity(
+                        opacity: waiting ? 0.38 : 1,
+                        child: Image.asset(
+                          'assets/google_g_logo.webp',
+                          width: 20,
+                          height: 20,
+                        ),
                       ),
                       const SizedBox(width: 10),
-                      const Flexible(
+                      Flexible(
                         child: Text(
-                          'Google 계정으로 계속하기',
+                          waiting ? '잠시만 기다려 주세요' : 'Google 계정으로 계속하기',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -141,6 +148,13 @@ class _GoogleButtonColors {
   final Color fill;
   final Color stroke;
   final Color text;
+
+  /// 막힌 버튼의 색: 바탕 61%, 테두리 12%, 글자 38%
+  _GoogleButtonColors get disabled => _GoogleButtonColors(
+    fill: fill.withValues(alpha: 0.61),
+    stroke: (this == light ? text : stroke).withValues(alpha: 0.12),
+    text: text.withValues(alpha: 0.38),
+  );
 
   static const light = _GoogleButtonColors(
     fill: Color(0xFFFFFFFF),
