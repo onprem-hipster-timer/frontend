@@ -26,7 +26,7 @@ class MeetingDraft {
   const MeetingDraft({
     this.mode = MeetingMode.hourly,
     this.dates = MeetingDates.none,
-    this.startHour = hourlyEarliestHour,
+    this.startHour = 6,
     this.endHour = 18,
     this.isPublic = true,
     this.allowGuests = true,
@@ -35,7 +35,7 @@ class MeetingDraft {
   final MeetingMode mode;
   final MeetingDates dates;
 
-  /// 시간별 하루 범위의 시작(시, 6~23)
+  /// 시간별 하루 범위의 시작(시, 0~23)
   final int startHour;
 
   /// 시간별 하루 범위의 끝(시, 시작+1~24). 24는 하루의 끝이다

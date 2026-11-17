@@ -174,7 +174,7 @@ void main() {
         .map((item) => item.value)
         .toList();
 
-    testWidgets('시작은 6~23시, 끝은 시작 뒤부터 24시까지 고른다', (tester) async {
+    testWidgets('시작은 0~23시, 끝은 시작 뒤부터 24시까지 고른다', (tester) async {
       final starts = <int>[];
       final ends = <int>[];
       await pumpBody(
@@ -187,7 +187,7 @@ void main() {
         ),
       );
 
-      expect(optionsOf(tester, 0), [for (var h = 6; h <= 23; h++) h]);
+      expect(optionsOf(tester, 0), [for (var h = 0; h <= 23; h++) h]);
       expect(optionsOf(tester, 1), [21, 22, 23, 24]);
 
       await tester.tap(find.text('20:00'));

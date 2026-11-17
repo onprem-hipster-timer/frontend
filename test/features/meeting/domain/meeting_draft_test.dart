@@ -215,15 +215,6 @@ void main() {
       expect(body.endTime, '00:00:00');
     });
 
-    test('하루짜리 시간별도 시작이 6시 이후라 0시 시작과 겹치지 않는다', () {
-      final body = tapAll(const MeetingDraft(), [
-        4,
-      ]).toMeetingCreate(title: '하루', timezone: timezone);
-      expect(body.startDate, body.endDate);
-      expect(body.startTime, '06:00:00');
-      expect(body.endTime, '18:00:00');
-    });
-
     test('날짜별은 하루 전체(00:00~00:00)로 보낸다', () {
       final body = tapAll(const MeetingDraft(startHour: 9, endHour: 12), [
         1,

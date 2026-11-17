@@ -1,9 +1,8 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 시간별 하루 범위. 정각 단위로 시작(6~23시)과 끝(시작 뒤~24시)을 고른다
+/// 시간별 하루 범위. 정각 단위로 시작(0~23시)과 끝(시작 뒤~24시)을 고른다
 class MeetingTimeRange extends StatelessWidget {
   const MeetingTimeRange({
     super.key,
@@ -28,7 +27,7 @@ class MeetingTimeRange extends StatelessWidget {
         _HourPicker(
           label: '시작 시각',
           value: startHour,
-          hours: [for (var h = hourlyEarliestHour; h < 24; h++) h],
+          hours: [for (var h = 0; h < 24; h++) h],
           onChanged: onStartChanged,
         ),
         const Text('~'),

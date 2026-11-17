@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
-import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/domain/time_span.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -41,10 +40,10 @@ class MeetingCell {
   final bool joinsPrevious;
 }
 
-/// 미팅 하나의 격자. 방식([MeetingMode])마다 모양이 다르다.
+/// 미팅 하나의 격자. 미팅의 방식([MeetingRead.mode])마다 모양이 다르다.
 ///
 /// - 시간별: 날짜가 열, 하루 범위를 슬롯 분으로 나눈 벽시계 시각이 줄
-/// - 날짜별: 일요일부터 한 주가 한 줄인 달력, 하루가 한 칸
+/// - 날짜별: 일요일부터 한 주가 한 줄인 달력, 하루가 한 칸. 알 수 없는 방식도 날짜별로 그린다
 /// - 요일별: 월요일부터 일곱 요일이 한 줄
 ///
 /// 칸은 언제나 미팅 시간대의 실제 시각 구간이다. 날짜별·요일별 칸도 하루 범위 전체의 구간이라
@@ -74,7 +73,7 @@ class MeetingGrid {
     final endClock = clockMinutes(meeting.endTime);
     final dayEnd = endClock == 0 ? minutesPerDay : endClock;
     final days = meetingDays(meeting);
-    return switch (inferMeetingMode(meeting)) {
+    return switch (meeting.mode) {
       MeetingMode.hourly => _hourly(
         location,
         days,

@@ -162,6 +162,48 @@ void main() {
     });
   });
 
+  group('방식은 미팅의 mode를 따른다', () {
+    test('0시에 시작하는 시간별도 시간별이다', () {
+      final grid = MeetingGrid.of(
+        makeMeeting(
+          endDate: date(3, 1),
+          startTime: '00:00:00',
+          endTime: '00:00:00',
+        ),
+      );
+
+      expect(grid.mode, MeetingMode.hourly);
+      expect(grid.rows, 48);
+      expect(grid.rowMinutes.first, 0);
+    });
+
+    test('기간이 7일인 날짜별은 날짜별이다', () {
+      final grid = MeetingGrid.of(
+        makeMeeting(
+          endDate: date(3, 7),
+          mode: MeetingMode.daily,
+          startTime: '00:00:00',
+          endTime: '00:00:00',
+        ),
+      );
+
+      expect(grid.mode, MeetingMode.daily);
+      expect(grid.cells, hasLength(7));
+    });
+
+    test('알 수 없는 방식은 날짜별로 그린다', () {
+      final grid = MeetingGrid.of(
+        makeMeeting(
+          mode: MeetingMode.$unknown,
+          startTime: '00:00:00',
+          endTime: '00:00:00',
+        ),
+      );
+
+      expect(grid.mode, MeetingMode.daily);
+    });
+  });
+
   group('날짜별', () {
     MeetingGrid daily({
       required DateTime from,

@@ -3,6 +3,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 
 import '../../meeting_fixtures.dart';
 
@@ -63,7 +64,8 @@ void main() {
   group('격자 칸과 선택된 일정 카드', () {
     setUpAll(tz.initializeTimeZones);
 
-    MeetingGrid grid({
+    MeetingGrid grid(
+      MeetingMode mode, {
       DateTime? from,
       DateTime? to,
       String start = '00:00:00',
@@ -72,6 +74,7 @@ void main() {
       makeMeeting(
         startDate: from ?? march(1),
         endDate: to ?? march(7),
+        mode: mode,
         startTime: start,
         endTime: end,
       ),
@@ -83,7 +86,12 @@ void main() {
     );
 
     test('시간별 칸은 날짜와 시각 범위, 카드는 날짜와 첫 칸 시작부터 마지막 칸 끝까지다', () {
-      final hourly = grid(to: march(1), start: '22:00:00', end: '00:00:00');
+      final hourly = grid(
+        MeetingMode.hourly,
+        to: march(1),
+        start: '22:00:00',
+        end: '00:00:00',
+      );
 
       expect(
         meetingCellLabel(hourly, hourly.at(0, 3)!),
@@ -96,7 +104,11 @@ void main() {
     });
 
     test('날짜별 칸은 날짜이고 하루 카드는 하루 종일, 이어진 날은 첫날 ~ 마지막 날과 날 수다', () {
-      final daily = grid(from: march(29), to: DateTime.utc(2027, 4, 5));
+      final daily = grid(
+        MeetingMode.daily,
+        from: march(29),
+        to: DateTime.utc(2027, 4, 5),
+      );
 
       expect(meetingCellLabel(daily, daily.at(1, 0)!), '3월 29일 (월)');
       expect(meetingRunText(daily, runOf(daily, [(1, 0)])), (
@@ -114,7 +126,7 @@ void main() {
     });
 
     test('하루 범위가 하루 전체가 아닌 날짜별 하루 카드는 시각 범위를 보인다', () {
-      final daily = grid(to: march(8), end: '12:00:00');
+      final daily = grid(MeetingMode.daily, to: march(8), end: '12:00:00');
 
       expect(
         meetingRunText(daily, runOf(daily, [(1, 0)])).detail,
@@ -123,7 +135,7 @@ void main() {
     });
 
     test('요일별 칸은 요일이고 카드는 요일(이어지면 첫 요일 ~ 마지막 요일)이다', () {
-      final weekly = grid(from: march(3), to: march(9));
+      final weekly = grid(MeetingMode.weekly, from: march(3), to: march(9));
 
       expect(meetingCellLabel(weekly, weekly.at(6, 0)!), '일요일');
       expect(meetingRunText(weekly, runOf(weekly, [(0, 0)])), (
