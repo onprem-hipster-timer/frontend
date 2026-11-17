@@ -47,9 +47,9 @@ const meetingYes = '예';
 const meetingNo = '아니요';
 const meetingHoursConfirm = '이 시간으로 할게요';
 
-final meetingVisibilityExplain =
-    '공개하면 링크가 있는 누구나 로그인하지 않고 이 ${Terms.meeting.withJosa('과', '와')} 참여 인원을 '
-    '볼 수 있어요. 이름은 참여한 뒤에 보여요.';
+const meetingVisibilityExplain =
+    '링크로 공유하면 링크가 있는 누구나 로그인 없이 보고 게스트로도 참여할 수 있어요. '
+    '비공개는 정한 이메일로 로그인한 사람만 참여해요.';
 const meetingVisibilityQuestion = '어떻게 할까요?';
 const meetingPublic = '링크로 공유하기(공개)';
 const meetingPrivate = '비공개';
@@ -59,6 +59,22 @@ const meetingGuestExplain =
     '가입하지 않은 사람도 닉네임과 비밀번호만으로 참여할 수 있어요. 다만 로그인보다 안전하지 않아요.';
 const meetingAllowGuests = '허용';
 const meetingRefuseGuests = '허용 안 함';
+
+const meetingAccessQuestion = '참여할 사람의 이메일을 넣어 주세요';
+const meetingAccessGuide = '이메일이나 회사·학교 도메인(example.com)을 하나씩 넣어 주세요';
+const meetingAccessNote =
+    '초대 메일은 보내지 않아요. 링크는 직접 전해 주세요. 받는 사람은 넣은 이메일로(도메인이면 그 도메인의 '
+    '이메일로) 가입하거나 로그인해야 열 수 있어요.';
+const meetingAccessFieldLabel = '이메일 또는 도메인';
+const meetingAccessFieldHint = 'name@example.com 또는 example.com';
+const meetingAccessAdd = '추가';
+const meetingAccessRemove = '빼기';
+const meetingAccessInvalid = '이메일이나 도메인 형식이 아니에요';
+const meetingAccessDone = '다 넣었어요';
+const meetingOnlyMe = '지금은 나만 볼게요';
+const meetingOnlyMeExplain = '다른 사람은 참여할 수 없어요';
+const meetingFormAccessTitle = '참여할 사람';
+const meetingFormAccessRequired = "이메일을 하나 이상 넣거나 '지금은 나만 볼게요'를 골라야 만들 수 있어요";
 
 const meetingTitleQuestion = '마지막으로 제목을 지어 주세요';
 const meetingTitleGuide = '비워 두면 칸에 보이는 제목으로 만들어요';
@@ -101,6 +117,22 @@ String meetingExclusionSummary(MeetingDates dates) =>
 String meetingHoursSummary(MeetingDraft draft) =>
     '${draft.startHour}:00–${draft.endHour}:00';
 
+/// 요약의 참여할 사람 ('나만', '이메일 2개', '도메인 1개', '이메일·도메인 3개')
+String meetingAccessSummary(MeetingDraft draft) {
+  if (draft.onlyMe) return '나만';
+  final count = draft.accessEntryCount;
+  if (draft.domains.isEmpty) return '이메일 $count개';
+  if (draft.emails.isEmpty) return '도메인 $count개';
+  return '이메일·도메인 $count개';
+}
+
+/// 비공개 모임의 링크를 누가 열 수 있는지 알리는 한 줄. 공개나 알 수 없으면 null
+String? meetingLinkAudienceText(VisibilityLevel? level) => switch (level) {
+  VisibilityLevel.allowedEmails => '정한 이메일로 로그인한 사람만 열 수 있어요',
+  VisibilityLevel.private => '나만 볼 수 있어요',
+  _ => null,
+};
+
 /// 요약의 게스트
 String meetingGuestSummary(bool allowed) => allowed ? '게스트 허용' : '게스트 안 받음';
 
@@ -116,4 +148,5 @@ String meetingAdjustmentText(
   MeetingAdjustment.hourlyToDaily => '이 날짜는 시간별로 받을 수 없어 날짜별로 바꿨어요',
   MeetingAdjustment.weeklyToDaily => '이어진 7일이 아니라서 요일별을 날짜별로 바꿨어요',
   MeetingAdjustment.guestsDropped => '비공개라 게스트는 받지 않아요',
+  MeetingAdjustment.accessDropped => '링크로 공유해서 비공개 설정은 지웠어요',
 };

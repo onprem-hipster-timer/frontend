@@ -41,6 +41,9 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
   /// 처음 보이는 질문(되살린 폼 포함)은 그대로 두고, 답한 뒤 나타나는 질문부터 펼친다
   var _animate = false;
 
+  /// 펼친 폼에서 비공개인데 참여할 사람을 정하지 않고 화살표를 눌렀다(그 칸에 알린다)
+  var _accessAsked = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +79,8 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
       );
       return;
     }
+    final visibility = draft.visibilityUpdate;
+    if (visibility == null) return setState(() => _accessAsked = true);
     if (ref.read(currentUserProvider) == null) {
       final wide =
           MediaQuery.sizeOf(context).width >= MeetingCreateLayout.wideFrom;
@@ -95,7 +100,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
             .get(meetingMutationsProvider.notifier)
             .create(
               draft.toMeetingCreate(title: title, timezone: timezone),
-              isPublic: draft.isPublic,
+              visibility: visibility,
               allowGuests: draft.allowGuests,
             );
       });
@@ -147,6 +152,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
           ? MeetingCreateForm(
               flow: _flow,
               today: today,
+              accessAsked: _accessAsked,
               timezone: timezone,
               titleField: titleField,
               onChanged: _change,

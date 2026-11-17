@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/features/meeting/domain/meeting_access.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
@@ -104,11 +105,16 @@ void main() {
       );
     });
 
-    test('비공개면 게스트를 묻지 않는다', () {
+    test('비공개면 게스트 대신 참여할 사람의 이메일을 묻는다', () {
       final flow = upToMode(1, 3, MeetingMode.daily).choosePublic(false);
-      expect(flow.current, MeetingQuestion.title);
+      expect(flow.current, MeetingQuestion.access);
       expect(flow.draft.allowGuests, isFalse);
       expect(flow.applies(MeetingQuestion.guests), isFalse);
+    });
+
+    test('공개면 이메일을 묻지 않는다', () {
+      expect(answeredAll().applies(MeetingQuestion.access), isFalse);
+      expect(answeredAll().current, MeetingQuestion.title);
     });
   });
 
@@ -287,6 +293,7 @@ void main() {
           .confirmExclusions()
           .chooseMode(MeetingMode.daily)
           .choosePublic(false)
+          .keepPrivate()
           .edit(MeetingQuestion.range)
           .tapDay(march(1))
           .tapDay(march(4));
@@ -332,7 +339,7 @@ void main() {
       expect(private.draft.allowGuests, isFalse);
       expect(private.adjusted, {MeetingAdjustment.guestsDropped});
       expect(private.summarized, isNot(contains(MeetingQuestion.guests)));
-      expect(private.current, MeetingQuestion.title);
+      expect(private.current, MeetingQuestion.access);
 
       final public = private
           .edit(MeetingQuestion.visibility)
@@ -346,6 +353,104 @@ void main() {
           .edit(MeetingQuestion.mode)
           .chooseMode(MeetingMode.hourly);
       expect(flow.current, MeetingQuestion.time);
+    });
+  });
+
+  group('비공개에 참여할 사람', () {
+    MeetingFlow private() =>
+        upToMode(1, 3, MeetingMode.daily).choosePublic(false);
+    MeetingAccessEntry entry(String input) => parseMeetingAccessEntry(input)!;
+
+    test('이메일이나 도메인을 하나 이상 넣어야 다 넣었어요로 답한다', () {
+      var flow = private();
+      expect(flow.confirmAccess().current, MeetingQuestion.access);
+
+      flow = flow.addAccessEntry(entry('kim@example.com'));
+      expect(flow.current, MeetingQuestion.access, reason: '넣기만 해서는 답이 아니다');
+      flow = flow.addAccessEntry(entry('@corp.com')).confirmAccess();
+
+      expect(flow.current, MeetingQuestion.title);
+      expect(flow.summarized.last, MeetingQuestion.access);
+      final update = flow.draft.visibilityUpdate!;
+      expect(update.level, VisibilityLevel.allowedEmails);
+      expect(update.allowedEmails, ['kim@example.com']);
+      expect(update.allowedDomains, ['corp.com']);
+    });
+
+    test('넣은 것을 모두 빼면 다 넣었어요로 답할 수 없다', () {
+      final flow = private()
+          .addAccessEntry(entry('kim@example.com'))
+          .removeAccessEntry('kim@example.com');
+      expect(flow.confirmAccess().current, MeetingQuestion.access);
+    });
+
+    test('지금은 나만 볼게요는 넣은 것 없이 답하고 나만 보기(private)다', () {
+      final flow = private().keepPrivate();
+      expect(flow.current, MeetingQuestion.title);
+      expect(flow.draft.onlyMe, isTrue);
+      expect(flow.draft.visibilityUpdate!.level, VisibilityLevel.private);
+    });
+
+    test('이메일로 답한 뒤 다시 물어 넣으면 나만 보기를 풀고 이메일로 연다', () {
+      final flow = private()
+          .keepPrivate()
+          .edit(MeetingQuestion.access)
+          .addAccessEntry(entry('kim@example.com'))
+          .confirmAccess();
+      expect(flow.draft.onlyMe, isFalse);
+      expect(flow.draft.visibilityUpdate!.level, VisibilityLevel.allowedEmails);
+    });
+
+    test('그대로 둘게요는 넣던 것을 버린다', () {
+      final flow = private()
+          .keepPrivate()
+          .edit(MeetingQuestion.access)
+          .addAccessEntry(entry('kim@example.com'))
+          .keep();
+      expect(flow.draft.emails, isEmpty);
+      expect(flow.draft.onlyMe, isTrue);
+    });
+
+    test('공개로 바꾸면 이메일 답을 지우고 알리며, 다시 비공개면 이메일을 다시 묻는다', () {
+      final public = private()
+          .addAccessEntry(entry('kim@example.com'))
+          .confirmAccess()
+          .edit(MeetingQuestion.visibility)
+          .choosePublic(true);
+      expect(public.adjusted, {MeetingAdjustment.accessDropped});
+      expect(public.draft.emails, isEmpty);
+      expect(public.current, MeetingQuestion.guests);
+
+      final again = public
+          .chooseGuests(true)
+          .edit(MeetingQuestion.visibility)
+          .choosePublic(false);
+      expect(again.current, MeetingQuestion.access);
+      expect(again.adjusted, {MeetingAdjustment.guestsDropped});
+    });
+
+    test('되살린 비공개 폼에 이메일도 나만 보기도 없으면 이메일을 다시 묻는다', () {
+      final flow = MeetingFlow.restored(
+        const MeetingDraft(
+          mode: MeetingMode.daily,
+          isPublic: false,
+          allowGuests: false,
+        ).withDates(MeetingDates.range(march(1), march(3))),
+        answered: {
+          MeetingQuestion.range,
+          MeetingQuestion.exclusions,
+          MeetingQuestion.mode,
+          MeetingQuestion.visibility,
+          MeetingQuestion.access,
+        },
+      );
+      expect(flow.current, MeetingQuestion.access);
+    });
+
+    test('펼쳐도 참여할 사람을 대신 정하지 않는다', () {
+      final flow = private().expand();
+      expect(flow.draft.isPublic, isFalse);
+      expect(flow.draft.accessReady, isFalse);
     });
   });
 

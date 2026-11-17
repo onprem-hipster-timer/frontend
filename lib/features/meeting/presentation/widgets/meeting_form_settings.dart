@@ -11,7 +11,8 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_timezone_la
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// 펼친 모임 만들기 폼의 설정: '모임 시간'(받는 방식, 시간별 하루 범위, 시간 기준)과 '공개 여부'·'게스트 로그인'.
+/// 펼친 모임 만들기 폼의 설정: '모임 시간'(받는 방식, 시간별 하루 범위, 시간 기준)과 '공개 여부'(공개가 아니면 그 아래
+/// [access])·'게스트 로그인'.
 /// 공개가 아니면 게스트 로그인을 고를 수 없다. 값이 규칙에 걸려 저절로 바뀐 자리는 [modeShakes]·[guestShakes]가
 /// 늘 때 떤다
 class MeetingFormSettings extends StatelessWidget {
@@ -23,6 +24,7 @@ class MeetingFormSettings extends StatelessWidget {
     required this.guestShakes,
     required this.onChanged,
     required this.onPublicChanged,
+    this.access,
   });
 
   final MeetingDraft draft;
@@ -34,6 +36,9 @@ class MeetingFormSettings extends StatelessWidget {
   final int guestShakes;
   final ValueChanged<MeetingDraft> onChanged;
   final ValueChanged<bool> onPublicChanged;
+
+  /// 공개가 아닐 때 '공개 여부' 아래에 두는 참여할 사람 칸
+  final Widget? access;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +96,10 @@ class MeetingFormSettings extends StatelessWidget {
           value: draft.isPublic,
           onChanged: onPublicChanged,
         ),
+        if (!draft.isPublic && access != null) ...[
+          const SizedBox(height: 12),
+          access!,
+        ],
         const SizedBox(height: 16),
         const MeetingSectionTitle(
           '게스트 로그인',

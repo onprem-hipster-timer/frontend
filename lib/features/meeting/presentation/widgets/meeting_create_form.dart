@@ -3,6 +3,7 @@ import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_layout.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_form_access.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_form_settings.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -12,7 +13,8 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 날짜를 왼쪽, 나머지를 오른쪽에 두고, 좁으면 같은 순서로 쌓는다.
 ///
 /// 달력은 '기간'이면 시작하는 날과 끝나는 날을 차례로(요일별은 시작하는 날만) 고르고, '제외할 날'이면 기간
-/// 안의 날을 빼거나 되돌린다. 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다.
+/// 안의 날을 빼거나 되돌린다. 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다. 공개를 끄면
+/// 참여할 사람(이메일·도메인 또는 나만 보기)을 정해야 만든다([MeetingFormAccess]).
 ///
 /// 테스트: test/features/meeting/presentation/pages/meeting_create_page_test.dart
 class MeetingCreateForm extends StatefulWidget {
@@ -20,6 +22,7 @@ class MeetingCreateForm extends StatefulWidget {
     super.key,
     required this.flow,
     required this.today,
+    required this.accessAsked,
     required this.timezone,
     required this.titleField,
     required this.onChanged,
@@ -27,6 +30,9 @@ class MeetingCreateForm extends StatefulWidget {
 
   final MeetingFlow flow;
   final DateTime today;
+
+  /// 비공개인데 참여할 사람을 정하지 않고 화살표를 눌렀다
+  final bool accessAsked;
 
   /// 아직 모르면 null
   final String? timezone;
@@ -118,6 +124,11 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
               guestShakes: _guestShakes,
               onChanged: (draft) => widget.onChanged(flow.withDraft(draft)),
               onPublicChanged: _setPublic,
+              access: MeetingFormAccess(
+                draft: flow.draft,
+                asked: widget.accessAsked,
+                onChanged: (draft) => widget.onChanged(flow.withDraft(draft)),
+              ),
             ),
             const SizedBox(height: 28),
             widget.titleField,

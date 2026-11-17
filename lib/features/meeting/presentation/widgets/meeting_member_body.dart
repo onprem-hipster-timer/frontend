@@ -110,7 +110,10 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
                 participant,
               ),
             );
-            final link = MeetingLinkPanel(meetingId: meetingId);
+            final link = MeetingLinkPanel(
+              meetingId: meetingId,
+              level: board.meeting.visibilityLevel,
+            );
             final account = _Account(guest: guest);
             return MeetingLayout(
               main: availability,

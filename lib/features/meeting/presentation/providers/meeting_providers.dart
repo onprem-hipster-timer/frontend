@@ -38,34 +38,37 @@ final meetingHeadcountProvider = FutureProvider.autoDispose
 
 /// 미팅 만들기. 화면의 작업 상태는 [createMeetingMutation]이 담는다.
 ///
-/// 사용 예: `createMeetingMutation.run(ref, (tsx) =>
-/// tsx.get(meetingMutationsProvider.notifier).create(body, isPublic: true, allowGuests: true))`
+/// 사용 예: `createMeetingMutation.run(ref, (tsx) => tsx.get(meetingMutationsProvider.notifier)
+/// .create(body, visibility: draft.visibilityUpdate!, allowGuests: draft.allowGuests))`
 @riverpod
 class MeetingMutations extends _$MeetingMutations {
   @override
   void build() {}
 
-  /// [body]로 미팅을 만든다. [isPublic]이면 링크가 있는 누구나 볼 수 있게 열고, 그다음 [allowGuests]면
-  /// 게스트 로그인을 켠다(`PATCH allow_guests`). backend는 공개 미팅에서만 게스트를 켜므로 이 순서다.
+  /// [body]로 미팅을 만들고 공개 범위를 [visibility]로 정한다(공개, 정한 이메일·도메인, 나만). 공개면 그다음
+  /// [allowGuests]일 때 게스트 로그인을 켠다(`PATCH allow_guests`). backend는 공개 미팅에서만 게스트를 켜므로
+  /// 이 순서다.
   ///
-  /// 공개로 열거나 게스트를 켜지 못하면 만든 미팅을 지우고 그 오류를 던진다. 다시 눌러도 미팅이 둘 생기지 않는다.
+  /// 공개 범위를 정하거나 게스트를 켜지 못하면 만든 미팅을 지우고 그 오류를 던진다. 다시 눌러도 미팅이 둘 생기지
+  /// 않는다.
   Future<MeetingRead> create(
     MeetingCreate body, {
-    required bool isPublic,
+    required VisibilityUpdate visibility,
     required bool allowGuests,
   }) async {
     final meetings = ref.read(meetingsApiProvider);
     final meeting = await meetings.createMeetingV1MeetingsPost(body: body);
-    if (!isPublic) return meeting;
     try {
       await ref
           .read(visibilityApiProvider)
           .setVisibilityV1VisibilityResourceTypeResourceIdPut(
             resourceType: ResourceType.meeting,
             resourceId: meeting.id,
-            body: const VisibilityUpdate(level: VisibilityLevel.public),
+            body: visibility,
           );
-      if (!allowGuests) return meeting;
+      if (visibility.level != VisibilityLevel.public || !allowGuests) {
+        return meeting;
+      }
       return await meetings.updateMeetingV1MeetingsMeetingIdPatch(
         meetingId: meeting.id,
         body: const MeetingUpdate(allowGuests: true),

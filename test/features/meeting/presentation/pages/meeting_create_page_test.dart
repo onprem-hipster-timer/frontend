@@ -46,6 +46,7 @@ const modeQuestion = '어떻게 받을까요?';
 const hoursQuestion = '6시부터 18시까지로 할까요?';
 const visibilityQuestion = '어떻게 할까요?';
 const guestQuestion = '게스트를 허용할까요?';
+const accessQuestion = '참여할 사람의 이메일을 넣어 주세요';
 const titleQuestion = '마지막으로 제목을 지어 주세요';
 
 const questions = [
@@ -54,6 +55,7 @@ const questions = [
   hoursQuestion,
   visibilityQuestion,
   guestQuestion,
+  accessQuestion,
   titleQuestion,
 ];
 
@@ -175,7 +177,22 @@ void main() {
     await press(tester, mode);
     if (mode == '시간별') await press(tester, '예');
     await press(tester, public ? '링크로 공유하기(공개)' : '비공개');
-    if (public) await press(tester, guests ? '허용' : '허용 안 함');
+    await press(tester, public ? (guests ? '허용' : '허용 안 함') : '지금은 나만 볼게요');
+  }
+
+  /// 비공개로 답하고 이메일 없이 '지금은 나만 볼게요'로 넘어간다
+  Future<void> keepPrivate(WidgetTester tester) async {
+    await press(tester, '비공개');
+    await press(tester, '지금은 나만 볼게요');
+  }
+
+  /// 이메일·도메인 칸에 [input]을 넣고 추가한다
+  Future<void> addAccess(WidgetTester tester, String input) async {
+    final field = find.widgetWithText(TextField, '이메일 또는 도메인');
+    await tester.ensureVisible(field);
+    await tester.enterText(field, input);
+    await tester.tap(find.text('추가'));
+    await tester.pumpAndSettle();
   }
 
   /// 전체 설정을 펼친다. [nextMonthShown]이면 펼친 폼의 달력도 다음 달로 넘긴다
@@ -251,7 +268,8 @@ void main() {
 
       await press(tester, '예');
       expectOnly(visibilityQuestion);
-      expect(plainContaining('로그인하지 않고'), findsOneWidget);
+      expect(plainContaining('로그인 없이 보고 게스트로도'), findsOneWidget);
+      expect(plainContaining('정한 이메일로 로그인한 사람만'), findsOneWidget);
       expect(find.text('6:00–18:00'), findsOneWidget);
 
       await press(tester, '링크로 공유하기(공개)');
@@ -295,7 +313,7 @@ void main() {
       expect(find.text('제외할 날 고르기'), findsNothing);
     });
 
-    testWidgets('날짜별은 시간을, 비공개는 게스트를 묻지 않고 제목으로 간다', (tester) async {
+    testWidgets('날짜별은 시간을, 비공개는 게스트 대신 참여할 사람을 묻는다', (tester) async {
       await pumpPage(tester);
       await pickRange(tester, 3, 5);
       await press(tester, '없어요');
@@ -303,11 +321,13 @@ void main() {
       expectOnly(visibilityQuestion);
 
       await press(tester, '비공개');
+      expectOnly(accessQuestion);
+      await press(tester, '지금은 나만 볼게요');
       expectOnly(titleQuestion);
       await submit(tester);
 
       expect(meetings.created.single.mode, MeetingMode.daily);
-      expect(calls, ['create']);
+      expect(calls, ['create', 'visibility private']);
     });
   });
 
@@ -341,7 +361,7 @@ void main() {
       expect(find.text('제외한 날 다시 고르기'), findsOneWidget);
 
       await press(tester, '날짜별');
-      await press(tester, '비공개');
+      await keepPrivate(tester);
       await submit(tester);
       final body = meetings.created.single;
       expect(body.startDate, nextMonth(3));
@@ -361,7 +381,7 @@ void main() {
       expect(find.text('주말 제외'), findsNothing, reason: '뺄 주말이 없다');
       await press(tester, '다 골랐어요');
       await press(tester, '날짜별');
-      await press(tester, '비공개');
+      await keepPrivate(tester);
       await submit(tester);
 
       expect(meetings.created.single.excludedDates, weekends);
@@ -420,7 +440,7 @@ void main() {
       expect(plain('요일별이라 제외한 날짜를 되돌렸어요'), findsOneWidget);
       expect(find.text('제외한 날 다시 고르기'), findsNothing);
       expectOnly(visibilityQuestion);
-      await press(tester, '비공개');
+      await keepPrivate(tester);
       expect(plainContaining('요일별은 7일로'), findsNothing, reason: '다음 답에서 지운다');
       await submit(tester);
 
@@ -449,7 +469,7 @@ void main() {
     expectOnly('');
     await press(tester, '이 시간으로 할게요');
     expect(find.text('9:00–18:00'), findsOneWidget);
-    await press(tester, '비공개');
+    await keepPrivate(tester);
     await submit(tester);
 
     final body = meetings.created.single;
@@ -478,11 +498,12 @@ void main() {
 
       await press(tester, '링크로 공유하기(공개)');
       await press(tester, '비공개');
-      expectOnly(titleQuestion);
+      expectOnly(accessQuestion);
       expect(find.text('게스트 허용'), findsNothing);
       expect(plain('비공개라 게스트는 받지 않아요'), findsOneWidget);
+      await press(tester, '지금은 나만 볼게요');
       await submit(tester);
-      expect(calls, ['create']);
+      expect(calls, ['create', 'visibility private']);
     });
 
     testWidgets('기간을 줄이면 새 기간 밖의 제외 날짜를 빼고 알린다', (tester) async {
@@ -492,7 +513,7 @@ void main() {
       await tapDay(tester, 6);
       await press(tester, '다 골랐어요');
       await press(tester, '날짜별');
-      await press(tester, '비공개');
+      await keepPrivate(tester);
 
       await press(tester, '제외한 날 다시 고르기');
       expectOnly(exclusionQuestion);
@@ -709,6 +730,240 @@ void main() {
         tester.getSemantics(find.text('비허용').first),
         isSemantics(isChecked: true),
       );
+    });
+  });
+
+  group('비공개에 참여할 사람', () {
+    /// 다음 달 3~5일, 날짜별로 답하고 비공개를 고른다
+    Future<void> toAccess(WidgetTester tester) async {
+      await pickRange(tester, 3, 5);
+      await press(tester, '없어요');
+      await press(tester, '날짜별');
+      await press(tester, '비공개');
+    }
+
+    FilledButton doneButton(WidgetTester tester) => tester.widget<FilledButton>(
+      find.ancestor(
+        of: find.text('다 넣었어요'),
+        matching: find.byType(FilledButton),
+      ),
+    );
+
+    testWidgets('비공개를 고르면 이메일을 묻고 초대 메일이 없다고 알리며, 넣은 이메일·도메인만 열게 만든다', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      await toAccess(tester);
+
+      expectOnly(accessQuestion);
+      expect(plainContaining('초대 메일은 보내지 않아요'), findsOneWidget);
+      expect(plainContaining('가입하거나 로그인해야'), findsOneWidget);
+      expect(doneButton(tester).onPressed, isNull, reason: '하나 이상 넣어야 한다');
+
+      await addAccess(tester, ' Kim@Example.com ');
+      final field = find.widgetWithText(TextField, '이메일 또는 도메인');
+      await tester.enterText(field, '@Corp.com');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('kim@example.com'), findsOneWidget);
+      expect(find.text('@corp.com'), findsOneWidget);
+
+      await press(tester, '다 넣었어요');
+      expectOnly(titleQuestion);
+      expect(find.text('비공개'), findsOneWidget);
+      expect(find.text('이메일·도메인 2개'), findsOneWidget);
+      await submit(tester);
+
+      expect(calls, ['create', 'visibility allowedEmails']);
+      final (_, id, update) = visibility.updates.single;
+      expect(id, 'meeting-new-1');
+      expect(update.level, VisibilityLevel.allowedEmails);
+      expect(update.allowedEmails, ['kim@example.com']);
+      expect(update.allowedDomains, ['corp.com']);
+      expect(location(), '/meetings/meeting-new-1/created');
+    });
+
+    testWidgets('형식이 아니면 칸 아래에 알리고 넣지 않으며, 대소문자만 다른 같은 이메일은 한 번만 넣는다', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      await toAccess(tester);
+
+      await addAccess(tester, 'kim@');
+      expect(find.text('이메일이나 도메인 형식이 아니에요'), findsOneWidget);
+      expect(find.byTooltip('빼기'), findsNothing);
+
+      await addAccess(tester, 'kim@example.com');
+      expect(find.text('이메일이나 도메인 형식이 아니에요'), findsNothing);
+      await addAccess(tester, 'KIM@Example.COM');
+      expect(find.byTooltip('빼기'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, '이메일 또는 도메인'))
+            .controller!
+            .text,
+        isEmpty,
+        reason: '겹친 값은 넣지 않고 칸만 비운다',
+      );
+    });
+
+    testWidgets('칩의 빼기로 빼고, 모두 빼면 다 넣었어요를 누를 수 없다', (tester) async {
+      await pumpPage(tester);
+      await toAccess(tester);
+      await addAccess(tester, 'kim@example.com');
+      expect(doneButton(tester).onPressed, isNotNull);
+
+      await tester.tap(find.byTooltip('빼기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('빼기'), findsNothing);
+      expect(doneButton(tester).onPressed, isNull);
+    });
+
+    testWidgets('지금은 나만 볼게요는 넣은 것 없이 나만 보는 비공개로 만든다', (tester) async {
+      await pumpPage(tester);
+      await toAccess(tester);
+
+      await press(tester, '지금은 나만 볼게요');
+
+      expectOnly(titleQuestion);
+      expect(find.text('나만'), findsOneWidget);
+      await submit(tester);
+      expect(calls, ['create', 'visibility private']);
+      expect(visibility.updates.single.$3.allowedEmails, isNull);
+    });
+
+    testWidgets('요약의 참여할 사람을 눌러 이메일을 더 넣는다', (tester) async {
+      await pumpPage(tester);
+      await toAccess(tester);
+      await addAccess(tester, 'kim@example.com');
+      await press(tester, '다 넣었어요');
+
+      await press(tester, '이메일 1개');
+      expectOnly(accessQuestion);
+      expect(find.text('kim@example.com'), findsOneWidget, reason: '넣은 그대로');
+      await addAccess(tester, 'lee@example.com');
+      await press(tester, '다 넣었어요');
+
+      expect(find.text('이메일 2개'), findsOneWidget);
+    });
+
+    testWidgets('링크로 공유로 바꾸면 이메일 답을 지우고 알리며 게스트를 묻는다', (tester) async {
+      await pumpPage(tester);
+      await toAccess(tester);
+      await addAccess(tester, 'kim@example.com');
+      await press(tester, '다 넣었어요');
+
+      await press(tester, '비공개');
+      await press(tester, '링크로 공유하기(공개)');
+
+      expect(plain('링크로 공유해서 비공개 설정은 지웠어요'), findsOneWidget);
+      expectOnly(guestQuestion);
+      expect(find.text('이메일 1개'), findsNothing);
+    });
+
+    testWidgets('공개 범위를 정하지 못하면 만든 모임을 지우고 알린다', (tester) async {
+      visibility.setError = StateError('범위 실패');
+      await pumpPage(tester);
+      await toAccess(tester);
+      await addAccess(tester, 'kim@example.com');
+      await press(tester, '다 넣었어요');
+
+      await submit(tester);
+
+      expect(calls, [
+        'create',
+        'visibility allowedEmails',
+        'delete meeting-new-1',
+      ]);
+      expect(find.textContaining('모임을 만들지 못했습니다'), findsOneWidget);
+      expect(location(), AppRoute.meetings.path);
+    });
+
+    testWidgets('로그인하고 돌아오면 넣은 이메일을 그대로 요약하고 화살표 한 번으로 만든다', (tester) async {
+      await pumpPage(tester, signedIn: false);
+      await toAccess(tester);
+      await addAccess(tester, 'corp.com');
+      await press(tester, '다 넣었어요');
+      await submit(tester);
+      await tester.tap(find.widgetWithText(FilledButton, '로그인하고 계속하기'));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpPage(tester, nextMonthShown: false);
+
+      expectOnly(titleQuestion);
+      expect(find.text('도메인 1개'), findsOneWidget);
+      await submit(tester);
+      final update = visibility.updates.single.$3;
+      expect(update.level, VisibilityLevel.allowedEmails);
+      expect(update.allowedDomains, ['corp.com']);
+      expect(update.allowedEmails, isNull);
+    });
+
+    group('펼친 폼', () {
+      Future<void> expandPrivate(WidgetTester tester) async {
+        await pickRange(tester, 3, 5);
+        await expand(tester);
+        await tester.tap(find.text('비허용').first);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('공개를 끄면 같은 이메일 칸이 보이고, 정하지 않고 화살표를 누르면 만들지 않고 그 칸에 알린다', (
+        tester,
+      ) async {
+        await pumpPage(tester);
+        await expandPrivate(tester);
+
+        expect(find.text('참여할 사람'), findsOneWidget);
+        expect(plainContaining('초대 메일은 보내지 않아요'), findsOneWidget);
+        await submit(tester);
+
+        expect(meetings.created, isEmpty);
+        expect(
+          plain("이메일을 하나 이상 넣거나 '지금은 나만 볼게요'를 골라야 만들 수 있어요"),
+          findsOneWidget,
+        );
+
+        await addAccess(tester, 'kim@example.com');
+        expect(
+          plain("이메일을 하나 이상 넣거나 '지금은 나만 볼게요'를 골라야 만들 수 있어요"),
+          findsNothing,
+        );
+        await submit(tester);
+        expect(calls, ['create', 'visibility allowedEmails']);
+      });
+
+      testWidgets('지금은 나만 볼게요를 고르면 이메일 칸을 막고 나만 보는 비공개로 만든다', (tester) async {
+        await pumpPage(tester);
+        await expandPrivate(tester);
+        await addAccess(tester, 'kim@example.com');
+
+        await tester.tap(find.text('지금은 나만 볼게요'));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<TextField>(find.widgetWithText(TextField, '이메일 또는 도메인'))
+              .enabled,
+          isFalse,
+        );
+        await submit(tester);
+
+        expect(calls, ['create', 'visibility private']);
+      });
+
+      testWidgets('공개를 다시 켜면 이메일 칸을 거두고 넣은 것을 버린다', (tester) async {
+        await pumpPage(tester);
+        await expandPrivate(tester);
+        await addAccess(tester, 'kim@example.com');
+
+        await tester.tap(find.text('허용').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('참여할 사람'), findsNothing);
+        await submit(tester);
+        expect(visibility.updates.single.$3.level, VisibilityLevel.public);
+      });
     });
   });
 

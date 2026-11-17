@@ -40,6 +40,9 @@ class PendingMeetingStore {
         'end_hour': draft.endHour,
         'public': draft.isPublic,
         'guests': draft.allowGuests,
+        'emails': draft.emails,
+        'domains': draft.domains,
+        'only_me': draft.onlyMe,
         if (!flow.expanded)
           'answered': [for (final question in flow.answered) question.name],
         'title': pending.title,
@@ -47,7 +50,8 @@ class PendingMeetingStore {
     );
   }
 
-  /// 둔 폼을 꺼내고 지운다. 폼의 규칙으로 다시 만들고([MeetingDraft.restore]) 제목은 제목 칸처럼 자른다.
+  /// 둔 폼을 꺼내고 지운다. 폼의 규칙으로 다시 만들고([MeetingDraft.restore], 비공개에 넣은 이메일·도메인도
+  /// 다시 읽는다) 제목은 제목 칸처럼 자른다.
   /// 답한 질문이 없으면(펼친 폼, 이전 형식) 펼친 폼이고, 모르는 질문 이름은 버린다.
   /// 없거나, 읽을 수 없거나, 폼이 만들 수 없는 값이면 null
   PendingMeeting? take({required DateTime today}) {
@@ -67,6 +71,12 @@ class PendingMeetingStore {
         isPublic: json['public']! as bool,
         allowGuests: json['guests']! as bool,
         today: today,
+        access: [
+          for (final key in ['emails', 'domains'])
+            for (final entry in (json[key] as List?) ?? const [])
+              entry as String,
+        ],
+        onlyMe: json['only_me'] as bool? ?? false,
       );
       if (draft == null) return null;
       final answered = json['answered'] as List?;

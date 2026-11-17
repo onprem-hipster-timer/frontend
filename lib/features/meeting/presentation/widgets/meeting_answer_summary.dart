@@ -4,7 +4,7 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 답한 질문의 한 줄 요약: 날짜(기간 · 제외), 방식(방식 · 시간), 공개(공개 여부 · 게스트). 답마다 누르면 그 질문을
+/// 답한 질문의 한 줄 요약: 날짜(기간 · 제외), 방식(방식 · 시간), 공개(공개 여부 · 게스트 또는 참여할 사람). 답마다 누르면 그 질문을
 /// 다시 묻는다([onEdit]). 날짜를 묻는 동안에는 날짜 줄을 두지 않는다(달력 위에 보인다)
 class MeetingAnswerSummary extends StatelessWidget {
   const MeetingAnswerSummary({
@@ -27,7 +27,11 @@ class MeetingAnswerSummary extends StatelessWidget {
     ),
     (
       icon: Icons.public_outlined,
-      questions: [MeetingQuestion.visibility, MeetingQuestion.guests],
+      questions: [
+        MeetingQuestion.visibility,
+        MeetingQuestion.guests,
+        MeetingQuestion.access,
+      ],
     ),
   ];
 
@@ -70,6 +74,7 @@ class MeetingAnswerSummary extends StatelessWidget {
     MeetingQuestion.time => '시간',
     MeetingQuestion.visibility => '공개 여부',
     MeetingQuestion.guests => '게스트',
+    MeetingQuestion.access => '참여할 사람',
     MeetingQuestion.title => '제목',
   };
 
@@ -83,6 +88,7 @@ class MeetingAnswerSummary extends StatelessWidget {
       MeetingQuestion.visibility =>
         draft.isPublic ? meetingPublic : meetingPrivate,
       MeetingQuestion.guests => meetingGuestSummary(draft.allowGuests),
+      MeetingQuestion.access => meetingAccessSummary(draft),
       MeetingQuestion.title => '',
     };
   }

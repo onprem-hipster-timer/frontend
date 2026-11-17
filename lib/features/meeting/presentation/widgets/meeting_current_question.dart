@@ -1,12 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_access_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_answer_buttons.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_hours_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_question.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_question_prompt.dart';
 
-/// 날짜(기간·제외) 밖의 지금 질문: 받는 방식, 시간, 공개 여부, 게스트, 제목. 다시 묻는 질문이면 지금 답을
+/// 날짜(기간·제외) 밖의 지금 질문: 받는 방식, 시간, 공개 여부, 게스트(공개) 또는 참여할 사람(비공개), 제목. 다시 묻는 질문이면 지금 답을
 /// 채워 보인다
 class MeetingCurrentQuestion extends StatelessWidget {
   const MeetingCurrentQuestion({
@@ -76,6 +77,10 @@ class MeetingCurrentQuestion extends StatelessWidget {
             onPressed: () => onChanged(flow.chooseGuests(false)),
           ),
         ],
+      ),
+      MeetingQuestion.access => MeetingAccessQuestion(
+        flow: flow,
+        onChanged: onChanged,
       ),
       _ => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

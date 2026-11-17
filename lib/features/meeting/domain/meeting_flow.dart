@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:momeet/features/meeting/domain/meeting_access.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
@@ -12,6 +13,7 @@ enum MeetingQuestion {
   time,
   visibility,
   guests,
+  access,
   title,
 }
 
@@ -34,6 +36,9 @@ enum MeetingAdjustment {
 
   /// 비공개라 게스트 답을 지웠다
   guestsDropped,
+
+  /// 공개라 비공개에 참여할 사람(이메일·나만 보기) 답을 지웠다
+  accessDropped,
 }
 
 /// 달력의 날짜 칸 상태
@@ -69,13 +74,20 @@ class MeetingFlow {
     this.before,
   });
 
-  /// 이 기기에 두었던 폼을 되살린다. [answered]를 모르면(펼친 폼에서 둔 폼) 펼친 폼이다
+  /// 이 기기에 두었던 폼을 되살린다. [answered]를 모르면(펼친 폼에서 둔 폼) 펼친 폼이다. 비공개인데 참여할
+  /// 사람을 정하지 않은 값이면 그 질문은 답하지 않은 것으로 둔다
   factory MeetingFlow.restored(
     MeetingDraft draft, {
     Set<MeetingQuestion>? answered,
   }) => answered == null
       ? MeetingFlow(draft: draft, expanded: true)
-      : MeetingFlow(draft: draft, answered: answered);
+      : MeetingFlow(
+          draft: draft,
+          answered: {...answered}
+            ..removeWhere(
+              (q) => q == MeetingQuestion.access && !draft.accessReady,
+            ),
+        );
 
   final MeetingDraft draft;
 
@@ -111,6 +123,8 @@ class MeetingFlow {
     MeetingQuestion.time => _modeChosen && draft.mode == MeetingMode.hourly,
     MeetingQuestion.guests =>
       answered.contains(MeetingQuestion.visibility) && draft.isPublic,
+    MeetingQuestion.access =>
+      answered.contains(MeetingQuestion.visibility) && !draft.isPublic,
     _ => true,
   };
 
@@ -207,22 +221,45 @@ class MeetingFlow {
   /// 고른 시각으로 답한다
   MeetingFlow confirmHours() => _answer(MeetingQuestion.time, draft);
 
-  /// 공개 여부를 답한다. 비공개면 게스트 답을 지우고(다시 공개하면 다시 묻는다), 지웠으면 알린다
+  /// 공개 여부를 답한다. 비공개면 게스트 답을, 공개면 참여할 사람 답을 지우고(다시 바꾸면 다시 묻는다), 지웠으면
+  /// 알린다
   MeetingFlow choosePublic(bool value) {
-    final dropped = !value && isAnswered(MeetingQuestion.guests);
+    final dropped = value
+        ? isAnswered(MeetingQuestion.access)
+        : isAnswered(MeetingQuestion.guests);
     final next = _answer(
       MeetingQuestion.visibility,
       draft.withPublic(value),
-      adjusted: {if (dropped) MeetingAdjustment.guestsDropped},
+      adjusted: {
+        if (dropped && value) MeetingAdjustment.accessDropped,
+        if (dropped && !value) MeetingAdjustment.guestsDropped,
+      },
     );
-    if (value) return next;
     return next._copy(
-      answered: {...next.answered}..remove(MeetingQuestion.guests),
+      answered: {...next.answered}
+        ..remove(value ? MeetingQuestion.access : MeetingQuestion.guests),
     );
   }
 
   MeetingFlow chooseGuests(bool value) =>
       _answer(MeetingQuestion.guests, draft.withGuests(value));
+
+  /// 비공개 모임에 이메일이나 도메인 [entry]를 더한다(이미 있으면 그대로, 답하지는 않는다)
+  MeetingFlow addAccessEntry(MeetingAccessEntry entry) =>
+      _copy(draft: draft.withAccessEntry(entry));
+
+  /// 넣은 이메일이나 도메인 [value]를 뺀다
+  MeetingFlow removeAccessEntry(String value) =>
+      _copy(draft: draft.withoutAccessEntry(value));
+
+  /// '다 넣었어요': 넣은 이메일·도메인으로 답한다. 하나도 없으면 그대로다
+  MeetingFlow confirmAccess() => draft.accessEntryCount == 0
+      ? this
+      : _answer(MeetingQuestion.access, draft.withOnlyMe(false));
+
+  /// '지금은 나만 볼게요': 나만 보는 비공개로 답한다
+  MeetingFlow keepPrivate() =>
+      _answer(MeetingQuestion.access, draft.withOnlyMe(true));
 
   /// 답한 [question]을 다시 묻는다
   MeetingFlow edit(MeetingQuestion question) => MeetingFlow(

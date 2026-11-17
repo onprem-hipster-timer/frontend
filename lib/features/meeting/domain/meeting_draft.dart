@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:momeet/features/meeting/domain/meeting_access.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -21,6 +22,9 @@ class MeetingDraft {
     this.endHour = meetingDefaultEndHour,
     this.isPublic = true,
     this.allowGuests = true,
+    this.emails = const [],
+    this.domains = const [],
+    this.onlyMe = false,
   });
 
   final MeetingMode mode;
@@ -38,9 +42,19 @@ class MeetingDraft {
   /// 게스트 로그인을 받는지. 공개가 아니면 늘 false다
   final bool allowGuests;
 
+  /// 비공개 모임을 열 수 있는 이메일(소문자, 겹치지 않음). 공개면 비어 있다
+  final List<String> emails;
+
+  /// 비공개 모임을 열 수 있는 이메일의 도메인(소문자, 겹치지 않음). 공개면 비어 있다
+  final List<String> domains;
+
+  /// 비공개 모임을 지금은 나만 본다(넣은 이메일과 상관없이 아무도 열 수 없다). 공개면 false다
+  final bool onlyMe;
+
   /// 이 기기에 두었던 폼 값을 폼의 규칙으로 다시 만든다. 폼이 저절로 맞추는 값(시간별 날짜,
-  /// 요일별 7일, 비공개의 게스트 로그인, 시작보다 늦은 끝)은 같은 규칙으로 맞추고, 폼이 만들 수 없는 값(알 수 없는
-  /// 방식, 0~24시 밖의 시각, [today]보다 앞의 날, 3개월을 넘는 기간)이면 null이다
+  /// 요일별 7일, 비공개의 게스트 로그인, 공개의 이메일·나만 보기, 시작보다 늦은 끝)은 같은 규칙으로 맞추고, 형식이
+  /// 아닌 이메일·도메인은 버린다. 폼이 만들 수 없는 값(알 수 없는 방식, 0~24시 밖의 시각, [today]보다 앞의 날,
+  /// 3개월을 넘는 기간)이면 null이다
   static MeetingDraft? restore({
     required MeetingMode mode,
     required Iterable<DateTime> days,
@@ -49,6 +63,8 @@ class MeetingDraft {
     required bool isPublic,
     required bool allowGuests,
     required DateTime today,
+    Iterable<String> access = const [],
+    bool onlyMe = false,
   }) {
     final dates = MeetingDates.of(days);
     if (mode == MeetingMode.$unknown ||
@@ -60,12 +76,17 @@ class MeetingDraft {
         (!dates.isEmpty && dates.first.isBefore(calendarDay(today)))) {
       return null;
     }
-    return MeetingDraft(
+    final draft = MeetingDraft(
       mode: MeetingMode.daily,
       dates: dates,
       endHour: endHour,
       allowGuests: allowGuests,
     ).withStartHour(startHour).withPublic(isPublic).withMode(mode);
+    return access
+        .map(parseMeetingAccessEntry)
+        .nonNulls
+        .fold(draft, (draft, entry) => draft.withAccessEntry(entry))
+        .withOnlyMe(onlyMe);
   }
 
   /// 시간별로 받을 수 있는 날짜인지: 모이는 날(뺀 날 제외)이 [hourlyMaxDays]일 이하이고 기간(뺀 날 포함)이
@@ -95,13 +116,65 @@ class MeetingDraft {
 
   MeetingDraft withEndHour(int hour) => _copy(endHour: hour);
 
-  /// 공개를 끄면 게스트 로그인도 끈다
-  MeetingDraft withPublic(bool value) =>
-      _copy(isPublic: value, allowGuests: value && allowGuests);
+  /// 공개를 끄면 게스트 로그인도 끄고, 공개하면 이메일과 나만 보기를 지운다
+  MeetingDraft withPublic(bool value) => MeetingDraft(
+    mode: mode,
+    dates: dates,
+    startHour: startHour,
+    endHour: endHour,
+    isPublic: value,
+    allowGuests: value && allowGuests,
+    emails: value ? const [] : emails,
+    domains: value ? const [] : domains,
+    onlyMe: !value && onlyMe,
+  );
 
   /// 공개가 아니면 게스트 로그인을 켜지 않는다
   MeetingDraft withGuests(bool value) =>
       isPublic ? _copy(allowGuests: value) : this;
+
+  /// 비공개 모임에 이메일이나 도메인 [entry]를 더한다. 이미 있거나 공개면 그대로다
+  MeetingDraft withAccessEntry(MeetingAccessEntry entry) {
+    if (isPublic || emails.contains(entry.value)) return this;
+    if (domains.contains(entry.value)) return this;
+    return entry.domain
+        ? _copy(domains: [...domains, entry.value])
+        : _copy(emails: [...emails, entry.value]);
+  }
+
+  /// 넣은 이메일이나 도메인 [value]를 뺀다
+  MeetingDraft withoutAccessEntry(String value) => _copy(
+    emails: [
+      for (final email in emails)
+        if (email != value) email,
+    ],
+    domains: [
+      for (final domain in domains)
+        if (domain != value) domain,
+    ],
+  );
+
+  /// 비공개 모임을 지금은 나만 볼지. 공개면 그대로다
+  MeetingDraft withOnlyMe(bool value) => isPublic ? this : _copy(onlyMe: value);
+
+  /// 넣은 이메일과 도메인의 수
+  int get accessEntryCount => emails.length + domains.length;
+
+  /// 누가 열 수 있는지 정했는지: 공개, 나만 보기, 또는 이메일·도메인 하나 이상
+  bool get accessReady => isPublic || onlyMe || accessEntryCount > 0;
+
+  /// 만든 뒤 보낼 공개 범위(`PUT /v1/visibility/meeting/{id}`): 공개(public), 나만 보기(private), 정한
+  /// 이메일·도메인(allowed_emails, 빈 목록은 담지 않는다). 정하지 않았으면([accessReady]가 아니면) null
+  VisibilityUpdate? get visibilityUpdate {
+    if (isPublic) return const VisibilityUpdate(level: VisibilityLevel.public);
+    if (onlyMe) return const VisibilityUpdate(level: VisibilityLevel.private);
+    if (accessEntryCount == 0) return null;
+    return VisibilityUpdate(
+      level: VisibilityLevel.allowedEmails,
+      allowedEmails: emails.isEmpty ? null : emails,
+      allowedDomains: domains.isEmpty ? null : domains,
+    );
+  }
 
   /// 만들기 요청. 기간은 첫날~마지막 날이고 그 사이 고르지 않은 날은 제외 날짜다. 시간을 묻지 않는 방식은 하루
   /// 전체(0시~다음 날 0시)로 보낸다.
@@ -130,14 +203,19 @@ class MeetingDraft {
     MeetingDates? dates,
     int? startHour,
     int? endHour,
-    bool? isPublic,
     bool? allowGuests,
+    List<String>? emails,
+    List<String>? domains,
+    bool? onlyMe,
   }) => MeetingDraft(
     mode: mode ?? this.mode,
     dates: dates ?? this.dates,
     startHour: startHour ?? this.startHour,
     endHour: endHour ?? this.endHour,
-    isPublic: isPublic ?? this.isPublic,
+    isPublic: isPublic,
     allowGuests: allowGuests ?? this.allowGuests,
+    emails: emails ?? this.emails,
+    domains: domains ?? this.domains,
+    onlyMe: onlyMe ?? this.onlyMe,
   );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
@@ -88,6 +89,35 @@ void main() {
     expect(find.text('1'), findsOneWidget);
     expect(find.text('March'), findsOneWidget);
     expect(find.bySemanticsLabel('첫날 3월 1일 (월)'), findsOneWidget);
+  });
+
+  group('링크를 누가 열 수 있는지', () {
+    for (final (level, line) in [
+      (VisibilityLevel.allowedEmails, '정한 이메일로 로그인한 사람만 열 수 있어요'),
+      (VisibilityLevel.private, '나만 볼 수 있어요'),
+    ]) {
+      testWidgets('${level.name} 모임은 "$line"을 한 줄로 알리고 QR은 그대로다', (
+        tester,
+      ) async {
+        meetings.meeting = makeMeeting().copyWith(visibilityLevel: level);
+        await pumpPage(tester);
+
+        expect(find.text(line), findsOneWidget);
+        await showQr(tester);
+        expect(qr(), findsOneWidget);
+        expect(find.text(line), findsOneWidget);
+      });
+    }
+
+    testWidgets('공개 모임은 알리지 않는다', (tester) async {
+      meetings.meeting = makeMeeting().copyWith(
+        visibilityLevel: VisibilityLevel.public,
+      );
+      await pumpPage(tester);
+
+      expect(find.textContaining('열 수 있어요'), findsNothing);
+      expect(find.textContaining('볼 수 있어요'), findsNothing);
+    });
   });
 
   testWidgets('링크 공유를 누르면 모임 화면 주소를 복사하고 알린다', (tester) async {

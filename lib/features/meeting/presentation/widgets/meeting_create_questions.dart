@@ -249,6 +249,7 @@ class _Asked extends StatelessWidget {
       MeetingQuestion.time => meetingHoursQuestion,
       MeetingQuestion.visibility => meetingVisibilityQuestion,
       MeetingQuestion.guests => meetingGuestQuestion,
+      MeetingQuestion.access => meetingAccessQuestion,
       MeetingQuestion.title => meetingTitleQuestion,
     },
     child: child,

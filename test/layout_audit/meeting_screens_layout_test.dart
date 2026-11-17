@@ -19,6 +19,7 @@ import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/guest_session_page.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
+import 'package:momeet/features/meeting/domain/meeting_access.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
@@ -302,6 +303,8 @@ PendingMeeting _pendingCreate({
   List<int> excluded = const [],
   Set<MeetingQuestion>? answered,
   String title = '',
+  bool public = true,
+  List<String> access = const [],
 }) {
   final start = DateTime.now().add(const Duration(days: 1));
   final dates = MeetingDates.range(
@@ -309,19 +312,26 @@ PendingMeeting _pendingCreate({
     start.add(Duration(days: days - 1)),
     excluded: [for (final i in excluded) start.add(Duration(days: i))],
   );
+  final draft = access
+      .map((input) => parseMeetingAccessEntry(input)!)
+      .fold(
+        const MeetingDraft().withDates(dates).withPublic(public),
+        (draft, entry) => draft.withAccessEntry(entry),
+      );
   return (
     flow: answered == null
-        ? MeetingFlow(
-            draft: const MeetingDraft().withDates(dates),
-            expanded: true,
-          )
-        : MeetingFlow(
-            draft: const MeetingDraft().withDates(dates),
-            answered: answered,
-          ),
+        ? MeetingFlow(draft: draft, expanded: true)
+        : MeetingFlow(draft: draft, answered: answered),
     title: title,
   );
 }
+
+/// 비공개에 넣은 긴 이메일과 도메인
+const _longAccess = [
+  'very.long.name.for.layout.checks@subdomain.example.co.kr',
+  'kim@example.com',
+  'corp.com',
+];
 
 /// 모든 질문에 답했다(제목만 남는다)
 const _allAnswered = {
@@ -529,6 +539,70 @@ void main() {
     verify: (tester) => expect(find.text('모임 시간'), findsOneWidget),
   );
 
+  for (final (name, access) in [
+    ('meeting_create_page_access', <String>[]),
+    ('meeting_create_page_access_entries', _longAccess),
+  ]) {
+    testLayoutAudit(
+      name,
+      subject: '안내',
+      texts: const [StressTexts.koreanLong],
+      build: (text) => createFrom(
+        _pendingCreate(
+          public: false,
+          access: access,
+          answered: {
+            MeetingQuestion.range,
+            MeetingQuestion.exclusions,
+            MeetingQuestion.mode,
+            MeetingQuestion.time,
+            MeetingQuestion.visibility,
+          },
+        ),
+      ),
+      verify: (tester) => expect(_plain('참여할 사람의 이메일을 넣어 주세요'), findsOneWidget),
+    );
+  }
+
+  testLayoutAudit(
+    'meeting_create_page_access_answered',
+    subject: '제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => createFrom(
+      _pendingCreate(
+        public: false,
+        access: _longAccess,
+        answered: {..._allAnswered, MeetingQuestion.access},
+        title: text.value,
+      ),
+    ),
+    verify: (tester) => expect(find.text('이메일·도메인 3개'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_expanded_private',
+    subject: '제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => createFrom(
+      _pendingCreate(public: false, access: _longAccess, title: text.value),
+    ),
+    verify: (tester) => expect(find.text('참여할 사람'), findsOneWidget),
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_expanded_private_required',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => createFrom(
+      _pendingCreate(public: false),
+      wrap: (page) => _SubmitOnStart(child: page),
+    ),
+    verify: (tester) => expect(
+      _plain("이메일을 하나 이상 넣거나 '지금은 나만 볼게요'를 골라야 만들 수 있어요"),
+      findsOneWidget,
+    ),
+  );
+
   testLayoutAudit(
     'meeting_create_page_login_request',
     subject: '제목',
@@ -553,6 +627,24 @@ void main() {
         ),
       ),
     ),
+  );
+
+  testLayoutAudit(
+    'meeting_created_page_private',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const MeetingCreatedPage(meetingId: 'meeting-1'),
+      meetingOverrides(
+        meetings: FakeMeetingsClient(
+          meeting: makeMeeting(
+            startDate: DateTime.utc(2027, 9, 30),
+          ).copyWith(visibilityLevel: VisibilityLevel.allowedEmails),
+        ),
+      ),
+    ),
+    verify: (tester) =>
+        expect(find.text('정한 이메일로 로그인한 사람만 열 수 있어요'), findsOneWidget),
   );
 
   testLayoutAudit(

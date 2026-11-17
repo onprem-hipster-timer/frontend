@@ -5,15 +5,18 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_link_audience.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_row.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_qr_code.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 모임을 만든 뒤 화면(탭 셸 밖). 링크를 복사하거나 내 시간을 넣으러 모임 화면(주소도 그 모임 링크)으로 간다.
+/// 비공개 모임이면 그림 아래에 링크를 누가 열 수 있는지 한 줄로 알린다.
 ///
 /// 두 단추 아래의 '또는 QR로 공유하기'를 누르면 첫날 달력 그림이 그 자리에서 뒤집혀 모임 링크 QR 코드와 링크가
 /// 되고, 'QR 가리기'로 되돌린다(애니메이션을 줄였으면 움직임 없이 바꾼다).
@@ -69,6 +72,11 @@ class _MeetingCreatedPageState extends ConsumerState<MeetingCreatedPage> {
                       ],
                     ),
                   ),
+                  if (meetingLinkAudienceText(meeting?.visibilityLevel) !=
+                      null) ...[
+                    const SizedBox(height: 16),
+                    MeetingLinkAudience(level: meeting?.visibilityLevel),
+                  ],
                   const SizedBox(height: 32),
                   FilledButton.tonal(
                     onPressed: () => copyMeetingLink(context, ref, meetingId),

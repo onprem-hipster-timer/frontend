@@ -443,6 +443,27 @@ void main() {
     expect(meetings.availabilityReads, 0);
   });
 
+  group('링크를 누가 열 수 있는지', () {
+    testWidgets('정한 이메일만 여는 모임은 링크 칸에 한 줄로 알린다', (tester) async {
+      meetings.meeting = makeMeeting().copyWith(
+        visibilityLevel: VisibilityLevel.allowedEmails,
+      );
+      await pumpMeeting(tester, size: const Size(1280, 900));
+
+      expect(find.text('정한 이메일로 로그인한 사람만 열 수 있어요'), findsOneWidget);
+    });
+
+    testWidgets('공개 모임과 범위를 모르는 모임은 알리지 않는다', (tester) async {
+      for (final level in [VisibilityLevel.public, null]) {
+        meetings.meeting = makeMeeting().copyWith(visibilityLevel: level);
+        await pumpMeeting(tester, size: const Size(1280, 900));
+        expect(find.textContaining('열 수 있어요'), findsNothing, reason: '$level');
+        expect(find.text('나만 볼 수 있어요'), findsNothing, reason: '$level');
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+  });
+
   testWidgets('링크로 바로 열어 돌아갈 곳이 없으면 뒤로 가기 없이 서비스 배지로 홈에 간다', (tester) async {
     await pumpMeeting(tester);
 

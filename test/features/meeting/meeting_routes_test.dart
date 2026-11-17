@@ -361,14 +361,14 @@ void main() {
       await pumpAWhile(tester);
       final now = DateTime.now();
       final day = DateTime.utc(now.year, now.month + 1, 3);
-      // 하루를 고르고(같은 날 두 번) 날짜별·비공개로 답해 제목까지 간다
+      // 하루를 고르고(같은 날 두 번) 날짜별·비공개(나만 보기)로 답해 제목까지 간다
       for (var i = 0; i < 2; i++) {
         await tester.tap(
           find.bySemanticsLabel(RegExp('^${day.month}월 ${day.day}일')),
         );
         await pumpAWhile(tester);
       }
-      for (final answer in ['날짜별', '비공개']) {
+      for (final answer in ['날짜별', '비공개', '지금은 나만 볼게요']) {
         await tester.tap(find.text(answer).last);
         await pumpAWhile(tester);
       }

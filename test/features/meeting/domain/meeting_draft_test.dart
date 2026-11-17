@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:momeet/features/meeting/domain/meeting_access.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -96,6 +97,86 @@ void main() {
       final draft = const MeetingDraft().withGuests(false);
       expect(draft.isPublic, isTrue);
       expect(draft.allowGuests, isFalse);
+    });
+  });
+
+  group('비공개 모임을 열 수 있는 사람', () {
+    final private = const MeetingDraft().withPublic(false);
+
+    MeetingDraft entries(MeetingDraft draft, List<String> inputs) =>
+        inputs.fold(
+          draft,
+          (d, input) => d.withAccessEntry(parseMeetingAccessEntry(input)!),
+        );
+
+    test('공개는 공개로 연다', () {
+      final update = const MeetingDraft().visibilityUpdate!;
+      expect(update.level, VisibilityLevel.public);
+      expect(update.allowedEmails, isNull);
+      expect(const MeetingDraft().accessReady, isTrue);
+    });
+
+    test('비공개는 이메일이나 나만 보기를 정하기 전에는 열 수 없다', () {
+      expect(private.accessReady, isFalse);
+      expect(private.visibilityUpdate, isNull);
+    });
+
+    test('이메일과 도메인을 나눠 담고, 대소문자만 다른 같은 값은 한 번만 담는다', () {
+      final draft = entries(private, [
+        'Kim@Example.com',
+        'kim@example.com',
+        '@corp.com',
+        'CORP.com',
+      ]);
+      expect(draft.emails, ['kim@example.com']);
+      expect(draft.domains, ['corp.com']);
+      expect(draft.accessReady, isTrue);
+
+      final update = draft.visibilityUpdate!;
+      expect(update.level, VisibilityLevel.allowedEmails);
+      expect(update.allowedEmails, ['kim@example.com']);
+      expect(update.allowedDomains, ['corp.com']);
+      expect(update.allowedUserIds, isNull);
+    });
+
+    test('이메일만 넣으면 도메인 목록은 보내지 않는다', () {
+      final update = entries(private, ['kim@example.com']).visibilityUpdate!;
+      expect(update.allowedDomains, isNull);
+      expect(update.toJson().containsKey('allowed_domains'), isFalse);
+    });
+
+    test('넣은 값을 지운다', () {
+      final draft = entries(private, [
+        'kim@example.com',
+        'corp.com',
+      ]).withoutAccessEntry('corp.com').withoutAccessEntry('kim@example.com');
+      expect(draft.emails, isEmpty);
+      expect(draft.domains, isEmpty);
+      expect(draft.accessReady, isFalse);
+    });
+
+    test('나만 보기는 넣은 이메일과 상관없이 비공개(private)로 연다', () {
+      final draft = entries(private, ['kim@example.com']).withOnlyMe(true);
+      expect(draft.accessReady, isTrue);
+      final update = draft.visibilityUpdate!;
+      expect(update.level, VisibilityLevel.private);
+      expect(update.allowedEmails, isNull);
+    });
+
+    test('다시 공개하면 이메일과 나만 보기를 지운다', () {
+      final draft = entries(private, [
+        'kim@example.com',
+      ]).withOnlyMe(true).withPublic(true);
+      expect(draft.emails, isEmpty);
+      expect(draft.onlyMe, isFalse);
+      expect(draft.visibilityUpdate!.level, VisibilityLevel.public);
+    });
+
+    test('공개 모임에는 이메일을 넣지 않는다', () {
+      final draft = const MeetingDraft().withAccessEntry(
+        parseMeetingAccessEntry('kim@example.com')!,
+      );
+      expect(draft.emails, isEmpty);
     });
   });
 
