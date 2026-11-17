@@ -295,7 +295,7 @@ void main() {
     });
   });
 
-  testWidgets('하단 바에 모임 탭이 없고, 만들기 화면은 탭 셸 밖에서 처음 화면 단추와 함께 열린다', (
+  testWidgets('하단 바에 모임 탭이 없고, 만들기 화면은 탭 셸 밖에서 홈으로 가는 서비스 배지와 함께 열린다', (
     tester,
   ) async {
     final router = await pumpRouter(tester);
@@ -310,7 +310,7 @@ void main() {
     expect(find.byType(MeetingCreatePage), findsOneWidget);
     expect(find.byType(ScaffoldWithNavBar), findsNothing);
 
-    await tester.tap(find.byTooltip('처음 화면으로'));
+    await tester.tap(find.byTooltip('홈으로'));
     await pumpAWhile(tester);
     expect(location(router), AppRoute.calendar.path);
   });
@@ -324,7 +324,7 @@ void main() {
     expect(find.byType(MeetingCreatedPage), findsOneWidget);
     expect(find.byType(MeetingPage), findsNothing);
     expect(find.byType(ScaffoldWithNavBar), findsNothing);
-    expect(find.byTooltip('처음 화면으로'), findsOneWidget);
+    expect(find.byTooltip('홈으로'), findsOneWidget);
 
     await tester.tap(find.text('나의 일정 입력'));
     await pumpAWhile(tester);

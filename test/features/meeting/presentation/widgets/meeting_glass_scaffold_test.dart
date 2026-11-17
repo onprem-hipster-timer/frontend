@@ -1,3 +1,5 @@
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -105,13 +107,75 @@ void main() {
     expect(tint(tester), closeTo(0.75, 0.001));
   });
 
-  testWidgets('제목은 스크린 리더에 머리글로 읽히고 앞 화면이 없으면 처음 화면 단추가 있다', (tester) async {
+  testWidgets('제목은 스크린 리더에 머리글로 읽힌다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpGlass(tester);
 
     expect(tester.getSemantics(find.text('팀 회의')), isSemantics(isHeader: true));
-    expect(find.byTooltip('처음 화면으로'), findsOneWidget);
     semantics.dispose();
+  });
+
+  group('서비스 배지', () {
+    testWidgets('왼쪽에서 홈으로 가는 단추로 읽히고 배지 그림은 따로 읽히지 않는다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpGlass(tester);
+
+      expect(
+        tester.getSemantics(find.byTooltip('홈으로')),
+        isSemantics(
+          tooltip: '홈으로',
+          isButton: true,
+          hasTapAction: true,
+          isFocusable: true,
+          hasEnabledState: true,
+          isEnabled: true,
+        ),
+      );
+      final image = tester.widget<Image>(
+        find.descendant(
+          of: find.byTooltip('홈으로'),
+          matching: find.byType(Image),
+        ),
+      );
+      expect(image.excludeFromSemantics, isTrue);
+      semantics.dispose();
+    });
+
+    testWidgets('누를 자리가 48×48 이상이고 제목보다 왼쪽에 있다', (tester) async {
+      await pumpGlass(tester);
+
+      final button = tester.getRect(
+        find.ancestor(
+          of: find.byType(Image),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(button.width, greaterThanOrEqualTo(48));
+      expect(button.height, greaterThanOrEqualTo(48));
+      expect(
+        button.right,
+        lessThanOrEqualTo(tester.getTopLeft(find.text('팀 회의')).dx),
+      );
+    });
+
+    testWidgets('포인터를 올리면 홈으로라고 알리고, Tab으로 가장 먼저 초점을 받는다', (tester) async {
+      await pumpGlass(tester);
+      final home = find.byTooltip('홈으로');
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: tester.getCenter(home));
+      addTearDown(gesture.removePointer);
+      await tester.pumpAndSettle();
+      expect(find.text('홈으로'), findsOneWidget, reason: '툴팁');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus?.context;
+      expect(
+        focused?.findAncestorWidgetOfExactType<IconButton>()?.tooltip,
+        '홈으로',
+      );
+    });
   });
 
   testWidgets('어두운 테마에서도 같은 역할 색으로 깐다', (tester) async {

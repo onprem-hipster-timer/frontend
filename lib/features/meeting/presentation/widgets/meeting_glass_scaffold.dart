@@ -1,13 +1,13 @@
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_bar.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
 
 /// 탭 셸 밖 모임 화면(만들기·만든 뒤·모임)의 공용 틀: 유리 머리띠와 그 아래로 지나가는 본문.
 ///
 /// 본문은 머리띠 뒤로 이어지고(본문의 굴림 영역은 위 여백에 `MediaQuery.paddingOf(context).top`을 더한다),
 /// 처음에는 머리띠가 비어 보인다. 본문이 머리띠 아래로 굴러가면 머리띠 자리만 흐리게 비치고 바탕색을 옅게 깔며
-/// 아래에 가는 선을 긋는다(짧게 바뀌고, 애니메이션을 줄였으면 바로). 앞 화면이 없으면 왼쪽에 처음 화면 단추를 둔다.
+/// 아래에 가는 선을 긋는다(짧게 바뀌고, 애니메이션을 줄였으면 바로). 왼쪽에는 홈으로 가는 서비스 배지를 두고, 앞 화면이 있으면
+/// 그 앞에 뒤로 가기를 둔다.
 ///
 /// 테스트: test/features/meeting/presentation/widgets/meeting_glass_scaffold_test.dart
 class MeetingGlassScaffold extends StatefulWidget {
@@ -42,7 +42,7 @@ class _MeetingGlassScaffoldState extends State<MeetingGlassScaffold> {
       extendBodyBehindAppBar: true,
       appBar: MeetingGlassBar(
         title: widget.title,
-        leading: context.canPop() ? null : const MeetingHomeButton(),
+        back: context.canPop(),
         under: _under,
       ),
       body: NotificationListener<ScrollNotification>(

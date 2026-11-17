@@ -443,28 +443,49 @@ void main() {
     expect(meetings.availabilityReads, 0);
   });
 
-  testWidgets('링크로 바로 열어 돌아갈 곳이 없으면 처음 화면으로 가는 버튼을 둔다', (tester) async {
+  testWidgets('링크로 바로 열어 돌아갈 곳이 없으면 뒤로 가기 없이 서비스 배지로 홈에 간다', (tester) async {
     await pumpMeeting(tester);
 
-    await tester.tap(find.byTooltip('처음 화면으로'));
+    expect(find.byType(BackButton), findsNothing);
+    await tester.tap(find.byTooltip('홈으로'));
     await tester.pumpAndSettle();
 
     expect(find.text('처음 화면'), findsOneWidget);
   });
 
-  testWidgets('다른 화면에서 열었으면 뒤로 가기를 둔다', (tester) async {
-    final router = await pumpMeeting(tester, initialLocation: '/');
-    router.pushNamed(
-      AppRoute.meeting.name,
-      pathParameters: {'meetingId': 'meeting-1'},
-    );
-    await tester.pumpAndSettle();
+  group('다른 화면에서 열었으면', () {
+    Future<GoRouter> pushMeeting(WidgetTester tester) async {
+      final router = await pumpMeeting(tester, initialLocation: '/');
+      router.pushNamed(
+        AppRoute.meeting.name,
+        pathParameters: {'meetingId': 'meeting-1'},
+      );
+      await tester.pumpAndSettle();
+      return router;
+    }
 
-    expect(find.byTooltip('처음 화면으로'), findsNothing);
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
+    testWidgets('뒤로 가기가 맨 왼쪽이고 그 오른쪽에 서비스 배지가 있다', (tester) async {
+      await pushMeeting(tester);
 
-    expect(find.text('처음 화면'), findsOneWidget);
+      final back = tester.getCenter(find.byType(BackButton));
+      final home = tester.getCenter(find.byTooltip('홈으로'));
+      expect(back.dx, lessThan(home.dx));
+      expect(back.dy, home.dy);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.text('처음 화면'), findsOneWidget);
+    });
+
+    testWidgets('서비스 배지는 뒤로 가지 않고 홈으로 간다', (tester) async {
+      final router = await pushMeeting(tester);
+
+      await tester.tap(find.byTooltip('홈으로'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('처음 화면'), findsOneWidget);
+      expect(router.canPop(), isFalse);
+    });
   });
 
   group('주인의 참여자 빼기', () {
