@@ -238,6 +238,14 @@ void main() {
       expect(find.byType(MeetingVisitorBody), findsOneWidget);
     });
 
+    testWidgets('로그인 화면에 있었으면 돌아갈 곳을 담은 그 로그인 화면에서 이어 간다', (tester) async {
+      final login =
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1')}';
+      final router = await pumpRouter(tester, browserRoute: login);
+
+      expect(location(router), login);
+    });
+
     testWidgets('로그인해야 보는 화면에 있었으면 처음 화면으로 간다', (tester) async {
       final router = await pumpRouter(tester, browserRoute: AppRoute.todo.path);
 

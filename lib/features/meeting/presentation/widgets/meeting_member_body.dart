@@ -245,8 +245,11 @@ class _Account extends ConsumerWidget {
     }
   }
 
-  /// '안전한 정규 유저로 바꾸기': 무엇이 바뀌는지 묻고, 고르면 게스트 세션을 끝내지 않고 따로 둔 뒤 이 모임으로
-  /// 돌아오는 로그인으로 간다(돌아오면 게스트 시간을 옮긴다)
+  /// '안전한 정규 유저로 바꾸기': 무엇이 바뀌는지 묻고, 고르면 이 모임으로 돌아오는 로그인으로 간 뒤 게스트 세션을
+  /// 끝내지 않고 따로 둔다(돌아오면 게스트 시간을 옮긴다).
+  ///
+  /// 게스트에서 벗어나면 계정이 바뀌어 라우터를 새로 만들고, 새 라우터는 브라우저 주소에서 시작한다. 그래서
+  /// 로그인 화면으로 먼저 가 주소에 남긴 뒤에 따로 둔다
   Future<void> _upgrade(
     BuildContext context,
     WidgetRef ref,
@@ -256,13 +259,15 @@ class _Account extends ConsumerWidget {
     if (meetingId == null) return;
     final wide = !MeetingLayout.narrow(MediaQuery.sizeOf(context).width);
     final router = GoRouter.of(context);
+    final auth = ref.read(authProvider.notifier);
     final back = router.namedLocation(
       AppRoute.meeting.name,
       pathParameters: {'meetingId': meetingId},
     );
     if (!await askGuestUpgrade(context, wide: wide)) return;
-    if (!await ref.read(authProvider.notifier).keepGuestForImport()) return;
     router.goNamed(AppRoute.login.name, queryParameters: {'redirect': back});
+    await WidgetsBinding.instance.endOfFrame;
+    await auth.keepGuestForImport();
   }
 
   @override
