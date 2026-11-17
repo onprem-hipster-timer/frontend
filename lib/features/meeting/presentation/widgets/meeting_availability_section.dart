@@ -1,12 +1,17 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_answer_reset.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_brush_texts.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_grid.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_brush_picker.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_brush_zone.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_help_icon.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_reset_confirm.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_save_indicator.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_timezone_label.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -15,8 +20,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// '내 시간 선택하기'를 영역으로 나눠 쌓는다: 제목 줄(시간별이면 하루 범위, 도움말, 저장 상태)과 시간 기준
 /// 한 줄 → 칠하기 조작(붓 고르기) → 격자와 그 아래 옅은 색 설명. 영역 사이는 영역 안보다 넓게 띄운다.
 ///
-/// 붓은 '가능'으로 시작하고, 붓 아래 한 줄이 고른 붓으로 무엇을 칠하는지 알린다(바뀌면 스크린 리더가 읽는다).
-/// 끌기와 붓 쓰는 법은 도움말에 둔다. [onPaint]가 없으면(로그인 전) 도움말·저장
+/// 붓은 '가능'으로 시작한다([MeetingBrushZone]). 끌기와 붓 쓰는 법은 도움말에 둔다. [onPaint]가 없으면(로그인 전) 도움말·저장
 /// 상태·붓 대신 조작 자리에 로그인하면 칠할 수 있다고 적고, 칸을 누르면 [onLocked]를 부른다.
 class MeetingAvailabilitySection extends StatefulWidget {
   const MeetingAvailabilitySection({
@@ -48,6 +52,79 @@ class _MeetingAvailabilitySectionState
 
   var _brush = MeetingAnswer.available;
 
+  /// 시간별 날짜 열마다 떤 횟수, 붓 줄을 떤 횟수
+  final _dayShakes = <int, int>{};
+  var _brushShakes = 0;
+
+  /// 막힌 붓질 알림이 떠 있는지. 떠 있는 동안 또 막히면 떨기만 한다
+  var _blockedOpen = false;
+
+  /// [question]으로 한 번 묻고, 초기화하면 [cells]의 내 답을 지운다(되돌리기 알림 없이. 묻는 것이 그 안전판이다)
+  Future<void> _confirmReset(
+    Iterable<MeetingCell> cells,
+    String question,
+  ) async {
+    final wide = !MeetingLayout.narrow(MediaQuery.sizeOf(context).width);
+    if (!await askResetMeetingAnswers(
+          context,
+          question: keepWords(question),
+          wide: wide,
+        ) ||
+        !mounted) {
+      return;
+    }
+    final MeetingAvailabilitySection(:shading, :onPaint) = widget;
+    onPaint?.call({
+      for (final cell in cells)
+        if (shading.answerAt(cell) != MeetingAnswer.unanswered)
+          cell: MeetingAnswer.unanswered,
+    });
+  }
+
+  /// 시간별 날짜 머리로 답한 날([day])을 지운다. 되돌리기 알림을 띄운다
+  void _resetDay(List<MeetingCell> day) {
+    final onPaint = widget.onPaint;
+    if (onPaint == null) return;
+    resetMeetingAnswers(
+      ScaffoldMessenger.of(context),
+      shading: widget.shading,
+      cells: day,
+      onPaint: onPaint,
+      done: meetingDayResetDone(day.first.day),
+    );
+  }
+
+  /// 다른 방식으로 표시한 묶음에 칠하려 했다: 그 자리를 떨고, 까닭과 초기화 단추를 알린다
+  void _blocked(List<List<MeetingCell>> groups) {
+    final mode = widget.shading.grid.mode;
+    setState(() {
+      if (mode == MeetingMode.hourly) {
+        _dayShakes.update(
+          groups.first.first.column,
+          (n) => n + 1,
+          ifAbsent: () => 1,
+        );
+      } else {
+        _brushShakes++;
+      }
+    });
+    if (_blockedOpen) return;
+    final text = meetingBlockedText(_brush, mode, [
+      for (final group in groups) group.first.day,
+    ]);
+    _blockedOpen = true;
+    ScaffoldMessenger.of(context)
+        .showAppSnackBar(
+          keepWords(text.message),
+          actionLabel: text.action,
+          onAction: () => _confirmReset([
+            for (final group in groups) ...group,
+          ], text.question),
+        )
+        .closed
+        .whenComplete(() => _blockedOpen = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final MeetingAvailabilitySection(:shading, :onPaint, :onLocked) = widget;
@@ -66,52 +143,42 @@ class _MeetingAvailabilitySectionState
           status: widget.status,
           help: onPaint == null
               ? null
-              : _help(
-                  touch: touch,
-                  hourly: shading.grid.mode == MeetingMode.hourly,
-                ),
+              : meetingBrushHelp(shading.grid.mode, touch: touch),
           onRetry: widget.onRetry,
         ),
         const SizedBox(height: _zoneGap),
         if (onPaint == null)
           const _Hint(icon: Icons.lock_outline, text: '로그인하면 내 시간을 칠할 수 있어요')
         else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MeetingBrushPicker(
-                value: _brush,
-                onChanged: (brush) => setState(() => _brush = brush),
-              ),
-              const SizedBox(height: 8),
-              _BrushLine(
-                brush: _brush,
-                days: shading.grid.mode != MeetingMode.hourly,
-              ),
-            ],
+          MeetingBrushZone(
+            brush: _brush,
+            mode: shading.grid.mode,
+            shakes: _brushShakes,
+            onBrushChanged: (brush) => setState(() => _brush = brush),
+            onClearAll:
+                shading.grid.cells.any(
+                  (cell) => shading.answerAt(cell) != MeetingAnswer.unanswered,
+                )
+                ? () => _confirmReset(
+                    shading.grid.cells,
+                    meetingResetQuestion(shading.grid.mode, const []),
+                  )
+                : null,
           ),
         const SizedBox(height: _zoneGap + 4),
         MeetingAvailabilityGrid(
           shading: shading,
           brush: _brush,
           onPaint: onPaint,
+          onBlocked: _blocked,
+          onResetDay: _resetDay,
+          dayShakes: _dayShakes,
           onLocked: onLocked,
         ),
       ],
     );
   }
 }
-
-/// 칠하기 도움말. 시간별은 날 단위로 채우고 날짜 머리로 하루 전체를 칠한다
-String _help({required bool touch, required bool hourly}) => [
-  touch
-      ? '칸을 누르면 칠하거나 지웁니다. 길게 누른 채 끌면 여러 칸을 한 번에 칠합니다.'
-      : '칸을 누르거나 누른 채 끌어서 여러 칸을 칠합니다.',
-  '이미 고른 붓으로 칠한 칸에서 시작하면 지웁니다.',
-  "아직 아무것도 칠하지 않은 ${hourly ? '날' : '모임'}에 '불가능'을 칠하면 나머지 칸은 '가능'이 됩니다.",
-  if (hourly) '날짜를 누르면 그날 전체를 칠합니다.',
-  '칠하면 바로 저장됩니다.',
-].join(' ');
 
 /// 제목 영역: '내 시간 선택하기'와 하루 범위·도움말([help]가 있을 때)·저장 상태, 그 아래 시간 기준 한 줄
 class _Heading extends StatelessWidget {
@@ -160,36 +227,6 @@ class _Heading extends StatelessWidget {
         const SizedBox(height: 4),
         MeetingTimezoneLabel(meeting.timezone),
       ],
-    );
-  }
-}
-
-/// 고른 붓으로 무엇을 칠하는지 한 줄. 날짜별·요일별은 '날'로 부른다
-class _BrushLine extends StatelessWidget {
-  const _BrushLine({required this.brush, required this.days});
-
-  final MeetingAnswer brush;
-  final bool days;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final text = switch ((brush, days)) {
-      (MeetingAnswer.unavailable, false) =>
-        '안 되는 시간만 칠해 주세요. 비어 있던 날은 나머지를 되는 시간으로 채울게요.',
-      (MeetingAnswer.unavailable, true) =>
-        '안 되는 날만 칠해 주세요. 아직 칠한 날이 없으면 나머지 날을 되는 날로 채울게요.',
-      (_, false) => '되는 시간만 칠해 주세요. 비워 둔 시간은 안 되는 걸로 볼게요.',
-      (_, true) => '되는 날만 칠해 주세요. 비워 둔 날은 안 되는 걸로 볼게요.',
-    };
-    return Semantics(
-      liveRegion: true,
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }

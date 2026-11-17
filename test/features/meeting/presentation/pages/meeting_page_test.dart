@@ -90,14 +90,14 @@ void main() {
   testWidgets('터치 기기는 도움말에서 길게 누른 채 끌기를 알린다', (tester) async {
     await pumpMeeting(tester);
 
-    expect(helpWith('길게 누른 채 끌면 여러 칸을 한 번에 칠합니다'), findsOneWidget);
+    expect(helpWith('길게 누른 채 끌면 여러 칸을 한 번에 칠해요'), findsOneWidget);
     expect(find.text('길게 누른 채 끌면 여러 칸을 칠합니다'), findsNothing);
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('마우스 기기는 도움말에서 누른 채 끌기를 알린다', (tester) async {
     await pumpMeeting(tester);
 
-    expect(helpWith('누른 채 끌어서 여러 칸을 칠합니다'), findsOneWidget);
+    expect(helpWith('누른 채 끌어서 여러 칸을 칠해요'), findsOneWidget);
   }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
 
   testWidgets('칸을 누르면 저장 중이다가 참여하고 저장한 뒤 저장됨과 내 이름 칩을 보인다', (tester) async {

@@ -8,6 +8,9 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 칸마다 [changes]의 답으로 칠하거나 지운다
 typedef MeetingPaint = void Function(Map<MeetingCell, MeetingAnswer> changes);
 
+/// 다른 방식으로 칠한 묶음(묶음의 칸들)이라 붓이 칠하지 못했다
+typedef MeetingBlocked = void Function(List<List<MeetingCell>> groups);
+
 /// 일요일(0)·토요일(6) 글자 색. 평일은 null
 Color? meetingWeekendColor(BuildContext context, int sundayFirstColumn) =>
     switch (sundayFirstColumn) {

@@ -38,7 +38,8 @@ void showAppSnackBar(
 
 /// 시트를 닫은 뒤처럼 [BuildContext]가 사라진 다음에도 미리 잡아 둔 messenger로 띄운다.
 extension AppSnackBarMessenger on ScaffoldMessengerState {
-  void showAppSnackBar(
+  /// 알림을 띄우고 그 알림의 controller를 돌려준다(닫힐 때를 알 수 있다)
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
     String message, {
     AppNoticeKind kind = AppNoticeKind.info,
     String? actionLabel,
@@ -46,7 +47,7 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
   }) {
     final (background, foreground) = _colors(context, kind);
     hideCurrentSnackBar();
-    showSnackBar(
+    return showSnackBar(
       SnackBar(
         content: Text(message, style: TextStyle(color: foreground)),
         backgroundColor: background,

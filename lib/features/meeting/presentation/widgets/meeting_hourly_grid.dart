@@ -8,11 +8,13 @@ import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_cells.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 시간별 격자: 위에 날짜, 왼쪽에 정각 시각, 가운데 칸.
 ///
-/// 날짜 머리를 누르면 그날 전체를 붓으로 칠한다(그날이 모두 이미 붓의 답이면 지운다). 날짜 열이 너무 좁아지면
+/// 날짜 머리를 누르면 답하지 않은 날은 그날 전체를 되는 칸으로 칠하고, 답한 날은 그날을 지운다(그날 칠하는
+/// 방식을 바꾸려면 지운 뒤 다른 붓으로 칠한다). 날짜 열이 너무 좁아지면
 /// 시각은 왼쪽에 둔 채 날짜와 칸을 옆으로 굴린다.
 class MeetingHourlyGrid extends StatelessWidget {
   const MeetingHourlyGrid({
@@ -21,12 +23,22 @@ class MeetingHourlyGrid extends StatelessWidget {
     required this.brush,
     required this.onPaint,
     required this.onLocked,
+    this.onBlocked,
+    this.onResetDay,
+    this.dayShakes = const {},
   });
 
   final MeetingShading shading;
   final MeetingAnswer brush;
   final MeetingPaint? onPaint;
   final VoidCallback? onLocked;
+  final MeetingBlocked? onBlocked;
+
+  /// 답한 날을 지운다. 없으면 바로 지운다
+  final ValueChanged<List<MeetingCell>>? onResetDay;
+
+  /// 날짜 열마다 날짜 머리를 떤 횟수(그날을 다른 방식으로 표시해 칠하지 못했을 때)
+  final Map<int, int> dayShakes;
 
   static const _columnGap = 6.0;
 
@@ -43,7 +55,12 @@ class MeetingHourlyGrid extends StatelessWidget {
         if (cell.column == column) cell,
     ];
     if (day.isEmpty) return;
-    onPaint(brushAll(grid, shading.answerAt, day, brush));
+    final answered = day.any(
+      (cell) => shading.answerAt(cell) != MeetingAnswer.unanswered,
+    );
+    final onResetDay = this.onResetDay;
+    if (answered && onResetDay != null) return onResetDay(day);
+    onPaint(brushGroup(day, shading.answerAt));
   }
 
   /// 시각을 적는 줄: 첫 줄과 정각
@@ -119,7 +136,7 @@ class MeetingHourlyGrid extends StatelessWidget {
                     height: headHeight,
                     child: _DayHeads(
                       shading: shading,
-                      brush: brush,
+                      shakes: dayShakes,
                       gap: _columnGap,
                       onTap: _paintDay,
                     ),
@@ -130,6 +147,7 @@ class MeetingHourlyGrid extends StatelessWidget {
                     shape: shape,
                     brush: brush,
                     onPaint: onPaint,
+                    onBlocked: onBlocked,
                     onLocked: onLocked,
                   ),
                 ],
@@ -151,13 +169,13 @@ class MeetingHourlyGrid extends StatelessWidget {
 class _DayHeads extends StatelessWidget {
   const _DayHeads({
     required this.shading,
-    required this.brush,
+    required this.shakes,
     required this.gap,
     required this.onTap,
   });
 
   final MeetingShading shading;
-  final MeetingAnswer brush;
+  final Map<int, int> shakes;
   final double gap;
   final ValueChanged<int> onTap;
 
@@ -169,14 +187,16 @@ class _DayHeads extends StatelessWidget {
         for (final (i, day) in grid.columnDays.indexed) ...[
           if (i > 0) SizedBox(width: gap),
           Expanded(
-            child: _DayHead(
-              day: day,
-              brush: brush,
-              answers: [
-                for (final cell in grid.cells)
-                  if (cell.column == i) shading.answerAt(cell),
-              ],
-              onTap: () => onTap(i),
+            child: MeetingShake(
+              count: shakes[i] ?? 0,
+              child: _DayHead(
+                day: day,
+                answers: [
+                  for (final cell in grid.cells)
+                    if (cell.column == i) shading.answerAt(cell),
+                ],
+                onTap: () => onTap(i),
+              ),
             ),
           ),
         ],
@@ -228,17 +248,15 @@ class _HourLabels extends StatelessWidget {
   }
 }
 
-/// 시간별의 날짜 머리: 요일과 '3.1'. 누르면 그날 전체를 붓으로 칠하거나 지운다
+/// 시간별의 날짜 머리: 요일과 '3.1'. 누르면 답하지 않은 날은 그날 전체를 되는 칸으로, 답한 날은 지운다
 class _DayHead extends StatelessWidget {
   const _DayHead({
     required this.day,
-    required this.brush,
     required this.answers,
     required this.onTap,
   });
 
   final DateTime day;
-  final MeetingAnswer brush;
 
   /// 그날 칸마다 내 답
   final List<MeetingAnswer> answers;
@@ -247,36 +265,39 @@ class _DayHead extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final clears = answers.every((answer) => answer == brush);
+    final hint = answers.any((answer) => answer != MeetingAnswer.unanswered)
+        ? '그날 일정을 초기화합니다'
+        : '하루 전체를 되는 시간으로 칠합니다';
     return Semantics(
       label: '${meetingDayLabel(day)} 하루 전체',
-      hint: clears
-          ? '하루 전체를 지웁니다'
-          : '하루 전체를 ${brush == MeetingAnswer.unavailable ? '불가능' : '가능'}으로 칠합니다',
+      hint: hint,
       button: true,
       excludeSemantics: true,
-      child: InkWell(
-        borderRadius: AppRadius.smAll,
-        onTap: onTap,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            children: [
-              Text(
-                weekdayName(day.weekday - 1),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color:
-                      meetingWeekendColor(context, day.weekday % 7) ??
-                      theme.colorScheme.onSurfaceVariant,
+      child: Tooltip(
+        message: hint,
+        child: InkWell(
+          borderRadius: AppRadius.smAll,
+          onTap: onTap,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              children: [
+                Text(
+                  weekdayName(day.weekday - 1),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color:
+                        meetingWeekendColor(context, day.weekday % 7) ??
+                        theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              Text(
-                '${day.month}.${day.day}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+                Text(
+                  '${day.month}.${day.day}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
