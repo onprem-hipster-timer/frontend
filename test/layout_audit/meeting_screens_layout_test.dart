@@ -64,6 +64,14 @@ List<AvailabilityRead> _fivePeople(String name) => [
     ),
 ];
 
+/// 저장하지 못한 상태로 열고 '저장하기'도 저장하지 못하는 모임 화면 값
+class _FinishFails extends _FailedSave {
+  _FinishFails(super.meeting, super.availability);
+
+  @override
+  Future<bool> finishSaving() async => false;
+}
+
 /// 저장하지 못한 상태로 여는 모임 화면 값
 class _FailedSave extends MeetingBoardNotifier {
   _FailedSave(this.meeting, this.availability);
@@ -81,9 +89,12 @@ class _FailedSave extends MeetingBoardNotifier {
     ),
     status: MeetingSaveStatus.failed,
   );
+
+  @override
+  Future<bool> finishSaving() async => true;
 }
 
-/// 모임 화면을 불러온 뒤 [label] 단추를 한 번 누른 화면(예: 주인의 '편집')
+/// 모임 화면을 불러온 뒤 [label] 단추를 한 번 누른 화면(예: 주인의 '편집', '저장하기')
 class _PressWhenLoaded extends ConsumerStatefulWidget {
   const _PressWhenLoaded({required this.label, required this.child});
 
@@ -103,8 +114,11 @@ class _PressWhenLoadedState extends ConsumerState<_PressWhenLoaded> {
       if (_pressed || !next.hasValue) return;
       _pressed = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final button = find.widgetWithText(TextButton, widget.label);
-        (button.evaluate().first.widget as TextButton).onPressed!();
+        final button = find.ancestor(
+          of: find.text(widget.label),
+          matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+        );
+        (button.evaluate().first.widget as ButtonStyleButton).onPressed!();
       });
     });
     return widget.child;
@@ -822,6 +836,36 @@ void main() {
       ]);
     },
   );
+
+  for (final (name, fails, shown) in [
+    ('meeting_page_save_finished', false, '입력을 마쳤어요'),
+    ('meeting_page_save_finish_failed', true, '다시 저장하기'),
+  ]) {
+    testLayoutAudit(
+      name,
+      subject: '참여자 이름',
+      texts: const [StressTexts.koreanLong],
+      build: (text) {
+        final meeting = meetingIn('hourly', title: '팀 회의');
+        final people = _fivePeople(text.value);
+        return routed(
+          const _PressWhenLoaded(
+            label: '저장하기',
+            child: MeetingPage(meetingId: 'meeting-1'),
+          ),
+          [
+            ...meetingOverrides(meetings: FakeMeetingsClient(meeting: meeting)),
+            meetingBoardProvider.overrideWith(
+              () => fails
+                  ? _FinishFails(meeting, people)
+                  : _FailedSave(meeting, people),
+            ),
+          ],
+        );
+      },
+      verify: (tester) => expect(find.text(shown), findsOneWidget),
+    );
+  }
 
   /// 게스트 [name]으로 들어온 모임 화면에 바꿔 끼우는 것
   List<Override> guestOverrides(

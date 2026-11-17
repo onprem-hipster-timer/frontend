@@ -18,6 +18,7 @@ enum MeetingSaveStatus {
 /// 바뀔 때마다 [delay]만큼 기다렸다가 한 번 저장한다. 저장하는 사이 또 바뀌면 끝난 뒤 한 번 더 저장한다.
 ///
 /// [save]는 부르는 때의 최신 값을 보낸다. 실패하면 바뀐 것을 남겨 두고 [retry]나 다음 [changed]가 다시 보낸다.
+/// [flush]는 기다리지 않고 남은 것을 저장하고 그 결과를 돌려준다('저장하기').
 ///
 /// 테스트: test/features/meeting/presentation/providers/meeting_autosave_test.dart
 class MeetingAutosave {
@@ -35,6 +36,9 @@ class MeetingAutosave {
   var _dirty = false;
   var _saving = false;
   var _disposed = false;
+
+  /// [flush]를 부르고 결과를 기다리는 쪽
+  final _waiters = <Completer<bool>>[];
 
   /// 아직 저장하지 않은 것이 있거나 저장하는 중이다
   bool get busy => _dirty || _saving;
@@ -54,9 +58,30 @@ class MeetingAutosave {
     unawaited(_flush());
   }
 
+  /// 기다리지 않고 남은 것을 모두 저장한다. 보내는 중이면 그것을(그사이 또 바뀌었으면 그것까지) 기다리고,
+  /// 저장하지 못한 것은 다시 보낸다. 모두 저장했으면 true, 저장하지 못했거나 그사이 닫혔으면 false다
+  Future<bool> flush() {
+    if (!busy) return Future.value(true);
+    final waiter = Completer<bool>();
+    _waiters.add(waiter);
+    if (!_saving) {
+      _timer?.cancel();
+      unawaited(_flush());
+    }
+    return waiter.future;
+  }
+
   void dispose() {
     _disposed = true;
     _timer?.cancel();
+    _answer(false);
+  }
+
+  void _answer(bool saved) {
+    for (final waiter in _waiters) {
+      waiter.complete(saved);
+    }
+    _waiters.clear();
   }
 
   Future<void> _flush() async {
@@ -71,13 +96,17 @@ class MeetingAutosave {
       _saving = false;
       _dirty = true;
       // 저장하는 사이 또 바뀌었으면 곧 다시 보낸다
-      if (!_disposed && _timer == null) onStatus(MeetingSaveStatus.failed);
+      if (!_disposed && _timer == null) {
+        onStatus(MeetingSaveStatus.failed);
+        _answer(false);
+      }
       return;
     }
     _saving = false;
     if (_disposed) return;
     if (!_dirty) {
       onStatus(MeetingSaveStatus.saved);
+      _answer(true);
     } else if (_timer == null) {
       unawaited(_flush());
     }

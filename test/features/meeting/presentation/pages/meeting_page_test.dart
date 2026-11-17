@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/gestures.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
 import 'package:go_router/go_router.dart';
@@ -140,6 +141,156 @@ void main() {
     expect(meetings.puts, hasLength(2));
     expect(find.text('저장됨'), findsOneWidget);
     semantics.dispose();
+  });
+
+  group('저장하기', () {
+    const cell = '3월 1일 (월) 6:00 ~ 6:30';
+    Finder finish() => find.widgetWithText(FilledButton, '저장하기');
+
+    /// '추천 시간' 제목이 화면(아래 붙은 단추 위) 안에 있는지
+    void expectSlotsInView(WidgetTester tester, {required double bottom}) {
+      final title = tester.getRect(find.text('추천 시간'));
+      expect(title.top, greaterThanOrEqualTo(0));
+      expect(title.bottom, lessThanOrEqualTo(bottom));
+    }
+
+    testWidgets('바꾸기 전에는 없고, 칸을 칠하면 좁은 화면 아래에 붙어 마지막 칸을 가리지 않는다', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(400, 800));
+      expect(finish(), findsNothing);
+
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump();
+      expect(finish(), findsOneWidget);
+      final bar = tester.getRect(finish());
+      expect(bar.bottom, greaterThan(800 - 80));
+
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      final last = cellCenter(tester, '3월 5일 (금) 17:30 ~ 18:00');
+      expect(last.dy, lessThan(bar.top), reason: '단추 자리를 비워 둔다');
+      semantics.dispose();
+    });
+
+    testWidgets('보내는 중에 누르면 기다렸다가 마쳤다고 알리고 추천 시간을 보인다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      meetings.putGate = Completer<void>();
+      await pumpMeeting(tester, size: const Size(400, 800));
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump(const Duration(seconds: 1));
+      expect(meetings.puts, hasLength(1));
+
+      await tester.tap(finish());
+      await tester.pump();
+      expect(find.text('저장하는 중'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.text('저장하는 중')),
+        isSemantics(isButton: true, isEnabled: false),
+      );
+      expect(find.text('입력을 마쳤어요'), findsNothing);
+
+      meetings.putGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('입력을 마쳤어요'), findsOneWidget);
+      expect(find.text('언제든 다시 고칠 수 있어요'), findsOneWidget);
+      expect(finish(), findsNothing, reason: '다음에 바꿀 때까지 조용하다');
+      expect(meetings.puts, hasLength(1), reason: '이미 보낸 것을 또 보내지 않는다');
+      final bar = tester.getRect(find.text('입력을 마쳤어요'));
+      expectSlotsInView(tester, bottom: bar.top);
+      expect(
+        tester.takeAnnouncements().map((a) => a.message),
+        contains('입력을 마쳤어요. 언제든 다시 고칠 수 있어요'),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('기다리던 저장은 기다리지 않고 바로 보낸다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(400, 800));
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump();
+      expect(meetings.puts, isEmpty);
+
+      await tester.tap(finish());
+      await tester.pump();
+      await tester.pump();
+      expect(meetings.puts, hasLength(1));
+      await tester.pumpAndSettle();
+      expect(find.text('입력을 마쳤어요'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('저장하지 못하면 마쳤다고 하지 않고, 다시 저장하기로 다시 보낸다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      meetings.putError = Exception('끊김');
+      await pumpMeeting(tester, size: const Size(400, 800));
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump();
+
+      await tester.tap(finish());
+      await tester.pumpAndSettle();
+      expect(find.text('저장하지 못했어요'), findsOneWidget);
+      expect(find.text('입력을 마쳤어요'), findsNothing);
+      expect(meetings.puts, hasLength(1));
+
+      await tester.tap(find.text('다시 저장하기'));
+      await tester.pumpAndSettle();
+      expect(meetings.puts, hasLength(2));
+      expect(find.text('입력을 마쳤어요'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('마친 뒤 또 칠하면 저장하기가 다시 보인다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(400, 800));
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump();
+      await tester.tap(finish());
+      await tester.pumpAndSettle();
+      expect(find.text('입력을 마쳤어요'), findsOneWidget);
+
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 5000));
+      await tester.pumpAndSettle();
+      await tester.tapAt(cellCenter(tester, '3월 2일 (화) 6:00 ~ 6:30'));
+      await tester.pump();
+      expect(finish(), findsOneWidget);
+      expect(find.text('입력을 마쳤어요'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('넓은 화면에서는 격자 아래 오른쪽 끝에 맞춰 둔다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(1280, 900));
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump();
+
+      final button = tester.getRect(finish());
+      final lastCell = cellCenter(tester, '3월 5일 (금) 17:30 ~ 18:00');
+      expect(button.top, greaterThan(lastCell.dy));
+      expect(
+        button.right,
+        closeTo(
+          tester.getRect(find.byType(MeetingAvailabilitySection)).right,
+          1,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('저장은 누르지 않아도 전처럼 잠시 뒤 저절로 된다', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMeeting(tester, size: const Size(400, 800));
+      await tester.tapAt(cellCenter(tester, cell));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(meetings.puts, hasLength(1));
+      expect(find.text('저장됨'), findsOneWidget);
+      expect(finish(), findsOneWidget, reason: '마쳤다는 말은 누를 때만 한다');
+      semantics.dispose();
+    });
   });
 
   testWidgets('카드의 내 달력에 일정 만들기는 모임 제목과 그 시간으로 새 일정을 연다', (tester) async {

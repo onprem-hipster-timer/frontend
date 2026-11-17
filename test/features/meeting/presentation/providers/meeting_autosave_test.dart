@@ -208,4 +208,88 @@ void main() {
       expect(h.saved, isEmpty);
     });
   });
+
+  group('저장 마치기(flush)', () {
+    test('저장할 것이 없으면 바로 끝났다고 한다', () {
+      fakeAsync((async) {
+        final h = Harness();
+        bool? done;
+        h.autosave.flush().then((value) => done = value);
+        async.flushMicrotasks();
+        expect(done, isTrue);
+        expect(h.saved, isEmpty);
+      });
+    });
+
+    test('기다리던 저장을 기다리지 않고 바로 보내고 끝나면 true다', () {
+      fakeAsync((async) {
+        final h = Harness()..change(1);
+        bool? done;
+        h.autosave.flush().then((value) => done = value);
+        async.flushMicrotasks();
+        expect(h.saved, [1], reason: '600ms를 기다리지 않는다');
+        expect(done, isTrue);
+        expect(h.statuses.last, MeetingSaveStatus.saved);
+      });
+    });
+
+    test('보내는 중인 저장을 기다리고, 그사이 또 바꿨으면 그것까지 저장한 뒤 true다', () {
+      fakeAsync((async) {
+        final h = Harness()..gate = Completer<void>();
+        h.change(1);
+        async.elapse(delay);
+        expect(h.autosave.busy, isTrue);
+
+        bool? done;
+        h.autosave.flush().then((value) => done = value);
+        h.change(2);
+        async.flushMicrotasks();
+        expect(done, isNull, reason: '아직 보내는 중');
+
+        final gate = h.gate!;
+        h.gate = null;
+        gate.complete();
+        async.flushMicrotasks();
+        expect(done, isNull, reason: '2를 아직 보내지 않았다');
+        async.elapse(delay);
+        expect(h.saved, [1, 2]);
+        expect(done, isTrue);
+      });
+    });
+
+    test('저장하지 못한 것을 다시 보내고, 또 실패하면 false다', () {
+      fakeAsync((async) {
+        final h = Harness()..failNext = true;
+        h.change(1);
+        async.elapse(delay);
+        expect(h.statuses.last, MeetingSaveStatus.failed);
+
+        h.failNext = true;
+        bool? first;
+        h.autosave.flush().then((value) => first = value);
+        async.flushMicrotasks();
+        expect(first, isFalse);
+        expect(h.statuses.last, MeetingSaveStatus.failed);
+
+        bool? second;
+        h.autosave.flush().then((value) => second = value);
+        async.flushMicrotasks();
+        expect(second, isTrue);
+        expect(h.saved, [1]);
+      });
+    });
+
+    test('기다리는 동안 화면을 닫으면 false로 끝난다', () {
+      fakeAsync((async) {
+        final h = Harness()..gate = Completer<void>();
+        h.change(1);
+        async.elapse(delay);
+        bool? done;
+        h.autosave.flush().then((value) => done = value);
+        h.autosave.dispose();
+        async.flushMicrotasks();
+        expect(done, isFalse);
+      });
+    });
+  });
 }

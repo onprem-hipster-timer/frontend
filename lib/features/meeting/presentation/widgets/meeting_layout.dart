@@ -12,6 +12,9 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_quiet_panel
 /// 좁으면 중요한 순서로 쌓는다: [header](조용한 한 줄) → [main] → [secondary] → [tertiary]. 끝의 [tertiary]는
 /// 상자 없이 작은 제목으로 두고 구분선으로 나눈다. [bottom]은 화면 아래에 붙어 굴려도 그 자리다. 같은 위젯을
 /// [side]와 좁은 목록에 함께 넣어도 한쪽만 그린다.
+///
+/// [action]은 좁으면 [bottom] 자리에 붙고(`pinned`), 넓으면 [main] 아래 오른쪽에 둔다. 붙은 띠는 굴림 영역
+/// 밖에 있어 본문의 마지막 줄을 가리지 않는다.
 class MeetingLayout extends StatelessWidget {
   const MeetingLayout({
     super.key,
@@ -22,6 +25,7 @@ class MeetingLayout extends StatelessWidget {
     this.secondary = const [],
     this.tertiary = const [],
     this.bottom,
+    this.action,
   });
 
   /// 이 폭부터 두 칸
@@ -37,9 +41,11 @@ class MeetingLayout extends StatelessWidget {
   final List<Widget> secondary;
   final List<Widget> tertiary;
   final Widget? bottom;
+  final Widget Function(bool pinned)? action;
 
   @override
   Widget build(BuildContext context) {
+    final action = this.action;
     return LayoutBuilder(
       builder: (context, constraints) {
         if (narrow(constraints.maxWidth)) {
@@ -48,10 +54,19 @@ class MeetingLayout extends StatelessWidget {
             main: main,
             secondary: secondary,
             tertiary: tertiary,
-            bottom: bottom,
+            bottom: bottom ?? action?.call(true),
           );
         }
-        return _WideLayout(main: main, side: side, sideFill: sideFill);
+        return _WideLayout(
+          main: action == null
+              ? main
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [main, const SizedBox(height: 16), action(false)],
+                ),
+          side: side,
+          sideFill: sideFill,
+        );
       },
     );
   }
@@ -233,6 +248,7 @@ class _NarrowLayout extends StatelessWidget {
     );
     if (bottom == null) return content;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: content),
         bottom,

@@ -3,12 +3,14 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
+import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_participant_removal.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_account_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_finish_slot.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_problem.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
@@ -46,6 +48,9 @@ class MeetingMemberBody extends ConsumerStatefulWidget {
 class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
   final _highlight = MeetingRunHighlight();
 
+  /// '저장하기'가 마친 뒤 보이게 굴리는 추천 시간
+  final _slotsKey = GlobalKey();
+
   @override
   void dispose() {
     _highlight.dispose();
@@ -78,37 +83,22 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
               onRetry: notifier.retrySave,
               highlight: _highlight,
             );
-            MeetingSlotsPanel slots({bool fill = false}) => MeetingSlotsPanel(
-              board: board,
-              fill: fill,
-              highlight: _highlight,
-              onAddToCalendar: guest != null
-                  ? null
-                  : (run) => addMeetingRunToCalendar(context, board, run),
-            );
-            final participants = MeetingParticipantsPanel(
-              board: board,
-              // 게스트의 이름 바꾸기·지우기는 확인 위젯이 있어야 한다
-              onRename: guest != null
-                  ? ref.watch(turnstileFactoryProvider) == null
-                        ? null
-                        : () => showMeetingGuestSheet(
-                            context,
-                            ref,
-                            meetingId: meetingId,
-                            guest: guest,
-                          )
-                  : () => showMeetingNameSheet(
-                      context,
-                      meetingId: meetingId,
-                      currentName: board.me?.displayName ?? board.selfName,
-                    ),
-              onRemove: (participant) => removeMeetingParticipant(
-                context,
-                ref,
-                meetingId,
-                participant,
+            // 넓으면 오른쪽 칸, 좁으면 격자 아래에 하나만 그린다
+            Widget slots({bool fill = false}) => KeyedSubtree(
+              key: _slotsKey,
+              child: MeetingSlotsPanel(
+                board: board,
+                fill: fill,
+                highlight: _highlight,
+                onAddToCalendar: guest != null
+                    ? null
+                    : (run) => addMeetingRunToCalendar(context, board, run),
               ),
+            );
+            final participants = _Participants(
+              board: board,
+              meetingId: meetingId,
+              guest: guest,
             );
             final link = MeetingLinkPanel(
               meetingId: meetingId,
@@ -122,6 +112,11 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
               header: account,
               secondary: [slots()],
               tertiary: [participants, link],
+              action: (pinned) => MeetingFinishSlot(
+                meetingId: meetingId,
+                slotsKey: _slotsKey,
+                pinned: pinned,
+              ),
             );
           },
           loading: () => const AppLoading(),
@@ -131,6 +126,44 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
             error: error,
           ),
         );
+  }
+}
+
+/// '일정 참여자'. 회원은 이 모임의 이름을, 게스트는 확인 위젯이 있을 때 게스트 이름을 바꾼다
+class _Participants extends ConsumerWidget {
+  const _Participants({
+    required this.board,
+    required this.meetingId,
+    required this.guest,
+  });
+
+  final MeetingBoard board;
+  final String meetingId;
+  final GuestUser? guest;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final guest = this.guest;
+    return MeetingParticipantsPanel(
+      board: board,
+      // 게스트의 이름 바꾸기·지우기는 확인 위젯이 있어야 한다
+      onRename: guest != null
+          ? ref.watch(turnstileFactoryProvider) == null
+                ? null
+                : () => showMeetingGuestSheet(
+                    context,
+                    ref,
+                    meetingId: meetingId,
+                    guest: guest,
+                  )
+          : () => showMeetingNameSheet(
+              context,
+              meetingId: meetingId,
+              currentName: board.me?.displayName ?? board.selfName,
+            ),
+      onRemove: (participant) =>
+          removeMeetingParticipant(context, ref, meetingId, participant),
+    );
   }
 }
 

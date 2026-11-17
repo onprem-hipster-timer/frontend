@@ -188,6 +188,10 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
   /// 저장하지 못한 내 가능 시간을 바로 다시 보낸다
   void retrySave() => _autosave.retry();
 
+  /// '저장하기': 남은 저장을 기다리지 않고 보내고 끝날 때까지 기다린다(저장하지 못한 것은 다시 보낸다). 모두
+  /// 저장했으면 true
+  Future<bool> finishSaving() => _autosave.flush();
+
   /// 이 모임에서 내 이름을 [name]으로 바꾼다. 참여 요청을 새 이름으로 다시 보내면 backend가 이름만 바꾼다
   Future<void> rename(String name) async {
     final participant = await ref
