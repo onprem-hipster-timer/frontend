@@ -89,7 +89,7 @@ Future<void> pumpPanel(
 void main() {
   setUpAll(tz.initializeTimeZones);
 
-  group('선택된 일정', () {
+  group('추천 시간', () {
     late List<MeetingRun> added;
 
     setUp(() => added = []);
@@ -169,7 +169,7 @@ void main() {
     testWidgets('후보가 없으면 두 명 이상 겹치면 보인다고 알린다', (tester) async {
       await pumpSlots(tester, boardOf([threePeople().first]));
 
-      expect(find.text('두 명 이상 되는 시간이 겹치면 여기에 보입니다'), findsOneWidget);
+      expect(find.text('두 명 이상 함께 되는 시간이 생기면 여기에 추천해 드려요'), findsOneWidget);
     });
 
     testWidgets('카드를 누르면 이름을 카드 안에 고정하고 다시 누르면 접는다', (tester) async {

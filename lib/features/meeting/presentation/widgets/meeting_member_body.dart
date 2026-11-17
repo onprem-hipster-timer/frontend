@@ -19,10 +19,11 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 로그인한 회원·게스트의 모임 화면 본문: 지금 계정, 내 시간 격자, 링크, 일정 참여자, 선택된 일정.
+/// 로그인한 회원·게스트의 모임 화면 본문: 지금 계정, 내 시간 격자, 링크, 일정 참여자, 추천 시간.
 ///
 /// 넓으면 격자 오른쪽에 계정('OO 계정으로 진행 중입니다', 방문자의 로그인 상자 자리) → 링크 → 일정 참여자
-/// → 선택된 일정을 상자로 둔다. 좁으면 계정은 격자 앞의 조용한 한 줄이고, 격자 → 선택된 일정 → 일정 참여자
+/// → 추천 시간을 상자로 둔다(추천 시간은 남은 높이를 채우고 그 안에서 굴린다). 좁으면 계정은 격자 앞의 조용한
+/// 한 줄이고, 격자 → 추천 시간 → 일정 참여자
 /// → 링크 순서로 뒤로 갈수록 덜 눈에 띈다(칠하기가 이 화면의 일이고, 그 결과가 바로 아래에 보이게). 볼 수
 /// 없는 모임은 없는 모임과 같다.
 ///
@@ -52,8 +53,9 @@ class MeetingMemberBody extends ConsumerWidget {
               onRetry: notifier.retrySave,
             );
             final guest = this.guest;
-            final slots = MeetingSlotsPanel(
+            MeetingSlotsPanel slots({bool fill = false}) => MeetingSlotsPanel(
               board: board,
+              fill: fill,
               onAddToCalendar: guest != null
                   ? null
                   : (run) => addMeetingRunToCalendar(context, board, run),
@@ -86,9 +88,10 @@ class MeetingMemberBody extends ConsumerWidget {
             final account = _Account(guest: guest);
             return MeetingLayout(
               main: availability,
-              side: [account, link, participants, slots],
+              side: [account, link, participants],
+              sideFill: slots(fill: true),
               header: account,
-              secondary: [slots],
+              secondary: [slots()],
               tertiary: [participants, link],
             );
           },

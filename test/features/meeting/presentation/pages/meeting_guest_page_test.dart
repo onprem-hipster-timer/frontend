@@ -116,7 +116,7 @@ void main() {
   ProviderContainer container(WidgetTester tester) =>
       ProviderScope.containerOf(tester.element(find.byType(MeetingPage)));
 
-  testWidgets('처음 그릴 때 게스트 이름으로 한 번 참여하고 회원처럼 격자·참여자·선택된 일정을 보인다', (
+  testWidgets('처음 그릴 때 게스트 이름으로 한 번 참여하고 회원처럼 격자·참여자·추천 시간을 보인다', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -127,7 +127,7 @@ void main() {
     expect(find.widgetWithText(AppBar, '팀 회의'), findsOneWidget);
     expect(find.bySemanticsLabel('민수, 게스트, 나'), findsOneWidget);
     expect(find.bySemanticsLabel('지현, 주인'), findsOneWidget);
-    expect(find.text('선택된 일정'), findsOneWidget);
+    expect(find.text('추천 시간'), findsOneWidget);
     expect(find.text('게스트 민수로 진행 중입니다'), findsOneWidget);
     expect(find.byType(MeetingLoginPanel), findsNothing);
     expect(users.reads, 0, reason: '회원 경로는 부르지 않는다');
@@ -155,7 +155,7 @@ void main() {
     expect(find.textContaining('민수'), findsNothing);
   });
 
-  testWidgets('선택된 일정 카드에 내 달력에 일정 만들기가 없다', (tester) async {
+  testWidgets('추천 시간 카드에 내 달력에 일정 만들기가 없다', (tester) async {
     await pumpGuest(tester);
 
     expect(find.text('3월 1일 (월)'), findsWidgets);

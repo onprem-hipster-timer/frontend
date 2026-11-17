@@ -157,7 +157,7 @@ void main() {
     for (final name in ['민수', '서연', '하준']) {
       expect(find.textContaining(name), findsNothing);
     }
-    expect(find.text('선택된 일정'), findsNothing);
+    expect(find.text('추천 시간'), findsNothing);
     expect(find.text('편집'), findsNothing);
     expect(find.byTooltip('내 달력에 일정 만들기'), findsNothing);
     expect(meetings.resultReads, 1);
@@ -401,13 +401,13 @@ void main() {
     addTearDown(session.dispose);
     await pumpMeeting(tester, session: session);
     expect(find.bySemanticsLabel('민수'), findsOneWidget);
-    expect(find.text('선택된 일정'), findsOneWidget);
+    expect(find.text('추천 시간'), findsOneWidget);
 
     session.value = null;
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel('민수'), findsNothing);
-    expect(find.text('선택된 일정'), findsNothing);
+    expect(find.text('추천 시간'), findsNothing);
     expect(find.text('4명 참여 중'), findsOneWidget);
     expect(loginButton(), findsOneWidget);
     expect(find.textContaining('로그인 화면'), findsNothing);

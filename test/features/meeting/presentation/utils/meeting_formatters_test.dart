@@ -61,7 +61,7 @@ void main() {
     expect(minuteLabel(minutesPerDay), '24:00');
   });
 
-  group('격자 칸과 선택된 일정 카드', () {
+  group('격자 칸과 추천 시간 카드', () {
     setUpAll(tz.initializeTimeZones);
 
     MeetingGrid grid(

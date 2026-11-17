@@ -4,6 +4,10 @@ import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/gestures.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
@@ -219,19 +223,131 @@ void main() {
     expect(find.text('로그아웃'), findsNothing);
   });
 
-  testWidgets('넓으면 격자 오른쪽에 계정·링크·일정 참여자·선택된 일정을 둔다', (tester) async {
+  testWidgets('넓으면 격자 오른쪽에 계정·링크·일정 참여자·추천 시간을 둔다', (tester) async {
     await pumpMeeting(tester, size: const Size(1280, 800));
 
     final grid = tester.getTopLeft(find.text('내 시간 선택하기'));
     final account = tester.getTopLeft(find.text('로그인'));
     final link = tester.getTopLeft(find.text('링크'));
     final people = tester.getTopLeft(find.text('일정 참여자'));
-    final slots = tester.getTopLeft(find.text('선택된 일정'));
+    final slots = tester.getTopLeft(find.text('추천 시간'));
     expect(account.dx, greaterThan(grid.dx + 400));
     expect(link.dx, account.dx);
     expect(people.dx, link.dx);
     final rows = [account.dy, link.dy, people.dy, slots.dy];
     expect(rows, orderedEquals([...rows]..sort()));
+  });
+
+  group('넓은 화면의 양쪽 높이', () {
+    const wide = Size(1280, 800);
+
+    /// 3월 1일에 12명이 6~18시에 되는 서로 다른 이어진 시간을 칠한 모임(추천 카드가 많다)
+    List<AvailabilityRead> crowd() => [
+      for (var i = 0; i < 12; i++)
+        availabilityOf(
+          'p$i',
+          slots: [
+            (seoul(1 + i % 5, 6 + i), seoul(1 + i % 5, 8 + i)),
+            (seoul(1 + (i + 1) % 5, 6 + i), seoul(1 + (i + 1) % 5, 8 + i)),
+          ],
+        ),
+    ];
+
+    ScrollableState pageScroll(WidgetTester tester) =>
+        tester.state<ScrollableState>(find.byType(Scrollable).first);
+
+    ScrollableState cardScroll(WidgetTester tester) => tester.state(
+      find
+          .ancestor(
+            of: find.byType(MeetingSlotCard).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+
+    testWidgets('격자가 짧으면 화면은 굴러가지 않고 오른쪽 칸은 화면 안에 들며 카드 목록만 상자 안에서 굴러간다', (
+      tester,
+    ) async {
+      meetings =
+          FakeMeetingsClient(
+              meeting: makeMeeting(
+                endDate: DateTime.utc(2027, 3, 10),
+                mode: MeetingMode.daily,
+                startTime: '00:00:00',
+                endTime: '00:00:00',
+              ),
+            )
+            ..availability = [
+              for (var i = 0; i < 12; i++)
+                availabilityOf(
+                  'p$i',
+                  slots: [(seoul(1 + i % 9, 0), seoul(2 + i % 9 + i % 2, 0))],
+                ),
+            ];
+      await pumpMeeting(tester, size: wide);
+
+      expect(pageScroll(tester).position.maxScrollExtent, 0);
+      final panel = tester.getRect(find.byType(MeetingSlotsPanel));
+      expect(panel.bottom, lessThanOrEqualTo(wide.height));
+      final title = tester.getTopLeft(find.text('추천 시간'));
+
+      final cards = cardScroll(tester);
+      expect(cards.position.maxScrollExtent, greaterThan(0));
+      await tester.drag(
+        find.byType(MeetingSlotCard).first,
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+      expect(cards.position.pixels, greaterThan(0));
+      expect(tester.getTopLeft(find.text('추천 시간')), title, reason: '제목 줄은 그대로');
+      expect(find.byType(Scrollbar), findsWidgets);
+    });
+
+    testWidgets('격자가 길면 화면이 굴러가고 오른쪽 칸은 화면에 머문다', (tester) async {
+      meetings = FakeMeetingsClient(
+        meeting: makeMeeting(startTime: '06:00:00', endTime: '00:00:00'),
+      )..availability = crowd();
+      await pumpMeeting(tester, size: wide);
+      final page = pageScroll(tester);
+      expect(page.position.maxScrollExtent, greaterThan(200));
+      final account = tester.getTopLeft(find.text('로그인'));
+
+      page.position.jumpTo(200);
+      await tester.pump();
+
+      expect(tester.getTopLeft(find.text('로그인')), account);
+      expect(
+        tester.getRect(find.byType(MeetingSlotsPanel)).bottom,
+        lessThanOrEqualTo(wide.height),
+      );
+    });
+
+    testWidgets('카드 목록 끝에서 휠을 더 굴리면 화면이 굴러간다', (tester) async {
+      meetings = FakeMeetingsClient(
+        meeting: makeMeeting(startTime: '06:00:00', endTime: '00:00:00'),
+      )..availability = crowd();
+      await pumpMeeting(tester, size: wide);
+      final cards = cardScroll(tester);
+      cards.position.jumpTo(cards.position.maxScrollExtent);
+      await tester.pump();
+      final page = pageScroll(tester);
+      expect(page.position.pixels, 0);
+
+      final at = tester.getCenter(find.byType(MeetingSlotCard).last);
+      // ignore: avoid_print
+      print(
+        'DEBUG ${find.byType(Scrollable).evaluate().map((e) => ((e as StatefulElement).state as ScrollableState).position).map((p) => '${p.pixels}/${p.maxScrollExtent}').toList()} at $at',
+      );
+      // 목록 끝에서는 바깥(오른쪽 칸이 넘치면 그 칸, 다음은 화면)이 받는다
+      for (var i = 0; i < 3; i++) {
+        await tester.sendEventToBinding(
+          PointerScrollEvent(position: at, scrollDelta: const Offset(0, 120)),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      expect(page.position.pixels, greaterThan(0));
+    });
   });
 
   group('좁은 화면', () {
@@ -240,14 +356,14 @@ void main() {
     double fontSize(WidgetTester tester, Finder text) =>
         tester.renderObject<RenderParagraph>(text).text.style!.fontSize!;
 
-    testWidgets('조용한 계정 줄 다음 바로 격자이고, 선택된 일정·일정 참여자·링크 순서다', (tester) async {
+    testWidgets('조용한 계정 줄 다음 바로 격자이고, 추천 시간·일정 참여자·링크 순서다', (tester) async {
       await pumpMeeting(tester, size: narrow);
 
       final order = [
         for (final title in [
           'user@example.com 계정으로 진행 중입니다',
           '내 시간 선택하기',
-          '선택된 일정',
+          '추천 시간',
           '일정 참여자',
           '링크',
         ])
@@ -274,15 +390,15 @@ void main() {
       );
     });
 
-    testWidgets('격자 → 선택된 일정 → 일정 참여자·링크로 갈수록 제목이 작아지고 끝의 둘은 상자가 아니다', (
+    testWidgets('격자 → 추천 시간 → 일정 참여자·링크로 갈수록 제목이 작아지고 끝의 둘은 상자가 아니다', (
       tester,
     ) async {
       await pumpMeeting(tester, size: narrow);
 
       double size(String title) =>
           fontSize(tester, find.text(title, skipOffstage: false));
-      expect(size('내 시간 선택하기'), greaterThanOrEqualTo(size('선택된 일정')));
-      expect(size('선택된 일정'), greaterThan(size('일정 참여자')));
+      expect(size('내 시간 선택하기'), greaterThanOrEqualTo(size('추천 시간')));
+      expect(size('추천 시간'), greaterThan(size('일정 참여자')));
       expect(size('일정 참여자'), size('링크'));
       for (final title in ['일정 참여자', '링크']) {
         expect(

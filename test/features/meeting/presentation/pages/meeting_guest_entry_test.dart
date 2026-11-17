@@ -692,12 +692,21 @@ void main() {
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await pumpVisitor(tester, size: const Size(1280, 500));
     await openGuest(tester);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+    // 넓은 화면의 오른쪽 칸은 화면 높이를 넘으면 그 칸 안에서 굴러간다
+    await tester.drag(
+      find
+          .ancestor(
+            of: find.byType(MeetingLoginPanel),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+      const Offset(0, -900),
+    );
     await tester.pumpAndSettle();
     expect(tester.getBottomLeft(nameField()).dy, lessThan(0));
     final rest = tester.getTopLeft(find.byType(MeetingLoginPanel)).dx;
 
-    await tester.tapAt(cellCenter(tester, '3월 2일 (화) 14:00 ~ 14:30'));
+    await tester.tapAt(cellCenter(tester, '3월 2일 (화) 7:00 ~ 7:30'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 40));
 
