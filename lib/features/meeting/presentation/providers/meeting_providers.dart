@@ -321,5 +321,5 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
   }
 }
 
-/// 이 모임에서 내 이름 바꾸기
+/// 이 모임에서 내 닉네임 바꾸기
 final renameInMeetingMutation = Mutation<void>(label: 'renameInMeeting');

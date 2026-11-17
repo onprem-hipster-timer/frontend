@@ -353,7 +353,7 @@ void main() {
         )..availability = _fivePeople(text.value),
       ),
     ),
-    verify: (tester) => expect(find.byTooltip('내 이름 바꾸기'), findsOneWidget),
+    verify: (tester) => expect(find.byTooltip('내 닉네임 바꾸기'), findsOneWidget),
   );
 
   for (final mode in ['hourly', 'daily', 'weekly']) {
@@ -449,7 +449,7 @@ void main() {
       ],
     ),
     verify: (tester) => expect(
-      find.text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요, 하지만 로그인만큼 강력한 보안을 보장하지 못해요!'),
+      find.text('게스트는 가입 없이 닉네임과 비밀번호만 있으면 돼요, 하지만 로그인만큼 강력한 보안을 보장하지 못해요!'),
       findsOneWidget,
     ),
   );
@@ -486,7 +486,7 @@ void main() {
       ),
       verify: (tester) => expect(
         returning
-            ? find.text('이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요')
+            ? find.text('이미 참여한 닉네임입니다. 본인이면 비밀번호를 입력하세요')
             : find.text('참여하기'),
         findsOneWidget,
       ),

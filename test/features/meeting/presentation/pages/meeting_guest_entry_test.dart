@@ -106,7 +106,7 @@ void main() {
     of: find.byType(MeetingLoginPanel),
     matching: find.widgetWithText(FilledButton, 'Guest'),
   );
-  Finder nameField() => find.widgetWithText(TextFormField, '이름');
+  Finder nameField() => find.widgetWithText(TextFormField, '닉네임');
   Finder passwordField() => find.widgetWithText(TextFormField, '비밀번호');
   Finder submit(String label) => find.widgetWithText(FilledButton, label);
 
@@ -199,7 +199,9 @@ void main() {
       await enterName(tester, '  민수  ');
       expect(guests.lookups, [('민수', 'token-1')]);
       expect(
-        find.text('비밀번호는 바꾸거나 찾을 수 없습니다. 잊으면 이 이름으로 다시 들어올 수 없습니다.'),
+        find.text(
+          '게스트는 비밀번호를 바꾸거나 찾을 수 없습니다. 잊으면 이 닉네임으로 다시 들어올 수 없습니다. 분실이 우려되면 로그인을 이용해 주세요!',
+        ),
         findsOneWidget,
       );
       expect(tester.widget<FilledButton>(submit('참여하기')).onPressed, isNull);
@@ -313,7 +315,7 @@ void main() {
       await press(tester, '참여하기');
 
       expect(guests.lookups.map((l) => l.$2), ['token-1', 'token-3']);
-      expect(find.text('이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요'), findsOneWidget);
+      expect(find.text('이미 참여한 닉네임입니다. 본인이면 비밀번호를 입력하세요'), findsOneWidget);
       expect(find.text('전체 동의'), findsNothing);
       expect(submit('들어가기'), findsOneWidget);
       expect(container(tester).read(currentGuestProvider), isNull);
@@ -459,7 +461,7 @@ void main() {
       );
       await tryCreate(tester, '1234');
 
-      expect(find.text('이름에 쓸 수 없는 글자가 있습니다'), findsOneWidget);
+      expect(find.text('닉네임에 쓸 수 없는 글자가 있습니다'), findsOneWidget);
       expect(find.text(tooShort), findsNothing);
     });
   });
@@ -472,7 +474,7 @@ void main() {
       await openGuest(tester);
 
       await enterName(tester, '민수');
-      expect(find.text('이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요'), findsOneWidget);
+      expect(find.text('이미 참여한 닉네임입니다. 본인이면 비밀번호를 입력하세요'), findsOneWidget);
       expect(find.text('전체 동의'), findsNothing);
       expect(find.textContaining('바꾸거나 찾을 수 없습니다'), findsNothing);
 
@@ -556,14 +558,14 @@ void main() {
       await tester.pump();
       await tester.tap(passwordField());
       await tester.pump();
-      expect(find.bySemanticsLabel('이름을 찾는 중'), findsOneWidget);
+      expect(find.bySemanticsLabel('닉네임을 찾는 중'), findsOneWidget);
 
       await tester.enterText(nameField(), '서연');
       await tester.pump();
       guests.lookupGate = null;
       gate.complete();
       await tester.pumpAndSettle();
-      expect(find.text('이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요'), findsNothing);
+      expect(find.text('이미 참여한 닉네임입니다. 본인이면 비밀번호를 입력하세요'), findsNothing);
 
       await tester.tap(passwordField());
       await tester.pumpAndSettle();
@@ -598,7 +600,7 @@ void main() {
       ),
       '이름 규칙': (
         guestError(422, 'RequestValidationError'),
-        '이름에 쓸 수 없는 글자가 있습니다',
+        '닉네임에 쓸 수 없는 글자가 있습니다',
       ),
     };
     for (final MapEntry(key: name, value: (error, text)) in cases.entries) {
@@ -724,7 +726,9 @@ void main() {
       );
       expect(
         inSheet(
-          find.text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요, 하지만 로그인만큼 강력한 보안을 보장하지 못해요!'),
+          find.text(
+            '게스트는 가입 없이 닉네임과 비밀번호만 있으면 돼요, 하지만 로그인만큼 강력한 보안을 보장하지 못해요!',
+          ),
         ),
         findsOneWidget,
       );

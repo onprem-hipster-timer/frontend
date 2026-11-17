@@ -89,7 +89,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
     super.dispose();
   }
 
-  /// 지금 이름을 찾는다. 같은 이름을 찾는 중이면 그 결과를 기다리고, 이미 찾았으면 다시 찾지 않는다.
+  /// 지금 이름을 찾는다. 같은 닉네임을 찾는 중이면 그 결과를 기다리고, 이미 찾았으면 다시 찾지 않는다.
   /// 찾는 사이 이름을 고쳤으면 그 결과는 버린다. 찾지 못하면 알리고 null이다
   Future<_Found?> _find() {
     final name = _typedName;
@@ -210,7 +210,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
             controller: _password,
             focusNode: _passwordFocus,
             helper: isNew
-                ? '비밀번호는 바꾸거나 찾을 수 없습니다. 잊으면 이 이름으로 다시 들어올 수 없습니다.'
+                ? '게스트는 비밀번호를 바꾸거나 찾을 수 없습니다. 잊으면 이 닉네임으로 다시 들어올 수 없습니다. 분실이 우려되면 로그인을 이용해 주세요!'
                 : null,
             errorText: _passwordError,
             onSubmitted: _submit,
@@ -261,11 +261,11 @@ class _NameField extends StatelessWidget {
       autofocus: true,
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
-        labelText: '이름',
+        labelText: '닉네임',
         prefixIcon: const Icon(Icons.badge_outlined),
         helperText: known
-            ? '이미 참여한 이름입니다. 본인이면 비밀번호를 입력하세요'
-            : '이 ${Terms.meeting}에서 보일 이름',
+            ? '이미 참여한 닉네임입니다. 본인이면 비밀번호를 입력하세요'
+            : '이 ${Terms.meeting}에서 보일 닉네임',
         helperMaxLines: 6,
         suffixIcon: checking ? const _Checking() : null,
       ),
@@ -302,13 +302,13 @@ class _SubmitButton extends StatelessWidget {
   }
 }
 
-/// 이름을 찾는 중인 작은 표시
+/// 닉네임을 찾는 중인 작은 표시
 class _Checking extends StatelessWidget {
   const _Checking();
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '이름을 찾는 중',
+    label: '닉네임을 찾는 중',
     child: const Padding(
       padding: EdgeInsets.all(14),
       child: SizedBox.square(

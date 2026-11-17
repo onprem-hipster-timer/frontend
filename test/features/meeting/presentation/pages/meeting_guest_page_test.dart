@@ -431,7 +431,7 @@ void main() {
           turnstileToken: 'token-1',
         ),
       ).called(1);
-      expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+      expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
       expect(find.bySemanticsLabel('철수, 게스트, 나'), findsOneWidget);
       expect(find.text('게스트 철수로 진행 중입니다'), findsOneWidget);
       expect(turnstiles.last.resets, 1);
@@ -450,14 +450,14 @@ void main() {
       await tester.enterText(nameField(), '서연');
       await tester.tap(find.text('저장'));
       await tester.pumpAndSettle();
-      expect(find.text('이 모임에 같은 이름이 있습니다. 다른 이름을 입력해 주세요'), findsOneWidget);
+      expect(find.text('이 모임에 같은 닉네임이 있습니다. 다른 닉네임을 입력해 주세요'), findsOneWidget);
 
       stubRename('서연2');
       await tester.enterText(nameField(), '서연2');
       await tester.tap(find.text('저장'));
       await tester.pumpAndSettle();
       expect(turnstiles.last.issued, ['token-1', 'token-2']);
-      expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+      expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
     });
 
     group('들어온 지 오래되어 이름 바꾸기가 거절되면(403 session_refresh_required)', () {
@@ -524,7 +524,7 @@ void main() {
         expect(find.text(reason), findsOneWidget);
         expect(passwordField(), findsOneWidget);
         expect(find.widgetWithText(TextFormField, '철수'), findsOneWidget);
-        expect(find.text('이름을 바꿨습니다'), findsNothing);
+        expect(find.text('닉네임을 바꿨습니다'), findsNothing);
 
         await tester.enterText(passwordField(), '1234');
         await tester.tap(find.text('저장'));
@@ -554,7 +554,7 @@ void main() {
           () => harness.kratos.logout(KratosTestHarness.sessionToken),
         ).called(1);
         expect(await harness.storedSessionToken(), refreshed);
-        expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+        expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
         expect(find.text('게스트 철수로 진행 중입니다'), findsOneWidget);
         expect(
           container(tester).read(currentGuestProvider)?.meetingId,
@@ -600,7 +600,7 @@ void main() {
           'token-3',
           'token-4',
         ]);
-        expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+        expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
         expect(await harness.storedSessionToken(), refreshed);
       });
 
@@ -620,7 +620,7 @@ void main() {
             'password': '12',
           }, turnstileToken: 'token-2'),
         ).called(1);
-        expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+        expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
       });
 
       testWidgets('비워 두고 저장하면 보내지 않고 비밀번호를 입력하라고 한다', (tester) async {
@@ -657,7 +657,10 @@ void main() {
         await tester.tap(find.text('저장'));
         await tester.pumpAndSettle();
 
-        expect(find.text('이 모임에 같은 이름이 있습니다. 다른 이름을 입력해 주세요'), findsOneWidget);
+        expect(
+          find.text('이 모임에 같은 닉네임이 있습니다. 다른 닉네임을 입력해 주세요'),
+          findsOneWidget,
+        );
         expect(passwordField(), findsNothing);
         expect(find.text(reason), findsNothing);
         expect(await harness.storedSessionToken(), refreshed);

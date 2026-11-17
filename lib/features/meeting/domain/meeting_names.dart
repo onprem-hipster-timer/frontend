@@ -19,10 +19,10 @@ String meetingDisplayName(String? accountName) {
 /// 참여자 이름 입력의 오류 문구. 쓸 수 있으면 null
 String? meetingNameError(String input) {
   final name = input.trim();
-  if (name.isEmpty) return '이름을 입력해 주세요';
+  if (name.isEmpty) return '닉네임을 입력해 주세요';
   if (_control.hasMatch(name)) return '줄바꿈이나 탭은 쓸 수 없습니다';
   if (name.runes.length > meetingNameMaxLength) {
-    return '이름은 $meetingNameMaxLength자까지 쓸 수 있습니다';
+    return '닉네임은 $meetingNameMaxLength자까지 쓸 수 있습니다';
   }
   return null;
 }

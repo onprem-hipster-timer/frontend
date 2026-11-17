@@ -38,7 +38,7 @@ void main() {
   testWidgets('지금 이름을 채워 연다', (tester) async {
     await openSheet(tester);
 
-    expect(find.text('내 이름'), findsOneWidget);
+    expect(find.text('내 닉네임'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, '지현'), findsOneWidget);
   });
 
@@ -46,9 +46,9 @@ void main() {
     await openSheet(tester);
 
     for (final (input, message) in [
-      ('   ', '이름을 입력해 주세요'),
+      ('   ', '닉네임을 입력해 주세요'),
       ('김\t지현', '줄바꿈이나 탭은 쓸 수 없습니다'),
-      ('가' * 51, '이름은 50자까지 쓸 수 있습니다'),
+      ('가' * 51, '닉네임은 50자까지 쓸 수 있습니다'),
     ]) {
       await tester.enterText(field(), input);
       await tapVisible(tester, find.text('저장'));
@@ -64,8 +64,8 @@ void main() {
     await tapVisible(tester, find.text('저장'));
 
     expect(meetings.participations, ['새 이름']);
-    expect(find.text('내 이름'), findsNothing);
-    expect(find.text('이름을 바꿨습니다'), findsOneWidget);
+    expect(find.text('내 닉네임'), findsNothing);
+    expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
   });
 
   testWidgets('바꾸지 못하면 시트를 두고 알린다', (tester) async {
@@ -75,7 +75,7 @@ void main() {
     await tester.enterText(field(), '새 이름');
     await tapVisible(tester, find.text('저장'));
 
-    expect(find.text('내 이름'), findsOneWidget);
-    expect(find.textContaining('이름을 바꾸지 못했습니다'), findsOneWidget);
+    expect(find.text('내 닉네임'), findsOneWidget);
+    expect(find.textContaining('닉네임을 바꾸지 못했습니다'), findsOneWidget);
   });
 }

@@ -114,7 +114,7 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
       await _steps.rename(widget.guest, name);
       await board.reload();
       navigator.pop();
-      messenger.showAppSnackBar('이름을 바꿨습니다', kind: AppNoticeKind.success);
+      messenger.showAppSnackBar('닉네임을 바꿨습니다', kind: AppNoticeKind.success);
     } catch (error) {
       if (mounted) _refused(error);
     } finally {
@@ -164,7 +164,7 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
     final theme = Theme.of(context);
     final message = _message;
     return AppFormSheet(
-      title: '내 이름',
+      title: '내 닉네임',
       formKey: _formKey,
       actions: AppFormActionBar(
         submitLabel: '저장',
@@ -177,7 +177,7 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
           autofocus: true,
           decoration: InputDecoration(
             // 큰 글자에서는 칸 이름을 자르지 않고 두 줄까지 보인다
-            label: Text('이 ${Terms.meeting}에서 보일 이름', maxLines: 2),
+            label: Text('이 ${Terms.meeting}에서 보일 닉네임', maxLines: 2),
             prefixIcon: const Icon(Icons.badge_outlined),
             errorText: _nameError,
             errorMaxLines: 3,
@@ -235,7 +235,7 @@ class _DeleteGuest extends StatelessWidget {
           label: const Text('게스트 계정 지우기'),
         ),
         Text(
-          '내 시간과 이름이 이 ${Terms.meeting}에서 지워집니다. 되돌리기 알림이 닫히면 되돌릴 수 없습니다.',
+          '내 시간과 닉네임이 이 ${Terms.meeting}에서 지워집니다. 되돌리기 알림이 닫히면 되돌릴 수 없습니다.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

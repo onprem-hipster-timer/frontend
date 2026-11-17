@@ -31,8 +31,8 @@ void main() {
     });
 
     test('비었거나 공백뿐이면 입력을 요청한다', () {
-      expect(meetingNameError(''), '이름을 입력해 주세요');
-      expect(meetingNameError('   '), '이름을 입력해 주세요');
+      expect(meetingNameError(''), '닉네임을 입력해 주세요');
+      expect(meetingNameError('   '), '닉네임을 입력해 주세요');
     });
 
     test('가운데의 줄바꿈·탭은 받지 않는다', () {
@@ -41,8 +41,8 @@ void main() {
     });
 
     test('51자부터 받지 않는다', () {
-      expect(meetingNameError('가' * 51), '이름은 50자까지 쓸 수 있습니다');
-      expect(meetingNameError('😀' * 51), '이름은 50자까지 쓸 수 있습니다');
+      expect(meetingNameError('가' * 51), '닉네임은 50자까지 쓸 수 있습니다');
+      expect(meetingNameError('😀' * 51), '닉네임은 50자까지 쓸 수 있습니다');
     });
   });
 }

@@ -7,7 +7,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// '일정 참여자': 참여자 이름 칩(주인은 왕관)과 '편집'.
 ///
 /// 모임 주인의 '편집'은 칩마다 빼기 단추를, 내 칩에는 이름 바꾸기 단추를 두고 '완료'로 닫는다.
-/// 다른 사람의 '편집'은 바로 내 이름 바꾸기를 연다(참여했을 때만 둔다).
+/// 다른 사람의 '편집'은 바로 내 닉네임 바꾸기를 연다(참여했을 때만 둔다).
 class MeetingParticipantsPanel extends StatefulWidget {
   const MeetingParticipantsPanel({
     super.key,
@@ -18,7 +18,7 @@ class MeetingParticipantsPanel extends StatefulWidget {
 
   final MeetingBoard board;
 
-  /// 내 이름 바꾸기. 없으면 다른 사람의 '편집'이 없다
+  /// 내 닉네임 바꾸기. 없으면 다른 사람의 '편집'이 없다
   final VoidCallback? onRename;
 
   /// 주인이 참여자를 뺀다

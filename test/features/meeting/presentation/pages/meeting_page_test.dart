@@ -170,7 +170,7 @@ void main() {
     await tester.tap(find.text('편집'));
     await tester.pumpAndSettle();
 
-    expect(find.text('내 이름'), findsOneWidget);
+    expect(find.text('내 닉네임'), findsOneWidget);
     expect(find.widgetWithText(TextFormField, '지현'), findsOneWidget);
   });
 
@@ -396,9 +396,9 @@ void main() {
       expect(find.byTooltip('민수 빼기'), findsOneWidget);
       expect(find.byTooltip('하준 빼기'), findsOneWidget);
       expect(find.byTooltip('지현 빼기'), findsNothing);
-      expect(find.byTooltip('내 이름 바꾸기'), findsOneWidget);
+      expect(find.byTooltip('내 닉네임 바꾸기'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('내 이름 바꾸기'));
+      await tester.tap(find.byTooltip('내 닉네임 바꾸기'));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TextFormField, '지현'), findsOneWidget);
       await tester.tapAt(const Offset(10, 10));
@@ -407,7 +407,7 @@ void main() {
       await tester.tap(find.text('완료'));
       await tester.pumpAndSettle();
       expect(find.byTooltip('민수 빼기'), findsNothing);
-      expect(find.byTooltip('내 이름 바꾸기'), findsNothing);
+      expect(find.byTooltip('내 닉네임 바꾸기'), findsNothing);
     });
 
     testWidgets('참여하지 않은 주인도 편집으로 모든 참여자를 뺄 수 있다', (tester) async {
@@ -418,7 +418,7 @@ void main() {
 
       expect(find.byTooltip('민수 빼기'), findsOneWidget);
       expect(find.byTooltip('하준 빼기'), findsOneWidget);
-      expect(find.byTooltip('내 이름 바꾸기'), findsNothing);
+      expect(find.byTooltip('내 닉네임 바꾸기'), findsNothing);
     });
 
     testWidgets('빼면 칩·격자·카드에서 바로 빠지고 되돌리기 알림이 저절로 닫힐 때 보낸다', (tester) async {
@@ -526,13 +526,13 @@ void main() {
       expect(meetings.removedParticipants, ['a']);
     });
 
-    testWidgets('주인이 아니면 빼기 단추가 없고 편집은 바로 내 이름 바꾸기다', (tester) async {
+    testWidgets('주인이 아니면 빼기 단추가 없고 편집은 바로 내 닉네임 바꾸기다', (tester) async {
       meetings.meeting = makeMeeting(ownerId: 'someone');
       await pumpMeeting(tester, size: const Size(1280, 900));
 
       await openEdit(tester);
 
-      expect(find.text('내 이름'), findsOneWidget);
+      expect(find.text('내 닉네임'), findsOneWidget);
       expect(find.byTooltip('민수 빼기'), findsNothing);
     });
   });

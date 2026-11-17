@@ -46,7 +46,7 @@ class MeetingNameChip extends StatelessWidget {
     final action = onRemove != null
         ? (Icons.close, '$name 빼기', onRemove)
         : onRename != null
-        ? (Icons.edit_outlined, '내 이름 바꾸기', onRename)
+        ? (Icons.edit_outlined, '내 닉네임 바꾸기', onRename)
         : null;
     return Container(
       padding: EdgeInsets.fromLTRB(

@@ -117,7 +117,7 @@ bool _rejectsField(Object? data, String field) {
 /// [error]를 게스트에게 보일 한 문장으로 바꾼다. 429면 다시 보낼 수 있을 때까지의 초를 함께 쓴다
 String guestRefusalText(Object error) => switch (GuestRefusal.of(error)) {
   GuestRefusal.wrongPassword => '비밀번호가 맞지 않습니다',
-  GuestRefusal.nameTaken => '이 ${Terms.meeting}에 같은 이름이 있습니다. 다른 이름을 입력해 주세요',
+  GuestRefusal.nameTaken => '이 ${Terms.meeting}에 같은 닉네임이 있습니다. 다른 닉네임을 입력해 주세요',
   GuestRefusal.closed => '지금은 이 ${Terms.meeting}에 게스트로 들어갈 수 없습니다',
   GuestRefusal.full =>
     '이 ${Terms.meeting.withJosa('은', '는')} 게스트가 100명이라 더 들어올 수 없습니다',
@@ -128,7 +128,7 @@ String guestRefusalText(Object error) => switch (GuestRefusal.of(error)) {
     final wait? => '요청이 너무 많습니다. ${wait.inSeconds}초 뒤 다시 시도해 주세요',
     null => '요청이 너무 많습니다. 잠시 뒤 다시 시도해 주세요',
   },
-  GuestRefusal.invalidName => '이름에 쓸 수 없는 글자가 있습니다',
+  GuestRefusal.invalidName => '닉네임에 쓸 수 없는 글자가 있습니다',
   GuestRefusal.passwordTooShort => guestPasswordTooShortText,
   GuestRefusal.reauthRequired => '들어온 지 오래되어 비밀번호를 한 번 더 확인합니다',
   GuestRefusal.network => '네트워크 연결을 확인해 주세요',

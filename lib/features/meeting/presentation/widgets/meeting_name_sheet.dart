@@ -54,12 +54,12 @@ class _MeetingNameSheetState extends ConsumerState<MeetingNameSheet> {
             .rename(_name.text),
       );
       navigator.pop();
-      messenger.showAppSnackBar('이름을 바꿨습니다', kind: AppNoticeKind.success);
+      messenger.showAppSnackBar('닉네임을 바꿨습니다', kind: AppNoticeKind.success);
     } catch (error) {
       if (mounted) {
         showAppSnackBar(
           context,
-          '이름을 바꾸지 못했습니다: $error',
+          '닉네임을 바꾸지 못했습니다: $error',
           kind: AppNoticeKind.error,
         );
       }
@@ -69,7 +69,7 @@ class _MeetingNameSheetState extends ConsumerState<MeetingNameSheet> {
   @override
   Widget build(BuildContext context) {
     return AppFormSheet(
-      title: '내 이름',
+      title: '내 닉네임',
       formKey: _formKey,
       actions: AppFormActionBar(
         submitLabel: '저장',
@@ -81,7 +81,7 @@ class _MeetingNameSheetState extends ConsumerState<MeetingNameSheet> {
           controller: _name,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: '이 ${Terms.meeting}에서 보일 이름',
+            labelText: '이 ${Terms.meeting}에서 보일 닉네임',
             prefixIcon: const Icon(Icons.badge_outlined),
           ),
           validator: (value) => meetingNameError(value ?? ''),

@@ -42,7 +42,8 @@ class _MeetingGuestPasswordFieldState extends State<MeetingGuestPasswordField> {
         labelText: '비밀번호',
         prefixIcon: const Icon(Icons.lock_outlined),
         helperText: widget.helper,
-        helperMaxLines: 6,
+        // 큰 글자·좁은 화면에서도 안내를 자르지 않는다
+        helperMaxLines: 12,
         errorText: widget.errorText,
         suffixIcon: IconButton(
           icon: Icon(

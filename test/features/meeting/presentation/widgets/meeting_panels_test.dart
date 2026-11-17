@@ -311,7 +311,7 @@ void main() {
       expect(chip('하준', guest: true), findsOneWidget);
     });
 
-    testWidgets('참여했으면 편집으로 내 이름 바꾸기를 연다', (tester) async {
+    testWidgets('참여했으면 편집으로 내 닉네임 바꾸기를 연다', (tester) async {
       var edits = 0;
       await pumpPanel(
         tester,

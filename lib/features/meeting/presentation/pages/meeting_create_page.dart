@@ -371,7 +371,7 @@ class _SharingSection extends StatelessWidget {
         const MeetingSectionTitle(
           '게스트 로그인',
           help:
-              '허용하면 회원이 아니어도 이름과 비밀번호로 참여할 수 있습니다. '
+              '허용하면 회원이 아니어도 닉네임과 비밀번호로 참여할 수 있습니다. '
               '공개 ${Terms.meeting}에서만 허용할 수 있습니다.',
         ),
         MeetingShake(
