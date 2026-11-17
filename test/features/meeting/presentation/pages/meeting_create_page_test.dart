@@ -408,7 +408,7 @@ void main() {
       await pickRange(tester, 1, 6);
       await press(tester, '없어요');
 
-      expect(plainContaining('5일 이하이고 기간이 7일 안일 때만'), findsOneWidget);
+      expect(plainContaining('일주일 안에서 5일까지만 받을 수 있어요'), findsOneWidget);
       expect(
         tester.getSemantics(find.text('시간별')),
         isSemantics(isEnabled: false),
