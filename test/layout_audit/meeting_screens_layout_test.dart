@@ -8,7 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart'
-    show Tags, expect, find, findsOneWidget, setUpAll;
+    show Tags, expect, find, findsNothing, findsOneWidget, setUpAll;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
@@ -203,6 +203,39 @@ class _SubmitOnStartState extends State<_SubmitOnStart> {
   Widget build(BuildContext context) => widget.child;
 }
 
+/// 첫 프레임 뒤에 모임 만들기 달력에서 고를 수 있는 첫날을 한 번 고른 화면(시간 단계가 펼쳐진 단계)
+class _PickFirstDayOnStart extends StatefulWidget {
+  const _PickFirstDayOnStart({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PickFirstDayOnStart> createState() => _PickFirstDayOnStartState();
+}
+
+class _PickFirstDayOnStartState extends State<_PickFirstDayOnStart> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 보이는 달에서 고를 수 있는 첫날(날짜 칸만 InkResponse 그 자체다)
+      final cell = find
+          .byWidgetPredicate(
+            (widget) =>
+                widget.runtimeType == InkResponse &&
+                (widget as InkResponse).onTap != null,
+          )
+          .evaluate()
+          .first
+          .widget;
+      (cell as InkResponse).onTap!();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// 첫 프레임 뒤에 [label] 글자의 InkWell을 한 번 누른 화면(만든 뒤 화면의 '또는 QR로 공유하기')
 class _TapOnStart extends StatefulWidget {
   const _TapOnStart({required this.label, required this.child});
@@ -274,6 +307,39 @@ void main() {
       ...meetingOverrides(meetings: FakeMeetingsClient(), name: text.value),
       sharedPreferencesProvider.overrideWithValue(prefs),
     ]),
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_time_step',
+    subject: '제목 자리 글자의 이름',
+    texts: const [StressTexts.koreanLong],
+    build: (text) =>
+        routed(const _PickFirstDayOnStart(child: MeetingCreatePage()), [
+          ...meetingOverrides(meetings: FakeMeetingsClient(), name: text.value),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ]),
+    verify: (tester) {
+      expect(find.text('모임 시간'), findsOneWidget);
+      expect(find.text('공개 여부'), findsNothing);
+    },
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_all_steps',
+    subject: '제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) {
+      // 로그인하러 가며 둔 폼으로 열면 모든 단계가 바로 보인다
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      PendingMeetingStore(
+        prefs,
+      ).save((draft: const MeetingDraft().tapDay(tomorrow), title: text.value));
+      return routed(const MeetingCreatePage(), [
+        ...meetingOverrides(meetings: FakeMeetingsClient()),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ]);
+    },
+    verify: (tester) => expect(find.byType(TextField), findsOneWidget),
   );
 
   testLayoutAudit(

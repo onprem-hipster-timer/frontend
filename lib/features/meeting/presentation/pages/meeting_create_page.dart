@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -12,6 +14,7 @@ import 'package:momeet/features/meeting/presentation/providers/pending_meeting_s
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_create_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_login_prompt.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
@@ -26,7 +29,9 @@ import 'package:momeet/shared/ui/ui.dart';
 
 /// 모임 만들기 화면(`/meetings`). 탭 셸 밖의 독립 화면이다.
 ///
-/// 쉬운 입력부터 두고 비용이 큰 제목은 맨 끝 화살표 옆에 둔다: 날짜 → 시간 → 공개·게스트 → 제목.
+/// 쉬운 입력부터 두고 비용이 큰 제목은 맨 끝 화살표 옆에 둔다: 날짜 → 시간 → 공개·게스트 → 제목. 처음에는 날짜만
+/// 보이고, 날짜를 처음 고르면 시간이, 그 뒤로는 폼을 만지지 않고 잠시(1.2초) 지나면 다음 단계가 하나씩 펼쳐진다
+/// (만지면 다시 기다린다). 되살린 폼은 모든 단계를 바로 보인다.
 /// 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다.
 ///
 /// 로그인하지 않아도 모두 넣을 수 있고, 그동안 로그인 말은 없다. 화살표를 누르면 그때 로그인이 필요한 까닭을
@@ -49,6 +54,16 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
   /// 공개를 꺼서 게스트 로그인이 저절로 꺼진 횟수
   var _guestShakes = 0;
 
+  /// 보이는 단계 수(1: 날짜만 ~ 4: 제목까지). 나타난 단계는 사라지지 않는다
+  var _revealed = 1;
+
+  /// 되살린 폼처럼 처음부터 모든 단계가 보이면 펼치지 않는다
+  var _animate = true;
+
+  /// 마지막으로 만진 뒤 다음 단계를 펼칠 때까지 기다리는 시간
+  static const _dwell = Duration(milliseconds: 1200);
+  Timer? _next;
+
   @override
   void initState() {
     super.initState();
@@ -58,16 +73,34 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     if (pending != null) {
       _draft = pending.draft;
       _title.text = pending.title;
+      _revealed = 4;
+      _animate = false;
     }
   }
 
   @override
   void dispose() {
+    _next?.cancel();
     _title.dispose();
     super.dispose();
   }
 
-  void _change(MeetingDraft next) => setState(() => _draft = next);
+  /// 폼을 만졌다. 날짜를 처음 고르면 시간 단계를 바로 펼치고, 그 뒤 단계는 만지지 않고 잠시 지나면 하나씩 펼친다
+  void _touched() {
+    _next?.cancel();
+    if (_revealed == 1 && !_draft.dates.isEmpty) _revealed = 2;
+    if (_revealed == 1 || _revealed == 4) return;
+    _next = Timer(_dwell, () {
+      if (!mounted) return;
+      setState(() => _revealed++);
+      _touched();
+    });
+  }
+
+  void _change(MeetingDraft next) => setState(() {
+    _draft = next;
+    _touched();
+  });
 
   /// 날짜를 누른다. 시간별에서 날짜별로 바뀌면 방식 고르기를 떤다
   void _tapDay(DateTime day) {
@@ -75,6 +108,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     setState(() {
       if (next.mode != _draft.mode) _modeShakes++;
       _draft = next;
+      _touched();
     });
   }
 
@@ -84,6 +118,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     setState(() {
       if (next.allowGuests != _draft.allowGuests) _guestShakes++;
       _draft = next;
+      _touched();
     });
   }
 
@@ -96,7 +131,8 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     }
     if (ref.read(currentUserProvider) == null) {
       final wide =
-          MediaQuery.sizeOf(context).width >= _FormLayout.twoColumnsFrom;
+          MediaQuery.sizeOf(context).width >=
+          MeetingCreateLayout.twoColumnsFrom;
       if (await askLoginToCreateMeeting(context, wide: wide) && mounted) {
         await _goToLogin();
       }
@@ -155,7 +191,9 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     final name = ref.watch(currentUserProvider.select((user) => user?.name));
     return MeetingGlassScaffold(
       title: const Text('새 ${Terms.meeting}'),
-      body: _FormLayout(
+      body: MeetingCreateLayout(
+        revealed: _revealed,
+        animate: _animate,
         dates: _DatesSection(
           calendar: MeetingCalendar(
             firstDay: today,
@@ -187,77 +225,6 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
   }
 }
 
-/// 넓으면 날짜를 왼쪽, 나머지를 오른쪽 칸에 두고, 좁으면 같은 순서로 위에서 아래로 쌓는다
-class _FormLayout extends StatelessWidget {
-  const _FormLayout({
-    required this.dates,
-    required this.time,
-    required this.sharing,
-    required this.title,
-  });
-
-  /// 이 폭부터 두 칸
-  static const twoColumnsFrom = 720.0;
-
-  final Widget dates;
-  final Widget time;
-  final Widget sharing;
-  final Widget title;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= twoColumnsFrom;
-        final settings = [
-          time,
-          const SizedBox(height: 24),
-          sharing,
-          const SizedBox(height: 28),
-          title,
-        ];
-        return SingleChildScrollView(
-          padding: EdgeInsets.all(
-            wide ? 32 : 16,
-          ).add(EdgeInsets.only(top: MediaQuery.paddingOf(context).top)),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 880),
-              child: wide
-                  ? Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: dates),
-                            const SizedBox(width: 40),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: settings,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        dates,
-                        const SizedBox(height: 24),
-                        ...settings,
-                      ],
-                    ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
 /// '모임 날짜'와 달력
 class _DatesSection extends StatelessWidget {
   const _DatesSection({required this.calendar});
@@ -269,7 +236,10 @@ class _DatesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const MeetingSectionTitle('${Terms.meeting} 날짜'),
+        const MeetingSectionTitle(
+          '${Terms.meeting} 날짜',
+          caption: '모일 날짜를 골라 주세요',
+        ),
         const SizedBox(height: 12),
         calendar,
       ],

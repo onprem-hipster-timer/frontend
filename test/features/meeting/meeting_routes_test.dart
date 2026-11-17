@@ -300,7 +300,8 @@ void main() {
   ) async {
     final router = await pumpRouter(tester);
     expect(find.byType(ScaffoldWithNavBar), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('^모임')), findsNothing);
+    // 달력 앱바의 '모임 만들기'는 탭이 아니다
+    expect(find.bySemanticsLabel(RegExp('^모임(?! 만들기)')), findsNothing);
 
     router.go(AppRoute.meetings.path);
     await pumpAWhile(tester);
@@ -363,7 +364,11 @@ void main() {
       await tester.tap(
         find.bySemanticsLabel(RegExp('^${day.month}월 ${day.day}일')),
       );
-      await pumpAWhile(tester);
+      // 날짜를 고르면 남은 단계가 차례로 펼쳐진다
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 1300));
+        await pumpAWhile(tester);
+      }
       await tester.enterText(find.byType(TextField), '스터디');
       await tester.tap(find.byTooltip('모임 만들기'));
       await pumpAWhile(tester);

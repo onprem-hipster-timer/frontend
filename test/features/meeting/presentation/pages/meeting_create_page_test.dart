@@ -92,12 +92,22 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// 만지지 않고 기다려 남은 단계가 모두 펼쳐지게 한다
+  Future<void> revealRest(WidgetTester tester) async {
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 1300));
+      await tester.pumpAndSettle();
+    }
+  }
+
+  /// 다음 달의 [days]를 차례로 누르고, 다음 단계들이 펼쳐질 때까지 기다린다
   Future<void> tapDays(WidgetTester tester, Iterable<int> days) async {
     for (final day in days) {
       await tester.tap(dayCell(nextMonth(day)));
       await tester.pump();
     }
     await tester.pumpAndSettle();
+    await revealRest(tester);
   }
 
   Future<void> submit(WidgetTester tester) async {
@@ -113,16 +123,48 @@ void main() {
   double modeOffset(WidgetTester tester, double rest) =>
       tester.getTopLeft(find.byType(MeetingModeSelector)).dx - rest;
 
-  testWidgets('처음에는 시간별에 하루 시간 범위·시간 기준을 보이고 공개·게스트 로그인은 허용이다', (tester) async {
+  testWidgets('처음에는 날짜만 묻고, 날짜를 고르면 시간이, 그 뒤 잠시 지나면 공개·게스트와 제목이 차례로 나타난다', (
+    tester,
+  ) async {
     await pumpPage(tester);
+    expect(find.text('모일 날짜를 골라 주세요'), findsOneWidget);
+    expect(find.text('모임 시간'), findsNothing);
+    expect(find.text('공개 여부'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
 
+    await tester.tap(dayCell(nextMonth(3)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('모임 시간'), findsOneWidget);
+    expect(find.text('6:00'), findsOneWidget);
+    expect(find.text('18:00'), findsOneWidget);
+    expect(find.text('한국 시간 기준'), findsOneWidget);
+    expect(find.text('공개 여부'), findsNothing);
+
+    // 만지는 동안은 기다린다
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(dayCell(nextMonth(4)));
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(find.text('공개 여부'), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('공개 여부'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(dayCell(nextMonth(4))),
+      isSemantics(isSelected: true),
+      reason: '앞 단계 값은 그대로',
+    );
     expect(
       tester.getSemantics(find.text('시간별')),
       isSemantics(isSelected: true),
     );
-    expect(find.text('6:00'), findsOneWidget);
-    expect(find.text('18:00'), findsOneWidget);
-    expect(find.text('한국 시간 기준'), findsOneWidget);
     expect(
       tester.getSemantics(find.text('허용').first),
       isSemantics(isChecked: true, isEnabled: true),
@@ -133,8 +175,30 @@ void main() {
     );
   });
 
+  testWidgets('애니메이션을 줄였어도 단계는 같은 때에 바로 나타난다', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await pumpPage(tester);
+
+    await tester.tap(dayCell(nextMonth(3)));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('모임 시간'), findsOneWidget);
+    final fade = tester.widget<FadeTransition>(
+      find
+          .ancestor(
+            of: find.text('모임 시간'),
+            matching: find.byType(FadeTransition),
+          )
+          .first,
+    );
+    expect(fade.opacity.value, 1);
+  });
+
   testWidgets('입력은 날짜 → 시간 → 공개·게스트 → 제목 순서로 놓인다', (tester) async {
     await pumpPage(tester);
+    await tapDays(tester, [3]);
 
     final dates = tester.getTopLeft(find.text('모임 날짜')).dy;
     final time = tester.getTopLeft(find.text('모임 시간')).dy;
@@ -155,9 +219,9 @@ void main() {
     tester,
   ) async {
     await pumpPage(tester);
+    await tapDays(tester, [3, 4, 5, 6, 7]);
     final rest = tester.getTopLeft(find.byType(MeetingModeSelector)).dx;
 
-    await tapDays(tester, [3, 4, 5, 6, 7]);
     expect(
       tester.getSemantics(find.text('시간별')),
       isSemantics(isSelected: true),
@@ -195,6 +259,7 @@ void main() {
 
   testWidgets('날짜별을 직접 고르면 떨지 않는다', (tester) async {
     await pumpPage(tester);
+    await tapDays(tester, [3]);
     final rest = tester.getTopLeft(find.byType(MeetingModeSelector)).dx;
 
     await tester.tap(find.text('날짜별'));
@@ -206,6 +271,7 @@ void main() {
 
   testWidgets('공개를 끄면 게스트 로그인이 비허용으로 바뀌어 고를 수 없고 그 줄이 떤다', (tester) async {
     await pumpPage(tester);
+    await tapDays(tester, [3]);
     final guestRow = find.text('비허용').last;
     final rest = tester.getTopLeft(guestRow).dx;
 
@@ -241,8 +307,10 @@ void main() {
     );
   });
 
-  testWidgets('날짜를 고르지 않고 화살표를 누르면 날짜를 고르라고 알리고 보내지 않는다', (tester) async {
+  testWidgets('고른 날을 모두 빼고 화살표를 누르면 날짜를 고르라고 알리고 보내지 않는다', (tester) async {
     await pumpPage(tester);
+    await tapDays(tester, [3, 3]);
+    expect(find.text('모임 시간'), findsOneWidget, reason: '나타난 단계는 그대로');
 
     await submit(tester);
 
@@ -299,8 +367,8 @@ void main() {
 
   testWidgets('이름이 없으면 모임 일정을, 제목을 쓰면 그 제목을 앞뒤 공백 없이 보낸다', (tester) async {
     await pumpPage(tester, name: null);
-    expect(find.text('모임 일정'), findsOneWidget);
     await tapDays(tester, [3]);
+    expect(find.text('모임 일정'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), '  주간 회의 ');
     await submit(tester);
@@ -341,10 +409,10 @@ void main() {
 
   testWidgets('날짜별·요일별은 하루 전체로, 요일별은 누른 날부터 7일로 보낸다', (tester) async {
     await pumpPage(tester);
+    await tapDays(tester, [10]);
     await tester.tap(find.text('요일별'));
     await tester.pumpAndSettle();
     expect(find.text('6:00'), findsNothing);
-    await tapDays(tester, [10]);
 
     await submit(tester);
 
@@ -524,8 +592,9 @@ void main() {
       expect(location(), AppRoute.login.path);
     });
 
-    testWidgets('날짜를 고르지 않았으면 로그인보다 날짜를 먼저 고르라고 한다', (tester) async {
+    testWidgets('고른 날을 모두 뺐으면 로그인보다 날짜를 먼저 고르라고 한다', (tester) async {
       await pumpPage(tester, signedIn: false);
+      await tapDays(tester, [3, 3]);
 
       await submit(tester);
 
