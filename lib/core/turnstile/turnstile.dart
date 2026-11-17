@@ -15,6 +15,9 @@ enum TurnstileStatus {
   /// 위젯을 불러오거나 확인하는 중
   verifying,
 
+  /// 사람이 상자 안에서 할 일이 있다(누르기 등). 끝나면 확인 중으로 돌아간다
+  interactive,
+
   /// 쓸 토큰이 있다
   ready,
 

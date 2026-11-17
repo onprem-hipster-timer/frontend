@@ -62,6 +62,12 @@ class FakeTurnstile implements TurnstileController {
     _serve();
   }
 
+  /// 사람이 상자 안에서 할 일이 생겼다(Cloudflare의 before-interactive)
+  void beginInteractive() => status.value = TurnstileStatus.interactive;
+
+  /// 상자 안의 일이 끝났다(after-interactive). 토큰은 [release]나 다음 [nextToken]이 준다
+  void endInteractive() => status.value = TurnstileStatus.verifying;
+
   /// 붙잡아 둔 토큰을 준다
   void release() {
     holdTokens = false;

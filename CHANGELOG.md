@@ -220,7 +220,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Web
 - 웹 응답 헤더(`vercel.json`): `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`
-- Cloudflare Turnstile 위젯: 필요할 때 Cloudflare 스크립트(`render=explicit`)를 한 번 불러와 플랫폼 뷰에 그린다. 칸이 300보다 좁으면 compact, 색은 앱 밝기를 따른다. 새 패키지 없이 `dart:js_interop`을 쓴다
+- Cloudflare Turnstile 위젯: 필요할 때 Cloudflare 스크립트(`render=explicit`)를 한 번 불러와 플랫폼 뷰에 그린다. 칸이 300 이상이면 flexible(칸 폭 × 65), 좁으면 compact(150 × 140)이고, 색은 앱 밝기를 따른다. `action`은 `guest`, `retry`·`refresh-expired`·`refresh-timeout`은 `auto`, `appearance`는 `always`다
+  - 시간 초과·다시 시도하는 오류·토큰 만료 뒤에는 위젯이 스스로 다시 확인하는 동안 확인 중으로 두고 기다리는 요청을 끝내지 않는다. 다시 해도 안 되는 오류(Cloudflare 오류 코드 표의 Retry: No)와 지원하지 않는 브라우저는 '확인 상자를 불러오지 못했습니다'다. 오류 콜백은 처리했다고 알린다
+  - 사람이 상자 안에서 할 일이 생기면 상자를 보이게 굴리고 '확인 상자를 눌러 주세요'를 적는다(애니메이션을 줄였으면 움직임 없이)
+  - 받은 지 270초가 지난 토큰은 쓰지 않고 새로 받는다(토큰 수명 300초) 새 패키지 없이 `dart:js_interop`을 쓴다
   - `index.html`의 인라인 스크립트와 `onclick`을 `web/landing/*.js`, `web/flutter_bootstrap.js`로 옮긴다
 - 랜딩 위쪽 줄의 '로그인' 옆과 기능 소개 아래 모임 소개에 '모임 만들기'(`/#/meetings`)를 둔다. `/meetings` 주소로 열어도 해시 라우트로 바꿔 모임 만들기 화면을 연다(`web/landing/kratos-paths.js`)
 

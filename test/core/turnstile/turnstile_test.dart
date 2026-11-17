@@ -104,5 +104,71 @@ void main() {
       await tester.tap(find.text('다시 확인'));
       expect(turnstile.resets, 1);
     });
+
+    testWidgets('상자 안에서 할 일이 생기면 상자를 보이게 굴리고 눌러 달라고 한 줄 적으며, 끝나면 그 줄을 지운다', (
+      tester,
+    ) async {
+      final turnstile = FakeTurnstile(initial: TurnstileStatus.verifying);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 2000),
+                  TurnstileField(controller: turnstile),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      final box = find.bySemanticsLabel('사람인지 확인하는 상자');
+      expect(tester.getTopLeft(box).dy, greaterThan(600));
+      expect(find.text('확인 상자를 눌러 주세요'), findsNothing);
+
+      turnstile.beginInteractive();
+      await tester.pumpAndSettle();
+
+      expect(find.text('확인 상자를 눌러 주세요'), findsOneWidget);
+      final rect = tester.getRect(box);
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.bottom, lessThanOrEqualTo(600));
+      expect(find.byType(TextButton), findsNothing, reason: '다시 할 단추는 없다');
+
+      turnstile.endInteractive();
+      await tester.pumpAndSettle();
+      expect(find.text('확인 상자를 눌러 주세요'), findsNothing);
+    });
+
+    testWidgets('애니메이션을 줄였으면 움직임 없이 상자로 간다', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final turnstile = FakeTurnstile(initial: TurnstileStatus.verifying);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 2000),
+                  TurnstileField(controller: turnstile),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      turnstile.beginInteractive();
+      await tester.pump();
+      await tester.pump();
+
+      final rect = tester.getRect(find.bySemanticsLabel('사람인지 확인하는 상자'));
+      expect(rect.bottom, lessThanOrEqualTo(600));
+    });
   });
 }
