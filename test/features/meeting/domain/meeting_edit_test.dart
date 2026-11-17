@@ -111,6 +111,22 @@ void main() {
       expect(draft.allowGuests, isFalse);
     });
 
+    test('끝이 시작보다 이르거나 같은 예전 시간별 모임은 시작 한 시간 뒤까지로 보이고 고치지 않으면 보내지 않는다', () {
+      for (final (start, end, shown) in [
+        ('18:00:00', '06:00:00', (18, 19)),
+        ('09:00:00', '09:00:00', (9, 10)),
+        ('23:00:00', '22:00:00', (23, 24)),
+      ]) {
+        final base = baseOf(
+          meeting: makeMeeting(startTime: start, endTime: end),
+        );
+        expect((base.draft.startHour, base.draft.endHour), shown);
+        expect(sent(base.plan(base.draft, title: '새 이름')), [
+          'PATCH {title: 새 이름}',
+        ]);
+      }
+    });
+
     test('규칙에 맞지 않는 예전 모임(10일 시간별, 30분 시작)도 맞추지 않고 그대로 담는다', () {
       final base = baseOf(
         meeting: makeMeeting(

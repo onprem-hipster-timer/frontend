@@ -266,6 +266,19 @@ void main() {
       expect(plain('@corp.com'), findsOneWidget);
     });
 
+    testWidgets('끝이 시작보다 이른 예전 시간별 모임도 열린다', (tester) async {
+      meetings.meeting = makeMeeting(
+        ownerId: 'user-1',
+        startTime: '18:00:00',
+        endTime: '06:00:00',
+      );
+      await openEdit(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('18:00'), findsOneWidget);
+      expect(saveEnabled(tester), isFalse);
+    });
+
     testWidgets('규칙에 맞지 않는 예전 모임도 열리고, 제목만 바꾸면 제목만 보낸다', (tester) async {
       meetings.meeting = makeMeeting(
         ownerId: 'user-1',

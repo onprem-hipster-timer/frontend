@@ -74,13 +74,19 @@ class MeetingEditBase {
   bool get _hourly => meeting.mode == MeetingMode.hourly;
 
   /// 폼의 처음 값. 서버 값을 폼의 규칙으로 맞추지 않고 그대로 담는다(규칙에 맞지 않는 예전 모임도 그대로
-  /// 보이고, 고치지 않으면 보내지 않는다). 시각은 정시로 읽고, 시간을 받지 않는 방식이면 시간별로 바꿀 때 쓸
-  /// 처음 범위다. 공개 범위가 정한 이메일이 아니면 이메일·도메인은 비운다
+  /// 보이고, 고치지 않으면 보내지 않는다). 시각은 정시로 읽고, 끝이 시작보다 이르거나 같으면 시작 한 시간
+  /// 뒤까지로 보인다. 시간을 받지 않는 방식이면 시간별로 바꿀 때 쓸 처음 범위다. 공개 범위가 정한 이메일이
+  /// 아니면 이메일·도메인은 비운다
   MeetingDraft get draft {
     final level = audience.level;
     final public = level == VisibilityLevel.public;
     final listed = level == VisibilityLevel.allowedEmails;
-    final end = _hourOf(meeting.endTime);
+    final start = _hourOf(meeting.startTime);
+    final end = switch (_hourOf(meeting.endTime)) {
+      0 => 24,
+      final hour when hour <= start => start + 1,
+      final hour => hour,
+    };
     return MeetingDraft(
       mode: meeting.mode,
       dates: MeetingDates.range(
@@ -88,8 +94,8 @@ class MeetingEditBase {
         meeting.endDate,
         excluded: meeting.excludedDates,
       ),
-      startHour: _hourly ? _hourOf(meeting.startTime) : meetingDefaultStartHour,
-      endHour: _hourly ? (end == 0 ? 24 : end) : meetingDefaultEndHour,
+      startHour: _hourly ? start : meetingDefaultStartHour,
+      endHour: _hourly ? end : meetingDefaultEndHour,
       isPublic: public,
       allowGuests: public && meeting.allowGuests,
       emails: listed ? audience.emails : const [],
