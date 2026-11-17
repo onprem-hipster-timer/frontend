@@ -20,6 +20,7 @@ external _EventTarget get _document;
 extension type _MomeetAnalytics._(JSObject _) implements JSObject {
   external String? get();
   external void set(String value);
+  external void banner(bool visible);
 }
 
 extension type _EventTarget._(JSObject _) implements JSObject {
@@ -46,4 +47,7 @@ class _WebAnalyticsConsentBridge implements AnalyticsConsentBridge {
 
   @override
   Stream<AnalyticsConsent?> get changes => _changes.stream;
+
+  @override
+  void showBanner(bool visible) => _js.banner(visible);
 }

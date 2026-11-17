@@ -26,11 +26,12 @@ class MyProfileNotifier extends _$MyProfileNotifier {
     () => ref.read(usersApiProvider).getMyProfileV1UsersMeGet(),
   ).then((profile) => state = profile).whenComplete(() => _reloading = null);
 
-  /// 만 14세 이상·이용약관·개인정보 수집·이용에 동의한다.
+  /// 만 14세 이상·이용약관·개인정보 수집·이용에 동의한다. 사용성 분석 동의 [analytics]는 선택이고 같은 요청에
+  /// 담는다(null이면 고르지 않은 것).
   ///
   /// [version]은 프로필이 알려 준 현재 약관 버전이다. 그 사이 약관이 바뀌었으면
   /// 서버가 409로 거절하고, 그 오류를 그대로 던진다.
-  Future<void> agree(String version) async {
+  Future<void> agree(String version, {bool? analytics}) async {
     final profile = await ref
         .read(usersApiProvider)
         .putMyConsentV1UsersMeConsentPut(
@@ -39,9 +40,21 @@ class MyProfileNotifier extends _$MyProfileNotifier {
             ageOver14: true,
             terms: true,
             privacy: true,
+            analytics: analytics,
           ),
         );
     state = AsyncData(profile);
+  }
+
+  /// 계정의 사용성 분석 동의를 [value]로 바꾼다. 이미 동의한 지금 약관 버전의 동의를 [value]와 함께 다시 보내면
+  /// 서버가 그 값만 바꾼다. 프로필이 없거나 지금 약관에 아직 동의하지 않았으면 [StateError], 요청이 실패하면 그
+  /// 오류를 던진다
+  Future<void> setAnalytics(bool value) async {
+    final current = await future;
+    if (current == null || current.consentRequired) {
+      throw StateError('지금 약관에 동의한 회원 프로필이 없습니다');
+    }
+    await agree(current.consentVersion, analytics: value);
   }
 
   /// 회원 탈퇴를 신청하고 이 기기에서 로그아웃한다. 신청이 실패하면 오류를 그대로 던진다.

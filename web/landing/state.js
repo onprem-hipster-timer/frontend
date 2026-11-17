@@ -17,6 +17,8 @@
         || (isRootHash(hash) && !hasSession());
   }
   window.__momeet = {
+    // 저장된 로그인 세션(회원·게스트)이 있는지. 있으면 동의 배너는 앱이 정한다(landing/consent-banner.js)
+    hasSession: hasSession(),
     isLanding: isLandingHash(window.location.hash),
     isLandingHash: isLandingHash,
     flutterReady: false
