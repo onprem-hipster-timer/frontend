@@ -2,9 +2,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_quiet_panels.dart';
 
-/// 로그인 상자 자리에 두는 지금 계정. 회원은 'OO 계정으로 진행 중입니다'이고, 게스트는 게스트 이름과
-/// [onSignOut]('로그아웃'), 그 아래 [onUpgrade]('안전한 정규 유저로 바꾸기')다. 로그인한 사람에게는 게스트로 들어가는
-/// 길이 없다.
+/// 로그인 상자 자리에 두는 지금 계정. 회원은 'OO 계정으로 진행 중입니다', 게스트는 게스트 이름이고, 그 옆에
+/// [onSignOut]('로그아웃'), 게스트는 그 아래 [onUpgrade]('안전한 정규 유저로 바꾸기')를 둔다. 긴 이메일·이름은 줄을
+/// 바꿔 단추를 밀어내지 않는다. 로그인한 사람에게는 게스트로 들어가는 길이 없다.
 ///
 /// [MeetingQuietPanels] 아래(좁은 화면)에서는 상자 없이 작은 한 줄이다.
 class MeetingAccountPanel extends StatelessWidget {

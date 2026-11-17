@@ -795,6 +795,24 @@ void main() {
   }
 
   testLayoutAudit(
+    'meeting_page_member_account',
+    subject: '계정 이메일',
+    build: (text) => routed(
+      const MeetingPage(meetingId: 'meeting-1'),
+      meetingOverrides(
+        email: text.value,
+        meetings: FakeMeetingsClient(
+          meeting: meetingIn(
+            'hourly',
+            title: '팀 회의',
+          ).copyWith(visibilityLevel: VisibilityLevel.allowedEmails),
+        )..availability = _fivePeople('지현'),
+      ),
+    ),
+    verify: (tester) => expect(find.text('로그아웃'), findsOneWidget),
+  );
+
+  testLayoutAudit(
     'meeting_page_empty',
     subject: '모임 제목',
     texts: const [StressTexts.koreanLong],

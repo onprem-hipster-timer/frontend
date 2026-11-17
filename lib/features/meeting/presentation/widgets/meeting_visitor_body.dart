@@ -96,7 +96,10 @@ class _MeetingVisitorBodyState extends ConsumerState<MeetingVisitorBody> {
               onCloseGuest: () => setState(() => _guestOpen = false),
             );
             final participants = _HeadcountPanel(headcount.participantCount);
-            final link = MeetingLinkPanel(meetingId: widget.meetingId);
+            final link = MeetingLinkPanel(
+              meetingId: widget.meetingId,
+              title: headcount.meeting.title,
+            );
             return MeetingLayout(
               main: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

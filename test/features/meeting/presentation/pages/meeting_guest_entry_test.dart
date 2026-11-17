@@ -727,7 +727,7 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await pumpVisitor(tester, size: const Size(1280, 500));
+    await pumpVisitor(tester, size: const Size(1280, 420));
     await openGuest(tester);
     // 넓은 화면의 오른쪽 칸은 화면 높이를 넘으면 그 칸 안에서 굴러간다
     await tester.drag(

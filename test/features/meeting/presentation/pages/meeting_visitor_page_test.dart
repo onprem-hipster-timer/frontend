@@ -166,6 +166,18 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('링크 칸에는 공유하기와 막힌 수정하기가 있다', (tester) async {
+    await pumpMeeting(tester);
+
+    expect(find.text('공유하기'), findsOneWidget);
+    final edit = find.ancestor(
+      of: find.text('수정하기'),
+      matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+    );
+    expect(tester.widget<ButtonStyleButton>(edit).enabled, isFalse);
+    expect(find.byTooltip('모임을 만든 사람만 수정할 수 있어요'), findsOneWidget);
+  });
+
   testWidgets('참여자가 없는 공개 모임은 아직 참여한 사람이 없다고 하고 색 설명이 없다', (tester) async {
     meetings
       ..availability = []

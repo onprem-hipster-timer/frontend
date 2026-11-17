@@ -106,9 +106,11 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
             );
             final link = MeetingLinkPanel(
               meetingId: meetingId,
+              title: board.meeting.title,
+              owner: board.ownedByMe,
               level: board.meeting.visibilityLevel,
             );
-            final account = _Account(guest: guest);
+            final account = _Account(meetingId: meetingId, guest: guest);
             return MeetingLayout(
               main: guest != null
                   ? availability
@@ -222,13 +224,18 @@ class _LoadError extends ConsumerWidget {
   }
 }
 
-/// 로그인 상자 자리의 지금 계정. 회원은 계정 이메일, 게스트는 게스트 이름과 로그아웃
+/// 로그인 상자 자리의 지금 계정. 회원은 계정 이메일과 로그아웃, 게스트는 게스트 이름과 로그아웃, 정규 유저로 바꾸기
 class _Account extends ConsumerWidget {
-  const _Account({required this.guest});
+  const _Account({required this.meetingId, required this.guest});
 
+  final String meetingId;
   final GuestUser? guest;
 
+  /// 로그아웃한다. 보내는 중이거나 기다리는 내 시간 저장을 먼저 마치고(저장하지 못해도 묻지 않는다) 세션을
+  /// 끝낸다. 모임 화면은 그 자리에서 방문자 화면이 된다
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(meetingBoardProvider(meetingId).notifier).finishSaving();
+    if (!context.mounted) return;
     try {
       await ref.read(authProvider.notifier).signOut();
     } on Exception catch (e) {
@@ -264,6 +271,7 @@ class _Account extends ConsumerWidget {
     if (guest == null) {
       return MeetingAccountPanel(
         text: '${ref.watch(currentUserProvider)?.email} 계정으로 진행 중입니다',
+        onSignOut: () => _signOut(context, ref),
       );
     }
     return MeetingAccountPanel(

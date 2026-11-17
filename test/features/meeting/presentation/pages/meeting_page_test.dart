@@ -335,7 +335,7 @@ void main() {
     expect(find.widgetWithText(TextFormField, '지현'), findsOneWidget);
   });
 
-  testWidgets('링크 상자는 모임 링크를 보이고 복사한다', (tester) async {
+  testWidgets('공유 창이 없는 환경이면 공유하기가 모임 링크를 복사한다', (tester) async {
     final copied = <String>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
@@ -355,23 +355,24 @@ void main() {
     await pumpMeeting(tester);
 
     const link = 'https://app.example.com/meetings/meeting-1';
-    expect(find.text(link), findsOneWidget);
-    await tester.ensureVisible(find.byTooltip('링크 복사'));
+    await tester.ensureVisible(find.text('공유하기'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('링크 복사'));
+    await tester.tap(find.text('공유하기'));
     await tester.pumpAndSettle();
 
     expect(copied, [link]);
     expect(find.text('링크를 복사했습니다'), findsOneWidget);
   });
 
-  testWidgets('로그인 상자 자리에 지금 계정으로 진행 중이라고 하고 게스트로 들어가는 길은 없다', (tester) async {
+  testWidgets('로그인 상자 자리에 지금 계정으로 진행 중이라고 하고 로그아웃을 두며 게스트로 들어가는 길은 없다', (
+    tester,
+  ) async {
     meetings.meeting = makeMeeting().copyWith(allowGuests: true);
     await pumpMeeting(tester);
 
     expect(find.text('user@example.com 계정으로 진행 중입니다'), findsOneWidget);
     expect(find.text('Guest'), findsNothing);
-    expect(find.text('로그아웃'), findsNothing);
+    expect(find.text('로그아웃'), findsOneWidget);
   });
 
   testWidgets('넓으면 격자 오른쪽에 계정·링크·일정 참여자·추천 시간을 둔다', (tester) async {

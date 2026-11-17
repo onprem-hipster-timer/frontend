@@ -481,10 +481,13 @@ class FixedTimezone extends TimezoneNotifier {
   Future<String> build() async => value;
 }
 
-/// 로그인한 사람(user-1). 이름은 [name]
-AuthUser meetingUser({String? name = '지현'}) => AuthUser(
+/// 로그인한 사람(user-1). 이름은 [name], 이메일은 [email]
+AuthUser meetingUser({
+  String? name = '지현',
+  String email = 'user@example.com',
+}) => AuthUser(
   id: 'user-1',
-  email: 'user@example.com',
+  email: email,
   emailVerified: true,
   createdAt: _at,
   name: name,
@@ -497,6 +500,7 @@ List<Override> meetingOverrides({
   required FakeMeetingsClient meetings,
   FakeVisibilityClient? visibility,
   String? name = '지현',
+  String email = 'user@example.com',
   bool signedIn = true,
   ValueNotifier<AuthUser?>? session,
   GuestUser? guest,
@@ -518,6 +522,6 @@ List<Override> meetingOverrides({
     })
   else
     currentUserProvider.overrideWithValue(
-      signedIn && guest == null ? meetingUser(name: name) : null,
+      signedIn && guest == null ? meetingUser(name: name, email: email) : null,
     ),
 ];

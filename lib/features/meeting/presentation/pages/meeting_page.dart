@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/app_route.dart';
 import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_leave.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_member_body.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_page_title.dart';
@@ -89,12 +88,7 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
     return MeetingGlassScaffold(
       title: MeetingPageTitle(
         title ?? Terms.meeting,
-        onEdit: owner
-            ? () => context.pushNamed(
-                AppRoute.meetingEdit.name,
-                pathParameters: {'meetingId': meetingId},
-              )
-            : null,
+        onEdit: owner ? () => openMeetingEdit(context, meetingId) : null,
       ),
       body: signedIn
           ? MeetingMemberBody(meetingId: meetingId, guest: guest)

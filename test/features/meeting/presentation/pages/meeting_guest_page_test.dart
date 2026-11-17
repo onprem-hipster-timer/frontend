@@ -161,6 +161,26 @@ void main() {
     expect(find.textContaining('민수'), findsNothing);
   });
 
+  for (final (name, size) in [
+    ('넓으면', const Size(1280, 900)),
+    ('좁으면', const Size(400, 900)),
+  ]) {
+    testWidgets('$name 계정 자리에 로그아웃과 안전한 정규 유저로 바꾸기가 함께 있고 수정하기는 막혀 있다', (
+      tester,
+    ) async {
+      await pumpGuest(tester, size: size);
+
+      expect(find.text('로그아웃'), findsOneWidget);
+      expect(find.text('안전한 정규 유저로 바꾸기'), findsOneWidget);
+      final edit = find.ancestor(
+        of: find.text('수정하기'),
+        matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+      );
+      expect(tester.widget<ButtonStyleButton>(edit).enabled, isFalse);
+      expect(find.byTooltip('모임을 만든 사람만 수정할 수 있어요'), findsOneWidget);
+    });
+  }
+
   testWidgets('추천 시간 카드에 내 달력에 일정 만들기가 없다', (tester) async {
     await pumpGuest(tester);
 
