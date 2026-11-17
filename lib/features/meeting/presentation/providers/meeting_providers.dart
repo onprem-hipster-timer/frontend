@@ -13,6 +13,7 @@ import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
+import 'package:momeet/features/meeting/domain/time_span.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -169,6 +170,27 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
 
   /// 가능 시간을 다시 받는다(게스트가 이름을 바꾼 뒤 참여자 이름을 새로 보인다)
   Future<void> reload() => _refresh();
+
+  /// 게스트에서 옮겨 와 합친 내 참여자([mine])로 내 칸을 바꾸고, 다른 참여자도 다시 받는다(옮긴 게스트는
+  /// 서버에서 지워진다)
+  void applyImported(AvailabilityRead mine) {
+    if (state.value == null) return;
+    List<TimeSpan> spans(TimeSlotKind kind) => mergeSpans([
+      for (final slot in mine.timeSlots)
+        if (slot.kind == kind) TimeSpan(slot.startTime, slot.endTime),
+    ]);
+    _updateBoard(
+      (board) => board
+          .withSelf(mine.participant)
+          .withMine(
+            board.mine.withSaved(
+              available: spans(TimeSlotKind.available),
+              unavailable: spans(TimeSlotKind.unavailable),
+            ),
+          ),
+    );
+    unawaited(_refresh());
+  }
 
   /// 칸마다 [changes]의 답으로 칠하거나 지우고 저장을 맡긴다
   void paint(Map<MeetingCell, MeetingAnswer> changes) {

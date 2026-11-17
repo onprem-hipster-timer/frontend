@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/app_route.dart';
 import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
@@ -11,7 +13,9 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart
 import 'package:momeet/features/meeting/presentation/widgets/meeting_account_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_finish_slot.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_import_notice.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_problem.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_upgrade_prompt.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_panel.dart';
@@ -106,7 +110,15 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
             );
             final account = _Account(guest: guest);
             return MeetingLayout(
-              main: availability,
+              main: guest != null
+                  ? availability
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        MeetingGuestImportNotice(meetingId: meetingId),
+                        availability,
+                      ],
+                    ),
               side: [account, link, participants],
               sideFill: slots(fill: true),
               header: account,
@@ -226,6 +238,26 @@ class _Account extends ConsumerWidget {
     }
   }
 
+  /// '안전한 정규 유저로 바꾸기': 무엇이 바뀌는지 묻고, 고르면 게스트 세션을 끝내지 않고 따로 둔 뒤 이 모임으로
+  /// 돌아오는 로그인으로 간다(돌아오면 게스트 시간을 옮긴다)
+  Future<void> _upgrade(
+    BuildContext context,
+    WidgetRef ref,
+    GuestUser guest,
+  ) async {
+    final meetingId = guest.meetingId;
+    if (meetingId == null) return;
+    final wide = !MeetingLayout.narrow(MediaQuery.sizeOf(context).width);
+    final router = GoRouter.of(context);
+    final back = router.namedLocation(
+      AppRoute.meeting.name,
+      pathParameters: {'meetingId': meetingId},
+    );
+    if (!await askGuestUpgrade(context, wide: wide)) return;
+    if (!await ref.read(authProvider.notifier).keepGuestForImport()) return;
+    router.goNamed(AppRoute.login.name, queryParameters: {'redirect': back});
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final guest = this.guest;
@@ -238,6 +270,7 @@ class _Account extends ConsumerWidget {
       text: '게스트 ${guest.name.withJosa('으로', '로')} 진행 중입니다',
       guest: true,
       onSignOut: () => _signOut(context, ref),
+      onUpgrade: () => _upgrade(context, ref, guest),
     );
   }
 }

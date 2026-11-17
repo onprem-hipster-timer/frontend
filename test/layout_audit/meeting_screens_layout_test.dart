@@ -34,6 +34,7 @@ import 'package:momeet/features/meeting/presentation/providers/meeting_providers
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_login_request.dart';
+import 'package:momeet/features/meeting/presentation/providers/meeting_guest_import.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -63,6 +64,16 @@ List<AvailabilityRead> _fivePeople(String name) => [
       ],
     ),
 ];
+
+/// 따로 둔 게스트 세션의 시간을 옮기는 단계를 [phase]로 둔 것
+class _ImportAt extends MeetingGuestImport {
+  _ImportAt(this.phase);
+
+  final MeetingGuestImportPhase phase;
+
+  @override
+  Future<MeetingGuestImportPhase> build(String meetingId) async => phase;
+}
 
 /// 저장하지 못한 상태로 열고 '저장하기'도 저장하지 못하는 모임 화면 값
 class _FinishFails extends _FailedSave {
@@ -875,7 +886,12 @@ void main() {
   }) => [
     ...meetingOverrides(
       meetings: meetings..guestName = name,
-      guest: GuestUser(id: 'g', handle: 'g@guest.invalid', name: name),
+      guest: GuestUser(
+        id: 'g',
+        handle: 'g@guest.invalid',
+        name: name,
+        meetingId: 'meeting-1',
+      ),
       guestDenial: denial,
     ),
     guestsApiProvider.overrideWithValue(FakeGuestsClient()),
@@ -963,6 +979,60 @@ void main() {
           expect(find.textContaining('진행 중입니다'), findsOneWidget),
     );
   }
+
+  testLayoutAudit(
+    'meeting_page_guest_upgrade_prompt',
+    subject: '게스트 이름',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const _PressWhenLoaded(
+        label: '안전한 정규 유저로 바꾸기',
+        child: MeetingPage(meetingId: 'meeting-1'),
+      ),
+      guestOverrides(
+        FakeMeetingsClient(meeting: meetingIn('hourly', title: '팀 회의')),
+        meetingDisplayName(text.value),
+      ),
+    ),
+    verify: (tester) => expect(find.text('로그인하고 옮기기'), findsOneWidget),
+  );
+
+  for (final phase in [
+    MeetingGuestImportPhase.importing,
+    MeetingGuestImportPhase.failed,
+  ]) {
+    testLayoutAudit(
+      'meeting_page_guest_import_${phase.name}',
+      subject: '참여자 이름',
+      texts: const [StressTexts.koreanLong],
+      build: (text) => routed(const MeetingPage(meetingId: 'meeting-1'), [
+        ...meetingOverrides(
+          meetings: FakeMeetingsClient(
+            meeting: meetingIn('hourly', title: '팀 회의'),
+          )..availability = _fivePeople(text.value),
+        ),
+        meetingGuestImportProvider.overrideWith(() => _ImportAt(phase)),
+      ]),
+      verify: (tester) =>
+          expect(find.textContaining('게스트로 넣은 시간을'), findsOneWidget),
+    );
+  }
+
+  testLayoutAudit(
+    'meeting_page_visitor_kept_guest',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(const MeetingPage(meetingId: 'meeting-1'), [
+      ...meetingOverrides(
+        meetings: FakeMeetingsClient(
+          meeting: meetingIn('hourly', title: '팀 회의'),
+        ),
+        signedIn: false,
+      ),
+      keptGuestSessionExistsProvider.overrideWith((ref, id) async => true),
+    ]),
+    verify: (tester) => expect(find.text('게스트로 계속하기'), findsOneWidget),
+  );
 
   testLayoutAudit(
     'meeting_page_guest_consent',

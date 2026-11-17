@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/presentation/providers/meeting_providers
 import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_form.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_kept_guest_notice.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
@@ -97,7 +98,13 @@ class _MeetingVisitorBodyState extends ConsumerState<MeetingVisitorBody> {
             final participants = _HeadcountPanel(headcount.participantCount);
             final link = MeetingLinkPanel(meetingId: widget.meetingId);
             return MeetingLayout(
-              main: availability,
+              main: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  MeetingKeptGuestNotice(meetingId: widget.meetingId),
+                  availability,
+                ],
+              ),
               side: [login, participants, link],
               tertiary: [participants, link],
               bottom: _PaintAction(onPressed: () => _request(guests: guests)),

@@ -17,6 +17,7 @@
 | `meeting_member_arrived` | 로그인한 회원에게 모임 화면이 열릴 때(화면 하나에 한 번. 로그인을 다녀온 경우와 이미 로그인한 경우 모두) |
 | `meeting_guest_entered_new` | 처음 쓰는 닉네임으로 게스트를 만들고 들어갔을 때 |
 | `meeting_guest_entered_returning` | 이미 있는 게스트 닉네임으로 들어갔을 때 |
+| `meeting_guest_converted` | '안전한 정규 유저로 바꾸기'로 로그인한 회원에게 게스트로 넣은 시간을 옮겼을 때(응답을 잃은 뒤 다시 읽어 옮긴 것을 확인한 경우 포함) |
 
 ## 세션 태그 (`clarity("set", 키, 값)`)
 

@@ -30,7 +30,10 @@ enum UsageEvent {
   meetingGuestEnteredNew('meeting_guest_entered_new'),
 
   /// 이미 있는 게스트 이름으로 들어갔다
-  meetingGuestEnteredReturning('meeting_guest_entered_returning');
+  meetingGuestEnteredReturning('meeting_guest_entered_returning'),
+
+  /// 게스트로 넣은 시간을 회원 계정으로 옮겼다
+  meetingGuestConverted('meeting_guest_converted');
 
   const UsageEvent(this.id);
 
