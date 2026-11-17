@@ -3,9 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/my_profile_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/mypage/presentation/widgets/settings_section.dart';
 
+import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/kratos_mocks.dart';
 import '../../../../helpers/pump_app.dart';
 
@@ -13,12 +17,14 @@ const _analytics = '사용성 분석 허용';
 
 void main() {
   late KratosTestHarness harness;
+  late FakeUsersClient users;
   late List<Uri> opened;
 
   setUpAll(registerKratosFallbacks);
 
   setUp(() async {
     harness = await KratosTestHarness.create();
+    users = FakeUsersClient(consentRequired: false);
     opened = [];
   });
 
@@ -34,10 +40,15 @@ void main() {
         overrides: [
           ...harness.overrides,
           analyticsConsentBridgeProvider.overrideWithValue(bridge),
+          usersApiProvider.overrideWithValue(users),
           openLinkProvider.overrideWithValue((url) async => opened.add(url)),
         ],
       ),
     );
+    // 마이페이지가 열릴 때는 앱이 이미 회원 프로필을 듣고 있다(라우터의 약관 확인)
+    ProviderScope.containerOf(
+      tester.element(find.byType(SettingsSection)),
+    ).listen(myProfileProvider, (_, _) {});
     await tester.pumpAndSettle();
   }
 
@@ -63,15 +74,43 @@ void main() {
       });
     }
 
-    testWidgets('켜면 허용, 다시 끄면 거부로 저장한다', (tester) async {
+    testWidgets('무엇을 누구에게 보내는지 한 줄로 적는다', (tester) async {
+      await pumpSettings(tester, InMemoryAnalyticsConsentBridge());
+
+      expect(
+        find.text('화면 개선을 위해 화면 이용 기록을 Microsoft Clarity(미국)로 보냅니다'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('켜고 끄면 지금 약관 버전의 동의를 그 값과 함께 계정에 다시 보내고 이 브라우저에도 둔다', (
+      tester,
+    ) async {
       final bridge = InMemoryAnalyticsConsentBridge();
       await pumpSettings(tester, bridge);
 
       await tapText(tester, _analytics);
+      expect(users.agreed.last.analytics, isTrue);
+      expect(users.agreed.last.version, testConsentVersion);
+      expect(users.profile.analyticsConsent, isTrue);
       expect(bridge.current, AnalyticsConsent.granted);
       expect(switchOn(tester), isTrue);
 
       await tapText(tester, _analytics);
+      expect(users.agreed.last.analytics, isFalse);
+      expect(bridge.current, AnalyticsConsent.denied);
+      expect(switchOn(tester), isFalse);
+      expect(users.agreed, hasLength(2), reason: '따로 부르는 요청은 없다');
+    });
+
+    testWidgets('계정에 저장하지 못하면 알리고 이 브라우저 값은 그대로다', (tester) async {
+      final bridge = InMemoryAnalyticsConsentBridge(AnalyticsConsent.denied);
+      await pumpSettings(tester, bridge);
+      users.consentError = Exception('끊김');
+
+      await tapText(tester, _analytics);
+
+      expect(find.text('사용성 분석 설정을 저장하지 못했습니다'), findsOneWidget);
       expect(bridge.current, AnalyticsConsent.denied);
       expect(switchOn(tester), isFalse);
     });

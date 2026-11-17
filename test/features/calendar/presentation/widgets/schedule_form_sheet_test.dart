@@ -30,6 +30,7 @@ void main() {
     DateTime? initialStartTime,
     DateTime? initialEndTime,
     DateTime? initialDate,
+    String? initialTitle,
   }) => pumpSheetHost(
     tester,
     overrides: [schedulesApiProvider.overrideWithValue(schedules)],
@@ -38,6 +39,7 @@ void main() {
       initialStartTime: initialStartTime,
       initialEndTime: initialEndTime,
       initialDate: initialDate,
+      initialTitle: initialTitle,
     ),
   );
 
@@ -123,6 +125,32 @@ void main() {
       final body = schedules.created.single;
       expect(body.startTime.toLocal(), DateTime(now.year, now.month, 10));
       expect(body.endTime.toLocal(), DateTime(now.year, now.month, 10, 23, 59));
+    });
+
+    testWidgets('제목을 받으면 채워 열고 그대로 보낼 수 있다', (tester) async {
+      await openCreate(
+        tester,
+        initialStartTime: start,
+        initialEndTime: end,
+        initialTitle: '팀 회의',
+      );
+      await tapVisible(tester, find.text('저장'));
+
+      expect(schedules.created.single.title, '팀 회의');
+    });
+
+    testWidgets('받은 시각이 그날 00:00부터 마지막 날 23:59까지면 종일로 연다', (tester) async {
+      await openCreate(
+        tester,
+        initialStartTime: DateTime(now.year, now.month, 10),
+        initialEndTime: DateTime(now.year, now.month, 11, 23, 59),
+      );
+
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isTrue,
+      );
+      expect(find.textContaining(':'), findsNothing);
     });
 
     testWidgets('종료가 시작보다 이르면 오류를 보이고 보내지 않는다', (tester) async {

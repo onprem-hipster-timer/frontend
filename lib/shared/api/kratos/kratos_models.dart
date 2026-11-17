@@ -1,6 +1,7 @@
 // Kratos 공개 API 응답 중 앱이 쓰는 부분만 옮긴 모델 (손으로 파싱, 코드 생성 없음)
 
 import 'package:momeet/core/auth/auth_user.dart';
+import 'package:momeet/core/auth/guest_user.dart';
 
 /// Kratos UI 메시지. [id]는 Kratos text ID다 (예: 4000006 자격 증명 오류).
 class KratosMessage {
@@ -169,13 +170,34 @@ class KratosSubmitResult {
   }
 }
 
-/// whoami 결과: 사용자와 백엔드용 JWT
+/// whoami 결과: 회원이나 게스트, 그리고 백엔드용 JWT. [user]와 [guest] 중 하나만 있다
 class KratosSession {
-  const KratosSession({required this.user, required this.accessToken});
+  const KratosSession({required AuthUser this.user, required this.accessToken})
+    : guest = null;
+
+  const KratosSession.guest({
+    required GuestUser this.guest,
+    required this.accessToken,
+  }) : user = null;
+
+  /// 게스트 identity의 schema id (backend `KRATOS_GUEST_SCHEMA_ID`의 기본값)
+  static const guestSchemaId = 'guest';
 
   factory KratosSession.fromJson(Map<String, Object?> json) {
     final identity = (json['identity'] as Map).cast<String, Object?>();
     final traits = (identity['traits'] as Map).cast<String, Object?>();
+    final accessToken = json['tokenized'] as String;
+    // 게스트는 이메일 없이 handle과 이름만 있다
+    if (identity['schema_id'] == guestSchemaId) {
+      return KratosSession.guest(
+        guest: GuestUser(
+          id: identity['id'] as String,
+          handle: traits['handle'] as String,
+          name: traits['name'] as String,
+        ),
+        accessToken: accessToken,
+      );
+    }
     final email = traits['email'] as String;
     final addresses = identity['verifiable_addresses'];
     final emailVerified =
@@ -195,11 +217,15 @@ class KratosSession {
         name: traits['name'] as String?,
         createdAt: DateTime.parse(identity['created_at'] as String),
       ),
-      accessToken: json['tokenized'] as String,
+      accessToken: accessToken,
     );
   }
 
-  final AuthUser user;
+  /// 회원 세션의 사용자. 게스트 세션이면 null
+  final AuthUser? user;
+
+  /// 게스트 세션의 게스트. 회원 세션이면 null
+  final GuestUser? guest;
 
   /// 백엔드에 보낼 JWT (tokenize_as=api, 유효 10분)
   final String accessToken;
@@ -213,6 +239,7 @@ class KratosException implements Exception {
     this.messages = const [],
     this.useFlowId,
     this.verificationFlowId,
+    this.retryAfter,
   });
 
   final int statusCode;
@@ -228,6 +255,9 @@ class KratosException implements Exception {
 
   /// 이메일 인증 전 로그인(session_verified_address_required)일 때 Kratos가 새로 만든 인증 플로우 ID
   final String? verificationFlowId;
+
+  /// 요청 한도를 넘었을 때(429) 다시 보낼 수 있을 때까지의 시간
+  final Duration? retryAfter;
 
   /// 첫 오류 메시지의 text ID
   int? get messageId => messages.isEmpty ? null : messages.first.id;

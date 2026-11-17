@@ -224,10 +224,13 @@ fvm use stable
 # 3. 의존성 설치
 fvm flutter pub get
 
-# 4. 코드 생성 (Freezed / Retrofit / Riverpod)
+# 4. 환경 변수 (API 주소, Turnstile 테스트 사이트 키. assets/.env는 커밋하지 않는다)
+cp assets/.env.example assets/.env
+
+# 5. 코드 생성 (Freezed / Retrofit / Riverpod)
 fvm dart run build_runner build --delete-conflicting-outputs
 
-# 5. 앱 실행
+# 6. 앱 실행
 fvm flutter run
 ```
 

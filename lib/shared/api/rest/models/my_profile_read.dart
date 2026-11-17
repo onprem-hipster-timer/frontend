@@ -19,6 +19,9 @@ abstract class MyProfileRead with _$MyProfileRead {
     @JsonKey(name: 'avatar_url') String? avatarUrl,
     @JsonKey(name: 'deletion_requested_at') DateTime? deletionRequestedAt,
     @JsonKey(name: 'deletion_scheduled_at') DateTime? deletionScheduledAt,
+    @JsonKey(name: 'analytics_consent') bool? analyticsConsent,
+    @JsonKey(name: 'analytics_consent_updated_at')
+    DateTime? analyticsConsentUpdatedAt,
   }) = _MyProfileRead;
 
   factory MyProfileRead.fromJson(Map<String, Object?> json) =>

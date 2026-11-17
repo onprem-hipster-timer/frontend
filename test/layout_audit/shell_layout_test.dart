@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
+import 'package:momeet/shared/widgets/shell_tab_list.dart';
 
 /// 탭 셸(하단 바·왼쪽 세로 내비)을 화면 크기 × 글자 배율로 점검한다.
 void main() {
@@ -21,7 +22,7 @@ void main() {
             builder: (context, state, shell) =>
                 ScaffoldWithNavBar(navigationShell: shell),
             branches: [
-              for (var i = 0; i < 5; i++)
+              for (var i = 0; i < shellTabs.length; i++)
                 StatefulShellBranch(
                   routes: [
                     GoRoute(

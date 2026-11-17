@@ -15,6 +15,7 @@ import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
+import 'package:momeet/core/providers/kept_guest_session_store.dart';
 import 'package:momeet/core/providers/session_token_store.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/auth/domain/auth_error_type.dart';
@@ -25,6 +26,7 @@ export 'package:momeet/core/providers/auth_selectors.dart';
 export 'package:momeet/core/providers/auth_status.dart';
 
 part 'auth_provider.g.dart';
+part 'guest_auth_provider.dart';
 
 /// Google 로그인을 시작할 때 받은 교환 코드를 보관하는 키.
 ///
@@ -41,6 +43,11 @@ const googleSignInCodeKey = 'momeet.google_sign_in_code';
 class AuthNotifier extends _$AuthNotifier {
   Future<String?>? _refreshing;
 
+  /// 거절된 게스트의 세션 확인(동시에 거절돼도 한 번). 게스트 확장([GuestAuth])은 [_status]로 상태를 다룬다
+  Future<void>? _guestCheck;
+  AuthStatus get _status => state;
+  set _status(AuthStatus next) => state = next;
+
   /// 복구 코드가 맞았을 때 받은 세션. 새 비밀번호를 저장할 때까지 메모리에만 둔다.
   String? _recoverySessionToken;
 
@@ -50,6 +57,7 @@ class AuthNotifier extends _$AuthNotifier {
   KratosClient get _kratos => ref.read(kratosClientProvider);
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
   SessionTokenStore get _tokenStore => ref.read(sessionTokenStoreProvider);
+  KeptGuestSessionStore get _kept => ref.read(keptGuestSessionStoreProvider);
   String? get _sessionToken => _tokenStore.token;
 
   @override
@@ -73,31 +81,40 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  /// 세션 토큰으로 JWT를 받아 인증 상태가 된다. 세션이 끝났으면 토큰을 지우고 미인증이 된다.
-  Future<String?> _authenticateWith(String sessionToken) async {
+  /// 세션 토큰으로 JWT를 받아 회원이나 게스트 상태가 된다. 세션이 끝났으면 토큰을 지우고 미인증이 된다.
+  ///
+  /// 세션 토큰은 한 칸에 둔다. 게스트 세션을 다른 세션(회원 로그인)으로 바꾸면 게스트 세션은 끝낸다.
+  /// [guestMeetingId]는 게스트로 막 들어온 모임이다.
+  Future<String?> _authenticateWith(
+    String sessionToken, {
+    String? guestMeetingId,
+  }) async {
     final signOutsBefore = _signOuts;
     final session = await _kratos.whoami(sessionToken);
     // 기다리는 사이 로그아웃했으면 끝난 세션을 되살리지 않는다
     if (_signOuts != signOutsBefore) return null;
     if (session == null) {
       await _tokenStore.clear();
+      await _prefs.remove(guestMeetingKey);
       state = const AuthStatus.unauthenticated();
       return null;
     }
+    if (state is AuthGuest) _endGuestSessionReplacedBy(sessionToken);
     await _tokenStore.save(sessionToken);
-    state = AuthStatus.authenticated(
-      user: session.user,
-      accessToken: session.accessToken,
-    );
+    state = await _statusOf(session, guestMeetingId: guestMeetingId);
     return session.accessToken;
   }
 
-  /// 백엔드 요청에 쓸 JWT. 만료까지 1분이 안 남았으면 새로 받는다. 미인증이면 null.
+  /// 백엔드 요청에 쓸 JWT(회원·게스트). 만료까지 1분이 안 남았으면 새로 받는다. 세션이 없으면 null.
   Future<String?> freshAccessToken() async {
-    final current = state;
-    if (current is! AuthAuthenticated) return null;
-    if (!_expiresWithin(current.accessToken, const Duration(minutes: 1))) {
-      return current.accessToken;
+    final accessToken = switch (state) {
+      AuthAuthenticated(:final accessToken) ||
+      AuthGuest(:final accessToken) => accessToken,
+      _ => null,
+    };
+    if (accessToken == null) return null;
+    if (!_expiresWithin(accessToken, const Duration(minutes: 1))) {
+      return accessToken;
     }
     return refreshAccessToken();
   }
@@ -304,6 +321,7 @@ class AuthNotifier extends _$AuthNotifier {
       final sessionToken = _sessionToken;
       if (sessionToken != null) await _kratos.logout(sessionToken);
       await _tokenStore.clear();
+      await _prefs.remove(guestMeetingKey);
       _signOuts++;
       state = const AuthStatus.unauthenticated();
     });

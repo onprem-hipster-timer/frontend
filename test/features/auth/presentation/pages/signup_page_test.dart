@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -142,6 +144,33 @@ void main() {
 
     expect(find.text('비밀번호는 8자 이상이어야 합니다'), findsOneWidget);
     verifyNever(() => harness.kratos.createFlow(KratosFlowType.registration));
+  });
+
+  testWidgets('Google이 켜졌는지 묻는 동안 같은 자리에 막힌 버튼을 두어 답이 와도 화면이 움직이지 않는다', (
+    tester,
+  ) async {
+    final answer = Completer<bool>();
+    await tester.pumpWidget(
+      pumpAuthFlow(
+        initialLocation: '/signup',
+        overrides: [
+          ...harness.overrides,
+          googleSignInAvailableProvider.overrideWith((ref) => answer.future),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    final waiting = find.text('잠시만 기다려 주세요');
+    await tester.ensureVisible(waiting);
+    await tester.pump();
+    final button = tester.getRect(find.byType(OutlinedButton));
+
+    answer.complete(true);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Google 계정으로 계속하기'), findsOneWidget);
+    expect(tester.getRect(find.byType(OutlinedButton)), button);
   });
 
   testWidgets('Google 버튼은 가입 플로우로 시작하고 로그인 화면으로 돌아오게 한다', (tester) async {

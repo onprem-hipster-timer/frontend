@@ -18,8 +18,10 @@ import 'package:momeet/core/providers/my_profile_provider.dart';
 ///   세션이 끝났으면 AuthNotifier가 미인증으로 바꾸고 요청은 401로 끝난다.
 /// - 동시 갱신은 AuthNotifier가 한 번으로 합치므로 대기열(Queued) 방식을 쓰지 않는다.
 ///   대기열 방식에서 onError 안의 재시도가 다시 실패하면 onError끼리 기다리며 멈춘다.
-/// - 프로필 상태 때문에 거절([_profileStateStatuses])되면 프로필을 다시 받아
+/// - 회원 요청이 프로필 상태 때문에 거절([_profileStateStatuses])되면 프로필을 다시 받아
 ///   라우터가 그 상태의 화면(약관 동의, 탈퇴 대기)으로 보내게 한다.
+/// - 게스트 요청이 거절(403·428)되면 AuthNotifier.guestRefused가 게스트 상태에 그 까닭을 적는다(403은 세션을
+///   한 번 확인한다). 모임 화면은 그 상태를 보고 약관 동의·게스트를 받지 않음·지워진 게스트를 보인다.
 class AuthInterceptor extends Interceptor {
   final Ref ref;
 
@@ -83,7 +85,19 @@ class AuthInterceptor extends Interceptor {
       debugPrint('   Status: ${err.response?.statusCode}');
     }
 
-    if (_isProfileStateError(err.response)) {
+    final status = err.response?.statusCode;
+    if ((status == 403 || status == 428) &&
+        ref.read(authProvider) is AuthGuest) {
+      try {
+        await ref.read(authProvider.notifier).guestRefused(status!);
+      } catch (_) {
+        // 세션을 확인하지 못하면 거절을 그대로 넘긴다
+      }
+      return handler.next(err);
+    }
+
+    if (_isProfileStateError(err.response) &&
+        ref.read(authProvider) is AuthAuthenticated) {
       unawaited(ref.read(myProfileProvider.notifier).reload());
       return handler.next(err);
     }

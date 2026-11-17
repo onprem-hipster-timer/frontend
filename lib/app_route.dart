@@ -18,22 +18,39 @@
 /// context.go(AppRoute.todo.path);
 /// ```
 enum AppRoute {
-  // 인증 불필요 (공개 페이지)
-  login(path: '/login', requiresAuth: false),
-  signup(path: '/signup', requiresAuth: false),
+  // 인증 불필요 (공개 페이지). 게스트도 머무는 곳은 회원으로 로그인하는 길이다
+  login(path: '/login', requiresAuth: false, allowsGuest: true),
+  signup(path: '/signup', requiresAuth: false, allowsGuest: true),
   // 로그인한 사용자도 머문다: 비밀번호 변경도 메일 코드로 이 화면에서 한다
   forgotPassword(
     path: '/forgot-password',
     requiresAuth: false,
     authNeutral: true,
+    allowsGuest: true,
   ),
   landing(path: '/landing', requiresAuth: false),
   loading(path: '/loading', requiresAuth: false),
-  securityWarning(path: '/security-warning', requiresAuth: false),
+  securityWarning(
+    path: '/security-warning',
+    requiresAuth: false,
+    allowsGuest: true,
+  ),
+  // 게스트가 자기 모임 밖으로 가면 보는 안내. 게스트만 머문다
+  guestSession(path: '/guest-session', requiresAuth: false, allowsGuest: true),
 
   // 로그인 여부와 상관없이 머무는 페이지 (Kratos 메일 링크·오류로 들어옴)
-  verification(path: '/verification', requiresAuth: false, authNeutral: true),
-  authError(path: '/auth-error', requiresAuth: false, authNeutral: true),
+  verification(
+    path: '/verification',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
+  authError(
+    path: '/auth-error',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
 
   // 인증 필요 (보호된 페이지)
   // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
@@ -46,13 +63,25 @@ enum AppRoute {
   todoGroupDetail(path: '/todo/:groupId'),
   timer(path: '/timer'),
   timerDetail(path: '/timer/detail'),
+  // 모임 만들기 화면과 만든 뒤 화면 (탭 셸 밖). 만들기 화면은 로그인하지 않아도 머물고, 만들 때 로그인을 묻는다
+  meetings(path: '/meetings', allowsSignedOut: true),
+  meetingCreated(path: '/meetings/:meetingId/created'),
+  // 모임 설정 화면 (탭 셸 밖). 주인만 고치고, 다른 사람에게는 찾을 수 없는 모임이다
+  meetingEdit(path: '/meetings/:meetingId/edit'),
   tags(path: '/tags'),
-  mypage(path: '/mypage');
+  mypage(path: '/mypage'),
+  // 마이페이지의 내 모임 전체 목록
+  myMeetings(path: '/mypage/meetings'),
+  // 공유 링크로 여는 모임 화면 (탭 셸 밖). 로그인하지 않아도 머문다(공개 모임만 보인다).
+  // 게스트는 자기 모임의 화면에만 머문다
+  meeting(path: '/meetings/:meetingId', allowsSignedOut: true);
 
   const AppRoute({
     required this.path,
     this.requiresAuth = true,
     this.authNeutral = false,
+    this.allowsSignedOut = false,
+    this.allowsGuest = false,
   });
 
   /// 라우트 경로
@@ -64,10 +93,23 @@ enum AppRoute {
   /// 인증된 사용자도 머무르는 공개 페이지인지 (기본값: false)
   final bool authNeutral;
 
+  /// 로그인하지 않은 사용자도 머무는 보호된 페이지인지 (기본값: false).
+  /// 로그인한 사용자에게는 다른 보호된 페이지와 같다(약관 동의·탈퇴 대기를 먼저 본다).
+  final bool allowsSignedOut;
+
+  /// 게스트 세션도 머무는 페이지인지 (기본값: false). 게스트의 모임 화면은 리다이렉트가 따로 본다
+  final bool allowsGuest;
+
   /// 공개 라우트(인증 불필요) 경로 집합
   static final publicPaths = {
     for (final route in values)
       if (!route.requiresAuth) route.path,
+  };
+
+  /// 게스트 세션도 머무는 경로 집합
+  static final guestPaths = {
+    for (final route in values)
+      if (route.allowsGuest) route.path,
   };
 
   /// 로그인 여부와 상관없이 리다이렉트하지 않는 경로 집합
@@ -82,14 +124,28 @@ enum AppRoute {
   /// `/todo/abc-123` 같은 동적 경로도 매칭합니다.
   static final _protectedPatterns = [
     for (final route in values)
-      if (route.requiresAuth)
-        RegExp(
-          '^${route.path.replaceAllMapped(RegExp(r':(\w+)'), (_) => r'[^/]+')}\$',
-        ),
+      if (route.requiresAuth) route._pattern,
   ];
+
+  /// 로그인하지 않아도 머무는 보호 라우트의 경로 패턴 목록
+  static final _signedOutPatterns = [
+    for (final route in values)
+      if (route.allowsSignedOut) route._pattern,
+  ];
+
+  RegExp get _pattern =>
+      RegExp('^${path.replaceAllMapped(RegExp(r':(\w+)'), (_) => r'[^/]+')}\$');
+
+  /// [path]가 이 라우트의 경로인지 (`:param` 자리는 어떤 값이든)
+  bool matches(String path) => _pattern.hasMatch(path);
 
   /// 주어진 경로가 등록된 보호 라우트와 매칭되는지 확인
   static bool isKnownProtectedPath(String path) {
     return _protectedPatterns.any((pattern) => pattern.hasMatch(path));
+  }
+
+  /// 주어진 경로가 로그인하지 않아도 머무는 보호 라우트인지 확인 (`/meetings`, `/meetings/abc-123` 등)
+  static bool allowsSignedOutPath(String path) {
+    return _signedOutPatterns.any((pattern) => pattern.hasMatch(path));
   }
 }

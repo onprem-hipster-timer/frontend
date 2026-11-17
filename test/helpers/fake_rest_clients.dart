@@ -478,6 +478,7 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   @override
   Future<ScheduleRead> readScheduleV1SchedulesScheduleIdGet({
     required String scheduleId,
+    DateTime? instanceStart,
     String? timezone,
     RequestOptions? options,
   }) async {
@@ -634,7 +635,14 @@ class FakeUsersClient extends Fake implements UsersClient {
         data: {'message': 'account_deletion_pending'},
       );
     }
-    profile = profile.copyWith(consentRequired: false);
+    // 처음 동의하는 버전이면 그 값, 같은 버전에 다시 보내면 analytics만 바꾼다(빠졌거나 null이면 그대로)
+    final analytics = profile.consentRequired
+        ? body.analytics
+        : body.analytics ?? profile.analyticsConsent;
+    profile = profile.copyWith(
+      consentRequired: false,
+      analyticsConsent: analytics,
+    );
     return profile;
   }
 

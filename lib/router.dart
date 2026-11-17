@@ -9,6 +9,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/my_profile_provider.dart';
 import 'package:momeet/features/auth/auth.dart';
 import 'package:momeet/features/calendar/presentation/pages/calendar_page.dart'
@@ -21,12 +22,15 @@ import 'package:momeet/features/todo/todo.dart' deferred as todo;
 import 'package:momeet/features/tag/tag.dart' deferred as tag;
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
     deferred as mypage;
+import 'package:momeet/features/mypage/presentation/pages/my_meetings_page.dart'
+    deferred as my_meetings;
 import 'package:momeet/shared/widgets/deferred_widget.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/auth_redirect.dart';
 import 'package:momeet/core/landing/static_landing_page.dart';
+import 'package:momeet/meeting_routes.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
 export 'package:momeet/app_route.dart';
@@ -63,9 +67,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     // 인증 상태 리다이렉트
     redirect: (context, state) {
+      // 인증 상태 알림 안에서 불릴 수 있어 파생 provider 대신 지금 상태를 직접 읽는다
+      final auth = ref.read(authProvider);
+      final guest = auth is AuthGuest ? auth.guest : null;
       return authRedirect(
-        isAuthenticated: ref.read(isAuthenticatedProvider),
-        isAuthLoading: ref.read(isAuthLoadingProvider),
+        isAuthenticated: auth is AuthAuthenticated,
+        isGuest: guest != null,
+        guestMeetingId: guest?.meetingId,
+        isAuthLoading: auth is AuthLoading,
         matchedLocation: state.matchedLocation,
         redirectAfterLogin: state.uri.queryParameters['redirect'],
         queryParameters: state.uri.queryParameters,
@@ -74,7 +83,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
 
-    initialLocation: AppRoute.calendar.path,
+    // 로그아웃·게스트 삭제로 계정이 바뀌면 라우터를 새로 만든다. 그때 웹 엔진의 기본 경로는 이미 '/'이므로
+    // 로그인하지 않아도 머무는 화면(모임)에 있었으면 브라우저 주소의 그 화면에서 이어 간다
+    initialLocation:
+        signedOutStay(ref.read(browserRouteProvider)) ?? AppRoute.calendar.path,
 
     routes: [
       // ============================================================
@@ -157,6 +169,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ============================================================
+      // 게스트 세션 안내 (게스트가 자기 모임 밖으로 가면)
+      // ============================================================
+      GoRoute(
+        path: AppRoute.guestSession.path,
+        name: AppRoute.guestSession.name,
+        // redirect: 가려던 곳. 회원으로 로그인하면 그리로 간다
+        builder: (context, state) =>
+            GuestSessionPage(redirect: state.uri.queryParameters['redirect']),
+      ),
+
+      // ============================================================
       // 보안 경고 페이지
       // ============================================================
       GoRoute(
@@ -166,6 +189,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           attemptedUrl: state.uri.queryParameters['blocked'],
         ),
       ),
+
+      // 모임 화면들 (탭 셸 밖의 독립 화면)
+      ...meetingRoutes,
 
       // ============================================================
       // 메인 앱 (Floating Navigation 포함)
@@ -290,6 +316,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   loader: mypage.loadLibrary,
                   builder: (_) => mypage.MyPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'meetings',
+                    name: AppRoute.myMeetings.name,
+                    builder: (context, state) => DeferredWidget(
+                      loader: my_meetings.loadLibrary,
+                      builder: (_) => my_meetings.MyMeetingsPage(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

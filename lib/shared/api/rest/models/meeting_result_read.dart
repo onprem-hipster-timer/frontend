@@ -4,7 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'availability_date_group.dart';
+import 'availability_cell.dart';
 import 'meeting_read.dart';
 
 part 'meeting_result_read.freezed.dart';
@@ -15,8 +15,9 @@ part 'meeting_result_read.g.dart';
 abstract class MeetingResultRead with _$MeetingResultRead {
   const factory MeetingResultRead({
     required MeetingRead meeting,
+    @JsonKey(name: 'participant_count') required int participantCount,
     @JsonKey(name: 'availability_grid')
-    required List<AvailabilityDateGroup> availabilityGrid,
+    required List<AvailabilityCell> availabilityGrid,
   }) = _MeetingResultRead;
 
   factory MeetingResultRead.fromJson(Map<String, Object?> json) =>

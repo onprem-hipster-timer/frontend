@@ -5,8 +5,14 @@ import 'package:layout_audit/layout_audit.dart';
 ///
 /// `test/flutter_test_config.dart`가 바인딩에 넣고, 자동 점검과 `testLayoutAudit`이 같이 쓴다.
 final appLayoutAuditPolicy = LayoutAuditPolicy(
-  // 뒤 내용 위에 떠서 덮는 것이 설계인 위젯. 목록 끝 여백은 화면 테스트가 따로 본다.
-  floatingWidgets: const {'FloatingActionButton', 'Drawer', 'NavigationDrawer'},
+  // 뒤 내용 위에 떠서 덮는 것이 설계인 위젯. 목록 끝 여백은 화면 테스트가 따로 본다. 모임 화면의 유리 머리띠는
+  // 굴린 내용이 그 아래로 지나간다(처음 위치는 meeting_glass_scaffold_test가 본다).
+  floatingWidgets: const {
+    'FloatingActionButton',
+    'Drawer',
+    'NavigationDrawer',
+    'MeetingGlassBar',
+  },
   // Overlay 위 라우트(다이얼로그·시트)가 뒤 화면을 덮는 층
   coveringLayers: const {'_RenderTheater'},
   isUnscaledText: _isIconGlyph,

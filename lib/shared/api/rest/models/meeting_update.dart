@@ -4,6 +4,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'meeting_mode.dart';
+
 part 'meeting_update.freezed.dart';
 part 'meeting_update.g.dart';
 
@@ -15,10 +17,13 @@ abstract class MeetingUpdate with _$MeetingUpdate {
     String? description,
     @JsonKey(name: 'start_date') DateTime? startDate,
     @JsonKey(name: 'end_date') DateTime? endDate,
-    @JsonKey(name: 'available_days') List<int>? availableDays,
+    @JsonKey(name: 'excluded_dates') List<DateTime>? excludedDates,
+    String? timezone,
+    MeetingMode? mode,
     @JsonKey(name: 'start_time') String? startTime,
     @JsonKey(name: 'end_time') String? endTime,
     @JsonKey(name: 'time_slot_minutes') int? timeSlotMinutes,
+    @JsonKey(name: 'allow_guests') bool? allowGuests,
   }) = _MeetingUpdate;
 
   factory MeetingUpdate.fromJson(Map<String, Object?> json) =>

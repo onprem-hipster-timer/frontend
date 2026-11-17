@@ -30,7 +30,9 @@ class AppConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // 낮은 화면이나 큰 글자에서는 제목과 내용을 굴리고 단추는 그대로 둔다
     return AlertDialog(
+      scrollable: true,
       title: Text(title),
       content: Text(content),
       actions: [

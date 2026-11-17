@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/core/config/app_config.dart';
+import 'package:momeet/core/network/turnstile_request.dart';
 
 enum KratosFlowType { login, registration, verification, recovery, settings }
 
@@ -105,17 +106,25 @@ class KratosClient {
   }
 
   /// 플로우를 제출한다. 코드 오입력처럼 200으로 오는 오류도 [KratosException]으로 던진다.
+  ///
+  /// [turnstileToken]은 게스트 제출(게스트 로그인, 게스트 이름 변경)의 Cloudflare Turnstile 토큰이다.
   Future<KratosSubmitResult> submit(
     KratosFlowType type,
     String flowId,
     Map<String, Object?> body, {
     String? sessionToken,
+    String? turnstileToken,
   }) async {
     final response = await _dio.post<Object?>(
       '/self-service/${type.name}',
       queryParameters: {'flow': flowId},
       data: body,
-      options: _withSession(sessionToken),
+      options: Options(
+        headers: {
+          'X-Session-Token': ?sessionToken,
+          turnstileTokenHeader: ?turnstileToken,
+        },
+      ),
     );
     return KratosSubmitResult.fromJson(_parse(response));
   }
@@ -166,6 +175,7 @@ class KratosClient {
       errorId: error is Map ? error['id'] as String? : null,
       messages: errors,
       useFlowId: json['use_flow_id'] as String?,
+      retryAfter: status == 429 ? retryAfterOf(response) : null,
       // 인증 전 로그인 거절은 새 인증 플로우를 오류 상세의 continue_with로 준다
       verificationFlowId: details is Map
           ? KratosSubmitResult.fromJson({

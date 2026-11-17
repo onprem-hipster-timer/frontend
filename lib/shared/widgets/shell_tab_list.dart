@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// 탭 다섯 개의 아이콘과 이름
+/// 탭의 아이콘과 이름
 const shellTabs = [
   (Icons.calendar_month_rounded, '캘린더'),
   (Icons.check_circle_outline_rounded, Terms.todo),

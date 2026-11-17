@@ -48,6 +48,12 @@ class AppConfig {
     _ => '/v1/ws/timers',
   };
 
+  /// Cloudflare Turnstile 사이트 키. 게스트로 들어갈 때의 확인 위젯에 쓴다. 비어 있으면 null이고 게스트 입장을 두지 않는다
+  static String? get turnstileSiteKey {
+    final key = _readEnv('TURNSTILE_SITE_KEY')?.trim();
+    return key == null || key.isEmpty ? null : key;
+  }
+
   /// HTTP 연결 타임아웃
   static Duration get connectTimeout {
     final seconds =

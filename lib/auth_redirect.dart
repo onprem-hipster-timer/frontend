@@ -74,18 +74,28 @@ String? authRedirect({
   Map<String, String> queryParameters = const {},
   bool? consentRequired = false,
   bool? deletionPending = false,
+  bool isGuest = false,
+  String? guestMeetingId,
 }) {
   final isPublicRoute = AppRoute.publicPaths.contains(matchedLocation);
 
-  // 1. 인증 초기화 중이면 로딩 페이지로
+  // 1. 인증 초기화 중이면 로딩 페이지로 (연 주소를 기억한다)
   if (isAuthLoading) {
-    return matchedLocation == AppRoute.loading.path
-        ? null
-        : AppRoute.loading.path;
+    if (matchedLocation == AppRoute.loading.path) return null;
+    return _gate(
+      AppRoute.loading.path,
+      from: Uri(
+        path: matchedLocation,
+        queryParameters: queryParameters.isEmpty ? null : queryParameters,
+      ).toString(),
+    );
   }
 
-  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 탈출
+  // 1-1. 로딩이 끝났는데 로딩 페이지에 남아 있으면 기억한 주소로 돌아간다. 그 주소의 규칙은 다음
+  //      리다이렉트가 본다
   if (matchedLocation == AppRoute.loading.path) {
+    if (_resumable(redirectAfterLogin) case final resume?) return resume;
+    if (isGuest) return _guestHome(guestMeetingId);
     return isAuthenticated ? AppRoute.calendar.path : AppRoute.landing.path;
   }
 
@@ -98,8 +108,35 @@ String? authRedirect({
     return '${AppRoute.securityWarning.path}?blocked=${Uri.encodeComponent(attempted)}';
   }
 
+  // 1-3. 게스트는 자기 모임 화면과 회원으로 로그인하는 화면에만 머문다. 다른 곳은 게스트 세션 안내로
+  //      보내고 가려던 곳을 기억한다(회원으로 로그인하면 그리로 간다)
+  if (isGuest) {
+    final ownMeeting = guestMeetingId == null
+        ? AppRoute.meeting.matches(matchedLocation)
+        : matchedLocation == _guestHome(guestMeetingId);
+    if (ownMeeting || AppRoute.guestPaths.contains(matchedLocation)) {
+      return null;
+    }
+    return _gate(
+      AppRoute.guestSession.path,
+      from: Uri(
+        path: matchedLocation,
+        queryParameters: queryParameters.isEmpty ? null : queryParameters,
+      ).toString(),
+    );
+  }
+
+  // 1-4. 게스트 세션 안내는 게스트만 본다. 회원은 기억한 곳으로, 로그인하지 않았으면 기억한 곳이나 처음 화면으로
+  if (matchedLocation == AppRoute.guestSession.path) {
+    if (isAuthenticated) return _destination(redirectAfterLogin);
+    return _resumable(redirectAfterLogin) ?? AppRoute.landing.path;
+  }
+
   // 2. 미인증 사용자가 보호된 페이지에 접근하려 하면 리다이렉트
-  if (!isAuthenticated && !isPublicRoute) {
+  //    (로그인하지 않아도 머무는 페이지는 제외)
+  if (!isAuthenticated &&
+      !isPublicRoute &&
+      !AppRoute.allowsSignedOutPath(matchedLocation)) {
     // 2-1. 루트 경로는 랜딩 페이지로 (서비스 소개)
     if (matchedLocation == AppRoute.calendar.path) {
       return AppRoute.landing.path;
@@ -155,12 +192,39 @@ String? authRedirect({
   return null;
 }
 
+/// [route]가 로그인하지 않아도 머무는 화면(모임)이면 [route], 아니면 null. 라우터를 새로 만들 때 이어 갈 곳이다
+String? signedOutStay(String? route) =>
+    route != null && AppRoute.allowsSignedOutPath(Uri.parse(route).path)
+    ? route
+    : null;
+
 /// [page]로 보내며 [from]을 돌아갈 곳으로 기억한다. 돌아갈 곳이 없거나 루트(/)면 붙이지 않는다.
 String _gate(String page, {required String? from}) {
   if (from == null || from.isEmpty || from == AppRoute.calendar.path) {
     return page;
   }
   return '$page?redirect=${Uri.encodeComponent(from)}';
+}
+
+/// 게스트가 머무는 곳. 들어온 모임을 모르면 게스트 세션 안내다
+String _guestHome(String? meetingId) => meetingId == null
+    ? AppRoute.guestSession.path
+    : AppRoute.meeting.path.replaceFirst(':meetingId', meetingId);
+
+/// 로딩 화면이 기억한 주소. 앱에 있는 경로(로딩 화면 밖)의 내부 주소만 돌려주고, 아니면 null
+String? _resumable(String? location) {
+  if (location == null ||
+      !location.startsWith('/') ||
+      location.startsWith('//') ||
+      location.contains('://')) {
+    return null;
+  }
+  final path = Uri.tryParse(location)?.path;
+  if (path == null || path == AppRoute.loading.path) return null;
+  final known =
+      AppRoute.isKnownProtectedPath(path) ||
+      AppRoute.publicPaths.contains(path);
+  return known ? location : null;
 }
 
 /// 로그인·약관 동의를 마친 뒤 갈 곳. [redirect]가 안전한 내부 경로가 아니면 메인 앱으로,
