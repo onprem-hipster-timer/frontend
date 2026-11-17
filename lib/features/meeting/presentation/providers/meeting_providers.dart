@@ -26,6 +26,16 @@ final meetingProvider = FutureProvider.autoDispose.family<MeetingRead, String>(
       .readMeetingV1MeetingsMeetingIdGet(meetingId: meetingId),
 );
 
+/// 내가 만든 모임(`GET /v1/meetings`, 나눠 받지 않는다), 새로 만든 순. 만들기·모임 설정의 저장과 삭제가 다시 받게 한다
+final myMeetingsProvider = FutureProvider.autoDispose<List<MeetingRead>>((
+  ref,
+) async {
+  final meetings = await ref
+      .watch(meetingsApiProvider)
+      .readMeetingsV1MeetingsGet();
+  return [...meetings]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+});
+
 /// 로그인하지 않은 방문자가 보는 모임: 결과(`GET /result`)의 칸마다 사람 수와 참여자 수. 공개 모임만 받는다
 final meetingHeadcountProvider = FutureProvider.autoDispose
     .family<MeetingHeadcount, String>(
@@ -50,7 +60,7 @@ class MeetingMutations extends _$MeetingMutations {
   /// 이 순서다.
   ///
   /// 공개 범위를 정하거나 게스트를 켜지 못하면 만든 미팅을 지우고 그 오류를 던진다. 다시 눌러도 미팅이 둘 생기지
-  /// 않는다.
+  /// 않는다. 만들면 내 모임([myMeetingsProvider])을 다시 받는다.
   Future<MeetingRead> create(
     MeetingCreate body, {
     required VisibilityUpdate visibility,
@@ -66,13 +76,14 @@ class MeetingMutations extends _$MeetingMutations {
             resourceId: meeting.id,
             body: visibility,
           );
-      if (visibility.level != VisibilityLevel.public || !allowGuests) {
-        return meeting;
-      }
-      return await meetings.updateMeetingV1MeetingsMeetingIdPatch(
-        meetingId: meeting.id,
-        body: const MeetingUpdate(allowGuests: true),
-      );
+      final made = visibility.level != VisibilityLevel.public || !allowGuests
+          ? meeting
+          : await meetings.updateMeetingV1MeetingsMeetingIdPatch(
+              meetingId: meeting.id,
+              body: const MeetingUpdate(allowGuests: true),
+            );
+      ref.invalidate(myMeetingsProvider);
+      return made;
     } catch (_) {
       await meetings
           .deleteMeetingV1MeetingsMeetingIdDelete(meetingId: meeting.id)

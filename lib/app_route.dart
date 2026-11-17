@@ -70,6 +70,8 @@ enum AppRoute {
   meetingEdit(path: '/meetings/:meetingId/edit'),
   tags(path: '/tags'),
   mypage(path: '/mypage'),
+  // 마이페이지의 내 모임 전체 목록
+  myMeetings(path: '/mypage/meetings'),
   // 공유 링크로 여는 모임 화면 (탭 셸 밖). 로그인하지 않아도 머문다(공개 모임만 보인다).
   // 게스트는 자기 모임의 화면에만 머문다
   meeting(path: '/meetings/:meetingId', allowsSignedOut: true);

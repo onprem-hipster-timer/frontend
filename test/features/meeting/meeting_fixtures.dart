@@ -29,6 +29,8 @@ MeetingRead makeMeeting({
   String endTime = '18:00:00',
   int timeSlotMinutes = 30,
   String ownerId = 'owner-1',
+  DateTime? createdAt,
+  VisibilityLevel? visibilityLevel,
 }) => MeetingRead(
   id: id,
   ownerId: ownerId,
@@ -41,8 +43,9 @@ MeetingRead makeMeeting({
   startTime: startTime,
   endTime: endTime,
   timeSlotMinutes: timeSlotMinutes,
-  createdAt: _at,
+  createdAt: createdAt ?? _at,
   updatedAt: _at,
+  visibilityLevel: visibilityLevel,
 );
 
 /// 받은 요청을 기록하는 [MeetingsClient]
@@ -112,6 +115,29 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     );
     meeting ??= made;
     return made;
+  }
+
+  /// 내 모임 목록 조회가 돌려주는 미팅(받은 순서 그대로)
+  List<MeetingRead> mine = [];
+
+  /// 내 모임 목록 조회 횟수
+  var listReads = 0;
+
+  /// 설정하면 내 모임 목록 조회가 이 오류로 실패한다
+  Object? listError;
+
+  /// 설정하면 내 모임 목록 조회가 이것이 끝날 때까지 기다린다
+  Completer<void>? listGate;
+
+  @override
+  Future<List<MeetingRead>> readMeetingsV1MeetingsGet({
+    String? timezone,
+    RequestOptions? options,
+  }) async {
+    listReads++;
+    await listGate?.future;
+    if (listError != null) throw listError!;
+    return [...mine];
   }
 
   @override

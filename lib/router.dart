@@ -22,6 +22,8 @@ import 'package:momeet/features/todo/todo.dart' deferred as todo;
 import 'package:momeet/features/tag/tag.dart' deferred as tag;
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
     deferred as mypage;
+import 'package:momeet/features/mypage/presentation/pages/my_meetings_page.dart'
+    deferred as my_meetings;
 import 'package:momeet/shared/widgets/deferred_widget.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
@@ -314,6 +316,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   loader: mypage.loadLibrary,
                   builder: (_) => mypage.MyPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'meetings',
+                    name: AppRoute.myMeetings.name,
+                    builder: (context, state) => DeferredWidget(
+                      loader: my_meetings.loadLibrary,
+                      builder: (_) => my_meetings.MyMeetingsPage(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

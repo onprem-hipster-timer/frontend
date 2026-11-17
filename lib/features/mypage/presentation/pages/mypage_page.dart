@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
-import 'package:momeet/features/mypage/presentation/widgets/meeting_entry_section.dart';
+import 'package:momeet/features/mypage/presentation/widgets/my_meetings_section.dart';
 import 'package:momeet/features/mypage/presentation/widgets/profile_section.dart';
 import 'package:momeet/features/mypage/presentation/widgets/activity_stats_section.dart';
 import 'package:momeet/features/mypage/presentation/widgets/tag_stats_section.dart';
@@ -43,8 +43,8 @@ class _MyPageState extends ConsumerState<MyPage> {
 
           const SizedBox(height: 16),
 
-          // 모임 만들기 (모임은 탭이 아닌 독립 화면)
-          const MeetingEntrySection(),
+          // 내 모임과 모임 만들기 (모임은 탭이 아닌 독립 화면)
+          const MyMeetingsSection(),
 
           const SizedBox(height: 32),
 

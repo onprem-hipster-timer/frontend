@@ -9,6 +9,7 @@ import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_edit_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
+import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_form_settings.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -569,6 +570,38 @@ void main() {
 
       expect(find.text('모임을 삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요'), findsOneWidget);
       expect(find.byType(MeetingEditPage), findsOneWidget);
+    });
+  });
+
+  group('내 모임 목록', () {
+    /// 설정 화면에서 내 모임 목록을 듣는다(마이페이지가 떠 있는 것처럼)
+    void listenMine(WidgetTester tester) => ProviderScope.containerOf(
+      tester.element(find.byType(MeetingEditPage)),
+    ).listen(myMeetingsProvider, (_, _) {});
+
+    testWidgets('저장하면 내 모임을 다시 받는다', (tester) async {
+      await openEdit(tester);
+      listenMine(tester);
+      await tester.pumpAndSettle();
+      final reads = meetings.listReads;
+
+      await typeTitle(tester, '주간 회의');
+      await save(tester);
+
+      expect(meetings.listReads, greaterThan(reads));
+    });
+
+    testWidgets('지우면 내 모임을 다시 받는다', (tester) async {
+      await openEdit(tester);
+      listenMine(tester);
+      await tester.pumpAndSettle();
+      final reads = meetings.listReads;
+
+      await press(tester, '모임 삭제');
+      await tester.tap(find.text('삭제하기'));
+      await tester.pumpAndSettle();
+
+      expect(meetings.listReads, greaterThan(reads));
     });
   });
 

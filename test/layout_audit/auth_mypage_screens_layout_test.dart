@@ -1,6 +1,8 @@
 @Tags(['layout_audit'])
 library;
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart' show Tags, setUpAll;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
@@ -13,14 +15,18 @@ import 'package:momeet/features/auth/presentation/pages/login_page.dart';
 import 'package:momeet/features/auth/presentation/pages/signup_page.dart';
 import 'package:momeet/features/auth/presentation/pages/verification_page.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_settings_drawer.dart';
+import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/mypage/presentation/pages/my_meetings_page.dart';
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart';
 import 'package:momeet/features/mypage/presentation/providers/my_page_providers.dart';
 import 'package:momeet/features/mypage/presentation/widgets/account_deletion_dialog.dart';
 import 'package:momeet/features/settings/presentation/widgets/timezone_selection_sheet.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
+import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
+import '../features/meeting/meeting_fixtures.dart';
 import '../helpers/fake_rest_clients.dart';
 import '../helpers/kratos_mocks.dart';
 import '../helpers/layout_audit_app.dart';
@@ -110,12 +116,29 @@ void main() {
         wrapWithApp()(SecurityWarningPage(attemptedUrl: '/${text.value}')),
   );
 
+  /// [title]로 시작하는 제목의 내 모임 [count]개(새로 만든 순으로 공개·비공개, 방식이 번갈아)
+  List<MeetingRead> myMeetings(String title, int count) => [
+    for (var i = 0; i < count; i++)
+      makeMeeting(
+        id: 'meeting-$i',
+        title: i.isEven ? title : '모임 $i',
+        mode: MeetingMode.values[i % 3],
+        createdAt: DateTime.utc(2027, 1, 10 - i),
+        visibilityLevel: i.isEven
+            ? VisibilityLevel.public
+            : VisibilityLevel.allowedEmails,
+      ),
+  ];
+
   testLayoutAudit(
     'mypage_page',
     subject: '태그 이름',
     build: (text) => wrapWithApp(
       overrides: [
         ...signedIn.overrides,
+        myMeetingsProvider.overrideWith(
+          (ref) async => myMeetings(text.value, 7),
+        ),
         todoStatisticsProvider.overrideWith(
           (ref) async => const TodoStatistics(
             totalCount: 1234,
@@ -139,6 +162,44 @@ void main() {
         ),
       ],
     )(const MyPage()),
+  );
+
+  for (final (name, state) in [
+    ('items', 'items'),
+    ('empty', 'empty'),
+    ('error', 'error'),
+    ('loading', 'loading'),
+  ]) {
+    testLayoutAudit(
+      'mypage_my_meetings_$name',
+      subject: '모임 제목',
+      build: (text) => wrapWithApp(
+        overrides: [
+          ...signedIn.overrides,
+          myMeetingsProvider.overrideWith(
+            (ref) => switch (state) {
+              'items' => Future.value(myMeetings(text.value, 3)),
+              'empty' => Future.value(<MeetingRead>[]),
+              'error' => Future<List<MeetingRead>>.error(Exception('끊김')),
+              _ => Completer<List<MeetingRead>>().future,
+            },
+          ),
+        ],
+      )(const MyPage()),
+    );
+  }
+
+  testLayoutAudit(
+    'my_meetings_page',
+    subject: '모임 제목',
+    build: (text) => wrapWithApp(
+      overrides: [
+        ...signedIn.overrides,
+        myMeetingsProvider.overrideWith(
+          (ref) async => myMeetings(text.value, 8),
+        ),
+      ],
+    )(const MyMeetingsPage()),
   );
 
   testLayoutAudit(

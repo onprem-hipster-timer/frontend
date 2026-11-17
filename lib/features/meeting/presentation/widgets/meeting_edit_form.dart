@@ -83,7 +83,9 @@ class _MeetingEditFormState extends ConsumerState<MeetingEditForm> {
     final outcome = await ref
         .read(meetingEditRequestsProvider)
         .save(_base, steps);
-    ref.invalidate(meetingProvider(_meetingId));
+    ref
+      ..invalidate(meetingProvider(_meetingId))
+      ..invalidate(myMeetingsProvider);
     if (!mounted) return;
     if (!outcome.complete) {
       return setState(() {
@@ -118,6 +120,7 @@ class _MeetingEditFormState extends ConsumerState<MeetingEditForm> {
       showAppSnackBar(context, meetingDeleteFailed, kind: AppNoticeKind.error);
       return;
     }
+    ref.invalidate(myMeetingsProvider);
     if (!mounted) return;
     showAppSnackBar(context, meetingDeleted);
     context.goNamed(AppRoute.calendar.name);
