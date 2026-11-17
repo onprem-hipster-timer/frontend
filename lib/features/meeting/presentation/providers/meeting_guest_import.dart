@@ -6,7 +6,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/kept_guest_session_store.dart';
-import 'package:momeet/features/meeting/data/meeting_guest_import_client.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -99,8 +98,11 @@ class MeetingGuestImport extends _$MeetingGuestImport {
         if (token == null) return await _gone();
         try {
           final mine = await ref
-              .read(meetingGuestImportApiProvider)
-              .importGuest(meetingId: meetingId, guestToken: token);
+              .read(meetingsApiProvider)
+              .importGuestV1MeetingsMeetingIdGuestImportPost(
+                meetingId: meetingId,
+                body: GuestImport(guestToken: token),
+              );
           ref
               .read(meetingBoardProvider(meetingId).notifier)
               .applyImported(mine);

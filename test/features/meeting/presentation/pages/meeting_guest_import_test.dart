@@ -12,7 +12,6 @@ import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/kept_guest_session_store.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/timezone_provider.dart';
-import 'package:momeet/features/meeting/data/meeting_guest_import_client.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -29,30 +28,29 @@ import '../../meeting_fixtures.dart';
 /// 서울 2027년 3월 [day]일 [hour]시의 UTC 시각
 DateTime seoul(int day, int hour) => DateTime.utc(2027, 3, day, hour - 9);
 
-/// 받은 옮기기 요청을 기록하고 [responses]를 차례로 돌려준다(예외면 던진다)
-class FakeGuestImportClient implements MeetingGuestImportClient {
+/// 받은 옮기기 요청(`POST /guest-import`)을 기록하고 [responses]를 차례로 돌려준다(예외면 던진다). 옮기기에
+/// 성공하면 모임의 가능 시간에도 넣는다(다시 읽을 때 보인다)
+class ImportingMeetingsClient extends FakeMeetingsClient {
+  ImportingMeetingsClient({super.meeting});
+
   final responses = <Object>[];
   final tokens = <String>[];
 
-  /// 옮기기에 성공하면 모임의 가능 시간에도 넣는다(다시 읽을 때 보인다)
-  FakeMeetingsClient? meetings;
-
   @override
-  Future<AvailabilityRead> importGuest({
+  Future<AvailabilityRead> importGuestV1MeetingsMeetingIdGuestImportPost({
     required String meetingId,
-    required String guestToken,
+    required GuestImport body,
+    String? timezone,
+    RequestOptions? options,
   }) async {
-    tokens.add(guestToken);
+    tokens.add(body.guestToken);
     final next = responses.removeAt(0);
     if (next is! AvailabilityRead) throw next;
-    final meetings = this.meetings;
-    if (meetings != null) {
-      meetings.availability = [
-        for (final entry in meetings.availability)
-          if (entry.participant.id != next.participant.id) entry,
-        next,
-      ];
-    }
+    availability = [
+      for (final entry in availability)
+        if (entry.participant.id != next.participant.id) entry,
+      next,
+    ];
     return next;
   }
 }
@@ -95,8 +93,7 @@ AvailabilityRead mergedMember() => availabilityOf(
 
 void main() {
   late KratosTestHarness harness;
-  late FakeMeetingsClient meetings;
-  late FakeGuestImportClient imports;
+  late ImportingMeetingsClient meetings;
   late FakeUsageAnalytics analytics;
   late GoRouter router;
   final guestJwt = testJwt();
@@ -114,11 +111,10 @@ void main() {
       (_) async => KratosSession.guest(guest: testGuest, accessToken: guestJwt),
     );
     when(() => harness.kratos.logout(any())).thenAnswer((_) async {});
-    meetings = FakeMeetingsClient(meeting: makeMeeting())
+    meetings = ImportingMeetingsClient(meeting: makeMeeting())
       ..availability = [
         availabilityOf('b', name: '서연', slots: [(seoul(1, 9), seoul(1, 11))]),
       ];
-    imports = FakeGuestImportClient()..meetings = meetings;
     analytics = FakeUsageAnalytics();
   });
 
@@ -156,7 +152,6 @@ void main() {
           usersApiProvider.overrideWithValue(
             FakeUsersClient(consentRequired: false),
           ),
-          meetingGuestImportApiProvider.overrideWithValue(imports),
           timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
           appOriginProvider.overrideWithValue('https://app.example.com'),
           FakeTurnstiles().override,
@@ -175,12 +170,12 @@ void main() {
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      imports.responses.add(mergedMember());
+      meetings.responses.add(mergedMember());
 
       await pumpPage(tester);
       await tester.pumpAndSettle();
 
-      expect(imports.tokens, [guestJwt], reason: '따로 둔 세션으로 새로 받은 게스트 JWT');
+      expect(meetings.tokens, [guestJwt], reason: '따로 둔 세션으로 새로 받은 게스트 JWT');
       expect(find.text(moved), findsOneWidget);
       expect(
         find.bySemanticsLabel('지현, 나'),
@@ -209,14 +204,14 @@ void main() {
       await pumpPage(tester);
       await tester.pump(const Duration(seconds: 5));
 
-      expect(imports.tokens, isEmpty);
+      expect(meetings.tokens, isEmpty);
       expect(find.text(moved), findsNothing);
     });
 
     testWidgets('처음 시도가 404이고 내 시간이 없으면 찾지 못했다고 알리고 따로 둔 것을 지운다', (
       tester,
     ) async {
-      imports.responses.add(guestNotFound());
+      meetings.responses.add(guestNotFound());
 
       await pumpPage(tester);
       await tester.pumpAndSettle();
@@ -234,13 +229,13 @@ void main() {
       await pumpPage(tester);
       await tester.pumpAndSettle();
 
-      expect(imports.tokens, isEmpty);
+      expect(meetings.tokens, isEmpty);
       expect(find.text(notFound), findsOneWidget);
       expect(await kept(), isNull);
     });
 
     testWidgets('응답을 못 받은 뒤 다시 하기가 404이고 내 시간이 있으면 옮긴 것으로 본다', (tester) async {
-      imports.responses
+      meetings.responses
         ..add(lost())
         ..add(guestNotFound());
       // 서버는 처음 요청에서 이미 옮겼다
@@ -250,7 +245,7 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
-      expect(imports.tokens, hasLength(2));
+      expect(meetings.tokens, hasLength(2));
       expect(find.text(moved), findsOneWidget);
       expect(find.text(notFound), findsNothing);
       expect(await kept(), isNull);
@@ -259,24 +254,24 @@ void main() {
     testWidgets('계속 연결이 끊기면 정한 횟수만 다시 하고 조용한 알림에 다시 시도를 두며 따로 둔 것은 둔다', (
       tester,
     ) async {
-      imports.responses.addAll([lost(), refused(503), lost()]);
+      meetings.responses.addAll([lost(), refused(503), lost()]);
 
       await pumpPage(tester);
       await tester.pump(const Duration(seconds: 30));
       await tester.pumpAndSettle();
 
-      expect(imports.tokens, hasLength(3), reason: '저절로는 세 번까지');
+      expect(meetings.tokens, hasLength(3), reason: '저절로는 세 번까지');
       expect(find.text('게스트로 넣은 시간을 아직 옮기지 못했어요'), findsOneWidget);
       expect(await kept(), keptToken);
 
-      imports.responses.add(lost());
+      meetings.responses.add(lost());
       await tester.tap(find.widgetWithText(TextButton, '다시 시도'));
       await tester.pump(const Duration(seconds: 30));
       await tester.pumpAndSettle();
-      expect(imports.tokens, hasLength(4), reason: '누를 때마다 한 번');
+      expect(meetings.tokens, hasLength(4), reason: '누를 때마다 한 번');
       expect(find.text('게스트로 넣은 시간을 아직 옮기지 못했어요'), findsOneWidget);
 
-      imports.responses.add(mergedMember());
+      meetings.responses.add(mergedMember());
       await tester.tap(find.widgetWithText(TextButton, '다시 시도'));
       await tester.pumpAndSettle();
       expect(find.text(moved), findsOneWidget);
@@ -285,7 +280,7 @@ void main() {
     });
 
     testWidgets('같은 때 다른 요청과 겹치면(409) 잠시 뒤 다시 해 옮긴다', (tester) async {
-      imports.responses.addAll([
+      meetings.responses.addAll([
         refused(409, 'GuestImportConflictError'),
         mergedMember(),
       ]);
@@ -294,7 +289,7 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
 
-      expect(imports.tokens, hasLength(2));
+      expect(meetings.tokens, hasLength(2));
       expect(find.text(moved), findsOneWidget);
     });
 
@@ -309,7 +304,7 @@ void main() {
           accessToken: minted++ == 0 ? guestJwt : fresh,
         ),
       );
-      imports.responses.addAll([
+      meetings.responses.addAll([
         refused(422, 'GuestTokenInvalidError'),
         mergedMember(),
       ]);
@@ -317,7 +312,7 @@ void main() {
       await pumpPage(tester);
       await tester.pumpAndSettle();
 
-      expect(imports.tokens, [guestJwt, fresh]);
+      expect(meetings.tokens, [guestJwt, fresh]);
       expect(find.text(moved), findsOneWidget);
     });
 
@@ -328,7 +323,7 @@ void main() {
             ? KratosSession.guest(guest: testGuest, accessToken: guestJwt)
             : null,
       );
-      imports.responses.add(refused(422, 'GuestTokenInvalidError'));
+      meetings.responses.add(refused(422, 'GuestTokenInvalidError'));
 
       await pumpPage(tester);
       await tester.pumpAndSettle();
@@ -340,7 +335,7 @@ void main() {
     testWidgets('모임을 볼 수 없다는 404는 게스트를 찾지 못한 것으로 보지 않고 따로 둔 것을 둔다', (
       tester,
     ) async {
-      imports.responses.addAll([
+      meetings.responses.addAll([
         for (var i = 0; i < 3; i++) refused(404, 'MeetingNotFoundError'),
       ]);
 
