@@ -204,8 +204,8 @@ class _MonthGrid extends StatelessWidget {
   }
 }
 
-/// 날짜 칸 하나. 고른 날은 동그라미로 채우고, 고를 수 없는 날은 흐리게, 뺀 날은 빈 동그라미 안에 흐리게 줄을
-/// 긋는다(요일 색 없이)
+/// 날짜 칸 하나. 고른 날은 동그라미로 채우고, 기간을 고르는 중의 시작일은 진하게 채우며, 고를 수 없는 날은
+/// 흐리게, 뺀 날은 빈 동그라미 안에 흐리게 줄을 긋는다(요일 색 없이)
 class _DayCell extends StatelessWidget {
   const _DayCell({required this.day, required this.state, required this.onTap});
 
@@ -216,12 +216,15 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final selected = state == MeetingDayState.selected;
+    final started = state == MeetingDayState.started;
+    final selected = state == MeetingDayState.selected || started;
     final excluded = state == MeetingDayState.excluded;
     final tappable = state != MeetingDayState.unavailable;
     // 달력처럼 흐린 날은 요일 색 없이 흐린 날짜 색이다
     final color = state == MeetingDayState.unavailable || excluded
         ? scheme.onSurface.withValues(alpha: 0.4)
+        : started
+        ? scheme.onPrimary
         : _weekendColor(context, day.weekday % 7) ?? scheme.onSurface;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -230,7 +233,11 @@ class _DayCell extends StatelessWidget {
         return MergeSemantics(
           child: Semantics(
             label: meetingDayLabel(day),
-            hint: excluded ? '뺀 날' : null,
+            hint: excluded
+                ? '뺀 날'
+                : started
+                ? '시작하는 날. 끝나는 날을 눌러 주세요'
+                : null,
             selected: selected,
             button: true,
             enabled: tappable,
@@ -245,7 +252,11 @@ class _DayCell extends StatelessWidget {
                       dimension: diameter,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: selected ? scheme.primaryContainer : null,
+                          color: started
+                              ? scheme.primary
+                              : selected
+                              ? scheme.primaryContainer
+                              : null,
                           border: excluded
                               ? Border.all(color: scheme.outline)
                               : null,

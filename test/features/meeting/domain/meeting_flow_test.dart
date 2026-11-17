@@ -563,9 +563,9 @@ void main() {
       );
     });
 
-    test('시작일을 누르면 그날만 고른 상태이고, 3개월 상한 밖은 고를 수 없다', () {
+    test('시작일을 누르면 그날은 끝나는 날을 기다리는 시작일이고, 3개월 상한 밖은 고를 수 없다', () {
       final flow = const MeetingFlow().tapDay(march(31));
-      expect(flow.dayState(march(31), today: today), MeetingDayState.selected);
+      expect(flow.dayState(march(31), today: today), MeetingDayState.started);
       expect(
         flow.dayState(DateTime.utc(2027, 6, 30), today: today),
         MeetingDayState.open,
@@ -574,6 +574,16 @@ void main() {
         flow.dayState(DateTime.utc(2027, 7, 1), today: today),
         MeetingDayState.unavailable,
       );
+    });
+
+    test('기간을 다 고르면 시작일도 고른 날이고, 다시 고르기 시작하면 앞의 기간은 고른 날이 아니다', () {
+      final picked = ranged(1, 5);
+      expect(picked.dayState(march(1), today: today), MeetingDayState.selected);
+
+      final again = picked.expand().tapDayInForm(march(3), excluding: false);
+      expect(again.dayState(march(3), today: today), MeetingDayState.started);
+      expect(again.dayState(march(1), today: today), MeetingDayState.open);
+      expect(again.dayState(march(5), today: today), MeetingDayState.open);
     });
 
     test('제외를 묻는 동안 기간 밖은 고를 수 없고 뺀 날은 뺀 상태다', () {

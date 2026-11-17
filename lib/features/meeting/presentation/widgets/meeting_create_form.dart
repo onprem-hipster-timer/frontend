@@ -113,6 +113,7 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
           excluding: _excludingNow,
           canExclude: _canExclude,
           weekly: flow.draft.mode == MeetingMode.weekly,
+          rangeStart: flow.rangeStart,
           canExcludeWeekends:
               _excludingNow &&
               flow.draft.dates.weekendsInside.any(flow.draft.dates.contains),
@@ -183,6 +184,7 @@ class _FormDates extends StatelessWidget {
     required this.excluding,
     required this.canExclude,
     required this.weekly,
+    required this.rangeStart,
     required this.canExcludeWeekends,
     required this.refusal,
     required this.onExcludingChanged,
@@ -193,6 +195,9 @@ class _FormDates extends StatelessWidget {
   final bool excluding;
   final bool canExclude;
   final bool weekly;
+
+  /// 기간을 고르는 중이면 시작일
+  final DateTime? rangeStart;
   final bool canExcludeWeekends;
   final String? refusal;
   final ValueChanged<bool> onExcludingChanged;
@@ -210,7 +215,10 @@ class _FormDates extends StatelessWidget {
               ? meetingFormExcludeGuide
               : weekly
               ? meetingFormWeeklyGuide
-              : meetingRangeGuide,
+              : rangeStart == null
+              ? meetingRangeGuide
+              : meetingRangeStartedHint(rangeStart!),
+          captionEmphasis: !excluding && !weekly && rangeStart != null,
         ),
         const SizedBox(height: 12),
         Wrap(

@@ -70,6 +70,46 @@ void main() {
     expect(taps, [march(20)]);
   });
 
+  testWidgets('기간을 고르는 중의 시작일은 고른 날과 다르게 진하게 채우고 끝나는 날을 기다린다고 읽는다', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pumpCalendar(
+      tester,
+      stateOf: (day) => switch (day.day) {
+        3 => MeetingDayState.started,
+        10 => MeetingDayState.selected,
+        _ => MeetingDayState.open,
+      },
+    );
+
+    Color? fillOf(String label) => tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: dayCell(label),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((box) => (box.decoration as BoxDecoration).color)
+        .firstWhere((color) => color != null, orElse: () => null);
+
+    final scheme = Theme.of(tester.element(dayCell('3월 3일'))).colorScheme;
+    expect(fillOf('3월 3일'), scheme.primary);
+    expect(fillOf('3월 10일'), scheme.primaryContainer);
+    expect(
+      tester.getSemantics(dayCell('3월 3일')),
+      isSemantics(
+        label: '3월 3일 (수)',
+        hint: '시작하는 날. 끝나는 날을 눌러 주세요',
+        isButton: true,
+        isSelected: true,
+        isEnabled: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('스크린 리더가 날짜·고른 상태·고를 수 있는지·뺀 날을 읽는다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpCalendar(

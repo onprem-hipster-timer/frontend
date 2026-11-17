@@ -46,8 +46,11 @@ enum MeetingDayState {
   /// 누를 수 있다
   open,
 
-  /// 고른 날(기간을 고르는 중이면 시작일)
+  /// 고른 날
   selected,
+
+  /// 기간을 고르는 중의 시작일. 끝나는 날을 누르기를 기다린다
+  started,
 
   /// 기간 안에서 뺀 날
   excluded,
@@ -329,7 +332,7 @@ class MeetingFlow {
     }
     final start = rangeStart;
     if (start != null) {
-      if (target == start) return MeetingDayState.selected;
+      if (target == start) return MeetingDayState.started;
       return MeetingDates.range(start, target).withinMaxPeriod
           ? MeetingDayState.open
           : MeetingDayState.unavailable;
