@@ -6,6 +6,7 @@ import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_auto_scroll.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_painter.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -22,8 +23,9 @@ const _touchDevices = {
 /// 붓([brush])은 가능 또는 불가능이다([brushStroke]). 마우스는 누른 채 끌면 바로 칠한다. 터치는 칸을 누르면
 /// 그 칸만 바꾸고, 길게 누른 채 끌면 여러 칸을 칠한다(그냥 끌면 화면이 굴러간다). 이미 붓의 답인 칸에서
 /// 시작하면 지나간 칸을 지운다. 끈 범위는 시작 칸과 지금 칸을 꼭짓점으로 하는 사각형이고, 끄는 동안 결과를
-/// 그대로 보이고 손을 떼면 [onPaint]로 넘긴다. 누르기 등으로 내 칸이 바뀌면 짧게 섞여 바뀐다(애니메이션을
-/// 줄였으면 바로).
+/// 그대로 보이고 손을 떼면 그때 손 아래 칸까지를 [onPaint]로 넘긴다. 끄는 동안 손이 보이는 자리의 위아래 끝
+/// 가까이에 있으면 화면을 굴려 가려진 칸까지 이어 칠한다([MeetingGridAutoScroll]). 누르기 등으로 내 칸이
+/// 바뀌면 짧게 섞여 바뀐다(애니메이션을 줄였으면 바로).
 ///
 /// [onPaint]가 없으면 칠할 수 없는 격자다. 칸을 누르거나 끌기 시작하면 칠하지 않고 [onLocked]를 부른다.
 class MeetingGridCells extends StatefulWidget {
@@ -51,10 +53,17 @@ class MeetingGridCells extends StatefulWidget {
 }
 
 class _MeetingGridCellsState extends State<MeetingGridCells>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   MeetingGridDrag? _drag;
   var _mouseDown = false;
   late final _fade = _AnswerFade(this);
+  late final _autoScroll = MeetingGridAutoScroll(
+    vsync: this,
+    onScrolled: _moveTo,
+  );
+
+  /// 마지막으로 그린 칸 자리
+  MeetingGridGeometry? _geometry;
 
   MeetingGrid get _grid => widget.shading.grid;
 
@@ -73,6 +82,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
   @override
   void dispose() {
     _fade.dispose();
+    _autoScroll.dispose();
     super.dispose();
   }
 
@@ -94,13 +104,29 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
         : _stroke(_grid.within(drag.anchor, drag.current), clear: drag.clear);
   }
 
-  void _begin(MeetingGridGeometry geometry, Offset position) {
+  void _begin(MeetingGridGeometry geometry, Offset global) {
+    final position = _localIn(context, global);
+    if (position == null) return;
     final place = geometry.placeAt(position);
     final cell = _grid.at(place.$1, place.$2);
     if (cell == null) return;
     if (widget.onPaint == null) return widget.onLocked?.call();
     widget.highlight?.unpin();
     setState(() => _drag = MeetingGridDrag(place, place, clear: _clears(cell)));
+    _autoScroll.begin(context, global);
+  }
+
+  /// 손이 화면의 [global] 자리로 왔다(손은 그대로인데 화면이 굴러간 때도)
+  void _moveTo(Offset global) {
+    final (geometry, position) = (_geometry, _localIn(context, global));
+    if (geometry != null && position != null) _move(geometry, position);
+    _autoScroll.moved(global);
+  }
+
+  /// 손을 화면의 [global] 자리에서 뗐다. 그 칸에서 붓질을 끝낸다
+  void _release(Offset global) {
+    _moveTo(global);
+    _end();
   }
 
   void _move(MeetingGridGeometry geometry, Offset position) {
@@ -114,6 +140,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
   }
 
   void _end() {
+    _autoScroll.end();
     final result = _preview;
     if (result == null) return;
     // 끄는 동안 이미 보인 칸은 다시 섞지 않는다
@@ -127,6 +154,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
   }
 
   void _cancel() {
+    _autoScroll.end();
     if (_drag != null) setState(() => _drag = null);
   }
 
@@ -148,13 +176,14 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
       return;
     }
     _mouseDown = true;
-    _begin(geometry, event.localPosition);
+    _begin(geometry, event.position);
   }
 
-  void _pointerUp({required bool cancelled}) {
+  /// 마우스를 뗐다([global]이 없으면 취소). 뗀 자리의 칸에서 붓질을 끝낸다
+  void _pointerUp(Offset? global) {
     if (!_mouseDown) return;
     _mouseDown = false;
-    cancelled ? _cancel() : _end();
+    global == null ? _cancel() : _release(global);
   }
 
   @override
@@ -165,7 +194,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
     final direction = Directionality.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final geometry = MeetingGridGeometry(
+        final geometry = _geometry = MeetingGridGeometry(
           _grid,
           widget.shape,
           constraints.maxWidth,
@@ -176,17 +205,17 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
           child: Listener(
             onPointerDown: (event) => _pointerDown(geometry, event),
             onPointerMove: (event) {
-              if (_mouseDown) _move(geometry, event.localPosition);
+              if (_mouseDown) _moveTo(event.position);
             },
-            onPointerUp: (_) => _pointerUp(cancelled: false),
-            onPointerCancel: (_) => _pointerUp(cancelled: true),
+            onPointerUp: (event) => _pointerUp(event.position),
+            onPointerCancel: (_) => _pointerUp(null),
             child: RawGestureDetector(
               excludeFromSemantics: true,
               gestures: _touchGestures(
                 onTap: (at) => _tapAt(geometry, at),
-                onStart: (at) => _begin(geometry, at),
-                onMove: (at) => _move(geometry, at),
-                onEnd: _end,
+                onStart: (global) => _begin(geometry, global),
+                onMove: _moveTo,
+                onEnd: _release,
                 onCancel: _cancel,
               ),
               child: _RevealPinned(
@@ -222,12 +251,19 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
   }
 }
 
+/// 화면 자리 [global]의 지금 격자([context]) 안 자리. 누른 뒤 화면이 굴렀으면 포인터 이벤트의 격자 안 자리는
+/// 누를 때 자리 기준이라 쓰지 않는다
+Offset? _localIn(BuildContext context, Offset global) {
+  final box = context.mounted ? context.findRenderObject() : null;
+  return box is RenderBox && box.attached ? box.globalToLocal(global) : null;
+}
+
 /// 터치의 누르기(한 칸)와 길게 누른 뒤 끌기(여러 칸)
 Map<Type, GestureRecognizerFactory> _touchGestures({
   required ValueChanged<Offset> onTap,
   required ValueChanged<Offset> onStart,
   required ValueChanged<Offset> onMove,
-  required VoidCallback onEnd,
+  required ValueChanged<Offset> onEnd,
   required VoidCallback onCancel,
 }) => {
   TapGestureRecognizer:
@@ -242,13 +278,13 @@ Map<Type, GestureRecognizerFactory> _touchGestures({
         (recognizer) => recognizer
           ..onLongPressStart = (details) {
             HapticFeedback.selectionClick();
-            onStart(details.localPosition);
+            onStart(details.globalPosition);
           }
           ..onLongPressMoveUpdate = (details) {
-            onMove(details.localPosition);
+            onMove(details.globalPosition);
           }
-          ..onLongPressEnd = (_) {
-            onEnd();
+          ..onLongPressEnd = (details) {
+            onEnd(details.globalPosition);
           }
           ..onLongPressCancel = onCancel,
       ),
