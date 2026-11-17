@@ -102,12 +102,8 @@ class MeetingDraft {
   }
 
   /// 시간별로 받을 수 있는 날짜인지: 시간별로 바꾸면 갖게 될 날짜([_hourlyDates])의 모이는 날(뺀 날 제외)이
-  /// [hourlyMaxDays]일 이하이고 기간(뺀 날 포함)이 [hourlyMaxSpanDays]일 이하다. 시간별을 고를 수 있는지는
-  /// 모두 이 규칙을 따른다
-  bool get hourlyAvailable {
-    final next = _hourlyDates;
-    return next.days.length <= hourlyMaxDays && next.span <= hourlyMaxSpanDays;
-  }
+  /// [hourlyMaxDays]일 이하다(기간이 몇 주에 걸쳐도 된다). 시간별을 고를 수 있는지는 모두 이 규칙을 따른다
+  bool get hourlyAvailable => _hourlyDates.days.length <= hourlyMaxDays;
 
   /// 시간별로 바꾸면 갖게 될 날짜. 요일별이면 요일별로 바꾸기 전의 날짜, 그것이 없으면 앞의 [hourlyMaxDays]일이다
   MeetingDates get _hourlyDates => mode != MeetingMode.weekly

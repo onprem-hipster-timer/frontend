@@ -195,10 +195,10 @@ void main() {
 
     test('시간별인데 시간별로 받을 수 없는 날짜면 날짜별로 바꾼다', () {
       final taken = takeStored({
-        'days': ['2027-03-12', '2027-03-20'],
+        'days': [for (var day = 12; day <= 17; day++) '2027-03-$day'],
       })!;
       expect(taken.flow.draft.mode, MeetingMode.daily);
-      expect(daysOf(taken), [12, 20]);
+      expect(daysOf(taken), [12, 13, 14, 15, 16, 17]);
     });
 
     test('요일별인데 이어진 7일이 아니면 첫날부터 7일로 맞춘다', () {

@@ -311,6 +311,29 @@ void main() {
       expect(find.text(saved), findsOneWidget);
     });
 
+    testWidgets('3주에 걸친 5일 날짜별 모임은 시간별로 바꿀 수 있고 방식과 시각만 보낸다', (tester) async {
+      meetings.meeting = makeMeeting(
+        ownerId: 'user-1',
+        mode: MeetingMode.daily,
+        endDate: march(19),
+        excludedDates: [
+          for (var day = 2; day <= 18; day++)
+            if (!{8, 10, 15}.contains(day)) march(day),
+        ],
+        startTime: '00:00:00',
+        endTime: '00:00:00',
+      );
+      await pumpApp(tester, initialLocation: '/meetings/meeting-1/edit');
+
+      await press(tester, '시간별');
+      expect(shownDraft(tester).mode, MeetingMode.hourly);
+      await save(tester);
+
+      expect(calls, [
+        'update {mode: hourly, start_time: 06:00:00, end_time: 18:00:00}',
+      ]);
+    });
+
     testWidgets('시간별을 날짜별로 바꾸면 방식과 하루 전체 시각을 보낸다', (tester) async {
       await openEdit(tester);
       await press(tester, '날짜별');

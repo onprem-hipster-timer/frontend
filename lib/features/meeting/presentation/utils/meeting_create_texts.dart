@@ -33,7 +33,7 @@ String meetingModeDescription(MeetingMode mode) => switch (mode) {
 };
 
 /// 시간별을 고를 수 없을 때의 까닭
-const meetingHourlyUnavailable = '일주일 안에서 $hourlyMaxDays일까지만 받을 수 있어요';
+const meetingHourlyUnavailable = '$hourlyMaxDays일까지만 받을 수 있어요';
 
 /// 펼친 폼의 시간별 규칙
 const meetingHourlyRule = '시간별은 $meetingHourlyUnavailable';
