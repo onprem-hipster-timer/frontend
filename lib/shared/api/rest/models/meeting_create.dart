@@ -12,6 +12,7 @@ part 'meeting_create.g.dart';
 /// 일정 조율 생성 DTO.
 ///
 /// 수정(PATCH) 때도 저장된 값에 수정 내용을 합쳐 이 DTO로 다시 검증한다 (MeetingService.update_meeting).
+/// 방식의 규칙은 그때 MODE_RULE_FIELDS 중 하나라도 저장된 값과 달라질 때만 본다 (검증 context의 skip_mode_rules).
 @Freezed()
 abstract class MeetingCreate with _$MeetingCreate {
   const factory MeetingCreate({

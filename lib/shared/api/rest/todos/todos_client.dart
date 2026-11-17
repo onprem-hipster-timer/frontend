@@ -142,7 +142,7 @@ abstract class TodosClient {
   /// ID로 Todo 조회 (공유된 Todo 포함).
   ///
   /// 본인 소유 Todo 또는 공유 접근 권한이 있는 Todo를 조회합니다.
-  /// 접근 권한이 없으면 403 Forbidden을 반환합니다.
+  /// 없거나 접근 권한이 없으면 404를 반환합니다.
   ///
   /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @GET('/v1/todos/{todo_id}')

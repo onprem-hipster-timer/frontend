@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../models/availability_read.dart';
+import '../models/guest_import.dart';
 import '../models/meeting_create.dart';
 import '../models/meeting_read.dart';
 import '../models/meeting_result_read.dart';
@@ -100,6 +101,26 @@ abstract class MeetingsClient {
   removeParticipantV1MeetingsMeetingIdParticipantsParticipantIdDelete({
     @Path('meeting_id') required String meetingId,
     @Path('participant_id') required String participantId,
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Import Guest.
+  ///
+  /// 게스트 가져오기.
+  ///
+  /// 인증 필수: 회원만. 본문의 guest_token은 이 미팅 게스트의 JWT로, 그 게스트를 쥐고 있다는 증명입니다.
+  /// 게스트 참여자의 가능 시간을 회원의 참여자에 합치고(없으면 프로필 표시 이름으로 만든다) 게스트를 폐기합니다.
+  /// DB 변경은 한 트랜잭션이고, 게스트의 Kratos identity는 커밋한 뒤 지웁니다.
+  /// 회원이 접근할 수 없는 미팅은 404 MeetingNotFoundError, 게스트 토큰이 아니거나 검증에 실패하면 422,.
+  /// 게스트가 없거나(가져온 뒤 다시 부른 경우 포함) 다른 미팅의 게스트면 404 GuestNotFoundError,.
+  /// 같은 참여자를 쓰는 다른 요청과 겹치면 409이고 아무것도 바뀌지 않습니다. GUEST_ENABLED가 꺼져 있으면 404.
+  ///
+  /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
+  @POST('/v1/meetings/{meeting_id}/guest-import')
+  Future<AvailabilityRead> importGuestV1MeetingsMeetingIdGuestImportPost({
+    @Path('meeting_id') required String meetingId,
+    @Body() required GuestImport body,
+    @Query('timezone') String? timezone,
     @DioOptions() RequestOptions? options,
   });
 

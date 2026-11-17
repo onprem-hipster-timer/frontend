@@ -478,6 +478,7 @@ class FakeSchedulesClient extends Fake implements SchedulesClient {
   @override
   Future<ScheduleRead> readScheduleV1SchedulesScheduleIdGet({
     required String scheduleId,
+    DateTime? instanceStart,
     String? timezone,
     RequestOptions? options,
   }) async {

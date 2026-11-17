@@ -216,7 +216,7 @@
           "Schedules"
         ],
         "summary": "Read Schedule",
-        "description": "ID\ub85c \uc77c\uc815 \uc870\ud68c (\uacf5\uc720\ub41c \uc77c\uc815 \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 \uc77c\uc815 \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uc77c\uc815\uc744 \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 403 Forbidden\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
+        "description": "ID\ub85c \uc77c\uc815 \uc870\ud68c (\uacf5\uc720\ub41c \uc77c\uc815, \ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 \uc77c\uc815 \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \uc77c\uc815\uc744 \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc5c6\uac70\ub098 \uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 404\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.\n\n\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4: schedule_id\ub97c parent_id\ub85c \uc0ac\uc6a9\ud558\uace0 instance_start\ub97c \ucffc\ub9ac \ud30c\ub77c\ubbf8\ud130\ub85c \uc804\uc1a1.\n\ubaa9\ub85d\uc758 \uc778\uc2a4\ud134\uc2a4\uc640 \uac19\uc740 \ubaa8\uc591(parent_id, \ud68c\ucc28 \uc2dc\uac04, \uc608\uc678 \ubc18\uc601)\uc744 \ubc18\ud658\ud558\uba70,\n\uaddc\uce59\uc5d0 \ud574\ub2f9 \ud68c\ucc28\uac00 \uc5c6\uac70\ub098 \uc0ad\uc81c\ub41c \ud68c\ucc28\uba74 404, \ubc18\ubcf5 \uc77c\uc815\uc774 \uc544\ub2c8\uba74 400\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "read_schedule_v1_schedules__schedule_id__get",
         "security": [
           {
@@ -233,6 +233,25 @@
               "format": "uuid",
               "title": "Schedule Id"
             }
+          },
+          {
+            "name": "instance_start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \uc2dc\uc791 \uc2dc\uac04 (ISO 8601 \ud615\uc2dd)",
+              "title": "Instance Start"
+            },
+            "description": "\ubc18\ubcf5 \uc77c\uc815 \uc778\uc2a4\ud134\uc2a4 \uc2dc\uc791 \uc2dc\uac04 (ISO 8601 \ud615\uc2dd)"
           },
           {
             "name": "timezone",
@@ -1081,7 +1100,7 @@
           "Timers"
         ],
         "summary": "Get Timer",
-        "description": "\ud0c0\uc774\uba38 \uc870\ud68c (\uacf5\uc720\ub41c \ud0c0\uc774\uba38 \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 \ud0c0\uc774\uba38 \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \ud0c0\uc774\uba38\ub97c \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 403 Forbidden\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
+        "description": "\ud0c0\uc774\uba38 \uc870\ud68c (\uacf5\uc720\ub41c \ud0c0\uc774\uba38 \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 \ud0c0\uc774\uba38 \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 \ud0c0\uc774\uba38\ub97c \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc5c6\uac70\ub098 \uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 404\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "get_timer_v1_timers__timer_id__get",
         "security": [
           {
@@ -2666,7 +2685,7 @@
           "Todos"
         ],
         "summary": "Read Todo",
-        "description": "ID\ub85c Todo \uc870\ud68c (\uacf5\uc720\ub41c Todo \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 Todo \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 Todo\ub97c \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 403 Forbidden\uc744 \ubc18\ud658\ud569\ub2c8\ub2e4.",
+        "description": "ID\ub85c Todo \uc870\ud68c (\uacf5\uc720\ub41c Todo \ud3ec\ud568)\n\n\ubcf8\uc778 \uc18c\uc720 Todo \ub610\ub294 \uacf5\uc720 \uc811\uadfc \uad8c\ud55c\uc774 \uc788\ub294 Todo\ub97c \uc870\ud68c\ud569\ub2c8\ub2e4.\n\uc5c6\uac70\ub098 \uc811\uadfc \uad8c\ud55c\uc774 \uc5c6\uc73c\uba74 404\ub97c \ubc18\ud658\ud569\ub2c8\ub2e4.",
         "operationId": "read_todo_v1_todos__todo_id__get",
         "security": [
           {
@@ -3415,6 +3434,83 @@
         }
       }
     },
+    "/v1/meetings/{meeting_id}/guest-import": {
+      "post": {
+        "tags": [
+          "Meetings"
+        ],
+        "summary": "Import Guest",
+        "description": "\uac8c\uc2a4\ud2b8 \uac00\uc838\uc624\uae30\n\n\uc778\uc99d \ud544\uc218: \ud68c\uc6d0\ub9cc. \ubcf8\ubb38\uc758 guest_token\uc740 \uc774 \ubbf8\ud305 \uac8c\uc2a4\ud2b8\uc758 JWT\ub85c, \uadf8 \uac8c\uc2a4\ud2b8\ub97c \uc950\uace0 \uc788\ub2e4\ub294 \uc99d\uba85\uc785\ub2c8\ub2e4.\n\uac8c\uc2a4\ud2b8 \ucc38\uc5ec\uc790\uc758 \uac00\ub2a5 \uc2dc\uac04\uc744 \ud68c\uc6d0\uc758 \ucc38\uc5ec\uc790\uc5d0 \ud569\uce58\uace0(\uc5c6\uc73c\uba74 \ud504\ub85c\ud544 \ud45c\uc2dc \uc774\ub984\uc73c\ub85c \ub9cc\ub4e0\ub2e4) \uac8c\uc2a4\ud2b8\ub97c \ud3d0\uae30\ud569\ub2c8\ub2e4.\nDB \ubcc0\uacbd\uc740 \ud55c \ud2b8\ub79c\uc7ad\uc158\uc774\uace0, \uac8c\uc2a4\ud2b8\uc758 Kratos identity\ub294 \ucee4\ubc0b\ud55c \ub4a4 \uc9c0\uc6c1\ub2c8\ub2e4.\n\ud68c\uc6d0\uc774 \uc811\uadfc\ud560 \uc218 \uc5c6\ub294 \ubbf8\ud305\uc740 404 MeetingNotFoundError, \uac8c\uc2a4\ud2b8 \ud1a0\ud070\uc774 \uc544\ub2c8\uac70\ub098 \uac80\uc99d\uc5d0 \uc2e4\ud328\ud558\uba74 422,\n\uac8c\uc2a4\ud2b8\uac00 \uc5c6\uac70\ub098(\uac00\uc838\uc628 \ub4a4 \ub2e4\uc2dc \ubd80\ub978 \uacbd\uc6b0 \ud3ec\ud568) \ub2e4\ub978 \ubbf8\ud305\uc758 \uac8c\uc2a4\ud2b8\uba74 404 GuestNotFoundError,\n\uac19\uc740 \ucc38\uc5ec\uc790\ub97c \uc4f0\ub294 \ub2e4\ub978 \uc694\uccad\uacfc \uacb9\uce58\uba74 409\uc774\uace0 \uc544\ubb34\uac83\ub3c4 \ubc14\ub00c\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. GUEST_ENABLED\uac00 \uaebc\uc838 \uc788\uc73c\uba74 404.",
+        "operationId": "import_guest_v1_meetings__meeting_id__guest_import_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "meeting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Meeting Id"
+            }
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658",
+              "title": "Timezone"
+            },
+            "description": "\ud0c0\uc784\uc874 (\uc608: UTC, +09:00, Asia/Seoul). \uc9c0\uc815\ud558\uc9c0 \uc54a\uc73c\uba74 UTC\ub85c \ubc18\ud658"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/friends": {
       "get": {
         "tags": [
@@ -3963,7 +4059,7 @@
           "Users"
         ],
         "summary": "Put My Consent",
-        "description": "\ub9cc 14\uc138 \uc774\uc0c1 \ud655\uc778, \uc774\uc6a9\uc57d\uad00, \uac1c\uc778\uc815\ubcf4\ucc98\ub9ac\ubc29\uce68 \ub3d9\uc758 \uae30\ub85d.\n\n`version`\uc740 \uc751\ub2f5 \uc804\uc5d0 \ubc1b\uc740 \ud604\uc7ac \uc57d\uad00 \uc2dc\ud589\uc77c\uc774\uc5b4\uc57c \ud55c\ub2e4(\ub2e4\ub974\uba74 409).",
+        "description": "\ub9cc 14\uc138 \uc774\uc0c1 \ud655\uc778, \uc774\uc6a9\uc57d\uad00, \uac1c\uc778\uc815\ubcf4\ucc98\ub9ac\ubc29\uce68 \ub3d9\uc758 \uae30\ub85d. \uc0ac\uc6a9\uc131 \ubd84\uc11d \ub3d9\uc758(`analytics`)\ub294 \uc120\ud0dd\uc774\ub2e4.\n\n`version`\uc740 \uc751\ub2f5 \uc804\uc5d0 \ubc1b\uc740 \ud604\uc7ac \uc57d\uad00 \uc2dc\ud589\uc77c\uc774\uc5b4\uc57c \ud55c\ub2e4(\ub2e4\ub974\uba74 409).\n\uac19\uc740 \ubc84\uc804\uc5d0 \ub2e4\uc2dc \ubcf4\ub0b4\uba74 `analytics`\ub9cc \ubc14\uafbc\ub2e4(\ube60\uc84c\uac70\ub098 null\uc774\uac70\ub098 \uc800\uc7a5\ub41c \uac12\uacfc \uac19\uc73c\uba74 \uadf8\ub300\ub85c).",
         "operationId": "put_my_consent_v1_users_me_consent_put",
         "requestBody": {
           "content": {
@@ -4927,6 +5023,17 @@
             "type": "boolean",
             "const": true,
             "title": "Privacy"
+          },
+          "analytics": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytics"
           }
         },
         "type": "object",
@@ -4937,7 +5044,7 @@
           "privacy"
         ],
         "title": "ConsentCreate",
-        "description": "\uc57d\uad00 \ub3d9\uc758 \u2014 \uc138 \ud56d\ubaa9 \ubaa8\ub450 true\uc5ec\uc57c \ud55c\ub2e4\n\nPUT /v1/users/me/consent\u00b7PUT /v1/guests/me/consent\uc758 \ubcf8\ubb38\uc774\uace0 POST /v1/guests\uc758 consent\ub2e4."
+        "description": "\uc57d\uad00 \ub3d9\uc758 \u2014 \uc138 \ud56d\ubaa9 \ubaa8\ub450 true\uc5ec\uc57c \ud55c\ub2e4. \uc0ac\uc6a9\uc131 \ubd84\uc11d(analytics)\uc740 \uc120\ud0dd\uc774\ub2e4\n\nPUT /v1/users/me/consent\u00b7PUT /v1/guests/me/consent\uc758 \ubcf8\ubb38\uc774\uace0 POST /v1/guests\uc758 consent\ub2e4."
       },
       "CreateTodoOptions": {
         "properties": {
@@ -5143,6 +5250,20 @@
         ],
         "title": "GuestCreate",
         "description": "\uac8c\uc2a4\ud2b8 \uc0dd\uc131 \uc694\uccad. consent\ub294 \ud68c\uc6d0 \ub3d9\uc758(PUT /v1/users/me/consent)\uc640 \uac19\uc740 \ubaa8\uc591\uc774\ub2e4"
+      },
+      "GuestImport": {
+        "properties": {
+          "guest_token": {
+            "type": "string",
+            "title": "Guest Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "guest_token"
+        ],
+        "title": "GuestImport",
+        "description": "\uac8c\uc2a4\ud2b8 \uac00\uc838\uc624\uae30 \uc694\uccad (POST /v1/meetings/{meeting_id}/guest-import)"
       },
       "GuestLookup": {
         "properties": {
@@ -5364,7 +5485,17 @@
           "end_time"
         ],
         "title": "MeetingCreate",
-        "description": "\uc77c\uc815 \uc870\uc728 \uc0dd\uc131 DTO\n\n\uc218\uc815(PATCH) \ub54c\ub3c4 \uc800\uc7a5\ub41c \uac12\uc5d0 \uc218\uc815 \ub0b4\uc6a9\uc744 \ud569\uccd0 \uc774 DTO\ub85c \ub2e4\uc2dc \uac80\uc99d\ud55c\ub2e4 (MeetingService.update_meeting)."
+        "description": "\uc77c\uc815 \uc870\uc728 \uc0dd\uc131 DTO\n\n\uc218\uc815(PATCH) \ub54c\ub3c4 \uc800\uc7a5\ub41c \uac12\uc5d0 \uc218\uc815 \ub0b4\uc6a9\uc744 \ud569\uccd0 \uc774 DTO\ub85c \ub2e4\uc2dc \uac80\uc99d\ud55c\ub2e4 (MeetingService.update_meeting).\n\ubc29\uc2dd\uc758 \uaddc\uce59\uc740 \uadf8\ub54c MODE_RULE_FIELDS \uc911 \ud558\ub098\ub77c\ub3c4 \uc800\uc7a5\ub41c \uac12\uacfc \ub2ec\ub77c\uc9c8 \ub54c\ub9cc \ubcf8\ub2e4 (\uac80\uc99d context\uc758 skip_mode_rules)."
+      },
+      "MeetingMode": {
+        "type": "string",
+        "enum": [
+          "hourly",
+          "daily",
+          "weekly"
+        ],
+        "title": "MeetingMode",
+        "description": "\ucc38\uc5ec\uc790\uac00 \ubbf8\ud305\uc5d0 \ub2f5\ud558\ub294 \ubc29\uc2dd. \ud504\ub860\ud2b8\uc5d4\ub4dc\ub294 \uc774 \uac12\uc73c\ub85c \ud654\uba74\uc744 \uc815\ud55c\ub2e4"
       },
       "MeetingRead": {
         "properties": {
@@ -5683,6 +5814,29 @@
               }
             ],
             "title": "Deletion Scheduled At"
+          },
+          "analytics_consent": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytics Consent"
+          },
+          "analytics_consent_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytics Consent Updated At"
           }
         },
         "type": "object",
@@ -5998,6 +6152,18 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "instance_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance Start"
           },
           "source_todo_id": {
             "anyOf": [
@@ -6608,6 +6774,15 @@
         ],
         "title": "TimeSlotCreate",
         "description": "\uac00\ub2a5 \uc2dc\uac04 \uc0dd\uc131 DTO: \ubc18\uc5f4\ub9b0 \uad6c\uac04 [start_time, end_time). \uc2dc\uac04\ub300\uac00 \uc5c6\ub294 \uac12\uc740 UTC\ub85c \uc77d\ub294\ub2e4"
+      },
+      "TimeSlotKind": {
+        "type": "string",
+        "enum": [
+          "available",
+          "unavailable"
+        ],
+        "title": "TimeSlotKind",
+        "description": "\ucc38\uc5ec\uc790\uac00 \uace0\ub978 \uc2dc\uac04 \uad6c\uac04\uc758 \uc885\ub958"
       },
       "TimeSlotRead": {
         "properties": {
@@ -7642,25 +7817,6 @@
         ],
         "title": "VisibilityUpdate",
         "description": "\uc811\uadfc\uad8c\ud55c \uc124\uc815 \uc5c5\ub370\uc774\ud2b8 DTO"
-      },
-      "MeetingMode": {
-        "type": "string",
-        "enum": [
-          "hourly",
-          "daily",
-          "weekly"
-        ],
-        "title": "MeetingMode",
-        "description": "\ucc38\uc5ec\uc790\uac00 \ubbf8\ud305\uc5d0 \ub2f5\ud558\ub294 \ubc29\uc2dd. \ud504\ub860\ud2b8\uc5d4\ub4dc\ub294 \uc774 \uac12\uc73c\ub85c \ud654\uba74\uc744 \uc815\ud55c\ub2e4"
-      },
-      "TimeSlotKind": {
-        "type": "string",
-        "enum": [
-          "available",
-          "unavailable"
-        ],
-        "title": "TimeSlotKind",
-        "description": "\ucc38\uc5ec\uc790\uac00 \uace0\ub978 \uc2dc\uac04 \uad6c\uac04\uc758 \uc885\ub958"
       }
     },
     "securitySchemes": {

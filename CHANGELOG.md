@@ -89,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 미팅 경로와 스키마를 backend feat/meeting-guest(e91446e) 스펙으로 다시 반영한다: 미팅 `owner_id`는 null일 수 있다(로그인하지 않은 방문자·게스트의 응답), `allow_guests`, 결과 `participant_count`, 참여자 `is_owner`·`is_guest`, 참여자 빼기(`DELETE /v1/meetings/{id}/participants/{participant_id}`)
 - 미팅 경로와 스키마를 backend feat/meeting-mode(c2af138) 스펙으로 다시 반영한다: 미팅 `mode`(hourly·daily·weekly), 요일(`available_days`) 대신 기간 안에서 빼는 날짜 `excluded_dates`, 가능 시간 `kind`(available·unavailable), 결과 칸 `unavailable_count`. 만들기 요청은 방식과 첫날~마지막 날 사이의 고르지 않은 날을 담는다
 - 할 일 그룹 API(`/v1/todos/groups`)를 반영한다. 할 일은 `todo_group_id`, 할 일 목록 필터는 `todo_group_ids`를 쓰고, 일정의 `tag_group_id`는 없어진다
+- 스냅숏을 backend feat/meeting-mode(bfe32fd)의 전체 스펙으로 바꾸고 클라이언트를 재생성한다(빠진 경로·스키마 없음): 게스트 시간 옮기기(`POST /v1/meetings/{meeting_id}/guest-import`, `GuestImport`), 약관 동의 본문의 선택 `analytics`, 내 프로필의 `analytics_consent`·`analytics_consent_updated_at`, 일정 조회의 `instance_start`(요청 매개변수와 `ScheduleRead`)
 
 #### UI
 - 화면 용어를 개념마다 하나로 통일하고 `lib/shared/domain/terms.dart`의 `Terms`에서 관리한다. 'TODO'·'투두'는 '할 일', 타이머의 '작업'은 '타이머'(시트·제목·완료 알림·빈 상태)와 '집중'(휴식의 짝), '정지'는 '완료'로 부르고, '이 작업은 되돌릴 수 없습니다'는 '되돌릴 수 없습니다'로 줄인다. 용어 뒤의 조사는 받침에 맞춰 고른다(`KoreanJosa.withJosa`)
