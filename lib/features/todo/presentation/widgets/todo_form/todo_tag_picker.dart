@@ -87,18 +87,29 @@ class TodoTagPicker extends ConsumerWidget {
 ///
 /// 태그 그룹이 없으면 태그 그룹 폼을 먼저 열고, 태그 그룹이 생기면 그 그룹을 고른 채 태그 폼으로 잇는다.
 /// 태그 그룹 폼을 닫으면 아무것도 하지 않는다. 태그 목록을 아직 받지 못했으면 열지 않는다.
+/// 태그 목록 조회가 실패한 상태면 목록을 다시 받아 이어 가고, 또 실패하면 목록 자리의 오류 안내로 둔다.
 Future<void> _createTag(
   BuildContext context,
   WidgetRef ref, {
   String? groupId,
 }) async {
-  var groups = ref.read(tag_providers.tagTreeProvider).value;
-  if (groups == null) return;
-  if (groups.isEmpty) {
-    await showTagGroupFormSheet(context);
-    if (!context.mounted) return;
-    groups = await ref.read(tag_providers.tagTreeProvider.future);
-    if (!context.mounted || groups.isEmpty) return;
+  final tree = ref.read(tag_providers.tagTreeProvider);
+  var groups = tree.value;
+  try {
+    if (tree.hasError) {
+      ref.invalidate(tag_providers.tagGroupsRawProvider);
+      groups = await ref.read(tag_providers.tagTreeProvider.future);
+      if (!context.mounted) return;
+    }
+    if (groups == null) return;
+    if (groups.isEmpty) {
+      await showTagGroupFormSheet(context);
+      if (!context.mounted) return;
+      groups = await ref.read(tag_providers.tagTreeProvider.future);
+      if (!context.mounted || groups.isEmpty) return;
+    }
+  } catch (_) {
+    return;
   }
   await showTagFormSheet(
     context,

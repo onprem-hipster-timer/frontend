@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show RequestOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
@@ -249,6 +250,51 @@ void main() {
       expect(find.widgetWithText(FilterChip, '운동'), findsOneWidget);
     });
 
+    testWidgets(
+      '첫 태그 만들기에서 태그 그룹을 만든 뒤 목록을 받지 못하면 오류를 보이고, 다시 새 태그를 누르면 만든 그룹으로 태그 폼을 연다',
+      (tester) async {
+        final failing = _ReadFailsAfterGroupCreate();
+        tags = failing;
+        await open(tester);
+
+        await tapVisible(tester, find.text('첫 태그 만들기'));
+        await tester.enterText(field('태그 그룹 이름'), '생활');
+        await tapVisible(tester, find.widgetWithText(FilledButton, '생성').last);
+
+        expect(find.text('새 태그 만들기'), findsNothing);
+        expect(find.textContaining('태그를 불러오지 못했습니다'), findsOneWidget);
+        expect(find.text('새 할 일 만들기'), findsOneWidget);
+
+        await tapVisible(tester, find.text('새 태그'));
+        expect(find.text('새 태그 그룹 만들기'), findsNothing);
+        expect(find.text('새 태그 만들기'), findsNothing);
+
+        failing.readError = null;
+        await tapVisible(tester, find.text('새 태그'));
+
+        expect(find.text('새 태그 그룹 만들기'), findsNothing);
+        expect(find.text('새 태그 만들기'), findsOneWidget);
+        expect(tags.createdGroups, hasLength(1));
+        await tester.enterText(field('태그 이름'), '운동');
+        await tapVisible(tester, find.widgetWithText(FilledButton, '생성').last);
+        expect(tags.createdTags.single.groupId, 'group-new-1');
+      },
+    );
+
+    testWidgets('처음 태그 목록을 받지 못했어도 다시 새 태그를 누르면 목록을 받아 태그 폼을 연다', (
+      tester,
+    ) async {
+      tags.readError = Exception('연결 끊김');
+      await open(tester);
+      expect(find.textContaining('태그를 불러오지 못했습니다'), findsOneWidget);
+
+      tags.readError = null;
+      await tapVisible(tester, find.text('새 태그'));
+
+      expect(find.text('새 태그 그룹 만들기'), findsNothing);
+      expect(find.text('새 태그 만들기'), findsOneWidget);
+    });
+
     testWidgets('태그 그룹이 없을 때 새 태그에서 태그 그룹 폼을 닫으면 태그 폼을 열지 않는다', (tester) async {
       tags.groups.clear();
       await open(tester);
@@ -458,4 +504,20 @@ void main() {
       expect(find.textContaining('할 일 수정에 실패했습니다'), findsOneWidget);
     });
   });
+}
+
+/// 태그 그룹을 만든 직후부터 목록 조회가 실패하는 태그 API
+class _ReadFailsAfterGroupCreate extends FakeTagsClient {
+  @override
+  Future<TagGroupRead> createTagGroupV1TagsGroupsPost({
+    required TagGroupCreate body,
+    RequestOptions? options,
+  }) async {
+    final created = await super.createTagGroupV1TagsGroupsPost(
+      body: body,
+      options: options,
+    );
+    readError = Exception('연결 끊김');
+    return created;
+  }
 }
