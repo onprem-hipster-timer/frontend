@@ -9,7 +9,7 @@ void main() {
     id: 'todo-1',
     title: '보고서',
     description: '초안',
-    tagGroupId: 'group-1',
+    todoGroupId: 'group-1',
     status: status,
     createdAt: DateTime.utc(2026, 1, 1),
   );

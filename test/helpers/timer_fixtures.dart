@@ -53,7 +53,7 @@ FriendRead makeFriend(String userId, {String? displayName}) => FriendRead(
 TodoRead makeTodo({String id = 'todo-1'}) => TodoRead(
   id: id,
   title: '테스트 할 일',
-  tagGroupId: 'group-1',
+  todoGroupId: 'group-1',
   status: TodoStatus.unscheduled,
   createdAt: DateTime.utc(2026, 1, 1),
 );

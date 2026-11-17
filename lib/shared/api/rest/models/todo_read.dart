@@ -19,7 +19,7 @@ abstract class TodoRead with _$TodoRead {
   const factory TodoRead({
     required String id,
     required String title,
-    @JsonKey(name: 'tag_group_id') required String tagGroupId,
+    @JsonKey(name: 'todo_group_id') required String todoGroupId,
     required TodoStatus status,
     @JsonKey(name: 'created_at') required DateTime createdAt,
     @Default([]) List<TagRead> tags,

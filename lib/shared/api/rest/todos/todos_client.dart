@@ -10,6 +10,9 @@ import '../models/linked_timer_policy.dart';
 import '../models/resource_scope.dart';
 import '../models/timer_read.dart';
 import '../models/todo_create.dart';
+import '../models/todo_group_create.dart';
+import '../models/todo_group_read.dart';
+import '../models/todo_group_update.dart';
 import '../models/todo_read.dart';
 import '../models/todo_stats.dart';
 import '../models/todo_update.dart';
@@ -44,10 +47,8 @@ abstract class TodosClient {
   /// - shared: 공유된 타인의 Todo만.
   /// - all: 내 Todo + 공유된 Todo.
   ///
-  /// 그룹 필터링:.
-  /// - group_ids: 해당 그룹에 속한 Todo 반환.
-  ///   - tag_group_id로 직접 연결된 Todo.
-  ///   - OR 해당 그룹의 태그를 가진 Todo.
+  /// 할 일 그룹 필터링:.
+  /// - todo_group_ids: 해당 할 일 그룹에 속한 Todo 반환.
   ///
   /// 태그 필터링:.
   /// - tag_ids: AND 방식 (모든 지정 태그를 포함한 Todo만 반환).
@@ -57,21 +58,68 @@ abstract class TodosClient {
   /// - MATCH: 필터 조건에 직접 매칭된 Todo.
   /// - ANCESTOR: 매칭된 Todo의 조상이라 포함된 Todo.
   ///
-  /// 둘 다 지정 시: 그룹 필터링 후 태그 필터링 적용.
+  /// 둘 다 지정 시: 할 일 그룹 필터링 후 태그 필터링 적용.
   ///
   /// [scope] - 조회 범위: mine(내 Todo만), shared(공유된 Todo만), all(모두).
   ///
   /// [tagIds] - 태그 ID 리스트 (AND 방식: 모든 지정 태그를 포함한 Todo만 반환).
   ///
-  /// [groupIds] - 태그 그룹 ID 리스트 (해당 그룹에 속한 Todo 반환 - 직접 연결 또는 태그 기반).
+  /// [todoGroupIds] - 할 일 그룹 ID 리스트 (해당 할 일 그룹에 속한 Todo만 반환).
   ///
   /// [timezone] - 타임존 (예: UTC, +09:00, Asia/Seoul). 지정하지 않으면 UTC로 반환.
   @GET('/v1/todos')
   Future<List<TodoRead>> readTodosV1TodosGet({
     @Query('tag_ids') List<String>? tagIds,
-    @Query('group_ids') List<String>? groupIds,
+    @Query('todo_group_ids') List<String>? todoGroupIds,
     @Query('timezone') String? timezone,
     @Query('scope') ResourceScope? scope = ResourceScope.mine,
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Read Todo Groups.
+  ///
+  /// 모든 할 일 그룹 조회 (기본 그룹 먼저, 나머지는 이름순).
+  ///
+  /// 기본 그룹이 없으면 만든다. 받은 기본 그룹 id로 곧바로 할 일을 만들 수 있게 응답 전에 커밋한다.
+  @GET('/v1/todos/groups')
+  Future<List<TodoGroupRead>> readTodoGroupsV1TodosGroupsGet({
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Create Todo Group.
+  ///
+  /// 할 일 그룹 생성.
+  @POST('/v1/todos/groups')
+  Future<TodoGroupRead> createTodoGroupV1TodosGroupsPost({
+    @Body() required TodoGroupCreate body,
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Read Todo Group.
+  ///
+  /// 할 일 그룹 조회.
+  @GET('/v1/todos/groups/{group_id}')
+  Future<TodoGroupRead> readTodoGroupV1TodosGroupsGroupIdGet({
+    @Path('group_id') required String groupId,
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Update Todo Group.
+  ///
+  /// 할 일 그룹의 이름·색·설명 수정 (기본 그룹 포함).
+  @PATCH('/v1/todos/groups/{group_id}')
+  Future<TodoGroupRead> updateTodoGroupV1TodosGroupsGroupIdPatch({
+    @Path('group_id') required String groupId,
+    @Body() required TodoGroupUpdate body,
+    @DioOptions() RequestOptions? options,
+  });
+
+  /// Delete Todo Group.
+  ///
+  /// 할 일 그룹 삭제. 기본 그룹은 409.
+  @DELETE('/v1/todos/groups/{group_id}')
+  Future<void> deleteTodoGroupV1TodosGroupsGroupIdDelete({
+    @Path('group_id') required String groupId,
     @DioOptions() RequestOptions? options,
   });
 
@@ -79,13 +127,13 @@ abstract class TodosClient {
   ///
   /// Todo 통계 조회.
   ///
-  /// 그룹별 태그 통계를 반환합니다.
-  /// group_id가 지정되면 해당 그룹의 태그만 집계합니다.
+  /// 태그별 할 일 수를 반환합니다.
+  /// todo_group_id가 지정되면 그 할 일 그룹의 할 일만 셉니다.
   ///
-  /// [groupId] - 필터링할 태그 그룹 ID.
+  /// [todoGroupId] - 필터링할 할 일 그룹 ID.
   @GET('/v1/todos/stats')
   Future<TodoStats> getTodoStatsV1TodosStatsGet({
-    @Query('group_id') String? groupId,
+    @Query('todo_group_id') String? todoGroupId,
     @DioOptions() RequestOptions? options,
   });
 

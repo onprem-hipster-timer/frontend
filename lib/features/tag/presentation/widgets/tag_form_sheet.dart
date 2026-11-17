@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/shared/domain/terms.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/tag_group_with_tags.dart';
@@ -59,7 +60,10 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
     return availableGroupsAsync.when(
       loading: () => const SafeArea(child: AppLoading()),
       error: (error, stack) => SafeArea(
-        child: AppErrorState(title: '태그 그룹을 불러올 수 없습니다', error: error),
+        child: AppErrorState(
+          title: '${Terms.tagGroup.withJosa('을', '를')} 불러올 수 없습니다',
+          error: error,
+        ),
       ),
       data: (availableGroups) {
         // 첫 로드 시 기본 그룹 ID 설정
@@ -215,7 +219,7 @@ class _FixedGroupField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppSectionHeader('태그 그룹'),
+        const AppSectionHeader(Terms.tagGroup),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
@@ -285,7 +289,7 @@ class _GroupDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppSectionHeader('태그 그룹'),
+        const AppSectionHeader(Terms.tagGroup),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           // ⭐️ 핵심 Fix: 드롭다운이 넓이를 안전하게 잡도록 보장
@@ -345,7 +349,7 @@ class _GroupDropdown extends StatelessWidget {
           },
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return '태그 그룹을 선택해주세요';
+              return '${Terms.tagGroup.withJosa('을', '를')} 선택해주세요';
             }
             return null;
           },

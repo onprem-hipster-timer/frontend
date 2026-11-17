@@ -94,20 +94,18 @@ class ScheduleMutations extends _$ScheduleMutations {
     }
   }
 
-  /// 일정 → TODO 변환
+  /// 일정 → 할 일 변환. 할 일은 기본 할 일 그룹에 들어간다
   ///
   /// [scheduleId] 변환할 일정 ID
-  /// [tagGroupId] TODO가 속할 TagGroup ID
-  Future<void> convertToTodo(String scheduleId, String tagGroupId) async {
+  Future<void> convertToTodo(String scheduleId) async {
     try {
       final api = ref.read(schedulesApiProvider);
       await api.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
         scheduleId: scheduleId,
-        tagGroupId: tagGroupId,
       );
       ref.invalidate(scheduleDetailProvider(scheduleId));
       ref.invalidate(currentSchedulesProvider);
-      // 변환된 TODO가 특정 태그 그룹에 속할 수 있으므로 family 전체를 무효화한다.
+      // 기본 그룹이 이때 처음 만들어질 수 있고 할 일 목록은 그룹별이라 family 전체를 무효화한다.
       ref.invalidate(todosProvider);
       debugPrint('일정이 TODO로 변환되었습니다: $scheduleId');
     } catch (error) {

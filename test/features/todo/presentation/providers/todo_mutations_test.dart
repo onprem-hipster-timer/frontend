@@ -14,7 +14,7 @@ class FakeTodoUpdate extends Fake implements TodoUpdate {}
 TodoRead _todo() => TodoRead(
   id: 'todo-1',
   title: 'todo',
-  tagGroupId: 'g1',
+  todoGroupId: 'g1',
   status: TodoStatus.unscheduled,
   createdAt: DateTime(2025, 1, 1),
 );
@@ -43,7 +43,7 @@ void main() {
     when(
       () => api.readTodosV1TodosGet(
         tagIds: any(named: 'tagIds'),
-        groupIds: any(named: 'groupIds'),
+        todoGroupIds: any(named: 'todoGroupIds'),
         scope: any(named: 'scope'),
         options: any(named: 'options'),
       ),
@@ -54,7 +54,7 @@ void main() {
     verify(
       () => api.readTodosV1TodosGet(
         tagIds: any(named: 'tagIds'),
-        groupIds: any(named: 'groupIds'),
+        todoGroupIds: any(named: 'todoGroupIds'),
         scope: any(named: 'scope'),
         options: any(named: 'options'),
       ),
@@ -74,7 +74,7 @@ void main() {
       final container = makeContainer();
       await container
           .read(todoMutationsProvider.notifier)
-          .create(TodoCreate(title: 't', tagGroupId: 'g1'));
+          .create(TodoCreate(title: 't', todoGroupId: 'g1'));
 
       verify(
         () => api.createTodoV1TodosPost(
