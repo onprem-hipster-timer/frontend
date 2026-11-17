@@ -16,6 +16,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
+import '../../../../helpers/fake_usage_analytics.dart';
 import '../../meeting_fixtures.dart';
 import '../../meeting_grid_finders.dart';
 
@@ -43,7 +44,10 @@ void main() {
     await initializeDateFormatting('ko');
   });
 
+  late FakeUsageAnalytics analytics;
+
   setUp(() {
+    analytics = FakeUsageAnalytics();
     meetings = FakeMeetingsClient(meeting: makeMeeting())
       ..availability = [
         availabilityOf('a', name: '민수'),
@@ -86,11 +90,14 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         retry: appRetry,
-        overrides: meetingOverrides(
-          meetings: meetings,
-          signedIn: signedIn,
-          session: session,
-        ),
+        overrides: [
+          ...meetingOverrides(
+            meetings: meetings,
+            signedIn: signedIn,
+            session: session,
+          ),
+          analytics.asOverride,
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -403,5 +410,78 @@ void main() {
     expect(find.text('4명 참여 중'), findsOneWidget);
     expect(loginButton(), findsOneWidget);
     expect(find.textContaining('로그인 화면'), findsNothing);
+  });
+
+  group('사용성 분석', () {
+    testWidgets('방문자 화면이면 계정 태그를 visitor로 한 번 단다', (tester) async {
+      await pumpMeeting(tester);
+      await tester.pumpAndSettle();
+
+      expect(analytics.sent, ['tag:meeting_account=visitor']);
+    });
+
+    testWidgets('좁은 화면에서 요청을 띄울 때마다 한 번씩, 로그인을 고르면 그것도 한 번 보낸다', (
+      tester,
+    ) async {
+      await pumpMeeting(tester, size: const Size(360, 800));
+
+      await tester.tap(find.widgetWithText(FilledButton, paintCallToAction));
+      await tester.pumpAndSettle();
+      expect(analytics.events, ['meeting_login_request_shown']);
+
+      await tester.tap(sheetLoginButton());
+      await tester.pumpAndSettle();
+      expect(analytics.events, [
+        'meeting_login_request_shown',
+        'meeting_login_chosen',
+      ]);
+      expect(
+        analytics.sent,
+        everyElement(
+          isIn(
+            allowedUsageNames.map(
+              (n) => n.contains('=') ? 'tag:$n' : 'event:$n',
+            ),
+          ),
+        ),
+      );
+    });
+
+    testWidgets('좁은 화면에서 칠하려 해도 요청을 띄웠다고 보낸다', (tester) async {
+      await pumpMeeting(tester, size: const Size(360, 800));
+
+      await tester.tapAt(cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'));
+      await tester.pumpAndSettle();
+
+      expect(analytics.events, ['meeting_login_request_shown']);
+    });
+
+    testWidgets('넓은 화면에서는 칠하려 해서 옆의 로그인 상자를 떨 때 요청을 띄웠다고 보내고, 로그인을 고르면 보낸다', (
+      tester,
+    ) async {
+      await pumpMeeting(tester);
+      expect(analytics.events, isEmpty, reason: '상자가 옆에 있을 뿐 아직 요청하지 않았다');
+
+      await tester.tapAt(cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'));
+      await tester.pumpAndSettle();
+      await tester.tap(loginButton());
+      await tester.pumpAndSettle();
+
+      expect(analytics.events, [
+        'meeting_login_request_shown',
+        'meeting_login_chosen',
+      ]);
+    });
+
+    testWidgets('로그인한 회원이 모임 화면에 오면 회원 태그와 도착 이벤트를 한 번 보낸다', (tester) async {
+      await pumpMeeting(tester, signedIn: true);
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
+
+      expect(analytics.sent, [
+        'tag:meeting_account=member',
+        'event:meeting_member_arrived',
+      ]);
+    });
   });
 }

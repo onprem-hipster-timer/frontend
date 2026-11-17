@@ -21,6 +21,7 @@ import 'package:timezone/data/latest.dart' as tz;
 
 import '../../../../helpers/fake_rest_clients.dart';
 import '../../../../helpers/fake_turnstile.dart';
+import '../../../../helpers/fake_usage_analytics.dart';
 import '../../../../helpers/kratos_mocks.dart';
 import '../../guest_fixtures.dart';
 import '../../meeting_fixtures.dart';
@@ -32,6 +33,7 @@ void main() {
   late FakeMeetingsClient meetings;
   late FakeGuestsClient guests;
   late FakeTurnstiles turnstiles;
+  late FakeUsageAnalytics analytics;
 
   setUpAll(() async {
     registerKratosFallbacks();
@@ -52,6 +54,7 @@ void main() {
     );
     guests = FakeGuestsClient();
     turnstiles = FakeTurnstiles();
+    analytics = FakeUsageAnalytics();
   });
 
   Future<void> pumpVisitor(
@@ -88,6 +91,7 @@ void main() {
           guestsApiProvider.overrideWithValue(guests),
           timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
           appOriginProvider.overrideWithValue('https://app.example.com'),
+          analytics.asOverride,
           if (turnstile)
             turnstiles.override
           else
@@ -781,6 +785,78 @@ void main() {
         findsOneWidget,
       );
       expect(turnstiles.last.disposed, isTrue);
+    });
+  });
+
+  group('사용성 분석', () {
+    testWidgets(
+      'Guest를 고르면 보내고, 처음 쓰는 이름으로 들어가면 new 이벤트와 guest 태그를 한 번 보내며 이름은 담지 않는다',
+      (tester) async {
+        await pumpVisitor(tester);
+        await openGuest(tester);
+        expect(analytics.events, ['meeting_guest_chosen']);
+
+        await enterName(tester, '민수');
+        await agreeAll(tester);
+        await tester.enterText(passwordField(), '1234');
+        await press(tester, '참여하기');
+        await tester.pumpAndSettle();
+
+        expect(analytics.events, [
+          'meeting_guest_chosen',
+          'meeting_guest_entered_new',
+        ]);
+        expect(analytics.tags, [
+          'meeting_account=visitor',
+          'meeting_account=guest',
+        ]);
+        expect(analytics.sent.where((s) => s.contains('민수')), isEmpty);
+        expect(analytics.sent.where((s) => s.contains('meeting-1')), isEmpty);
+      },
+    );
+
+    testWidgets('이미 참여한 이름으로 들어가면 returning 이벤트다', (tester) async {
+      guests.guests['민수'] = 'g7@guest.invalid';
+      await pumpVisitor(tester);
+      await openGuest(tester);
+      await enterName(tester, '민수');
+      await tester.enterText(passwordField(), '1234');
+      await press(tester, '들어가기');
+
+      expect(analytics.events, [
+        'meeting_guest_chosen',
+        'meeting_guest_entered_returning',
+      ]);
+    });
+
+    testWidgets('만든 뒤 로그인이 실패해 다시 눌러 들어가도 new 하나만 보낸다', (tester) async {
+      var logins = 0;
+      when(
+        () => harness.kratos.submit(
+          KratosFlowType.login,
+          any(),
+          any(),
+          sessionToken: any(named: 'sessionToken'),
+          turnstileToken: any(named: 'turnstileToken'),
+        ),
+      ).thenAnswer((_) async {
+        if (logins++ == 0) throw const KratosException(statusCode: 503);
+        return const KratosSubmitResult(sessionToken: 'ory_st_guest');
+      });
+      await pumpVisitor(tester);
+      await openGuest(tester);
+      await enterName(tester, '민수');
+      await agreeAll(tester);
+      await tester.enterText(passwordField(), '1234');
+      await press(tester, '참여하기');
+      expect(analytics.events, ['meeting_guest_chosen']);
+
+      await press(tester, '들어가기');
+
+      expect(analytics.events, [
+        'meeting_guest_chosen',
+        'meeting_guest_entered_new',
+      ]);
     });
   });
 }

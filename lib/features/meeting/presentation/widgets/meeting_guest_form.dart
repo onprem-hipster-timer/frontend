@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/core/turnstile/turnstile_field.dart';
@@ -37,9 +38,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
   final _password = TextEditingController();
   final _nameFocus = FocusNode();
   final _passwordFocus = FocusNode();
-  late final TurnstileController _turnstile = ref.read(
-    turnstileFactoryProvider,
-  )!();
+  late final _turnstile = ref.read(turnstileFactoryProvider)!();
   late final _steps = MeetingGuestSteps(
     meetingId: widget.meetingId,
     turnstile: _turnstile,
@@ -54,6 +53,9 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
   Future<_Found?>? _lookup;
 
   var _busy = false;
+
+  /// 이 폼에서 게스트를 새로 만들었다(들어가면 새 게스트로 센다)
+  var _created = false;
   GuestConsentChecks _consent = (age: false, terms: false, privacy: false);
   String? _message;
   String? _passwordError;
@@ -144,6 +146,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
           password: _password.text,
           consentVersion: found.consentVersion,
         );
+        _created = true;
         // 다시 시도하면 만들지 않고 로그인만 한다
         found = (
           name: found.name,
@@ -153,6 +156,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
         if (mounted) setState(() => _found = found);
       }
       await _steps.signIn(handle: found.handle!, password: _password.text);
+      _reportEntered(ref, created: _created);
     } catch (error) {
       if (mounted) await _refused(error);
     } finally {
@@ -187,7 +191,6 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
   Widget build(BuildContext context) {
     final found = _current;
     final isNew = found != null && found.handle == null;
-    final known = found?.handle != null;
     return Form(
       key: _formKey,
       child: Column(
@@ -196,7 +199,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
           _NameField(
             controller: _name,
             focusNode: _nameFocus,
-            known: known,
+            known: found?.handle != null,
             checking: _lookingUp != null && _lookingUp == _typedName,
             onSubmitted: _passwordFocus.requestFocus,
           ),
@@ -204,9 +207,7 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
           MeetingGuestPasswordField(
             controller: _password,
             focusNode: _passwordFocus,
-            helper: isNew
-                ? '게스트는 비밀번호를 바꾸거나 찾을 수 없습니다. 잊으면 이 닉네임으로 다시 들어올 수 없습니다. 분실이 우려되면 로그인을 이용해 주세요!'
-                : null,
+            helper: isNew ? _newGuestPasswordHelper : null,
             errorText: _passwordError,
             onSubmitted: _submit,
           ),
@@ -231,6 +232,20 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
     );
   }
 }
+
+/// 처음 쓰는 이름의 비밀번호 칸 아래 안내
+const _newGuestPasswordHelper =
+    '게스트는 비밀번호를 바꾸거나 찾을 수 없습니다. 잊으면 이 닉네임으로 다시 들어올 수 없습니다. '
+    '분실이 우려되면 로그인을 이용해 주세요!';
+
+/// 게스트로 들어간 것을 사용성 분석에 알린다. [created]면 이 폼에서 새로 만든 게스트다
+void _reportEntered(WidgetRef ref, {required bool created}) => ref
+    .read(usageAnalyticsProvider)
+    .event(
+      created
+          ? UsageEvent.meetingGuestEnteredNew
+          : UsageEvent.meetingGuestEnteredReturning,
+    );
 
 /// 이름 칸. 이미 참여한 이름이면 로그인하라고 안내하고, 찾는 중이면 끝에 작게 돈다
 class _NameField extends StatelessWidget {

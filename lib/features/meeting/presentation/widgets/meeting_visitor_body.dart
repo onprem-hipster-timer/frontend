@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
@@ -42,6 +43,7 @@ class _MeetingVisitorBodyState extends ConsumerState<MeetingVisitorBody> {
     if (MeetingLayout.narrow(MediaQuery.sizeOf(context).width)) {
       return _request(guests: guests);
     }
+    ref.read(usageAnalyticsProvider).event(UsageEvent.meetingLoginRequestShown);
     setState(() => _shakes++);
     final box = _login.currentContext;
     if (box == null) return;
@@ -57,12 +59,15 @@ class _MeetingVisitorBodyState extends ConsumerState<MeetingVisitorBody> {
 
   void _goToLogin() => goToLoginForMeeting(context, widget.meetingId);
 
-  void _request({required bool guests}) => showMeetingLoginRequest(
-    context,
-    meetingId: widget.meetingId,
-    guests: guests,
-    onLogin: _goToLogin,
-  );
+  void _request({required bool guests}) {
+    ref.read(usageAnalyticsProvider).event(UsageEvent.meetingLoginRequestShown);
+    showMeetingLoginRequest(
+      context,
+      meetingId: widget.meetingId,
+      guests: guests,
+      onLogin: _goToLogin,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

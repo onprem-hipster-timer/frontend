@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_leave.dart';
@@ -13,13 +14,34 @@ import 'package:momeet/shared/domain/terms.dart';
 ///
 /// 로그인했거나 이 모임의 게스트면 내 시간을 칠하고 이름을 보는 본문([MeetingMemberBody]), 아니면 공개 모임의
 /// 사람 수만 보는 방문자 본문([MeetingVisitorBody])이다. 보는 중에 세션이 끝나면 방문자 본문으로 바뀐다.
-class MeetingPage extends ConsumerWidget {
+class MeetingPage extends ConsumerStatefulWidget {
   const MeetingPage({super.key, required this.meetingId});
 
   final String meetingId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MeetingPage> createState() => _MeetingPageState();
+}
+
+class _MeetingPageState extends ConsumerState<MeetingPage> {
+  /// 사용성 분석에 마지막으로 알린 계정 종류
+  MeetingAccountTag? _reported;
+
+  /// 계정 종류가 바뀌면 세션 태그로 알리고, 회원이 되면 도착을 알린다
+  void _report(MeetingAccountTag account) {
+    if (account == _reported) return;
+    _reported = account;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final analytics = ref.read(usageAnalyticsProvider)..tag(account);
+      if (account == MeetingAccountTag.member) {
+        analytics.event(UsageEvent.meetingMemberArrived);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final meetingId = widget.meetingId;
     final member = ref.watch(
       currentUserProvider.select((user) => user != null),
     );
@@ -27,6 +49,13 @@ class MeetingPage extends ConsumerWidget {
     // 자기를 지우는 게스트는 되돌리기를 기다리는 동안에도 방문자 화면을 본다
     final leaving = ref.watch(meetingGuestLeavingProvider);
     final signedIn = member || (guest != null && !leaving);
+    _report(
+      member
+          ? MeetingAccountTag.member
+          : signedIn
+          ? MeetingAccountTag.guest
+          : MeetingAccountTag.visitor,
+    );
     final title = signedIn
         ? ref.watch(
             meetingBoardProvider(
