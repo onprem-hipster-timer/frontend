@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 2027년 3월의 [day]일 (3월 1일은 월요일)
 DateTime march(int day) => DateTime.utc(2027, 3, day);
@@ -141,4 +142,38 @@ void main() {
     expect(dayCell('2월 30일'), findsNothing);
     expect(dayCell('3월 1일'), findsNothing);
   });
+
+  testWidgets(
+    '날짜 글자는 달력과 같은 색이다: 고를 수 있는 일·토요일은 공휴일·토요일 색, 흐린 날은 요일과 상관없이 달력의 흐린 날짜 색',
+    (tester) async {
+      await pumpCalendar(
+        tester,
+        stateOf: (day) => day.day < 10
+            ? MeetingDayState.unavailable
+            : day.day == 14
+            ? MeetingDayState.leavesHourly
+            : MeetingDayState.open,
+      );
+      final context = tester.element(find.byType(MeetingCalendar));
+      final scheme = Theme.of(context).colorScheme;
+      final app = AppColors.of(context);
+      Color? colorOf(int day) => tester
+          .widget<Text>(
+            find.descendant(
+              of: dayCell('3월 $day일'),
+              matching: find.text('$day'),
+            ),
+          )
+          .style
+          ?.color;
+
+      final dim = scheme.onSurface.withValues(alpha: 0.4);
+      expect(colorOf(7), dim, reason: '지난 일요일');
+      expect(colorOf(6), dim, reason: '지난 토요일');
+      expect(colorOf(14), dim, reason: '고르면 방식이 바뀌는 일요일');
+      expect(colorOf(21), app.holiday);
+      expect(colorOf(20), app.saturday);
+      expect(colorOf(16), scheme.onSurface);
+    },
+  );
 }

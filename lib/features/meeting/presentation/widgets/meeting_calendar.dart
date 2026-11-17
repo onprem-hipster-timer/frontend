@@ -204,7 +204,7 @@ class _MonthGrid extends StatelessWidget {
   }
 }
 
-/// 날짜 칸 하나. 고른 날은 동그라미로 채우고, 고를 수 없거나 고르면 방식이 바뀌는 날은 흐리게 한다
+/// 날짜 칸 하나. 고른 날은 동그라미로 채우고, 고를 수 없거나 고르면 방식이 바뀌는 날은 흐리게 한다(요일 색 없이)
 class _DayCell extends StatelessWidget {
   const _DayCell({required this.day, required this.state, required this.onTap});
 
@@ -220,7 +220,10 @@ class _DayCell extends StatelessWidget {
     final dimmed =
         state == MeetingDayState.unavailable ||
         state == MeetingDayState.leavesHourly;
-    final base = _weekendColor(context, day.weekday % 7) ?? scheme.onSurface;
+    // 달력처럼 흐린 날은 요일 색 없이 흐린 날짜 색이다
+    final color = dimmed
+        ? scheme.onSurface.withValues(alpha: 0.4)
+        : _weekendColor(context, day.weekday % 7) ?? scheme.onSurface;
     return LayoutBuilder(
       builder: (context, constraints) {
         final diameter =
@@ -259,7 +262,7 @@ class _DayCell extends StatelessWidget {
                         child: Text(
                           '${day.day}',
                           style: TextStyle(
-                            color: dimmed ? base.withValues(alpha: 0.38) : base,
+                            color: color,
                             fontWeight: selected ? FontWeight.w700 : null,
                           ),
                         ),
