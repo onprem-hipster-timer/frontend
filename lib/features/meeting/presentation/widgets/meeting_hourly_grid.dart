@@ -108,6 +108,14 @@ class MeetingHourlyGrid extends StatelessWidget {
     );
   }
 
+  /// 띠 높이: 한 시간 덩어리 높이로 줄여 둔다(글이 들어갈 높이는 지킨다)
+  static double _bandHeight(MeetingGrid grid, double rowHeight, double font) {
+    final slot = grid.rowMinutes.length > 1
+        ? grid.rowMinutes[1] - grid.rowMinutes[0]
+        : 60;
+    return math.max(rowHeight * 60 / slot, font * 1.4 + 12);
+  }
+
   @override
   Widget build(BuildContext context) {
     final grid = shading.grid;
@@ -128,80 +136,119 @@ class MeetingHourlyGrid extends StatelessWidget {
         scaler.scale(theme.titleSmall!.fontSize!) * 1.4 +
         4;
     final bands = _bands(grid);
-    // 띠는 한 시간 덩어리 높이로 줄여 둔다(글이 들어갈 높이는 지킨다)
-    final slot = grid.rowMinutes.length > 1
-        ? grid.rowMinutes[1] - grid.rowMinutes[0]
-        : 60;
-    final bandHeight = math.max(rowHeight * 60 / slot, fontSize * 1.4 + 12);
+    final bandHeight = _bandHeight(grid, rowHeight, fontSize);
     final top = bands.upper == null ? 0.0 : bandHeight + _bandGap;
     final cellsHeight = grid.rows * rowHeight;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(top: headHeight + 8),
-          child: SizedBox(
-            width: labelWidth,
-            height:
-                top +
-                cellsHeight +
-                (bands.lower == null ? 0 : _bandGap + bandHeight),
-            child: _HourLabels(
-              marks: [
-                if (bands.upper != null) (0, minuteLabel(0)),
-                for (final row in labelRows)
-                  (top + row * rowHeight, minuteLabel(grid.rowMinutes[row])),
-                if (bands.lower != null)
-                  (top + cellsHeight + _bandGap, minuteLabel(bands.end)),
-              ],
-            ),
-          ),
+        _HourLabels(
+          top: headHeight + 8,
+          width: labelWidth,
+          height:
+              top +
+              cellsHeight +
+              (bands.lower == null ? 0 : _bandGap + bandHeight),
+          marks: [
+            if (bands.upper != null) (0, minuteLabel(0)),
+            for (final row in labelRows)
+              (top + row * rowHeight, minuteLabel(grid.rowMinutes[row])),
+            if (bands.lower != null)
+              (top + cellsHeight + _bandGap, minuteLabel(bands.end)),
+          ],
         ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final needed =
-                  grid.columns * _minColumnWidth +
-                  (grid.columns - 1) * _columnGap;
-              final body = Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    height: headHeight,
-                    child: _DayHeads(
-                      shading: shading,
-                      gap: _columnGap,
-                      onTap: _paintDay,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (bands.upper case final text?) ...[
-                    MeetingHourlyBand(text: text, height: bandHeight),
-                    const SizedBox(height: _bandGap),
-                  ],
-                  MeetingGridCells(
-                    shading: shading,
-                    shape: shape,
-                    brush: brush,
-                    onPaint: onPaint,
-                    highlight: highlight,
-                    onLocked: onLocked,
-                  ),
-                  if (bands.lower case final text?) ...[
-                    const SizedBox(height: _bandGap),
-                    MeetingHourlyBand(text: text, height: bandHeight),
-                  ],
-                ],
-              );
-              if (needed <= constraints.maxWidth) return body;
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(width: needed, child: body),
-              );
-            },
+          child: _Columns(
+            shading: shading,
+            shape: shape,
+            brush: brush,
+            onPaint: onPaint,
+            onLocked: onLocked,
+            highlight: highlight,
+            headHeight: headHeight,
+            bands: (upper: bands.upper, lower: bands.lower),
+            bandHeight: bandHeight,
+            onTapDay: _paintDay,
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 날짜 머리와 칸, 위아래 띠. 날짜 열이 너무 좁아지면 옆으로 굴린다
+class _Columns extends StatelessWidget {
+  const _Columns({
+    required this.shading,
+    required this.shape,
+    required this.brush,
+    required this.onPaint,
+    required this.onLocked,
+    required this.highlight,
+    required this.headHeight,
+    required this.bands,
+    required this.bandHeight,
+    required this.onTapDay,
+  });
+
+  final MeetingShading shading;
+  final MeetingCellShape shape;
+  final MeetingAnswer brush;
+  final MeetingPaint? onPaint;
+  final VoidCallback? onLocked;
+  final MeetingRunHighlight? highlight;
+  final double headHeight;
+
+  /// 위아래 띠의 글. 없으면 그 띠는 없다
+  final ({String? upper, String? lower}) bands;
+  final double bandHeight;
+  final ValueChanged<int> onTapDay;
+
+  @override
+  Widget build(BuildContext context) {
+    final grid = shading.grid;
+    const gap = MeetingHourlyGrid._bandGap;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final needed =
+            grid.columns * MeetingHourlyGrid._minColumnWidth +
+            (grid.columns - 1) * MeetingHourlyGrid._columnGap;
+        final body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: headHeight,
+              child: _DayHeads(
+                shading: shading,
+                gap: MeetingHourlyGrid._columnGap,
+                onTap: onTapDay,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (bands.upper case final text?) ...[
+              MeetingHourlyBand(text: text, height: bandHeight),
+              const SizedBox(height: gap),
+            ],
+            MeetingGridCells(
+              shading: shading,
+              shape: shape,
+              brush: brush,
+              onPaint: onPaint,
+              highlight: highlight,
+              onLocked: onLocked,
+            ),
+            if (bands.lower case final text?) ...[
+              const SizedBox(height: gap),
+              MeetingHourlyBand(text: text, height: bandHeight),
+            ],
+          ],
+        );
+        if (needed <= constraints.maxWidth) return body;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(width: needed, child: body),
+        );
+      },
     );
   }
 }
@@ -243,7 +290,17 @@ class _DayHeads extends StatelessWidget {
 
 /// 시간별 왼쪽의 시각: 띠의 위 끝(0:00), 첫 줄(정각이 아니어도), 정각, 아래 띠의 위 끝(범위의 끝)
 class _HourLabels extends StatelessWidget {
-  const _HourLabels({required this.marks});
+  const _HourLabels({
+    required this.top,
+    required this.width,
+    required this.height,
+    required this.marks,
+  });
+
+  /// 날짜 머리만큼 띄우는 위 여백
+  final double top;
+  final double width;
+  final double height;
 
   /// 위에서부터의 자리와 시각
   final List<(double, String)> marks;
@@ -251,28 +308,35 @@ class _HourLabels extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ExcludeSemantics(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          for (final (top, label) in marks)
-            Positioned(
-              top: top - 1,
-              left: 0,
-              right: 6,
-              // 한 줄로 두고, 칸보다 넓은 글꼴이면 칸에 맞춰 줄인다
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+    return Padding(
+      padding: EdgeInsets.only(top: top),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: ExcludeSemantics(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final (top, label) in marks)
+                Positioned(
+                  top: top - 1,
+                  left: 0,
+                  right: 6,
+                  // 한 줄로 두고, 칸보다 넓은 글꼴이면 칸에 맞춰 줄인다
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
