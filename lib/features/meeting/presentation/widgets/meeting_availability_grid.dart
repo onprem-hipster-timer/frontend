@@ -61,7 +61,7 @@ class MeetingAvailabilityGrid extends StatelessWidget {
             onLocked: onLocked,
           ),
         },
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         MeetingGridLegend(
           othersTotal: shading.othersTotal,
           hasSelf: shading.hasSelf,

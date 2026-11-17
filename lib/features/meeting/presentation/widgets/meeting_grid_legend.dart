@@ -3,7 +3,7 @@ import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 격자 아래 색 설명: 다른 참여자 농도(1명 ~ 모두). 내 칸의 색은 붓 고르기([MeetingBrushPicker])가 보인다
+/// 격자 바로 아래의 옅은 색 설명: 다른 참여자 농도(1명 ~ 모두). 내 칸의 색은 붓 고르기([MeetingBrushPicker])가 보인다
 class MeetingGridLegend extends StatelessWidget {
   const MeetingGridLegend({
     super.key,
@@ -19,7 +19,7 @@ class MeetingGridLegend extends StatelessWidget {
     if (othersTotal == 0) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final colors = MeetingGridColors.of(context);
-    final style = theme.textTheme.bodySmall?.copyWith(
+    final style = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
     final levels = {
@@ -54,8 +54,8 @@ class _Swatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 14,
-      height: 14,
+      width: 12,
+      height: 12,
       margin: const EdgeInsets.only(right: 2),
       decoration: BoxDecoration(
         color: color,

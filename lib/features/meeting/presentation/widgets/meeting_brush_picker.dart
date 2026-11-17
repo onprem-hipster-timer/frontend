@@ -2,8 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 
-/// 붓 고르기: '가능'(기본)과 '불가능'. 고를 때마다 그 붓이 칠하는 칸 모양을 함께 보여 색 설명을 겸한다.
-/// 늘리지 않고 앞쪽(왼쪽)에 둔다
+/// 붓 고르기: '가능'(기본)과 '불가능'. 고를 때마다 그 붓이 칠하는 칸 모양을 함께 보여 색 설명을 겸한다
 class MeetingBrushPicker extends StatelessWidget {
   const MeetingBrushPicker({
     super.key,
@@ -17,9 +16,18 @@ class MeetingBrushPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = MeetingGridColors.of(context);
-    final picker = SegmentedButton<MeetingAnswer>(
+    final label = Theme.of(context).textTheme.labelLarge;
+    return SegmentedButton<MeetingAnswer>(
       showSelectedIcon: false,
-      style: const ButtonStyle(visualDensity: VisualDensity.compact),
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        // 고른 붓은 바탕색에 더해 굵은 글자로도 가린다
+        textStyle: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? label?.copyWith(fontWeight: FontWeight.w700)
+              : label,
+        ),
+      ),
       segments: [
         for (final (answer, label) in const [
           (MeetingAnswer.available, '가능'),
@@ -37,7 +45,6 @@ class MeetingBrushPicker extends StatelessWidget {
       selected: {value},
       onSelectionChanged: (picked) => onChanged(picked.single),
     );
-    return Align(alignment: AlignmentDirectional.centerStart, child: picker);
   }
 }
 

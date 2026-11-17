@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
@@ -79,13 +80,24 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('붓은 가능으로 시작하고 한 줄 안내와 함께 가능·불가능을 고른다', (tester) async {
+  testWidgets('붓은 가능으로 시작하고 가능·불가능을 고른다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpSection(tester);
 
-    expect(find.text("바쁜 날은 '가능'만, 한가한 날은 '불가능'만 칠하세요"), findsOneWidget);
+    expect(find.textContaining('바쁜 날은'), findsNothing);
     expect(tester.getSemantics(find.text('가능')), isSemantics(isSelected: true));
+    const availableLine = '되는 시간만 칠해 주세요. 비워 둔 시간은 안 되는 걸로 볼게요.';
+    expect(find.text(availableLine), findsOneWidget);
+    expect(
+      tester.getSemantics(find.text(availableLine)),
+      isSemantics(isLiveRegion: true),
+    );
     await pickBrush(tester, '불가능');
+    expect(find.text(availableLine), findsNothing);
+    expect(
+      find.text('안 되는 시간만 칠해 주세요. 비어 있던 날은 나머지를 되는 시간으로 채울게요.'),
+      findsOneWidget,
+    );
     expect(
       tester.getSemantics(find.text('불가능')),
       isSemantics(isSelected: true),
@@ -121,6 +133,48 @@ void main() {
       reason: '불가능 칸에서 시작하면 지운다',
     );
     expect(valueOf('3월 1일 (월) 6:00 ~ 6:30'), '가능');
+    semantics.dispose();
+  });
+
+  testWidgets('가능과 불가능을 함께 칠한 날의 남은 칸은 미답으로 남는다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpSection(tester);
+
+    await tapCell(tester, '3월 2일 (화) 6:00 ~ 6:30');
+    await pickBrush(tester, '불가능');
+    await tapCell(tester, '3월 2일 (화) 9:00 ~ 9:30');
+    await pickBrush(tester, '가능');
+    await tapCell(tester, '3월 2일 (화) 12:00 ~ 12:30');
+
+    expect(valueOf('3월 2일 (화) 6:00 ~ 6:30'), '가능');
+    expect(valueOf('3월 2일 (화) 9:00 ~ 9:30'), '불가능');
+    expect(valueOf('3월 2일 (화) 12:00 ~ 12:30'), '가능');
+    for (final blank in ['7:00 ~ 7:30', '10:00 ~ 10:30', '17:30 ~ 18:00']) {
+      expect(valueOf('3월 2일 (화) $blank'), isNull, reason: blank);
+    }
+    semantics.dispose();
+  });
+
+  testWidgets('끌어서 불가능을 칠하면 손을 뗀 뒤 채워지는 칸이 섞여 나타난다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpSection(tester);
+    await pickBrush(tester, '불가능');
+
+    final gesture = await tester.startGesture(
+      cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'),
+      kind: PointerDeviceKind.mouse,
+      buttons: kPrimaryMouseButton,
+    );
+    await tester.pump();
+    await gesture.moveTo(cellCenter(tester, '3월 1일 (월) 10:00 ~ 10:30'));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    expect(tester.hasRunningAnimations, isTrue, reason: '채운 칸이 섞여 나타난다');
+    await tester.pumpAndSettle();
+    expect(valueOf('3월 1일 (월) 6:00 ~ 6:30'), '가능');
+    expect(valueOf('3월 1일 (월) 9:30 ~ 10:00'), '불가능');
     semantics.dispose();
   });
 
@@ -174,7 +228,12 @@ void main() {
         endTime: '00:00:00',
       ),
     );
+    expect(find.text('되는 날만 칠해 주세요. 비워 둔 날은 안 되는 걸로 볼게요.'), findsOneWidget);
     await pickBrush(tester, '불가능');
+    expect(
+      find.text('안 되는 날만 칠해 주세요. 아직 칠한 날이 없으면 나머지 날을 되는 날로 채울게요.'),
+      findsOneWidget,
+    );
 
     await tapCell(tester, '3월 4일 (목)');
 

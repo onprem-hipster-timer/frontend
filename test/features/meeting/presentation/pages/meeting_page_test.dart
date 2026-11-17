@@ -82,16 +82,22 @@ void main() {
     expect(find.text('3.1'), findsOneWidget);
   });
 
-  testWidgets('터치 기기는 길게 누른 채 끌기를 알린다', (tester) async {
+  /// 도움말(물음표)에 [text]가 있는지
+  Finder helpWith(String text) => find.byWidgetPredicate(
+    (widget) => widget is Tooltip && (widget.message ?? '').contains(text),
+  );
+
+  testWidgets('터치 기기는 도움말에서 길게 누른 채 끌기를 알린다', (tester) async {
     await pumpMeeting(tester);
 
-    expect(find.text('길게 누른 채 끌면 여러 칸을 칠합니다'), findsOneWidget);
+    expect(helpWith('길게 누른 채 끌면 여러 칸을 한 번에 칠합니다'), findsOneWidget);
+    expect(find.text('길게 누른 채 끌면 여러 칸을 칠합니다'), findsNothing);
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
-  testWidgets('마우스 기기는 누른 채 끌기를 알린다', (tester) async {
+  testWidgets('마우스 기기는 도움말에서 누른 채 끌기를 알린다', (tester) async {
     await pumpMeeting(tester);
 
-    expect(find.text('누른 채 끌면 여러 칸을 칠합니다'), findsOneWidget);
+    expect(helpWith('누른 채 끌어서 여러 칸을 칠합니다'), findsOneWidget);
   }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
 
   testWidgets('칸을 누르면 저장 중이다가 참여하고 저장한 뒤 저장됨과 내 이름 칩을 보인다', (tester) async {

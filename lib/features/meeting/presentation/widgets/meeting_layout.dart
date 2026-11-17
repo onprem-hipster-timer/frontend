@@ -103,7 +103,9 @@ class _NarrowLayout extends StatelessWidget {
         children: [
           if (header != null) ...[
             MeetingQuietPanels(child: header),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
           ],
           main,
           for (final child in secondary) ...[const SizedBox(height: 32), child],
