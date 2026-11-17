@@ -203,6 +203,31 @@ class _SubmitOnStartState extends State<_SubmitOnStart> {
   Widget build(BuildContext context) => widget.child;
 }
 
+/// 첫 프레임 뒤에 [label] 글자의 InkWell을 한 번 누른 화면(만든 뒤 화면의 '또는 QR로 공유하기')
+class _TapOnStart extends StatefulWidget {
+  const _TapOnStart({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  State<_TapOnStart> createState() => _TapOnStartState();
+}
+
+class _TapOnStartState extends State<_TapOnStart> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ink = find.widgetWithText(InkWell, widget.label).evaluate().first;
+      (ink.widget as InkWell).onTap!();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// 모임 만들기·만든 뒤·모임 화면을 화면 크기 × 글자 배율 × 긴 문구로 점검한다.
 ///
 /// 사용자가 정하는 글자(제목 자리 글자의 이름, 모임 제목)에 [StressText]를 넣는다.
@@ -281,6 +306,25 @@ void main() {
         ),
       ),
     ),
+  );
+
+  testLayoutAudit(
+    'meeting_created_page_qr',
+    subject: '안내',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const _TapOnStart(
+        label: '또는 QR로 공유하기',
+        child: MeetingCreatedPage(meetingId: 'meeting-1'),
+      ),
+      meetingOverrides(
+        meetings: FakeMeetingsClient(
+          meeting: makeMeeting(startDate: DateTime.utc(2027, 9, 30)),
+        ),
+      ),
+    ),
+    verify: (tester) =>
+        expect(find.bySemanticsLabel('모임 링크 QR 코드'), findsOneWidget),
   );
 
   MeetingRead meetingIn(String mode, {required String title}) => switch (mode) {
