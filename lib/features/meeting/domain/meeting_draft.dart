@@ -25,10 +25,15 @@ class MeetingDraft {
     this.emails = const [],
     this.domains = const [],
     this.onlyMe = false,
+    this.beforeWeekly,
   });
 
   final MeetingMode mode;
   final MeetingDates dates;
+
+  /// 요일별로 바꾸며 7일로 맞추기 전의 날짜(기간과 뺀 날). 요일별을 벗어나면 이 날짜로 되돌리고, 요일별인 동안
+  /// 날짜를 새로 고르면 지운다. 요일별이 아니면 null이다
+  final MeetingDates? beforeWeekly;
 
   /// 시간별 하루 범위의 시작(시, 0~23)
   final int startHour;
@@ -54,10 +59,11 @@ class MeetingDraft {
   /// 이 기기에 두었던 폼 값을 폼의 규칙으로 다시 만든다. 폼이 저절로 맞추는 값(시간별 날짜,
   /// 요일별 7일, 비공개의 게스트 로그인, 공개의 이메일·나만 보기, 시작보다 늦은 끝)은 같은 규칙으로 맞추고, 형식이
   /// 아닌 이메일·도메인은 버린다. 폼이 만들 수 없는 값(알 수 없는 방식, 0~24시 밖의 시각, [today]보다 앞의 날,
-  /// 3개월을 넘는 기간)이면 null이다
+  /// 3개월을 넘는 기간)이면 null이다. 요일별이면 요일별로 바꾸기 전의 날짜([daysBeforeWeekly])도 되살린다
   static MeetingDraft? restore({
     required MeetingMode mode,
     required Iterable<DateTime> days,
+    Iterable<DateTime>? daysBeforeWeekly,
     required int startHour,
     required int endHour,
     required bool isPublic,
@@ -76,12 +82,18 @@ class MeetingDraft {
         (!dates.isEmpty && dates.first.isBefore(calendarDay(today)))) {
       return null;
     }
-    final draft = MeetingDraft(
+    final before = mode == MeetingMode.weekly && daysBeforeWeekly != null
+        ? MeetingDates.of(daysBeforeWeekly)
+        : null;
+    final remembered = before != null && before.withinMaxPeriod;
+    var draft = MeetingDraft(
       mode: MeetingMode.daily,
-      dates: dates,
+      dates: remembered ? before : dates,
       endHour: endHour,
       allowGuests: allowGuests,
     ).withStartHour(startHour).withPublic(isPublic).withMode(mode);
+    // 기억한 날짜가 없던 요일별은 기억 없이 둔다
+    if (!remembered) draft = draft.withDates(draft.dates);
     return access
         .map(parseMeetingAccessEntry)
         .nonNulls
@@ -89,26 +101,46 @@ class MeetingDraft {
         .withOnlyMe(onlyMe);
   }
 
-  /// 시간별로 받을 수 있는 날짜인지: 모이는 날(뺀 날 제외)이 [hourlyMaxDays]일 이하이고 기간(뺀 날 포함)이
-  /// [hourlyMaxSpanDays]일 이하다. 시간별을 고를 수 있는지는 모두 이 규칙을 따른다
-  bool get hourlyAvailable =>
-      dates.days.length <= hourlyMaxDays && dates.span <= hourlyMaxSpanDays;
+  /// 시간별로 받을 수 있는 날짜인지: 시간별로 바꾸면 갖게 될 날짜([_hourlyDates])의 모이는 날(뺀 날 제외)이
+  /// [hourlyMaxDays]일 이하이고 기간(뺀 날 포함)이 [hourlyMaxSpanDays]일 이하다. 시간별을 고를 수 있는지는
+  /// 모두 이 규칙을 따른다
+  bool get hourlyAvailable {
+    final next = _hourlyDates;
+    return next.days.length <= hourlyMaxDays && next.span <= hourlyMaxSpanDays;
+  }
 
-  /// 날짜를 바꾼다. 방식은 그대로다(방식과 맞추는 것은 부르는 쪽이 한다)
-  MeetingDraft withDates(MeetingDates next) => _copy(dates: next);
+  /// 시간별로 바꾸면 갖게 될 날짜. 요일별이면 요일별로 바꾸기 전의 날짜, 그것이 없으면 앞의 [hourlyMaxDays]일이다
+  MeetingDates get _hourlyDates => mode != MeetingMode.weekly
+      ? dates
+      : beforeWeekly ?? MeetingDates.of(dates.days.take(hourlyMaxDays));
 
-  /// 방식을 바꾼다. 시간별을 고를 수 없는 날짜면 시간별로 바꾸지 않고, 요일별은 첫날부터 7일로 맞추고 뺀 날을
-  /// 되돌린다
-  MeetingDraft withMode(MeetingMode next) => switch (next) {
-    MeetingMode.hourly when !hourlyAvailable => this,
-    MeetingMode.weekly => _copy(
+  /// 날짜를 바꾼다. 방식은 그대로다(방식과 맞추는 것은 부르는 쪽이 한다). 요일별로 바꾸기 전의 날짜는 잊는다
+  MeetingDraft withDates(MeetingDates next) =>
+      _copy(dates: next, forgetBeforeWeekly: true);
+
+  /// 방식을 바꾼다. 시간별을 고를 수 없는 날짜면 시간별로 바꾸지 않는다. 요일별은 지금 날짜를 기억하고 첫날부터
+  /// 7일로 맞추며 뺀 날을 되돌린다. 요일별에서 벗어나면 기억한 날짜로 되돌리고, 기억한 날짜가 없으면 날짜별은
+  /// 7일 그대로, 시간별은 앞의 [hourlyMaxDays]일로 줄인다
+  MeetingDraft withMode(MeetingMode next) {
+    if (next == MeetingMode.hourly && !hourlyAvailable) return this;
+    if (next == MeetingMode.weekly) {
+      return _copy(
+        mode: next,
+        dates: dates.isEmpty
+            ? dates
+            : MeetingDates.period(dates.first, weeklyDays),
+        beforeWeekly: mode == MeetingMode.weekly || dates.isEmpty
+            ? beforeWeekly
+            : dates,
+      );
+    }
+    if (mode != MeetingMode.weekly) return _copy(mode: next);
+    return _copy(
       mode: next,
-      dates: dates.isEmpty
-          ? dates
-          : MeetingDates.period(dates.first, weeklyDays),
-    ),
-    _ => _copy(mode: next),
-  };
+      dates: next == MeetingMode.hourly ? _hourlyDates : beforeWeekly ?? dates,
+      forgetBeforeWeekly: true,
+    );
+  }
 
   /// 시작 시각을 바꾼다. 끝이 시작보다 늦지 않으면 끝을 한 시간 뒤로 민다
   MeetingDraft withStartHour(int hour) =>
@@ -120,6 +152,7 @@ class MeetingDraft {
   MeetingDraft withPublic(bool value) => MeetingDraft(
     mode: mode,
     dates: dates,
+    beforeWeekly: beforeWeekly,
     startHour: startHour,
     endHour: endHour,
     isPublic: value,
@@ -207,9 +240,12 @@ class MeetingDraft {
     List<String>? emails,
     List<String>? domains,
     bool? onlyMe,
+    MeetingDates? beforeWeekly,
+    bool forgetBeforeWeekly = false,
   }) => MeetingDraft(
     mode: mode ?? this.mode,
     dates: dates ?? this.dates,
+    beforeWeekly: forgetBeforeWeekly ? null : beforeWeekly ?? this.beforeWeekly,
     startHour: startHour ?? this.startHour,
     endHour: endHour ?? this.endHour,
     isPublic: isPublic,

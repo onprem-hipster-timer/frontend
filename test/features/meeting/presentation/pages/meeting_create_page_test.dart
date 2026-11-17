@@ -453,6 +453,72 @@ void main() {
       expect(body.startTime, '00:00:00');
       expect(body.endTime, '00:00:00');
     });
+
+    testWidgets('요일별로 답한 뒤 방식을 다시 물으면 시간별을 고를 수 있고, 고르면 그전 기간으로 되돌리고 알린다', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      await pickRange(tester, 10, 12);
+      await press(tester, '없어요');
+      await press(tester, '요일별');
+
+      await press(tester, '요일별');
+      expectOnly(modeQuestion);
+      expect(find.text(meetingHourlyUnavailable), findsNothing);
+      await press(tester, '시간별');
+
+      final range = meetingRangeText(
+        MeetingDates.range(nextMonth(10), nextMonth(12)),
+      );
+      expect(plainContaining('요일별을 벗어나 기간을 $range'), findsOneWidget);
+      expect(plainContaining('되돌렸어요'), findsOneWidget);
+      await press(tester, '예');
+      await keepPrivate(tester);
+      await submit(tester);
+
+      final body = meetings.created.single;
+      expect(body.mode, MeetingMode.hourly);
+      expect(body.startDate, nextMonth(10));
+      expect(body.endDate, nextMonth(12));
+    });
+  });
+
+  group('펼친 폼에서 요일별 벗어나기', () {
+    testWidgets('요일별로 바꾸면 7일로 맞추고 알리며, 시간별로 돌아오면 그전 기간으로 되돌리고 날짜를 떤다', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      await pickRange(tester, 10, 12);
+      await expand(tester);
+
+      await press(tester, '요일별');
+      expect(plainContaining('요일별은 7일로 받아서 기간을'), findsOneWidget);
+      await press(tester, '시간별');
+
+      expect(plainContaining('요일별을 벗어나 기간을'), findsOneWidget);
+      expect(plainContaining('요일별은 7일로'), findsNothing, reason: '다음 바뀜에서 지운다');
+      await submit(tester);
+      final body = meetings.created.single;
+      expect(body.mode, MeetingMode.hourly);
+      expect(body.endDate, nextMonth(12));
+    });
+
+    testWidgets('요일별인 채로 날짜를 새로 고른 뒤 시간별로 바꾸면 앞의 5일로 줄이고 알린다', (tester) async {
+      await pumpPage(tester);
+      await pickRange(tester, 10, 12);
+      await expand(tester);
+      await press(tester, '요일별');
+      await tapDay(tester, 20);
+
+      await press(tester, '시간별');
+
+      final range = meetingRangeText(
+        MeetingDates.range(nextMonth(20), nextMonth(24)),
+      );
+      expect(plainContaining('시간별은 5일까지라 기간을 $range'), findsOneWidget);
+      await submit(tester);
+      expect(meetings.created.single.endDate, nextMonth(24));
+    });
   });
 
   testWidgets('아니요를 누르면 시각을 골라 그 시간으로 만든다', (tester) async {

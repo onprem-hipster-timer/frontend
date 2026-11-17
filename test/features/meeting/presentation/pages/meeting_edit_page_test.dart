@@ -508,6 +508,52 @@ void main() {
       ),
     ];
 
+    testWidgets('요일별 모임을 시간별로 바꾸면 앞의 5일로 줄이고 알리며, 답이 있으면 방식과 빠진 날도 알린다', (
+      tester,
+    ) async {
+      meetings.meeting = makeMeeting(
+        ownerId: 'user-1',
+        mode: MeetingMode.weekly,
+        endDate: march(7),
+        startTime: '00:00:00',
+        endTime: '00:00:00',
+      );
+      withAnswers();
+      await pumpApp(tester, initialLocation: '/meetings/meeting-1/edit');
+
+      await press(tester, '시간별');
+
+      expect(shownDraft(tester).mode, MeetingMode.hourly);
+      expect(shownDraft(tester).dates.days.last, march(5));
+      expect(plain('시간별은 5일까지라 기간을 3.1(월)–3.5(금)으로 맞췄어요'), findsOneWidget);
+      expect(plain(modeNotice), findsOneWidget);
+      expect(plain(daysNotice), findsOneWidget);
+      await save(tester);
+      expect(meetings.meeting!.mode, MeetingMode.hourly);
+      expect(meetings.meeting!.endDate, march(5));
+    });
+
+    testWidgets('날짜별 모임을 요일별로 바꿨다가 날짜별로 돌아오면 불러온 날짜 그대로라 보낼 것이 없다', (
+      tester,
+    ) async {
+      meetings.meeting = makeMeeting(
+        ownerId: 'user-1',
+        mode: MeetingMode.daily,
+        endDate: march(3),
+        startTime: '00:00:00',
+        endTime: '00:00:00',
+      );
+      await pumpApp(tester, initialLocation: '/meetings/meeting-1/edit');
+
+      await press(tester, '요일별');
+      expect(shownDraft(tester).dates.days.last, march(7));
+      await press(tester, '날짜별');
+
+      expect(shownDraft(tester).dates.days.last, march(3));
+      expect(plain('요일별을 벗어나 기간을 3.1(월)–3.3(수)로 되돌렸어요'), findsOneWidget);
+      expect(saveEnabled(tester), isFalse);
+    });
+
     testWidgets('답이 있으면 방식을 바꿀 때와 날을 뺄 때 한 줄씩 알린다', (tester) async {
       withAnswers();
       await openEdit(tester);

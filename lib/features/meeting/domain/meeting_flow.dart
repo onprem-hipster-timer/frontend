@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:momeet/features/meeting/domain/meeting_access.dart';
+import 'package:momeet/features/meeting/domain/meeting_adjustment.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+
+export 'package:momeet/features/meeting/domain/meeting_adjustment.dart';
 
 /// 모임 만들기에서 하나씩 묻는 질문. 묻는 순서다
 enum MeetingQuestion {
@@ -15,30 +18,6 @@ enum MeetingQuestion {
   guests,
   access,
   title,
-}
-
-/// 앞의 답을 바꿔 뒤의 답을 묻지 않고 맞춘 것
-enum MeetingAdjustment {
-  /// 새 기간에 들지 않는 제외 날짜를 뺐다
-  exclusionsDropped,
-
-  /// 요일별이라 기간을 첫날부터 7일로 맞췄다
-  weeklyPeriod,
-
-  /// 요일별이라 제외 날짜를 되돌렸다
-  weeklyExclusionsDropped,
-
-  /// 시간별로 받을 수 없는 날짜가 되어 날짜별로 바꿨다
-  hourlyToDaily,
-
-  /// 이어진 7일이 아니게 되어 요일별을 날짜별로 바꿨다
-  weeklyToDaily,
-
-  /// 비공개라 게스트 답을 지웠다
-  guestsDropped,
-
-  /// 공개라 비공개에 참여할 사람(이메일·나만 보기) 답을 지웠다
-  accessDropped,
 }
 
 /// 달력의 날짜 칸 상태
@@ -188,20 +167,27 @@ class MeetingFlow {
   MeetingFlow excludeWeekends() =>
       _copy(draft: draft.withDates(draft.dates.withoutWeekends()));
 
-  /// 방식을 고른다. 시간별을 받을 수 없는 날짜면 그대로이고, 요일별은 첫날부터 7일로 맞추고 뺀 날을 되돌린다
+  /// 방식을 고른다. 시간별을 받을 수 없는 날짜면 그대로다. 요일별은 첫날부터 7일로 맞추고 뺀 날을 되돌리며,
+  /// 요일별을 벗어나면 그전 날짜로 되돌리거나 시간별 기간으로 줄인다([MeetingDraft.withMode])
   MeetingFlow chooseMode(MeetingMode mode) {
     if (mode == MeetingMode.hourly && !draft.hourlyAvailable) return this;
     final next = draft.withMode(mode);
-    final weekly = mode == MeetingMode.weekly;
     return _answer(
       MeetingQuestion.mode,
       next,
-      adjusted: {
-        if (weekly && next.dates.last != draft.dates.last)
-          MeetingAdjustment.weeklyPeriod,
-        if (weekly && draft.dates.excluded.isNotEmpty)
-          MeetingAdjustment.weeklyExclusionsDropped,
-      },
+      adjusted: meetingModeAdjustments(draft, next),
+    );
+  }
+
+  /// 펼친 폼(모임 설정 포함)에서 방식을 바꾼다. 시간별을 받을 수 없는 날짜면 그대로이고, 묻지 않고 맞춘 것을
+  /// 남긴다(다음에 값을 바꾸면 지운다)
+  MeetingFlow changeMode(MeetingMode mode) {
+    final next = draft.withMode(mode);
+    if (identical(next, draft)) return this;
+    return MeetingFlow(
+      draft: next,
+      expanded: expanded,
+      adjusted: meetingModeAdjustments(draft, next),
     );
   }
 

@@ -266,4 +266,42 @@ void main() {
       expect(prefs.getString(PendingMeetingStore.key), isNull, reason: raw);
     }
   });
+
+  test('요일별이면 요일별로 바꾸기 전의 날짜를 함께 두고 꺼내, 벗어나면 그 날짜로 돌아간다', () async {
+    final weekly = MeetingDraft(
+      mode: MeetingMode.daily,
+      dates: march(12, 14),
+    ).withMode(MeetingMode.weekly);
+    await store.save((
+      flow: MeetingFlow(draft: weekly, expanded: true),
+      title: '',
+    ));
+
+    final restored = store.take(today: today)!.flow.draft;
+
+    expect(restored.mode, MeetingMode.weekly);
+    expect(restored.dates.days, march(12, 18).days);
+    expect(restored.beforeWeekly?.days, march(12, 14).days);
+    expect(
+      restored.withMode(MeetingMode.hourly).dates.days,
+      march(12, 14).days,
+    );
+  });
+
+  test('기억한 날짜가 없는 요일별은 기억 없이 꺼내, 시간별은 앞의 5일로 줄인다', () async {
+    final weekly = MeetingDraft(mode: MeetingMode.weekly, dates: march(12, 18));
+    await store.save((
+      flow: MeetingFlow(draft: weekly, expanded: true),
+      title: '',
+    ));
+
+    final restored = store.take(today: today)!.flow.draft;
+
+    expect(restored.dates.days, march(12, 18).days);
+    expect(restored.beforeWeekly, isNull);
+    expect(
+      restored.withMode(MeetingMode.hourly).dates.days,
+      march(12, 16).days,
+    );
+  });
 }
