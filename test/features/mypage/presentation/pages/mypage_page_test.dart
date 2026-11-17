@@ -4,7 +4,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:momeet/app_route.dart';
 import 'package:momeet/features/mypage/mypage.dart';
 import 'package:momeet/shared/widgets/error_banner.dart';
 
@@ -320,5 +322,51 @@ void main() {
 
       verify(() => harness.kratos.logout(any())).called(2);
     });
+  });
+
+  testWidgets('모임 만들기 항목은 프로필 바로 아래에 있고 누르면 만들기 화면을 위에 연다', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(
+      initialLocation: AppRoute.mypage.path,
+      routes: [
+        GoRoute(
+          path: AppRoute.mypage.path,
+          name: AppRoute.mypage.name,
+          builder: (context, state) => const MyPage(),
+        ),
+        GoRoute(
+          path: AppRoute.meetings.path,
+          name: AppRoute.meetings.name,
+          builder: (context, state) => const Text('모임 만들기 화면'),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: appRetry,
+        overrides: harness.overrides,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final entry = find.widgetWithText(ListTile, '모임 만들기');
+    expect(entry, findsOneWidget);
+    expect(
+      tester.getTopLeft(entry).dy,
+      greaterThan(tester.getBottomLeft(find.text('user@example.com')).dy),
+    );
+    expect(
+      tester.getTopLeft(entry).dy,
+      lessThan(tester.getTopLeft(find.text('설정')).dy),
+    );
+
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+
+    expect(find.text('모임 만들기 화면'), findsOneWidget);
+    expect(router.canPop(), isTrue, reason: '뒤로 가면 마이페이지다');
   });
 }
