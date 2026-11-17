@@ -15,7 +15,8 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 높이를 채우고 제목 줄은 둔 채 카드 목록만 상자 안에서 굴린다(넓은 화면 옆 칸).
 ///
 /// 카드에 마우스를 올리거나 누르면 [highlight]에 알려 격자의 그 칸을 강조한다. 누른 카드는 고정되어 이름을
-/// 펼치고, 고정은 한 번에 하나다. 고정한 카드가 목록에서 없어지면 고정을 푼다.
+/// 펼치고, 고정은 한 번에 하나다. 고정한 카드가 목록에서 없어지면 고정을 푼다. 격자를 끌어 칠하는 동안은
+/// 상자가 마우스·누르기·휠을 받지 않는다(카드는 저장한 뒤에 바뀐다).
 class MeetingSlotsPanel extends StatefulWidget {
   const MeetingSlotsPanel({
     super.key,
@@ -71,7 +72,7 @@ class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
               onAddToCalendar: widget.onAddToCalendar,
             ),
           );
-    return MeetingPanel(
+    final panel = MeetingPanel(
       title: '추천 시간',
       help:
           '여러 사람이 함께 되는 시간을 보여 줘요. '
@@ -96,6 +97,12 @@ class _MeetingSlotsPanelState extends State<MeetingSlotsPanel> {
               ),
             )
           : list,
+    );
+    return ListenableBuilder(
+      listenable: widget.highlight,
+      builder: (context, child) =>
+          IgnorePointer(ignoring: widget.highlight.painting, child: child),
+      child: panel,
     );
   }
 }

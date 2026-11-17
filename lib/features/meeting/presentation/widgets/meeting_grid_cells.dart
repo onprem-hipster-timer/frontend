@@ -44,7 +44,7 @@ class MeetingGridCells extends StatefulWidget {
   final MeetingPaint? onPaint;
   final MeetingAnswer brush;
 
-  /// 강조할 추천 시간 카드. 고정하면 그 칸이 보이게 굴리고, 칠하기 시작하면 고정을 푼다
+  /// 강조할 추천 시간 카드. 고정하면 그 칸이 보이게 굴리고, 끌어 칠하는 동안은 강조를 감춘다
   final MeetingRunHighlight? highlight;
   final VoidCallback? onLocked;
 
@@ -111,8 +111,8 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
     final cell = _grid.at(place.$1, place.$2);
     if (cell == null) return;
     if (widget.onPaint == null) return widget.onLocked?.call();
-    widget.highlight?.unpin();
     setState(() => _drag = MeetingGridDrag(place, place, clear: _clears(cell)));
+    widget.highlight?.painting = true;
     _autoScroll.begin(context, global);
   }
 
@@ -141,6 +141,7 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
 
   void _end() {
     _autoScroll.end();
+    widget.highlight?.painting = false;
     final result = _preview;
     if (result == null) return;
     // 끄는 동안 이미 보인 칸은 다시 섞지 않는다
@@ -155,12 +156,12 @@ class _MeetingGridCellsState extends State<MeetingGridCells>
 
   void _cancel() {
     _autoScroll.end();
+    widget.highlight?.painting = false;
     if (_drag != null) setState(() => _drag = null);
   }
 
   void _toggle(MeetingCell cell) {
     if (widget.onPaint == null) return widget.onLocked?.call();
-    widget.highlight?.unpin();
     _commit(_stroke([cell], clear: _clears(cell)));
   }
 
