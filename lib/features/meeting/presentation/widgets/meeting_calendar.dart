@@ -14,10 +14,14 @@ class MeetingCalendar extends StatefulWidget {
     required this.firstDay,
     required this.stateOf,
     required this.onDayTap,
+    this.shownDay,
   });
 
   /// 고를 수 있는 첫날(오늘)
   final DateTime firstDay;
+
+  /// 처음 보일 달의 날. 없으면 [firstDay]의 달이다
+  final DateTime? shownDay;
 
   /// 날짜 칸의 상태
   final MeetingDayState Function(DateTime day) stateOf;
@@ -30,8 +34,8 @@ class MeetingCalendar extends StatefulWidget {
 
 class _MeetingCalendarState extends State<MeetingCalendar> {
   late DateTime _month = DateTime.utc(
-    widget.firstDay.year,
-    widget.firstDay.month,
+    (widget.shownDay ?? widget.firstDay).year,
+    (widget.shownDay ?? widget.firstDay).month,
   );
 
   void _move(int months) =>

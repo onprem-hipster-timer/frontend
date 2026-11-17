@@ -10,6 +10,7 @@ import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:momeet/core/providers/timezone_provider.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_page.dart';
@@ -64,6 +65,8 @@ void main() {
             FakeUsersClient(consentRequired: false),
           ),
           meetingsApiProvider.overrideWithValue(meetings),
+          visibilityApiProvider.overrideWithValue(FakeVisibilityClient()),
+          timezoneProvider.overrideWith(() => FixedTimezone('Asia/Seoul')),
           appOriginProvider.overrideWithValue('https://app.example.com'),
           timerWsClientProvider.overrideWithValue(null),
           analyticsConsentBridgeProvider.overrideWithValue(
@@ -324,5 +327,90 @@ void main() {
     await pumpAWhile(tester);
     expect(location(router), '/meetings/meeting-1');
     expect(find.byType(MeetingPage), findsOneWidget);
+  });
+
+  group('로그인하지 않은 사람의 모임 만들기', () {
+    setUp(() async {
+      harness = await KratosTestHarness.create(authenticated: false);
+      harness.stubCreateFlow(KratosFlowType.login, 'flow-login');
+    });
+
+    testWidgets('/meetings는 로그인으로 보내지 않고 만들기 화면을 연다', (tester) async {
+      final router = await pumpRouter(tester);
+
+      router.go(AppRoute.meetings.path);
+      await pumpAWhile(tester);
+
+      expect(location(router), AppRoute.meetings.path);
+      expect(find.byType(MeetingCreatePage), findsOneWidget);
+    });
+
+    testWidgets('로그인하고 계속하기로 로그인하면 만들기 화면으로 돌아와 넣은 그대로이고 화살표 한 번으로 만든다', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(480, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = await pumpRouter(tester);
+      router.go(AppRoute.meetings.path);
+      await pumpAWhile(tester);
+      await tester.tap(find.byTooltip('다음 달'));
+      await pumpAWhile(tester);
+      final now = DateTime.now();
+      final day = DateTime.utc(now.year, now.month + 1, 3);
+      await tester.tap(
+        find.bySemanticsLabel(RegExp('^${day.month}월 ${day.day}일')),
+      );
+      await pumpAWhile(tester);
+      await tester.enterText(find.byType(TextField), '스터디');
+      await tester.tap(find.byTooltip('모임 만들기'));
+      await pumpAWhile(tester);
+      expect(meetings.created, isEmpty);
+
+      await tester.tap(find.widgetWithText(FilledButton, '로그인하고 계속하기'));
+      await pumpAWhile(tester);
+      expect(
+        location(router),
+        '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.meetings.path)}',
+      );
+
+      harness.stubSubmit(
+        KratosFlowType.login,
+        const KratosSubmitResult(sessionToken: KratosTestHarness.sessionToken),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(Router<Object>)),
+      );
+      await tester.runAsync(
+        () => container
+            .read(authProvider.notifier)
+            .signInWithEmail(email: 'user@example.com', password: 'pw'),
+      );
+      await pumpAWhile(tester);
+
+      expect(location(router), AppRoute.meetings.path);
+      expect(find.text('스터디'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('모임 만들기'));
+      await pumpAWhile(tester);
+
+      expect(meetings.created.single.title, '스터디');
+      expect(meetings.created.single.startDate, day);
+      expect(location(router), '/meetings/meeting-new-1/created');
+    });
+
+    testWidgets('게스트는 모임 만들기 화면 대신 게스트 세션 안내를 본다', (tester) async {
+      harness = await KratosTestHarness.create();
+      harness.stubGuestSession();
+      await harness.prefs.setString(guestMeetingKey, 'guest-uid meeting-1');
+      final router = await pumpRouter(tester);
+
+      router.go(AppRoute.meetings.path);
+      await pumpAWhile(tester);
+
+      expect(location(router), startsWith(AppRoute.guestSession.path));
+      expect(find.byType(MeetingCreatePage), findsNothing);
+      expect(find.text('로그인이 필요합니다'), findsOneWidget);
+    });
   });
 }

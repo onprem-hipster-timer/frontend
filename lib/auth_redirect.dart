@@ -112,7 +112,7 @@ String? authRedirect({
   //      보내고 가려던 곳을 기억한다(회원으로 로그인하면 그리로 간다)
   if (isGuest) {
     final ownMeeting = guestMeetingId == null
-        ? AppRoute.allowsSignedOutPath(matchedLocation)
+        ? AppRoute.meeting.matches(matchedLocation)
         : matchedLocation == _guestHome(guestMeetingId);
     if (ownMeeting || AppRoute.guestPaths.contains(matchedLocation)) {
       return null;

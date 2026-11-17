@@ -63,8 +63,8 @@ enum AppRoute {
   todoGroupDetail(path: '/todo/:groupId'),
   timer(path: '/timer'),
   timerDetail(path: '/timer/detail'),
-  // 모임 만들기 화면과 만든 뒤 화면 (탭 셸 밖)
-  meetings(path: '/meetings'),
+  // 모임 만들기 화면과 만든 뒤 화면 (탭 셸 밖). 만들기 화면은 로그인하지 않아도 머물고, 만들 때 로그인을 묻는다
+  meetings(path: '/meetings', allowsSignedOut: true),
   meetingCreated(path: '/meetings/:meetingId/created'),
   tags(path: '/tags'),
   mypage(path: '/mypage'),
@@ -132,12 +132,15 @@ enum AppRoute {
   RegExp get _pattern =>
       RegExp('^${path.replaceAllMapped(RegExp(r':(\w+)'), (_) => r'[^/]+')}\$');
 
+  /// [path]가 이 라우트의 경로인지 (`:param` 자리는 어떤 값이든)
+  bool matches(String path) => _pattern.hasMatch(path);
+
   /// 주어진 경로가 등록된 보호 라우트와 매칭되는지 확인
   static bool isKnownProtectedPath(String path) {
     return _protectedPatterns.any((pattern) => pattern.hasMatch(path));
   }
 
-  /// 주어진 경로가 로그인하지 않아도 머무는 보호 라우트인지 확인 (`/meetings/abc-123` 등)
+  /// 주어진 경로가 로그인하지 않아도 머무는 보호 라우트인지 확인 (`/meetings`, `/meetings/abc-123` 등)
   static bool allowsSignedOutPath(String path) {
     return _signedOutPatterns.any((pattern) => pattern.hasMatch(path));
   }

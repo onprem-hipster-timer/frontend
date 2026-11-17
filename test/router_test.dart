@@ -60,9 +60,9 @@ void main() {
     });
 
     group('allowsSignedOutPath', () {
-      test('모임 화면 경로만 로그인하지 않아도 머문다', () {
+      test('모임 화면과 모임 만들기 화면만 로그인하지 않아도 머문다', () {
         expect(AppRoute.allowsSignedOutPath('/meetings/abc-123'), true);
-        expect(AppRoute.allowsSignedOutPath('/meetings'), false);
+        expect(AppRoute.allowsSignedOutPath('/meetings'), true);
         expect(
           AppRoute.allowsSignedOutPath('/meetings/abc-123/created'),
           false,
@@ -379,6 +379,25 @@ void main() {
           matchedLocation: '/meetings/meeting-1',
         );
         expect(result, isNull);
+      });
+
+      test('미인증 사용자가 모임 만들기 화면에 오면 로그인으로 보내지 않는다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.meetings.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('로그인하면 돌아갈 곳으로 붙인 모임 만들기 화면으로 간다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.login.path,
+          redirectAfterLogin: AppRoute.meetings.path,
+        );
+        expect(result, AppRoute.meetings.path);
       });
 
       test('미인증 사용자가 모임을 만든 뒤 화면에 오면 /login으로 리다이렉트한다', () {
@@ -1321,6 +1340,15 @@ void main() {
 
       test('들어온 모임을 모르면 모임 화면은 어느 모임이든 막지 않는다', () {
         expect(guest('/meetings/meeting-2', meetingId: null), isNull);
+        expect(
+          guest(AppRoute.meetings.path, meetingId: null),
+          notice(AppRoute.meetings.path),
+          reason: '모임 만들기는 모임 화면이 아니다',
+        );
+        expect(
+          guest('/meetings/meeting-2/created', meetingId: null),
+          notice('/meetings/meeting-2/created'),
+        );
         expect(
           guest(AppRoute.todo.path, meetingId: null),
           notice(AppRoute.todo.path),

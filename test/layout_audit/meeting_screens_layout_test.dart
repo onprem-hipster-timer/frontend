@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart'
     show Tags, expect, find, findsOneWidget, setUpAll;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
@@ -17,6 +18,9 @@ import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/auth/presentation/pages/guest_session_page.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
+import 'package:momeet/features/meeting/domain/meeting_draft.dart';
+import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_created_page.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
@@ -141,12 +145,48 @@ class _GuestFormOpenedState extends ConsumerState<_GuestFormOpened> {
   }
 }
 
+/// 만들기 화면을 연 뒤 화살표를 한 번 누른 화면(로그인하지 않았으면 로그인 요청이 보인다)
+class _SubmitOnStart extends StatefulWidget {
+  const _SubmitOnStart({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_SubmitOnStart> createState() => _SubmitOnStartState();
+}
+
+class _SubmitOnStartState extends State<_SubmitOnStart> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final button = find
+          .ancestor(
+            of: find.byIcon(Icons.arrow_forward),
+            matching: find.byType(IconButton),
+          )
+          .evaluate()
+          .first
+          .widget;
+      (button as IconButton).onPressed!();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// 모임 만들기·만든 뒤·모임 화면을 화면 크기 × 글자 배율 × 긴 문구로 점검한다.
 ///
 /// 사용자가 정하는 글자(제목 자리 글자의 이름, 모임 제목)에 [StressText]를 넣는다.
 /// 모임 화면들은 go_router로 이동하므로 라우터 안에 띄운다.
 void main() {
-  setUpAll(tz.initializeTimeZones);
+  late SharedPreferences prefs;
+  setUpAll(() async {
+    tz.initializeTimeZones();
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
 
   Widget routed(Widget page, List<Override> overrides) => ProviderScope(
     retry: appRetry,
@@ -178,10 +218,28 @@ void main() {
   testLayoutAudit(
     'meeting_create_page',
     subject: '제목 자리 글자의 이름',
-    build: (text) => routed(
-      const MeetingCreatePage(),
-      meetingOverrides(meetings: FakeMeetingsClient(), name: text.value),
-    ),
+    build: (text) => routed(const MeetingCreatePage(), [
+      ...meetingOverrides(meetings: FakeMeetingsClient(), name: text.value),
+      sharedPreferencesProvider.overrideWithValue(prefs),
+    ]),
+  );
+
+  testLayoutAudit(
+    'meeting_create_page_login_request',
+    subject: '제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) {
+      // 로그인하러 가며 둔 폼(날짜 하나)으로 열고 화살표를 누른다
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      PendingMeetingStore(
+        prefs,
+      ).save((draft: const MeetingDraft().tapDay(tomorrow), title: text.value));
+      return routed(const _SubmitOnStart(child: MeetingCreatePage()), [
+        ...meetingOverrides(meetings: FakeMeetingsClient(), signedIn: false),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ]);
+    },
+    verify: (tester) => expect(find.text('로그인하고 계속하기'), findsOneWidget),
   );
 
   testLayoutAudit(

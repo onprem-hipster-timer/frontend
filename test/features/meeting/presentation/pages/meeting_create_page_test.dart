@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
+import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/presentation/pages/meeting_create_page.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../meeting_fixtures.dart';
 
@@ -27,20 +29,34 @@ void main() {
   late FakeVisibilityClient visibility;
   late List<String> calls;
   late GoRouter router;
+  late SharedPreferences prefs;
 
-  setUp(() {
+  setUp(() async {
     calls = [];
     meetings = FakeMeetingsClient(calls: calls);
     visibility = FakeVisibilityClient(calls: calls);
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
   });
 
-  Future<void> pumpPage(WidgetTester tester, {String? name = '지현'}) async {
+  /// [signedIn]이 false면 로그인하지 않은 사람이 연다. [nextMonthShown]이면 다음 달로 넘겨 둔다
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    String? name = '지현',
+    bool signedIn = true,
+    bool nextMonthShown = true,
+  }) async {
     tester.view.physicalSize = const Size(480, 1800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     router = GoRouter(
       initialLocation: AppRoute.meetings.path,
       routes: [
+        GoRoute(
+          path: AppRoute.login.path,
+          name: AppRoute.login.name,
+          builder: (context, state) => const Text('로그인 화면'),
+        ),
         GoRoute(
           path: AppRoute.meetings.path,
           name: AppRoute.meetings.name,
@@ -57,15 +73,20 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         retry: appRetry,
-        overrides: meetingOverrides(
-          meetings: meetings,
-          visibility: visibility,
-          name: name,
-        ),
+        overrides: [
+          ...meetingOverrides(
+            meetings: meetings,
+            visibility: visibility,
+            name: name,
+            signedIn: signedIn,
+          ),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
+    if (!nextMonthShown) return;
     await tester.tap(find.byTooltip('다음 달'));
     await tester.pumpAndSettle();
   }
@@ -84,6 +105,8 @@ void main() {
   }
 
   String location() => router.routerDelegate.currentConfiguration.uri.path;
+
+  const loginReason = '모임을 만들고 나중에 고치려면 로그인이 필요해요';
 
   /// 방식 고르기가 제자리에서 옆으로 밀린 거리
   double modeOffset(WidgetTester tester, double rest) =>
@@ -402,5 +425,109 @@ void main() {
     gate.complete();
     await tester.pumpAndSettle();
     expect(meetings.created, hasLength(1));
+  });
+
+  group('로그인하지 않았으면', () {
+    testWidgets('날짜·시간·공개·제목을 다 넣을 수 있고, 화살표를 누르면 만들지 않고 까닭과 로그인을 그 아래에 보인다', (
+      tester,
+    ) async {
+      await pumpPage(tester, signedIn: false);
+      expect(find.text(loginReason), findsNothing);
+      await tapDays(tester, [3, 4]);
+      await tester.tap(find.text('비허용').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '스터디');
+
+      await submit(tester);
+
+      expect(meetings.created, isEmpty);
+      expect(calls, isEmpty);
+      expect(location(), AppRoute.meetings.path);
+      expect(find.text(loginReason), findsOneWidget);
+      expect(find.text('입력한 내용은 그대로 남아요'), findsOneWidget);
+      final login = find.widgetWithText(FilledButton, '로그인하고 계속하기');
+      expect(login, findsOneWidget);
+      expect(
+        tester.getTopLeft(login).dy,
+        greaterThan(tester.getBottomLeft(find.byType(TextField)).dy),
+      );
+    });
+
+    testWidgets('날짜를 고르지 않았으면 로그인보다 날짜를 먼저 고르라고 한다', (tester) async {
+      await pumpPage(tester, signedIn: false);
+
+      await submit(tester);
+
+      expect(find.text('모임 날짜를 골라 주세요'), findsOneWidget);
+      expect(find.text(loginReason), findsNothing);
+    });
+
+    testWidgets(
+      '로그인하고 계속하기는 이 만들기 화면으로 돌아오게 로그인으로 가고, 로그인해 다시 열면 넣은 그대로이며 화살표 한 번으로 만든다',
+      (tester) async {
+        await pumpPage(tester, signedIn: false);
+        await tapDays(tester, [3, 4]);
+        await tester.tap(find.text('6:00'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('9:00').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('비허용').last);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), '스터디');
+        await submit(tester);
+
+        await tester.tap(find.widgetWithText(FilledButton, '로그인하고 계속하기'));
+        await tester.pumpAndSettle();
+
+        expect(
+          router.routerDelegate.currentConfiguration.uri.toString(),
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent(AppRoute.meetings.path)}',
+        );
+
+        // 로그인을 마치고 돌아와 화면을 새로 연다(Google 로그인은 앱을 새로 띄운다)
+        await tester.pumpWidget(const SizedBox());
+        await pumpPage(tester, nextMonthShown: false);
+
+        expect(find.text('스터디'), findsOneWidget);
+        expect(find.text('9:00'), findsOneWidget);
+        expect(find.text(loginReason), findsNothing);
+        expect(
+          tester.getSemantics(find.text('비허용').last),
+          isSemantics(isChecked: true),
+        );
+        expect(
+          tester.getSemantics(dayCell(nextMonth(3))),
+          isSemantics(isSelected: true),
+          reason: '고른 날짜의 달을 보인다',
+        );
+
+        await submit(tester);
+
+        final body = meetings.created.single;
+        expect(body.title, '스터디');
+        expect(body.startDate, nextMonth(3));
+        expect(body.endDate, nextMonth(4));
+        expect(body.startTime, '09:00:00');
+        expect(calls, ['create', 'visibility public']);
+        expect(location(), '/meetings/meeting-new-1/created');
+      },
+    );
+
+    testWidgets('둔 값은 한 번만 꺼낸다', (tester) async {
+      await pumpPage(tester, signedIn: false);
+      await tapDays(tester, [3]);
+      await tester.enterText(find.byType(TextField), '스터디');
+      await submit(tester);
+      await tester.tap(find.widgetWithText(FilledButton, '로그인하고 계속하기'));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpPage(tester, nextMonthShown: false);
+      expect(find.text('스터디'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpPage(tester, nextMonthShown: false);
+      expect(find.text('스터디'), findsNothing);
+    });
   });
 }

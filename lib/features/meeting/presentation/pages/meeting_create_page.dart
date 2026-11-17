@@ -8,6 +8,7 @@ import 'package:momeet/features/meeting/domain/meeting_dates.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
+import 'package:momeet/features/meeting/presentation/providers/pending_meeting_store.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
@@ -25,6 +26,10 @@ import 'package:momeet/shared/ui/ui.dart';
 ///
 /// 쉬운 입력부터 두고 비용이 큰 제목은 맨 끝 화살표 옆에 둔다: 날짜 → 시간 → 공개·게스트 → 제목.
 /// 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다.
+///
+/// 로그인하지 않아도 모두 넣을 수 있다. 화살표를 누르면 그때 로그인이 필요한 까닭과 로그인을 제목 아래에
+/// 보인다. 로그인하러 가는 동안 폼을 이 기기에 두고([PendingMeetingStore]), 로그인해 돌아오면 넣은 그대로
+/// 열려 화살표 한 번으로 만든다.
 class MeetingCreatePage extends ConsumerStatefulWidget {
   const MeetingCreatePage({super.key});
 
@@ -35,12 +40,28 @@ class MeetingCreatePage extends ConsumerStatefulWidget {
 class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
   final _title = TextEditingController();
   var _draft = const MeetingDraft();
+  final _loginRequest = GlobalKey();
+
+  /// 로그인하지 않은 사람이 화살표를 눌렀다
+  var _askLogin = false;
 
   /// 시간별에서 날짜별로 저절로 바뀐 횟수
   var _modeShakes = 0;
 
   /// 공개를 꺼서 게스트 로그인이 저절로 꺼진 횟수
   var _guestShakes = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final pending = ref
+        .read(pendingMeetingStoreProvider)
+        .take(today: DateTime.now());
+    if (pending != null) {
+      _draft = pending.draft;
+      _title.text = pending.title;
+    }
+  }
 
   @override
   void dispose() {
@@ -75,6 +96,22 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
       showAppSnackBar(context, '${Terms.meeting} 날짜를 골라 주세요');
       return;
     }
+    if (ref.read(currentUserProvider) == null) {
+      setState(() => _askLogin = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final request = _loginRequest.currentContext;
+        if (request == null || !request.mounted) return;
+        Scrollable.ensureVisible(
+          request,
+          duration: MediaQuery.disableAnimationsOf(request)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        );
+      });
+      return;
+    }
     final typed = _title.text.trim();
     final title = typed.isEmpty
         ? meetingTitlePlaceholder(ref.read(currentUserProvider)?.name)
@@ -106,11 +143,29 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     }
   }
 
+  /// 지금 폼을 이 기기에 두고 로그인하러 간다. 로그인하면 이 화면으로 돌아온다
+  Future<void> _goToLogin() async {
+    await ref.read(pendingMeetingStoreProvider).save((
+      draft: _draft,
+      title: _title.text,
+    ));
+    if (!mounted) return;
+    context.goNamed(
+      AppRoute.login.name,
+      queryParameters: {
+        'redirect': context.namedLocation(AppRoute.meetings.name),
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final draft = _draft;
     final today = calendarDay(DateTime.now());
     final name = ref.watch(currentUserProvider.select((user) => user?.name));
+    final signedIn = ref.watch(
+      currentUserProvider.select((user) => user != null),
+    );
     return Scaffold(
       appBar: AppBar(
         leading: meetingAppBarLeading(context),
@@ -120,6 +175,7 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
         dates: _DatesSection(
           calendar: MeetingCalendar(
             firstDay: today,
+            shownDay: draft.dates.isEmpty ? null : draft.dates.first,
             stateOf: (day) => draft.dayState(day, today: today),
             onDayTap: _tapDay,
           ),
@@ -142,6 +198,9 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
           submitting: ref.watch(createMeetingMutation).isPending,
           onSubmit: _submit,
         ),
+        loginRequest: _askLogin && !signedIn
+            ? _LoginRequest(key: _loginRequest, onLogin: _goToLogin)
+            : null,
       ),
     );
   }
@@ -154,6 +213,7 @@ class _FormLayout extends StatelessWidget {
     required this.time,
     required this.sharing,
     required this.title,
+    required this.loginRequest,
   });
 
   /// 이 폭부터 두 칸
@@ -163,6 +223,9 @@ class _FormLayout extends StatelessWidget {
   final Widget time;
   final Widget sharing;
   final Widget title;
+
+  /// 제목 아래에 두는 로그인 요청. 로그인하지 않은 사람이 화살표를 눌렀을 때만 있다
+  final Widget? loginRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -175,6 +238,10 @@ class _FormLayout extends StatelessWidget {
           sharing,
           const SizedBox(height: 28),
           title,
+          if (loginRequest case final request?) ...[
+            const SizedBox(height: 12),
+            request,
+          ],
         ];
         return SingleChildScrollView(
           padding: EdgeInsets.all(wide ? 32 : 16),
@@ -348,6 +415,72 @@ class _SharingSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 로그인하지 않은 사람이 만들려 할 때 제목 아래에 보이는 요청: 까닭, 넣은 것이 남는다는 것, 로그인
+class _LoginRequest extends StatelessWidget {
+  const _LoginRequest({super.key, required this.onLogin});
+
+  final VoidCallback onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh,
+          borderRadius: AppRadius.lgAll,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lock_outline, size: 20, color: scheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${Terms.meeting.withJosa('을', '를')} 만들고 나중에 고치려면 로그인이 필요해요',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '입력한 내용은 그대로 남아요',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: onLogin,
+                  child: const Text('로그인하고 계속하기'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
