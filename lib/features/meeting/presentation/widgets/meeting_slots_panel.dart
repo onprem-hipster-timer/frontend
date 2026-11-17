@@ -169,7 +169,7 @@ class _RunCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = meetingRunText(board.grid, run);
-    final unavailable = board.unavailableIn(run);
+    final unavailable = run.unavailable;
     final key = meetingRunKey(run);
     return MeetingSlotCard(
       pinned: highlight.pinned == key,

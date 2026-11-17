@@ -179,17 +179,18 @@ class MeetingBoard implements MeetingShading {
     if (answerAt(cell) == MeetingAnswer.available) me?.id ?? pendingSelfId,
   };
 
-  /// [run]의 칸 중 하나라도 안 된다고 한 사람. 내 칸이 불가능이면 나도 든다
-  Set<String> unavailableIn(MeetingRun run) => {
-    for (final cell in run.cells) ...[
-      ...othersUnavailableAt(cell),
-      if (answerAt(cell) == MeetingAnswer.unavailable) me?.id ?? pendingSelfId,
-    ],
+  /// [cell]이 안 된다고 한 사람. 내 칸이 불가능이면 나도 든다
+  Set<String> unavailableAt(MeetingCell cell) => {
+    ...othersUnavailableAt(cell),
+    if (answerAt(cell) == MeetingAnswer.unavailable) me?.id ?? pendingSelfId,
   };
 
-  /// 두 명 이상 되는 이어진 칸 묶음, [order] 순
-  List<MeetingRun> runs(MeetingRunOrder order) =>
-      sortMeetingRuns(findMeetingRuns(grid, peopleAt), order, mode: grid.mode);
+  /// 두 명 이상 되는 이어진 칸 묶음, [order] 순. 되는 사람이나 안 되는 사람이 바뀌는 곳에서 나눈다
+  List<MeetingRun> runs(MeetingRunOrder order) => sortMeetingRuns(
+    findMeetingRuns(grid, peopleAt, unavailableAt: unavailableAt),
+    order,
+    mode: grid.mode,
+  );
 
   bool isSelf(String id) => id == pendingSelfId || id == me?.id;
 

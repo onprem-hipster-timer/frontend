@@ -100,18 +100,35 @@ void main() {
     expect(board.peopleAt(cell), {'a'});
   });
 
-  test('묶음의 칸 중 하나라도 안 되는 사람은 안 되는 사람이다(빼는 중인 참여자는 빼고)', () {
+  test('안 되는 사람이 바뀌는 곳에서 후보를 나누고, 후보마다 내내 안 되는 사람을 담는다(빼는 중인 참여자는 빼고)', () {
     final board = boardOf([
       availabilityOf('a', slots: [(seoul(6), seoul(7))]),
       availabilityOf('b', slots: [(seoul(6), seoul(7))]),
       availabilityOf('c', unavailable: [(seoul(6, 30), seoul(7))]),
       availabilityOf('d', unavailable: [(seoul(6), seoul(6, 30))]),
       availabilityOf('e', unavailable: [(seoul(9), seoul(10))]),
+      availabilityOf(
+        'me',
+        userId: 'user-1',
+        unavailable: [(seoul(6, 30), seoul(7))],
+      ),
     ]).withRemoving({'d'});
-    final run = board.runs(MeetingRunOrder.people).single;
+    final runs = board.runs(MeetingRunOrder.date);
 
-    expect(run.people, {'a', 'b'});
-    expect(board.unavailableIn(run), {'c'});
+    expect(
+      [for (final run in runs) run.people],
+      [
+        {'a', 'b'},
+        {'a', 'b'},
+      ],
+    );
+    expect(
+      [for (final run in runs) run.unavailable],
+      [
+        <String>{},
+        {'c', 'me'},
+      ],
+    );
   });
 
   test('로그인한 사람의 참여자가 나이고 그 가능 시간이 내 칸이다', () {

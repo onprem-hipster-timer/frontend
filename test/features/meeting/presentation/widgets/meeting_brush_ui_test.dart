@@ -19,9 +19,7 @@ DateTime seoul(int day, int hour, [int minute = 0]) =>
 void main() {
   setUpAll(tz.initializeTimeZones);
 
-  late int paints;
-
-  /// 칠하면 그대로 내 시간에 반영하는 모임 화면의 '내 시간 선택하기'. 넘긴 칠하기 횟수는 [paints]
+  /// 칠하면 그대로 내 시간에 반영하는 모임 화면의 '내 시간 선택하기'
   Future<void> pumpSection(
     WidgetTester tester, {
     MeetingRead? meeting,
@@ -32,7 +30,6 @@ void main() {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    paints = 0;
     var board = MeetingBoard(
       meeting: meeting ?? makeMeeting(),
       availability: availability,
@@ -51,7 +48,6 @@ void main() {
                   meeting: board.meeting,
                   shading: board,
                   onPaint: (changes) => setState(() {
-                    paints++;
                     board = board.withMine(
                       board.mine.paint({
                         for (final MapEntry(key: cell, value: answer)
@@ -98,8 +94,8 @@ void main() {
         (widget.data?.replaceAll('\u2060', '').contains(part) ?? false),
   );
 
-  const hourlyYes = '되는 시간만 칠해 주세요. 그날 나머지는 안 되는 걸로 볼게요.';
-  const hourlyNo = '안 되는 시간만 칠해 주세요. 그날 나머지는 되는 걸로 볼게요.';
+  const hourlyYes = '확실히 되는 시간을 칠해 주세요';
+  const hourlyNo = '절대 안 되는 시간을 칠해 주세요';
 
   MeetingRead dayMeeting(MeetingMode mode) => makeMeeting(
     endDate: DateTime.utc(2027, 3, 7),
@@ -135,108 +131,55 @@ void main() {
     ]) {
       await tester.pumpWidget(const SizedBox());
       await pumpSection(tester, meeting: dayMeeting(mode));
-      expect(plain('되는 $unit만 칠해 주세요. 나머지는 모두 안 되는 걸로 볼게요.'), findsOneWidget);
-      expect(plainContaining('그날'), findsNothing);
-      expect(plainContaining('시간만'), findsNothing);
+      expect(plain('확실히 되는 $unit을 칠해 주세요'), findsOneWidget);
+      expect(plainContaining('시간을'), findsNothing);
       await pickBrush(tester, '불가능');
-      expect(plain('안 되는 $unit만 칠해 주세요. 나머지는 모두 되는 걸로 볼게요.'), findsOneWidget);
-      final other = unit == '날' ? '요일' : '되는 날';
-      expect(plainContaining(other), findsNothing);
+      expect(plain('절대 안 되는 $unit을 칠해 주세요'), findsOneWidget);
     }
   });
 
-  testWidgets('빈 날에 불가능을 누르면 그 칸은 불가능, 그날 나머지는 가능이 된다', (tester) async {
+  testWidgets('도움말은 끌어 칠하기를 알리고 한 가지로 표시하라는 말은 없다', (tester) async {
+    for (final mode in [
+      MeetingMode.hourly,
+      MeetingMode.daily,
+      MeetingMode.weekly,
+    ]) {
+      await tester.pumpWidget(const SizedBox());
+      await pumpSection(tester, meeting: dayMeeting(mode));
+      final help = tester
+          .widgetList<Tooltip>(find.byType(Tooltip))
+          .map((tooltip) => tooltip.message ?? '')
+          .firstWhere((message) => message.contains('칠해요'));
+      expect(help, contains('길게 누른 채 끌면 여러 칸을 한 번에 칠해요'));
+      expect(help, isNot(contains('한 가지')));
+      expect(help, isNot(contains('초기화하기')));
+    }
+  });
+
+  testWidgets('한 날에 두 붓을 섞어 칠하고, 칠하지 않은 칸은 답하지 않은 채로 둔다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpSection(tester);
+    await tapCell(tester, '3월 1일 (월) 6:00 ~ 6:30');
     await pickBrush(tester, '불가능');
-
     await tapCell(tester, '3월 1일 (월) 9:00 ~ 9:30');
 
-    expect(valueOf('3월 1일 (월) 9:00 ~ 9:30'), '불가능');
     expect(valueOf('3월 1일 (월) 6:00 ~ 6:30'), '가능');
-    expect(valueOf('3월 1일 (월) 17:30 ~ 18:00'), '가능');
-    expect(valueOf('3월 2일 (화) 9:00 ~ 9:30'), isNull, reason: '다른 날은 그대로');
+    expect(valueOf('3월 1일 (월) 9:00 ~ 9:30'), '불가능');
+    expect(valueOf('3월 1일 (월) 7:00 ~ 7:30'), isNull, reason: '채우지 않는다');
+    expect(valueOf('3월 1일 (월) 17:30 ~ 18:00'), isNull);
+    expect(find.byType(SnackBar), findsNothing, reason: '막는 알림이 없다');
 
+    await tapCell(tester, '3월 1일 (월) 6:00 ~ 6:30');
+    expect(valueOf('3월 1일 (월) 6:00 ~ 6:30'), '불가능', reason: '다른 답은 덮어쓴다');
     await tapCell(tester, '3월 1일 (월) 9:00 ~ 9:30');
-    expect(valueOf('3월 1일 (월) 9:00 ~ 9:30'), '가능', reason: '불가능 칸에서 시작하면 되돌린다');
+    expect(valueOf('3월 1일 (월) 9:00 ~ 9:30'), isNull, reason: '같은 답이면 지운다');
     semantics.dispose();
   });
 
-  testWidgets('가능으로 표시한 날에 불가능을 칠하면 아무것도 바꾸지 않고 그날을 떨며 까닭과 초기화를 알린다', (
-    tester,
-  ) async {
+  testWidgets('여러 날에 걸친 붓질은 지나간 칸만 칠하고 다른 답의 칸도 덮어쓴다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpSection(tester);
-    await tapCell(tester, '3월 2일 (화) 6:00 ~ 6:30');
-    await pickBrush(tester, '불가능');
-    final before = paints;
-
-    await tester.tapAt(cellCenter(tester, '3월 2일 (화) 9:00 ~ 9:30'));
-    await tester.pump();
-    expect(tester.hasRunningAnimations, isTrue, reason: '그날 머리를 떤다');
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(paints, before, reason: '칠하지도 저장하지도 않는다');
-    expect(valueOf('3월 2일 (화) 9:00 ~ 9:30'), isNull);
-    expect(
-      plain(
-        '하루는 되는 시간이나 안 되는 시간 중 한 가지로만 표시할 수 있어요. '
-        '3월 2일은 되는 시간으로 표시 중이에요.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('3/2 일정 초기화하기'), findsOneWidget);
-
-    await tester.tapAt(cellCenter(tester, '3월 2일 (화) 10:00 ~ 10:30'));
-    await tester.pump();
-    expect(find.text('3/2 일정 초기화하기'), findsOneWidget, reason: '알림은 하나');
-    semantics.dispose();
-  });
-
-  testWidgets('초기화 단추는 한 번 묻고, 취소하면 그대로, 초기화하면 그날만 지워 다음 붓질이 새 방식을 정한다', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    await pumpSection(tester, size: const Size(400, 1600));
-    await tapCell(tester, '3월 2일 (화) 6:00 ~ 6:30');
-    await tapCell(tester, '3월 3일 (수) 6:00 ~ 6:30');
-    await pickBrush(tester, '불가능');
     await tapCell(tester, '3월 2일 (화) 9:00 ~ 9:30');
-    final before = paints;
-
-    await tester.tap(find.text('3/2 일정 초기화하기'));
-    await tester.pumpAndSettle();
-    expect(plain('3월 2일에 표시한 시간을 모두 지울까요?'), findsOneWidget);
-    await tester.tap(find.text('취소'));
-    await tester.pumpAndSettle();
-    expect(paints, before);
-    expect(valueOf('3월 2일 (화) 6:00 ~ 6:30'), '가능');
-
-    await tester.tapAt(cellCenter(tester, '3월 2일 (화) 9:00 ~ 9:30'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('3/2 일정 초기화하기'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('초기화하기'));
-    await tester.pumpAndSettle();
-    expect(valueOf('3월 2일 (화) 6:00 ~ 6:30'), isNull);
-    expect(valueOf('3월 3일 (수) 6:00 ~ 6:30'), '가능', reason: '다른 날은 그대로');
-    expect(
-      tester.getSemantics(find.text('불가능')),
-      isSemantics(isSelected: true),
-      reason: '붓은 그대로',
-    );
-
-    await tapCell(tester, '3월 2일 (화) 9:00 ~ 9:30');
-    expect(valueOf('3월 2일 (화) 9:00 ~ 9:30'), '불가능');
-    expect(valueOf('3월 2일 (화) 6:00 ~ 6:30'), '가능');
-    semantics.dispose();
-  });
-
-  testWidgets('여러 날에 걸친 붓질은 되는 날만 칠하고 막힌 날들을 한 번에 알린다', (tester) async {
-    final semantics = tester.ensureSemantics();
-    await pumpSection(tester);
-    await tapCell(tester, '3월 2일 (화) 6:00 ~ 6:30');
-    await tapCell(tester, '3월 4일 (목) 6:00 ~ 6:30');
     await pickBrush(tester, '불가능');
 
     await tester.dragFrom(
@@ -248,15 +191,38 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(valueOf('3월 1일 (월) 9:00 ~ 9:30'), '불가능');
-    expect(valueOf('3월 3일 (수) 9:00 ~ 9:30'), '불가능');
-    expect(valueOf('3월 2일 (화) 9:00 ~ 9:30'), isNull);
-    expect(plainContaining('3월 2일 외 1일은 되는 시간으로 표시 중이에요.'), findsOneWidget);
-    expect(find.text('2일 일정 초기화하기'), findsOneWidget);
+    for (final day in ['1일 (월)', '2일 (화)', '3일 (수)', '5일 (금)']) {
+      expect(valueOf('3월 $day 9:00 ~ 9:30'), '불가능');
+    }
+    expect(valueOf('3월 1일 (월) 6:00 ~ 6:30'), isNull);
+    expect(find.byType(SnackBar), findsNothing);
     semantics.dispose();
   });
 
-  testWidgets('날짜 머리: 빈 날은 하루 전체를 가능으로, 답한 날은 초기화하고 되돌릴 수 있다', (tester) async {
+  testWidgets('붓의 답인 칸에서 끌기 시작하면 지나간 칸을 모두 지운다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpSection(tester);
+    await tapCell(tester, '3월 1일 (월) 9:00 ~ 9:30');
+    await pickBrush(tester, '불가능');
+    await tapCell(tester, '3월 1일 (월) 9:30 ~ 10:00');
+    await pickBrush(tester, '가능');
+
+    await tester.dragFrom(
+      cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'),
+      cellCenter(tester, '3월 1일 (월) 10:00 ~ 10:30') -
+          cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'),
+      kind: PointerDeviceKind.mouse,
+      buttons: kPrimaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+
+    expect(valueOf('3월 1일 (월) 9:00 ~ 9:30'), isNull);
+    expect(valueOf('3월 1일 (월) 9:30 ~ 10:00'), isNull);
+    expect(valueOf('3월 1일 (월) 10:00 ~ 10:30'), isNull);
+    semantics.dispose();
+  });
+
+  testWidgets('날짜 머리: 빈 날은 하루 전체를 가능으로, 답한 날은 지우고 되돌릴 수 있다', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpSection(tester);
     final head = find.bySemanticsLabel('3월 3일 (수) 하루 전체');
@@ -278,16 +244,17 @@ void main() {
     await tester.tap(find.text('되돌리기'));
     await tester.pumpAndSettle();
     expect(valueOf('3월 3일 (수) 6:00 ~ 6:30'), '가능');
+
+    await pickBrush(tester, '불가능');
+    await tapCell(tester, '3월 4일 (목) 9:00 ~ 9:30');
+    await tester.tap(find.bySemanticsLabel('3월 4일 (목) 하루 전체'));
+    await tester.pumpAndSettle();
+    expect(valueOf('3월 4일 (목) 9:00 ~ 9:30'), isNull, reason: '불가능만 칠한 날도 지운다');
     semantics.dispose();
   });
 
-  for (final (mode, unit) in [
-    (MeetingMode.daily, '날'),
-    (MeetingMode.weekly, '요일'),
-  ]) {
-    testWidgets('$mode: 모임 전체가 한 방식이고 막히면 그 방식의 말로 알리며 일정 초기화하기는 한 번 묻는다', (
-      tester,
-    ) async {
+  for (final mode in [MeetingMode.daily, MeetingMode.weekly]) {
+    testWidgets('$mode: 두 붓을 섞어 칠하고 채우지 않으며 초기화 단추가 없다', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpSection(tester, meeting: dayMeeting(mode));
       final grid = MeetingGrid.of(dayMeeting(mode));
@@ -295,61 +262,20 @@ void main() {
         grid,
         grid.cells.firstWhere((cell) => cell.day.day == day),
       );
+
+      expect(find.textContaining('초기화'), findsNothing);
+      await tapCell(tester, label(2));
       await pickBrush(tester, '불가능');
-
       await tapCell(tester, label(4));
+
+      expect(valueOf(label(2)), '가능');
       expect(valueOf(label(4)), '불가능');
-      expect(valueOf(label(1)), '가능');
-      expect(valueOf(label(7)), '가능');
-
-      await pickBrush(tester, '가능');
-      final before = paints;
-      await tester.tapAt(cellCenter(tester, label(4)));
-      await tester.pump(const Duration(seconds: 1));
-      expect(paints, before);
-      expect(
-        plain(
-          '이 모임은 되는 $unit이나 안 되는 $unit 중 한 가지로만 표시할 수 있어요. '
-          '지금은 안 되는 $unit로 표시 중이에요.',
-        ),
-        findsOneWidget,
-      );
-      expect(plainContaining('하루는'), findsNothing);
-
-      await tester.tap(find.widgetWithText(TextButton, '일정 초기화하기').first);
-      await tester.pumpAndSettle();
-      expect(plain('이 모임에 표시한 $unit을 모두 지울까요?'), findsOneWidget);
-      await tester.tap(find.text('초기화하기'));
-      await tester.pumpAndSettle();
-      for (final day in [1, 4, 7]) {
-        expect(valueOf(label(day)), isNull);
-      }
+      expect(valueOf(label(1)), isNull);
+      expect(valueOf(label(7)), isNull);
+      expect(find.byType(SnackBar), findsNothing);
       semantics.dispose();
     });
   }
-
-  testWidgets('끌어서 빈 날에 불가능을 칠하면 손을 뗀 뒤 채워지는 칸이 섞여 나타난다', (tester) async {
-    final semantics = tester.ensureSemantics();
-    await pumpSection(tester);
-    await pickBrush(tester, '불가능');
-
-    final gesture = await tester.startGesture(
-      cellCenter(tester, '3월 1일 (월) 9:00 ~ 9:30'),
-      kind: PointerDeviceKind.mouse,
-      buttons: kPrimaryMouseButton,
-    );
-    await tester.pump();
-    await gesture.moveTo(cellCenter(tester, '3월 1일 (월) 10:00 ~ 10:30'));
-    await tester.pump();
-    await gesture.up();
-    await tester.pump();
-
-    expect(tester.hasRunningAnimations, isTrue, reason: '채운 칸이 섞여 나타난다');
-    await tester.pumpAndSettle();
-    expect(valueOf('3월 1일 (월) 6:00 ~ 6:30'), '가능');
-    expect(valueOf('3월 1일 (월) 9:30 ~ 10:00'), '불가능');
-    semantics.dispose();
-  });
 
   testWidgets('다른 참여자의 불가능은 칸 안내에 인원수로만 읽는다', (tester) async {
     final semantics = tester.ensureSemantics();

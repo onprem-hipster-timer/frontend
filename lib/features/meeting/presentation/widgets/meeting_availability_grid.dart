@@ -22,9 +22,7 @@ class MeetingAvailabilityGrid extends StatelessWidget {
     required this.shading,
     required this.onPaint,
     this.brush = MeetingAnswer.available,
-    this.onBlocked,
     this.onResetDay,
-    this.dayShakes = const {},
     this.highlight,
     this.onLocked,
   });
@@ -33,14 +31,8 @@ class MeetingAvailabilityGrid extends StatelessWidget {
   final MeetingPaint? onPaint;
   final MeetingAnswer brush;
 
-  /// 다른 방식으로 표시한 묶음이라 칠하지 못했다
-  final MeetingBlocked? onBlocked;
-
   /// 시간별 날짜 머리로 답한 날을 지운다
   final ValueChanged<List<MeetingCell>>? onResetDay;
-
-  /// 시간별 날짜 열마다 날짜 머리를 떤 횟수
-  final Map<int, int> dayShakes;
 
   /// 강조할 추천 시간 카드
   final MeetingRunHighlight? highlight;
@@ -63,9 +55,7 @@ class MeetingAvailabilityGrid extends StatelessWidget {
             shading: shading,
             brush: brush,
             onPaint: onPaint,
-            onBlocked: onBlocked,
             onResetDay: onResetDay,
-            dayShakes: dayShakes,
             highlight: highlight,
             onLocked: onLocked,
           ),
@@ -74,7 +64,6 @@ class MeetingAvailabilityGrid extends StatelessWidget {
             shape: MeetingCellShape.weekly,
             brush: brush,
             onPaint: onPaint,
-            onBlocked: onBlocked,
             highlight: highlight,
             onLocked: onLocked,
           ),
@@ -82,7 +71,6 @@ class MeetingAvailabilityGrid extends StatelessWidget {
             shading: shading,
             brush: brush,
             onPaint: onPaint,
-            onBlocked: onBlocked,
             highlight: highlight,
             onLocked: onLocked,
           ),
@@ -105,7 +93,6 @@ class _DailyGrid extends StatelessWidget {
     required this.shading,
     required this.brush,
     required this.onPaint,
-    required this.onBlocked,
     required this.highlight,
     required this.onLocked,
   });
@@ -113,7 +100,6 @@ class _DailyGrid extends StatelessWidget {
   final MeetingShading shading;
   final MeetingAnswer brush;
   final MeetingPaint? onPaint;
-  final MeetingBlocked? onBlocked;
   final MeetingRunHighlight? highlight;
 
   final VoidCallback? onLocked;
@@ -149,7 +135,6 @@ class _DailyGrid extends StatelessWidget {
           shape: MeetingCellShape.daily,
           brush: brush,
           onPaint: onPaint,
-          onBlocked: onBlocked,
           highlight: highlight,
           onLocked: onLocked,
         ),

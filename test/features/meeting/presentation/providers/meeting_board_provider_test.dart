@@ -126,14 +126,38 @@ void main() {
     MeetingAnswer brush, {
     bool clear = false,
   }) => brushStroke(
-    state.board.grid,
     state.board.answerAt,
     cells(state, rows),
     brush,
     clear: clear,
-  ).changes;
+  );
 
-  test('불가능으로 표시한 날은 칠한 칸을 unavailable로, 그날 나머지를 available로 겹치지 않게 저장한다', () {
+  test('한 날에 두 붓을 섞어 칠하면 칠한 칸만 종류마다 합쳐 겹치지 않게 저장하고 나머지는 보내지 않는다', () {
+    fakeAsync((async) {
+      final (container, _) = open(async);
+      final notifier = container.read(provider.notifier);
+      notifier.paint(stroke(read(container), [0, 1, 4], available));
+      notifier.paint(stroke(read(container), [2, 3, 10], unavailable));
+      async.elapse(wait);
+
+      final body = meetings.puts.single.$2;
+      expect(kindOf(body, TimeSlotKind.available), [
+        (seoul(6), seoul(7)),
+        (seoul(8), seoul(8, 30)),
+      ]);
+      expect(kindOf(body, TimeSlotKind.unavailable), [
+        (seoul(7), seoul(8)),
+        (seoul(11), seoul(11, 30)),
+      ]);
+      expect(body.map((slot) => slot.toJson()['kind']).toSet(), {
+        'available',
+        'unavailable',
+      });
+      container.dispose();
+    });
+  });
+
+  test('불가능만 칠한 날도 칠한 칸만 unavailable로 저장하고 그날 나머지를 채우지 않는다', () {
     fakeAsync((async) {
       final (container, _) = open(async);
       container
@@ -145,37 +169,12 @@ void main() {
       expect(kindOf(body, TimeSlotKind.unavailable), [
         (seoul(6, 30), seoul(7, 30)),
       ]);
-      expect(kindOf(body, TimeSlotKind.available), [
-        (seoul(6), seoul(6, 30)),
-        (seoul(7, 30), seoul(18)),
-      ]);
-      expect(body.map((slot) => slot.toJson()['kind']).toSet(), {
-        'available',
-        'unavailable',
-      });
+      expect(kindOf(body, TimeSlotKind.available), isEmpty);
       container.dispose();
     });
   });
 
-  test('가능으로 표시한 날은 칠한 칸만 available로 저장한다', () {
-    fakeAsync((async) {
-      final (container, _) = open(async);
-      container
-          .read(provider.notifier)
-          .paint(stroke(read(container), [0, 1, 4], available));
-      async.elapse(wait);
-
-      final body = meetings.puts.single.$2;
-      expect(kindOf(body, TimeSlotKind.available), [
-        (seoul(6), seoul(7)),
-        (seoul(8), seoul(8, 30)),
-      ]);
-      expect(kindOf(body, TimeSlotKind.unavailable), isEmpty);
-      container.dispose();
-    });
-  });
-
-  test('그날을 초기화하고 불가능으로 다시 칠하면 그날 방식이 바뀐 대로 저장한다', () {
+  test('가능 칸을 불가능으로 덮어쓰고 지운 칸은 빼서 저장한다', () {
     fakeAsync((async) {
       meetings.availability.add(
         availabilityOf(
@@ -186,25 +185,23 @@ void main() {
       );
       final (container, _) = open(async);
       final notifier = container.read(provider.notifier);
-      notifier.paint(
-        answers(read(container), [for (var r = 0; r < 24; r++) r], unanswered),
-      );
-      notifier.paint(stroke(read(container), [5], unavailable));
+      notifier.paint(stroke(read(container), [1], unavailable));
+      notifier.paint(stroke(read(container), [3], available, clear: true));
       async.elapse(wait);
 
       final body = meetings.puts.single.$2;
-      expect(kindOf(body, TimeSlotKind.unavailable), [
-        (seoul(8, 30), seoul(9)),
-      ]);
       expect(kindOf(body, TimeSlotKind.available), [
-        (seoul(6), seoul(8, 30)),
-        (seoul(9), seoul(18)),
+        (seoul(6), seoul(6, 30)),
+        (seoul(7), seoul(7, 30)),
+      ]);
+      expect(kindOf(body, TimeSlotKind.unavailable), [
+        (seoul(6, 30), seoul(7)),
       ]);
       container.dispose();
     });
   });
 
-  test('다른 곳에서 저장한 빈틈 있는 불가능 날은 다음 저장 때 그날 전체를 덮어 보낸다', () {
+  test('다른 곳에서 저장한 빈틈 있는 불가능 날도 칠한 그대로 보이고 그대로 보낸다', () {
     fakeAsync((async) {
       meetings.availability.add(
         availabilityOf(
@@ -214,54 +211,19 @@ void main() {
         ),
       );
       final (container, _) = open(async);
-      expect(
-        read(container).board.answerAt(read(container).board.grid.at(0, 0)!),
-        unanswered,
-        reason: '저장된 그대로 보인다',
-      );
+      final board = read(container).board;
+      expect(board.answerAt(board.grid.at(0, 0)!), unanswered);
+      expect(board.answerAt(board.grid.at(0, 6)!), unavailable);
       container.read(provider.notifier).paint({
-        read(container).board.grid.at(1, 0)!: available,
+        board.grid.at(1, 0)!: available,
       });
       async.elapse(wait);
 
       final body = meetings.puts.single.$2;
       expect(kindOf(body, TimeSlotKind.unavailable), [(seoul(9), seoul(10))]);
       expect(kindOf(body, TimeSlotKind.available), [
-        (seoul(6), seoul(9)),
-        (seoul(10), seoul(18)),
         (DateTime.utc(2027, 3, 1, 21), DateTime.utc(2027, 3, 1, 21, 30)),
       ]);
-      container.dispose();
-    });
-  });
-
-  test('방식이 날짜별로 바뀐 모임은 새 묶음(모임 전체)으로 읽고 저장할 때 모든 날을 덮는다', () {
-    fakeAsync((async) {
-      meetings.meeting = makeMeeting(
-        endDate: DateTime.utc(2027, 3, 3),
-        mode: MeetingMode.daily,
-        startTime: '00:00:00',
-        endTime: '00:00:00',
-      );
-      DateTime day(int d) => DateTime.utc(2027, 3, d, -9);
-      meetings.availability = [
-        availabilityOf(
-          'participant-user-1',
-          userId: 'user-1',
-          slots: [(day(2), day(3))],
-          unavailable: [(day(1), day(2))],
-        ),
-      ];
-      final (container, _) = open(async);
-      final board = read(container).board;
-      container.read(provider.notifier).paint({
-        board.grid.cells[1]: unavailable,
-      });
-      async.elapse(wait);
-
-      final body = meetings.puts.single.$2;
-      expect(kindOf(body, TimeSlotKind.unavailable), [(day(1), day(3))]);
-      expect(kindOf(body, TimeSlotKind.available), [(day(3), day(4))]);
       container.dispose();
     });
   });

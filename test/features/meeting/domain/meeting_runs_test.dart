@@ -364,4 +364,88 @@ void main() {
       );
     });
   });
+
+  group('불가능한 사람', () {
+    test('되는 사람이 같아도 안 된다고 한 사람이 바뀌면 따로 묶고 그 사람들을 담는다', () {
+      final runs = findMeetingRuns(
+        hourly(),
+        peopleBy({
+          for (var row = 0; row < 4; row++) (0, row): {'a', 'b'},
+        }),
+        unavailableAt: (cell) => cell.row < 2 ? {'c'} : const {},
+      );
+
+      expect(
+        [for (final run in runs) placesOf(run)],
+        [
+          [(0, 0), (0, 1)],
+          [(0, 2), (0, 3)],
+        ],
+      );
+      expect(
+        [for (final run in runs) run.unavailable],
+        [
+          {'c'},
+          <String>{},
+        ],
+      );
+    });
+
+    test('안 된다고 한 사람을 주지 않으면 아무도 없다', () {
+      final runs = findMeetingRuns(
+        hourly(),
+        peopleBy({
+          (0, 0): {'a', 'b'},
+        }),
+      );
+      expect(runs.single.unavailable, isEmpty);
+    });
+
+    // 3월 1~5일, 칸은 30분
+    // X(1일) 4명×1시간 불가능 2 · Y(2일) 2명×2시간 불가능 0 · P(3일) 3명×2시간 불가능 1
+    // R(4일) 3명×1시간 불가능 2 · Q(5일) 3명×1시간 불가능 0
+    late List<MeetingRun> runs;
+    setUp(() {
+      const abc = {'a', 'b', 'c'};
+      final people = <(int, int), Set<String>>{
+        for (var row = 0; row < 2; row++) (0, row): {...abc, 'd'},
+        for (var row = 0; row < 4; row++) (1, row): {'a', 'b'},
+        for (var row = 0; row < 4; row++) (2, row): abc,
+        for (var row = 0; row < 2; row++) (3, row): abc,
+        for (var row = 0; row < 2; row++) (4, row): abc,
+      };
+      final unavailable = <(int, int), Set<String>>{
+        for (var row = 0; row < 2; row++) (0, row): {'e', 'f'},
+        for (var row = 0; row < 4; row++) (2, row): {'d'},
+        for (var row = 0; row < 2; row++) (3, row): {'d', 'e'},
+      };
+      runs = findMeetingRuns(
+        hourly(),
+        peopleBy(people),
+        unavailableAt: peopleBy(unavailable),
+      );
+    });
+
+    List<String> sorted(MeetingRunOrder order) => sortMeetingRuns(
+      runs,
+      order,
+      mode: MeetingMode.hourly,
+    ).map((run) => 'XYPRQ'[run.first.column]).toList();
+
+    test('모모밋 추천은 점수가 같으면 불가능이 적은 쪽이 인원보다 먼저다', () {
+      expect(sorted(MeetingRunOrder.recommended), ['P', 'Y', 'X', 'Q', 'R']);
+    });
+
+    test('인원 많은 순은 인원이 같으면 불가능이 적은 쪽이 길이보다 먼저다', () {
+      expect(sorted(MeetingRunOrder.people), ['X', 'Q', 'P', 'R', 'Y']);
+    });
+
+    test('긴 순은 길이와 인원이 같으면 불가능이 적은 쪽이 날짜보다 먼저다', () {
+      expect(sorted(MeetingRunOrder.length), ['P', 'Y', 'X', 'Q', 'R']);
+    });
+
+    test('날짜 순은 불가능과 상관없이 화면 순서다', () {
+      expect(sorted(MeetingRunOrder.date), ['X', 'Y', 'P', 'R', 'Q']);
+    });
+  });
 }

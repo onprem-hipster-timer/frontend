@@ -11,8 +11,6 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_availabilit
 import 'package:momeet/features/meeting/presentation/widgets/meeting_brush_zone.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_help_icon.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_reset_confirm.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_save_indicator.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_timezone_label.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -57,35 +55,6 @@ class _MeetingAvailabilitySectionState
 
   var _brush = MeetingAnswer.available;
 
-  /// 시간별 날짜 열마다 떤 횟수, 붓 줄을 떤 횟수
-  final _dayShakes = <int, int>{};
-  var _brushShakes = 0;
-
-  /// 막힌 붓질 알림이 떠 있는지. 떠 있는 동안 또 막히면 떨기만 한다
-  var _blockedOpen = false;
-
-  /// [question]으로 한 번 묻고, 초기화하면 [cells]의 내 답을 지운다(되돌리기 알림 없이. 묻는 것이 그 안전판이다)
-  Future<void> _confirmReset(
-    Iterable<MeetingCell> cells,
-    String question,
-  ) async {
-    final wide = !MeetingLayout.narrow(MediaQuery.sizeOf(context).width);
-    if (!await askResetMeetingAnswers(
-          context,
-          question: keepWords(question),
-          wide: wide,
-        ) ||
-        !mounted) {
-      return;
-    }
-    final MeetingAvailabilitySection(:shading, :onPaint) = widget;
-    onPaint?.call({
-      for (final cell in cells)
-        if (shading.answerAt(cell) != MeetingAnswer.unanswered)
-          cell: MeetingAnswer.unanswered,
-    });
-  }
-
   /// 시간별 날짜 머리로 답한 날([day])을 지운다. 되돌리기 알림을 띄운다
   void _resetDay(List<MeetingCell> day) {
     final onPaint = widget.onPaint;
@@ -97,37 +66,6 @@ class _MeetingAvailabilitySectionState
       onPaint: onPaint,
       done: meetingDayResetDone(day.first.day),
     );
-  }
-
-  /// 다른 방식으로 표시한 묶음에 칠하려 했다: 그 자리를 떨고, 까닭과 초기화 단추를 알린다
-  void _blocked(List<List<MeetingCell>> groups) {
-    final mode = widget.shading.grid.mode;
-    setState(() {
-      if (mode == MeetingMode.hourly) {
-        _dayShakes.update(
-          groups.first.first.column,
-          (n) => n + 1,
-          ifAbsent: () => 1,
-        );
-      } else {
-        _brushShakes++;
-      }
-    });
-    if (_blockedOpen) return;
-    final text = meetingBlockedText(_brush, mode, [
-      for (final group in groups) group.first.day,
-    ]);
-    _blockedOpen = true;
-    ScaffoldMessenger.of(context)
-        .showAppSnackBar(
-          keepWords(text.message),
-          actionLabel: text.action,
-          onAction: () => _confirmReset([
-            for (final group in groups) ...group,
-          ], text.question),
-        )
-        .closed
-        .whenComplete(() => _blockedOpen = false);
   }
 
   @override
@@ -158,26 +96,14 @@ class _MeetingAvailabilitySectionState
           MeetingBrushZone(
             brush: _brush,
             mode: shading.grid.mode,
-            shakes: _brushShakes,
             onBrushChanged: (brush) => setState(() => _brush = brush),
-            onClearAll:
-                shading.grid.cells.any(
-                  (cell) => shading.answerAt(cell) != MeetingAnswer.unanswered,
-                )
-                ? () => _confirmReset(
-                    shading.grid.cells,
-                    meetingResetQuestion(shading.grid.mode, const []),
-                  )
-                : null,
           ),
         const SizedBox(height: _zoneGap + 4),
         MeetingAvailabilityGrid(
           shading: shading,
           brush: _brush,
           onPaint: onPaint,
-          onBlocked: _blocked,
           onResetDay: _resetDay,
-          dayShakes: _dayShakes,
           highlight: widget.highlight,
           onLocked: onLocked,
         ),
