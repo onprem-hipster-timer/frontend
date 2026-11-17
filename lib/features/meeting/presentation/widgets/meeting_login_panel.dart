@@ -51,7 +51,7 @@ class MeetingLoginPanel extends StatelessWidget {
   }
 }
 
-/// 로그인할 까닭과 '로그인'·'Guest' 고르기. 게스트를 받으면 게스트는 이름과 비밀번호만 있으면 된다고 적는다
+/// 로그인할 까닭과 '로그인'·'Guest' 고르기. 게스트를 받으면 게스트는 이름과 비밀번호만 있으면 되지만 로그인만큼 안전하지는 않다고 적는다
 class MeetingLoginChoice extends StatelessWidget {
   const MeetingLoginChoice({super.key, required this.onLogin, this.onGuest});
 
@@ -97,7 +97,10 @@ class MeetingLoginChoice extends StatelessWidget {
         ),
         if (onGuest != null) ...[
           const SizedBox(height: 8),
-          Text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요', style: note),
+          Text(
+            '게스트는 가입 없이 이름과 비밀번호만 있으면 돼요, 하지만 로그인만큼 강력한 보안을 보장하지 못해요!',
+            style: note,
+          ),
         ],
       ],
     );

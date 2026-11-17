@@ -599,7 +599,12 @@ void main() {
         inSheet(find.widgetWithText(FilledButton, 'Guest')),
         findsOneWidget,
       );
-      expect(inSheet(find.text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요')), findsOneWidget);
+      expect(
+        inSheet(
+          find.text('게스트는 가입 없이 이름과 비밀번호만 있으면 돼요, 하지만 로그인만큼 강력한 보안을 보장하지 못해요!'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
