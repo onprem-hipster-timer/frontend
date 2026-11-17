@@ -10,9 +10,16 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 수정하기를 누를 수 없을 때의 안내
 const meetingEditOwnerOnly = '모임을 만든 사람만 수정할 수 있어요';
 
+/// 모임을 보던 사람이 자기 모임을 만들러 가는 버튼
+const meetingCreateOwn = '나도 모임 만들기';
+
+/// 주인이 모임을 하나 더 만들러 가는 버튼
+const meetingCreateAnother = '새 모임 만들기';
+
 /// '링크': '공유하기'([shareMeetingLink])와 '수정하기'(주인만 모임 설정을 연다. 다른 사람에게는 막혀 있고 만든
 /// 사람만 고칠 수 있다고 알린다)를 같은 폭으로 나란히 둔다(큰 글자로 넘치면 위아래로 쌓는다). 비공개 모임([level])이면
-/// 그 아래에 누가 열 수 있는지 한 줄로 알린다
+/// 그 아래에 누가 열 수 있는지 한 줄로 알린다. 제목 줄 끝의 '나도 모임 만들기'(주인에게는 '새 모임 만들기')는
+/// 모임 만들기 화면을 연다
 class MeetingLinkPanel extends ConsumerWidget {
   const MeetingLinkPanel({
     super.key,
@@ -38,6 +45,11 @@ class MeetingLinkPanel extends ConsumerWidget {
     final level = this.level;
     return MeetingPanel(
       title: '링크',
+      trailing: TextButton.icon(
+        onPressed: () => openMeetingCreate(context),
+        icon: const Icon(Icons.add, size: 18),
+        label: Text(owner ? meetingCreateAnother : meetingCreateOwn),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

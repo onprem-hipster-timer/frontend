@@ -437,7 +437,7 @@ void main() {
       expect(location(router), '/meetings/meeting-new-1/created');
     });
 
-    testWidgets('게스트는 모임 만들기 화면 대신 게스트 세션 안내를 본다', (tester) async {
+    testWidgets('게스트는 모임 만들기 화면에 머문다', (tester) async {
       harness = await KratosTestHarness.create();
       harness.stubGuestSession();
       await harness.prefs.setString(guestMeetingKey, 'guest-uid meeting-1');
@@ -446,9 +446,9 @@ void main() {
       router.go(AppRoute.meetings.path);
       await pumpAWhile(tester);
 
-      expect(location(router), startsWith(AppRoute.guestSession.path));
-      expect(find.byType(MeetingCreatePage), findsNothing);
-      expect(find.text('로그인이 필요합니다'), findsOneWidget);
+      expect(location(router), AppRoute.meetings.path);
+      expect(find.byType(MeetingCreatePage), findsOneWidget);
+      expect(find.text('로그인이 필요합니다'), findsNothing);
     });
   });
 }

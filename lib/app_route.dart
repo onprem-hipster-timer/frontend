@@ -64,7 +64,8 @@ enum AppRoute {
   timer(path: '/timer'),
   timerDetail(path: '/timer/detail'),
   // 모임 만들기 화면과 만든 뒤 화면 (탭 셸 밖). 만들기 화면은 로그인하지 않아도 머물고, 만들 때 로그인을 묻는다
-  meetings(path: '/meetings', allowsSignedOut: true),
+  // 게스트도 머문다(만들 때 회원으로 로그인하라고 묻는다)
+  meetings(path: '/meetings', allowsSignedOut: true, allowsGuest: true),
   meetingCreated(path: '/meetings/:meetingId/created'),
   // 모임 설정 화면 (탭 셸 밖). 주인만 고치고, 다른 사람에게는 찾을 수 없는 모임이다
   meetingEdit(path: '/meetings/:meetingId/edit'),
