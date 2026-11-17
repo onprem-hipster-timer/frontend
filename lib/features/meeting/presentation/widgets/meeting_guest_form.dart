@@ -18,7 +18,7 @@ import 'package:momeet/shared/providers/api_providers.dart';
 typedef _Found = ({String name, String? handle, String consentVersion});
 
 /// 게스트로 들어가는 폼: 이름 → 비밀번호 → (처음 쓰는 이름이면) 약관 동의 → 들어가기. 처음 쓰는 이름의
-/// 비밀번호는 [guestPasswordMinChars]글자 이상이어야 하고, 이미 있는 이름의 로그인에는 길이를 보지 않는다.
+/// 비밀번호는 공백뿐이 아니고 [guestPasswordMinChars]글자 이상이어야 하며, 이미 있는 이름의 로그인에는 이를 보지 않는다.
 ///
 /// 이름 칸을 벗어나면(글자마다가 아니라) 그 이름을 찾는다. 이미 참여한 이름이면 로그인이 되고 약관은 묻지
 /// 않는다. 처음 쓰는 이름이면 비밀번호를 바꾸거나 찾을 수 없다고 알리고 약관 동의를 받는다. 들어가면 인증
@@ -166,9 +166,9 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
 
   Future<void> _refused(Object error) async {
     final refusal = GuestRefusal.of(error);
-    if (refusal == GuestRefusal.wrongPassword ||
-        refusal == GuestRefusal.passwordTooShort) {
-      return setState(() => _passwordError = guestRefusalText(error));
+    if (refusal.onPassword) {
+      final text = guestPasswordRefusalText(_password.text, error);
+      return setState(() => _passwordError = text);
     }
     if (refusal != GuestRefusal.nameTaken &&
         refusal != GuestRefusal.consentChanged) {

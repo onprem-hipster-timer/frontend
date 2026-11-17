@@ -468,6 +468,43 @@ void main() {
       expect(find.text('닉네임에 쓸 수 없는 글자가 있습니다'), findsOneWidget);
       expect(find.text(tooShort), findsNothing);
     });
+
+    group('공백뿐이면', () {
+      const blank = '비밀번호는 공백만으로 만들 수 없어요';
+
+      for (final (label, password) in [
+        ('스페이스 네 칸', '    '),
+        ('세 칸이라 짧기도 하다', '   '),
+        ('전각 공백·탭·줄바꿈', '　\t\n　'),
+      ]) {
+        testWidgets('($label) 공백 알림을 비밀번호 칸에 보이고 아무것도 보내지 않는다', (tester) async {
+          await tryCreate(tester, password);
+
+          expect(find.text(blank), findsOneWidget);
+          expect(find.text(tooShort), findsNothing);
+          expect(guests.creates, isEmpty);
+          expect(turnstiles.issued, ['token-1'], reason: '이름 찾기에 쓴 토큰뿐이다');
+        });
+      }
+
+      testWidgets('앞뒤에만 공백이 있으면 그대로 만든다', (tester) async {
+        await tryCreate(tester, ' a1 ');
+
+        expect(find.text(blank), findsNothing);
+        expect(guests.creates.single.$1.password, ' a1 ');
+      });
+
+      testWidgets('글자를 넣어 다시 내면 알림이 사라지고 만든다', (tester) async {
+        await tryCreate(tester, '    ');
+
+        await tester.enterText(passwordField(), 'ab12');
+        await tester.pumpAndSettle();
+        expect(find.text(blank), findsNothing);
+        await press(tester, '참여하기');
+
+        expect(guests.creates.single.$1.password, 'ab12');
+      });
+    });
   });
 
   group('이미 참여한 이름', () {

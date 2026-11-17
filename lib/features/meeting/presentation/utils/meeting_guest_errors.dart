@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart' show DioException, DioExceptionType;
+import 'package:material_ui/material_ui.dart' show StringCharacters;
 import 'package:momeet/core/network/turnstile_request.dart';
+import 'package:momeet/core/text/nfc.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -36,15 +38,25 @@ enum GuestRefusal {
   /// 새 게스트의 비밀번호가 [guestPasswordMinChars]글자보다 짧다
   passwordTooShort,
 
+  /// 새 게스트의 비밀번호가 공백뿐이다
+  passwordBlank,
+
   /// 들어온 지 오래된 세션이라 이름을 바꾸려면 다시 로그인해야 한다 (Kratos session_refresh_required)
   reauthRequired,
 
   network,
   unknown;
 
+  /// 비밀번호 칸에 알릴 거절인지
+  bool get onPassword =>
+      this == wrongPassword ||
+      this == passwordTooShort ||
+      this == passwordBlank;
+
   /// [error]가 어느 거절인지 가린다. `/v1/guests/*`(DioException), `/auth`(KratosException), 확인 위젯
   static GuestRefusal of(Object error) => switch (error) {
     GuestPasswordTooShort() => passwordTooShort,
+    GuestPasswordBlank() => passwordBlank,
     TurnstileException(status: TurnstileStatus.failed) => verificationFailed,
     TurnstileException() => verificationUnavailable,
     KratosException() => _ofKratos(error),
@@ -105,8 +117,36 @@ class GuestPasswordTooShort implements Exception {
   const GuestPasswordTooShort();
 }
 
+/// 새 게스트 비밀번호가 공백뿐이라 보내지 않았다
+class GuestPasswordBlank implements Exception {
+  const GuestPasswordBlank();
+}
+
 /// 새 게스트 비밀번호가 짧을 때 비밀번호 칸에 보이는 말
 const guestPasswordTooShortText = '비밀번호는 $guestPasswordMinChars글자 이상이어야 해요';
+
+/// 새 게스트 비밀번호가 공백뿐일 때 비밀번호 칸에 보이는 말
+const guestPasswordBlankText = '비밀번호는 공백만으로 만들 수 없어요';
+
+/// 새 게스트 비밀번호 [password]를 보낼 수 없으면 그 까닭([GuestPasswordBlank]·[GuestPasswordTooShort]),
+/// 보낼 수 있으면 null. 공백뿐이면 길이보다 먼저 알린다
+Exception? newGuestPasswordProblem(String password) {
+  final text = nfc(password);
+  if (text.isNotEmpty && text.trim().isEmpty) return const GuestPasswordBlank();
+  if (text.characters.length < guestPasswordMinChars) {
+    return const GuestPasswordTooShort();
+  }
+  return null;
+}
+
+/// 비밀번호 [password]로 거절된 [error]를 비밀번호 칸의 말로 바꾼다. 서버 검사(422)는 칸만 알려 주므로
+/// 보낸 비밀번호로 공백인지 짧은지 가리고, 가릴 수 없으면 길이 알림이다
+String guestPasswordRefusalText(String password, Object error) =>
+    switch (GuestRefusal.of(error)) {
+      GuestRefusal.passwordTooShort || GuestRefusal.passwordBlank =>
+        guestRefusalText(newGuestPasswordProblem(password) ?? error),
+      _ => guestRefusalText(error),
+    };
 
 /// 검사 오류(422) 본문 [data]의 `detail`에 [field] 칸의 거절이 있는지
 bool _rejectsField(Object? data, String field) {
@@ -136,6 +176,7 @@ String guestRefusalText(Object error) => switch (GuestRefusal.of(error)) {
   },
   GuestRefusal.invalidName => '닉네임에 쓸 수 없는 글자가 있습니다',
   GuestRefusal.passwordTooShort => guestPasswordTooShortText,
+  GuestRefusal.passwordBlank => guestPasswordBlankText,
   GuestRefusal.reauthRequired => '들어온 지 오래되어 비밀번호를 한 번 더 확인합니다',
   GuestRefusal.network => '네트워크 연결을 확인해 주세요',
   GuestRefusal.unknown => '처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요',
