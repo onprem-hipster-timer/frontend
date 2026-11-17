@@ -93,10 +93,12 @@ class _WideLayoutState extends State<_WideLayout> {
 
   @override
   Widget build(BuildContext context) {
+    // 머리띠 뒤로 이어진 본문이라 위 여백에 머리띠 높이를 더한다
+    final top = MediaQuery.paddingOf(context).top;
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         controller: _scroll,
-        padding: const EdgeInsets.all(_padding),
+        padding: const EdgeInsets.all(_padding).add(EdgeInsets.only(top: top)),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1240),
@@ -107,7 +109,10 @@ class _WideLayoutState extends State<_WideLayout> {
                 const SizedBox(width: _padding),
                 SizedBox(
                   width: _sideWidth,
-                  height: math.max(0, constraints.maxHeight - _padding * 2),
+                  height: math.max(
+                    0,
+                    constraints.maxHeight - top - _padding * 2,
+                  ),
                   child: AnimatedBuilder(
                     animation: _scroll,
                     builder: (context, child) => Transform.translate(
@@ -192,7 +197,12 @@ class _NarrowLayout extends StatelessWidget {
     final header = this.header;
     final bottom = this.bottom;
     final content = SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, header == null ? 12 : 4, 16, 32),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        (header == null ? 12 : 4) + MediaQuery.paddingOf(context).top,
+        16,
+        32,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

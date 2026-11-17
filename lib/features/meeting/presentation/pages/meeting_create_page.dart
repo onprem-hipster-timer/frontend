@@ -13,7 +13,7 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.da
 import 'package:momeet/features/meeting/presentation/widgets/meeting_calendar.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_login_prompt.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
@@ -153,11 +153,8 @@ class _MeetingCreatePageState extends ConsumerState<MeetingCreatePage> {
     final draft = _draft;
     final today = calendarDay(DateTime.now());
     final name = ref.watch(currentUserProvider.select((user) => user?.name));
-    return Scaffold(
-      appBar: AppBar(
-        leading: context.canPop() ? null : const MeetingHomeButton(),
-        title: const Text('새 ${Terms.meeting}'),
-      ),
+    return MeetingGlassScaffold(
+      title: const Text('새 ${Terms.meeting}'),
       body: _FormLayout(
         dates: _DatesSection(
           calendar: MeetingCalendar(
@@ -220,7 +217,9 @@ class _FormLayout extends StatelessWidget {
           title,
         ];
         return SingleChildScrollView(
-          padding: EdgeInsets.all(wide ? 32 : 16),
+          padding: EdgeInsets.all(
+            wide ? 32 : 16,
+          ).add(EdgeInsets.only(top: MediaQuery.paddingOf(context).top)),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 880),

@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_leave.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_member_body.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_visitor_body.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -67,11 +66,8 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
               meetingId,
             ).select((state) => state.value?.meeting.title),
           );
-    return Scaffold(
-      appBar: AppBar(
-        leading: context.canPop() ? null : const MeetingHomeButton(),
-        title: Text(title ?? Terms.meeting),
-      ),
+    return MeetingGlassScaffold(
+      title: Text(title ?? Terms.meeting),
       body: signedIn
           ? MeetingMemberBody(meetingId: meetingId, guest: guest)
           : MeetingVisitorBody(meetingId: meetingId),

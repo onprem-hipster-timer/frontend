@@ -7,7 +7,7 @@ import 'package:momeet/app_route.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_row.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_qr_code.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -34,59 +34,61 @@ class _MeetingCreatedPageState extends ConsumerState<MeetingCreatedPage> {
     final meetingId = widget.meetingId;
     final meeting = ref.watch(meetingProvider(meetingId)).value;
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        leading: context.canPop() ? null : const MeetingHomeButton(),
-        title: const Text('새 ${Terms.meeting}'),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '${Terms.meeting} 생성이 완료되었어요 :)',
-                  style: theme.textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                _Illustration(
-                  qr: _qr,
-                  calendar: MeetingDateBadge(day: meeting?.startDate),
-                  link: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      MeetingQrCode(
-                        data: '${meetingLink(context, ref, meetingId)}',
-                      ),
-                      const SizedBox(height: 12),
-                      MeetingLinkRow(meetingId: meetingId),
-                    ],
+    return MeetingGlassScaffold(
+      title: const Text('새 ${Terms.meeting}'),
+      // 본문 안의 MediaQuery가 머리띠 높이를 담는다
+      body: Builder(
+        builder: (context) => Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(
+              24,
+            ).add(EdgeInsets.only(top: MediaQuery.paddingOf(context).top)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '${Terms.meeting} 생성이 완료되었어요 :)',
+                    style: theme.textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                const SizedBox(height: 32),
-                FilledButton.tonal(
-                  onPressed: () => copyMeetingLink(context, ref, meetingId),
-                  child: const Text('링크 공유'),
-                ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => context.goNamed(
-                    AppRoute.meeting.name,
-                    pathParameters: {'meetingId': meetingId},
+                  const SizedBox(height: 24),
+                  _Illustration(
+                    qr: _qr,
+                    calendar: MeetingDateBadge(day: meeting?.startDate),
+                    link: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MeetingQrCode(
+                          data: '${meetingLink(context, ref, meetingId)}',
+                        ),
+                        const SizedBox(height: 12),
+                        MeetingLinkRow(meetingId: meetingId),
+                      ],
+                    ),
                   ),
-                  child: const Text('나의 일정 입력'),
-                ),
-                const SizedBox(height: 16),
-                _QrToggle(
-                  showing: _qr,
-                  onPressed: () => setState(() => _qr = !_qr),
-                ),
-              ],
+                  const SizedBox(height: 32),
+                  FilledButton.tonal(
+                    onPressed: () => copyMeetingLink(context, ref, meetingId),
+                    child: const Text('링크 공유'),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => context.goNamed(
+                      AppRoute.meeting.name,
+                      pathParameters: {'meetingId': meetingId},
+                    ),
+                    child: const Text('나의 일정 입력'),
+                  ),
+                  const SizedBox(height: 16),
+                  _QrToggle(
+                    showing: _qr,
+                    onPressed: () => setState(() => _qr = !_qr),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
