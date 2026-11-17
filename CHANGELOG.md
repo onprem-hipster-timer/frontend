@@ -270,6 +270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `index.html`의 인라인 스크립트와 `onclick`을 `web/landing/*.js`, `web/flutter_bootstrap.js`로 옮긴다
 - 랜딩 위쪽 줄의 '로그인' 옆에 '모임 만들기'(모임 소개 `/meet`)를, 기능 소개 아래 모임 소개에 '모임 만들기'(`/#/meetings`)를 둔다. `/meetings` 주소로 열어도 해시 라우트로 바꿔 모임 만들기 화면을 연다(`web/landing/kratos-paths.js`)
 - 모임 소개 정적 페이지 `/meet`(`web/meet.html`, `web/landing/meet.css`, `vercel.json`)를 둔다. Flutter를 불러오지 않고 랜딩의 스타일·사용성 분석 동의 배너를 그대로 쓴다. 링크 하나로 시간 맞추기, 만들기 → 링크·QR로 보내기 → 추천 시간 확인, 시간별·날짜별·요일별, 게스트 참여(비밀번호를 바꾸거나 찾을 수 없어 로그인이 더 안전하다는 안내)를 담고, '모임 만들기'는 `/meetings`, '모모밋 둘러보기'는 랜딩으로 간다. 마지막 안내에 마스코트 그림(`web/landing/img/momo-mascot-320.webp`·`-640.webp`)을 둔다
+- 해시 라우트로 쓴 모임 소개(`/#/meet`, `/#/meet/`, 쿼리 포함)는 앱이 뜨기 전에, 그리고 앱이 떠 있는 동안 주소의 해시가 그렇게 바뀌면 앱이 받기 전에 정적 페이지 `/meet`(쿼리 그대로)로 보낸다(`web/landing/kratos-paths.js`). `/#/meetings`로 시작하는 주소는 그대로다
 - 랜딩 위쪽 줄의 글자 로고(mo.momeet) 앞에 서비스 배지(28px, 화면 배율에 따라 `web/landing/img/momo-badge-64.webp`·`momo-badge-128.webp`)를 둔다. 폭 400 이하에서는 링크가 두 줄이 되지 않게 글자 로고만 둔다
 
 #### Tests
