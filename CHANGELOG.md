@@ -219,6 +219,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TURNSTILE_SITE_KEY` 환경변수 (배포 시 GitHub vars에서 `.env`로 전달). 로컬 예시 `assets/.env.example`은 Cloudflare 테스트 사이트 키(늘 통과)다
 
 #### Web
+- 사용성 분석(Microsoft Clarity) 동의 문구를 줄인다. 첫 방문 배너는 '더 편한 화면을 만드는 데 도움을 주시겠어요?'와 '입력한 내용은 가려지고, 거부해도 그대로 쓸 수 있어요. 허용하면 화면 이용 기록이 Microsoft Clarity(미국)로 전송되어 최대 9개월 보관됩니다.', 약관 동의의 선택 항목은 '[선택] 화면 개선을 위한 사용성 분석 동의'와 같은 사실을 담은 설명, 마이페이지 '사용성 분석 허용'의 설명은 '화면 개선을 위해 화면 이용 기록을 Microsoft Clarity(미국)로 보냅니다'다. 배너 글은 낱말 단위로 줄을 바꾼다
 - 웹 응답 헤더(`vercel.json`): `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`
 - Cloudflare Turnstile 위젯: 필요할 때 Cloudflare 스크립트(`render=explicit`)를 한 번 불러와 플랫폼 뷰에 그린다. 칸이 300 이상이면 flexible(칸 폭 × 65), 좁으면 compact(150 × 140)이고, 색은 앱 밝기를 따른다. `action`은 `guest`, `retry`·`refresh-expired`·`refresh-timeout`은 `auto`, `appearance`는 `always`다
   - 시간 초과·다시 시도하는 오류·토큰 만료 뒤에는 위젯이 스스로 다시 확인하는 동안 확인 중으로 두고 기다리는 요청을 끝내지 않는다. 다시 해도 안 되는 오류(Cloudflare 오류 코드 표의 Retry: No)와 지원하지 않는 브라우저는 '확인 상자를 불러오지 못했습니다'다. 오류 콜백은 처리했다고 알린다

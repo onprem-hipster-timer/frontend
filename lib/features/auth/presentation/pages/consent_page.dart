@@ -159,11 +159,10 @@ class _ConsentFormState extends ConsumerState<_ConsentForm> {
                 onChanged: (value) => setState(() => _privacy = value),
               ),
               ConsentCheckTile(
-                label: '[선택] 사용성 분석(Microsoft Clarity) 동의',
+                label: '[선택] 화면 개선을 위한 사용성 분석 동의',
                 description:
-                    '방문·클릭·스크롤·화면 재현 정보가 Microsoft(미국)로 전송되어 '
-                    '화면 재현 정보는 30일, 클릭 등 집계 정보는 9개월 보관됩니다. '
-                    '거부해도 이용에 제한이 없습니다.',
+                    '화면 이용 기록이 Microsoft Clarity(미국)로 전송되어 최대 9개월 보관됩니다. '
+                    '입력한 내용은 가려지고, 거부해도 이용에 제한이 없습니다.',
                 value: _analytics,
                 onChanged: (value) => setState(() => _analytics = value),
               ),

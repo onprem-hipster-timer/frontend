@@ -63,6 +63,15 @@ void main() {
       });
     }
 
+    testWidgets('무엇을 누구에게 보내는지 한 줄로 적는다', (tester) async {
+      await pumpSettings(tester, InMemoryAnalyticsConsentBridge());
+
+      expect(
+        find.text('화면 개선을 위해 화면 이용 기록을 Microsoft Clarity(미국)로 보냅니다'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('켜면 허용, 다시 끄면 거부로 저장한다', (tester) async {
       final bridge = InMemoryAnalyticsConsentBridge();
       await pumpSettings(tester, bridge);

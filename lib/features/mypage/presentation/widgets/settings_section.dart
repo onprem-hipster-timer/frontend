@@ -161,7 +161,7 @@ class _AnalyticsTile extends ConsumerWidget {
         color: theme.colorScheme.onSurface,
       ),
       title: const Text('사용성 분석 허용'),
-      subtitle: const Text('방문·클릭·스크롤·화면 재현 정보를 Microsoft Clarity(미국)로 보냅니다'),
+      subtitle: const Text('화면 개선을 위해 화면 이용 기록을 Microsoft Clarity(미국)로 보냅니다'),
       value: consent == AnalyticsConsent.granted,
       onChanged: (value) {
         ref

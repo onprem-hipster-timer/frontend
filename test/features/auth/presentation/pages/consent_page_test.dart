@@ -20,7 +20,7 @@ import '../../../../helpers/pump_app.dart';
 const _age = '[필수] 만 14세 이상입니다';
 const _terms = '[필수] 이용약관 동의';
 const _privacy = '[필수] 개인정보 수집·이용 동의';
-const _analytics = '[선택] 사용성 분석(Microsoft Clarity) 동의';
+const _analytics = '[선택] 화면 개선을 위한 사용성 분석 동의';
 const _all = '전체 동의';
 const _submit = '동의하고 시작하기';
 
@@ -76,6 +76,22 @@ void main() {
       await tapText(tester, label);
     }
   }
+
+  testWidgets('선택 항목은 무엇을 누구에게 얼마나 보내는지와 입력이 가려지고 거부해도 된다는 것을 짧게 적는다', (
+    tester,
+  ) async {
+    await pumpConsent(tester);
+
+    expect(
+      find.text(
+        '화면 이용 기록이 Microsoft Clarity(미국)로 전송되어 최대 9개월 보관됩니다. '
+        '입력한 내용은 가려지고, 거부해도 이용에 제한이 없습니다.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('클릭'), findsNothing);
+    expect(find.textContaining('재현'), findsNothing);
+  });
 
   group('필수 항목', () {
     testWidgets('필수 세 항목을 모두 체크해야 시작할 수 있다', (tester) async {

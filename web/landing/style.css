@@ -705,6 +705,12 @@ body.landing-active #flutter-host {
   font-weight: 600;
 }
 
+.consent-banner-title,
+.consent-banner-text {
+  /* 한국어는 낱말 단위로 줄을 바꾼다 */
+  word-break: keep-all;
+}
+
 .consent-banner-text {
   margin: 0;
   color: var(--ink-light);
