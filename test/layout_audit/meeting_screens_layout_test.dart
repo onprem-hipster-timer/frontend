@@ -853,6 +853,30 @@ void main() {
     ),
   );
 
+  // 몇 주에 걸친 5일 시간별 모임(달이 바뀐다)
+  testLayoutAudit(
+    'meeting_page_hourly_spread_days',
+    subject: '모임 제목',
+    texts: const [StressTexts.koreanLong],
+    build: (text) => routed(
+      const MeetingPage(meetingId: 'meeting-1'),
+      meetingOverrides(
+        meetings: FakeMeetingsClient(
+          meeting: makeMeeting(
+            title: text.value,
+            ownerId: 'user-1',
+            startDate: DateTime.utc(2027, 3, 29),
+            endDate: DateTime.utc(2027, 4, 19),
+            excludedDates: [
+              for (var day = 30; day <= 50; day++)
+                if (!{34, 39, 44}.contains(day)) DateTime.utc(2027, 3, day),
+            ],
+          ),
+        )..availability = _fivePeople(text.value),
+      ),
+    ),
+  );
+
   testLayoutAudit(
     'meeting_page_owner_editing',
     subject: '참여자 이름',

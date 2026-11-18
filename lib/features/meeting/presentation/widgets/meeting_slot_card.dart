@@ -1,11 +1,13 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/meeting/presentation/utils/meeting_run_copy.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 카드에 보이는 참여자 한 명
 typedef MeetingSlotPerson = ({String name, bool owner, bool guest, bool self});
 
-/// 추천 시간 카드: 날짜, 시각(날 수), 되는 사람 수와 '내 달력에 일정 만들기'([onAddToCalendar]가 있을 때).
+/// 추천 시간 카드: 날짜, 시각(날 수), 되는 사람 수, '복사'([onCopy])와 '내 달력에 일정 만들기'([onAddToCalendar]가
+/// 있을 때). 카드의 글은 마우스로 끌거나 길게 눌러 골라 복사할 수 있다(누르면 펼치는 것은 그대로다).
 ///
 /// 이름은 고정하기 전에는 마우스를 올리면 카드 아래에 떠서 보이고([onHoverChanged]도 부른다), 카드를 누르면
 /// ([onTap]) 고정되어([pinned]) 카드 안에 남는다. 고정은 카드 밖(목록)이 한 번에 하나로 정한다. 그 시간이 안
@@ -17,6 +19,7 @@ class MeetingSlotCard extends StatefulWidget {
     required this.detail,
     required this.people,
     required this.onAddToCalendar,
+    required this.onCopy,
     required this.pinned,
     required this.onTap,
     this.onHoverChanged,
@@ -34,6 +37,7 @@ class MeetingSlotCard extends StatefulWidget {
   /// 그 시간의 칸 중 하나라도 안 된다고 한 사람의 이름
   final List<String> unavailable;
   final VoidCallback? onAddToCalendar;
+  final VoidCallback onCopy;
 
   @override
   State<MeetingSlotCard> createState() => _MeetingSlotCardState();
@@ -73,15 +77,18 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
               _hover.hide();
               widget.onHoverChanged?.call(false);
             },
-            child: _CardFace(
-              title: widget.title,
-              detail: widget.detail,
-              people: widget.people,
-              unavailable: widget.unavailable,
-              pinned: widget.pinned,
-              wide: constraints.maxWidth >= _wideFrom,
-              onTap: _toggle,
-              onAddToCalendar: widget.onAddToCalendar,
+            child: SelectionArea(
+              child: _CardFace(
+                title: widget.title,
+                detail: widget.detail,
+                people: widget.people,
+                unavailable: widget.unavailable,
+                pinned: widget.pinned,
+                wide: constraints.maxWidth >= _wideFrom,
+                onTap: _toggle,
+                onAddToCalendar: widget.onAddToCalendar,
+                onCopy: widget.onCopy,
+              ),
             ),
           ),
         ),
@@ -90,7 +97,7 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
   }
 }
 
-/// 카드 겉: 날짜·사람 수, 시각, 고정하면 이름, 펼침 표시·달력 버튼. 넓으면 버튼을 시각 줄에 둔다
+/// 카드 겉: 날짜·사람 수, 시각, 고정하면 이름, 펼침 표시·복사·달력 버튼. 넓으면 버튼을 시각 줄에 둔다
 class _CardFace extends StatelessWidget {
   const _CardFace({
     required this.title,
@@ -101,6 +108,7 @@ class _CardFace extends StatelessWidget {
     required this.wide,
     required this.onTap,
     required this.onAddToCalendar,
+    required this.onCopy,
   });
 
   final String title;
@@ -111,6 +119,7 @@ class _CardFace extends StatelessWidget {
   final bool wide;
   final VoidCallback onTap;
   final VoidCallback? onAddToCalendar;
+  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +129,7 @@ class _CardFace extends StatelessWidget {
       pinned: pinned,
       wide: wide,
       onAddToCalendar: onAddToCalendar,
+      onCopy: onCopy,
     );
     return Material(
       color: scheme.surface,
@@ -177,17 +187,19 @@ class _CardFace extends StatelessWidget {
   }
 }
 
-/// 펼침 표시와 '내 달력에 일정 만들기'. 좁으면 둘을 양 끝에 둔다. 달력 단추가 없으면 펼침 표시만 둔다
+/// 펼침 표시와 '복사'·'내 달력에 일정 만들기'(있을 때). 좁으면 펼침 표시와 단추들을 양 끝에 둔다
 class _Actions extends StatelessWidget {
   const _Actions({
     required this.pinned,
     required this.wide,
     required this.onAddToCalendar,
+    required this.onCopy,
   });
 
   final bool pinned;
   final bool wide;
   final VoidCallback? onAddToCalendar;
+  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -196,26 +208,31 @@ class _Actions extends StatelessWidget {
       mainAxisSize: wide ? MainAxisSize.min : MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Padding(
-          // 달력 단추가 없어도 카드 높이와 펼침 표시 자리가 같게 둔다
-          padding: EdgeInsets.symmetric(
-            vertical: onAddToCalendar == null ? 10 : 0,
-          ),
-          child: ExcludeSemantics(
-            child: Icon(
-              pinned ? Icons.expand_less : Icons.expand_more,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+        ExcludeSemantics(
+          child: Icon(
+            pinned ? Icons.expand_less : Icons.expand_more,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        if (onAddToCalendar != null)
-          IconButton(
-            tooltip: '내 달력에 일정 만들기',
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.edit_calendar_outlined),
-            onPressed: onAddToCalendar,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: '복사',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.content_copy_outlined),
+              onPressed: onCopy,
+            ),
+            if (onAddToCalendar != null)
+              IconButton(
+                tooltip: '내 달력에 일정 만들기',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.edit_calendar_outlined),
+                onPressed: onAddToCalendar,
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -302,7 +319,9 @@ class _Names extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 떠 있는 이름 상자는 화면 높이를 받으므로 내용 높이에 맞춘다
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Wrap(
@@ -323,7 +342,7 @@ class _Names extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              '불가능 ${unavailable.length}명 · ${unavailable.join(', ')}',
+              meetingUnavailableLine(unavailable),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

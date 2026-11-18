@@ -263,18 +263,20 @@ void main() {
       expect(highlight.pinned, isNull);
     });
 
-    testWidgets('칠하기 시작하면 고정을 푼다', (tester) async {
+    testWidgets('칸을 눌러 칠해도 고정은 그대로다', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpBoth(tester);
       await tester.tap(card(0));
       await tester.pumpAndSettle();
-      expect(highlight.pinned, isNotNull);
+      final pinned = highlight.pinned;
+      expect(pinned, isNotNull);
 
       await tester.ensureVisible(find.text('3.4'));
       await tester.tapAt(cellCenter(tester, '3월 4일 (목) 6:00 ~ 6:30'));
       await tester.pumpAndSettle();
 
-      expect(highlight.pinned, isNull);
+      expect(cellData('3월 4일 (목) 6:00 ~ 6:30').value, '가능');
+      expect(highlight.pinned, pinned);
       semantics.dispose();
     });
 

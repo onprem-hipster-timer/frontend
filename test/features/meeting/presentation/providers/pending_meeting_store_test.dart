@@ -195,10 +195,10 @@ void main() {
 
     test('시간별인데 시간별로 받을 수 없는 날짜면 날짜별로 바꾼다', () {
       final taken = takeStored({
-        'days': ['2027-03-12', '2027-03-20'],
+        'days': [for (var day = 12; day <= 17; day++) '2027-03-$day'],
       })!;
       expect(taken.flow.draft.mode, MeetingMode.daily);
-      expect(daysOf(taken), [12, 20]);
+      expect(daysOf(taken), [12, 13, 14, 15, 16, 17]);
     });
 
     test('요일별인데 이어진 7일이 아니면 첫날부터 7일로 맞춘다', () {
@@ -265,5 +265,43 @@ void main() {
       expect(store.take(today: today), isNull, reason: raw);
       expect(prefs.getString(PendingMeetingStore.key), isNull, reason: raw);
     }
+  });
+
+  test('요일별이면 요일별로 바꾸기 전의 날짜를 함께 두고 꺼내, 벗어나면 그 날짜로 돌아간다', () async {
+    final weekly = MeetingDraft(
+      mode: MeetingMode.daily,
+      dates: march(12, 14),
+    ).withMode(MeetingMode.weekly);
+    await store.save((
+      flow: MeetingFlow(draft: weekly, expanded: true),
+      title: '',
+    ));
+
+    final restored = store.take(today: today)!.flow.draft;
+
+    expect(restored.mode, MeetingMode.weekly);
+    expect(restored.dates.days, march(12, 18).days);
+    expect(restored.beforeWeekly?.days, march(12, 14).days);
+    expect(
+      restored.withMode(MeetingMode.hourly).dates.days,
+      march(12, 14).days,
+    );
+  });
+
+  test('기억한 날짜가 없는 요일별은 기억 없이 꺼내, 시간별은 앞의 5일로 줄인다', () async {
+    final weekly = MeetingDraft(mode: MeetingMode.weekly, dates: march(12, 18));
+    await store.save((
+      flow: MeetingFlow(draft: weekly, expanded: true),
+      title: '',
+    ));
+
+    final restored = store.take(today: today)!.flow.draft;
+
+    expect(restored.dates.days, march(12, 18).days);
+    expect(restored.beforeWeekly, isNull);
+    expect(
+      restored.withMode(MeetingMode.hourly).dates.days,
+      march(12, 16).days,
+    );
   });
 }

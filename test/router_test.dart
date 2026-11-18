@@ -1315,7 +1315,6 @@ void main() {
           '/meetings/meeting-2',
           '/meetings/meeting-1/created',
           '/meetings/meeting-1/edit',
-          AppRoute.meetings.path,
           AppRoute.todo.path,
           AppRoute.mypage.path,
           AppRoute.consent.path,
@@ -1353,13 +1352,13 @@ void main() {
         );
       });
 
+      test('게스트도 모임 만들기 화면에는 머문다', () {
+        expect(guest(AppRoute.meetings.path), isNull);
+      });
+
       test('들어온 모임을 모르면 모임 화면은 어느 모임이든 막지 않는다', () {
         expect(guest('/meetings/meeting-2', meetingId: null), isNull);
-        expect(
-          guest(AppRoute.meetings.path, meetingId: null),
-          notice(AppRoute.meetings.path),
-          reason: '모임 만들기는 모임 화면이 아니다',
-        );
+        expect(guest(AppRoute.meetings.path, meetingId: null), isNull);
         expect(
           guest('/meetings/meeting-2/created', meetingId: null),
           notice('/meetings/meeting-2/created'),
