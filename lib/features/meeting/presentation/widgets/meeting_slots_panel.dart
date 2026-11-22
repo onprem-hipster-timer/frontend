@@ -299,6 +299,7 @@ class _OrderMenu extends StatelessWidget {
       child: DropdownButton<MeetingRunOrder>(
         value: value,
         isDense: true,
+        padding: const EdgeInsetsDirectional.only(start: 8),
         borderRadius: BorderRadius.circular(12),
         style: theme.textTheme.labelLarge?.copyWith(
           color: theme.colorScheme.onSurface,
