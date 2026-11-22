@@ -290,6 +290,7 @@ _No unreleased changes._
 
 #### Tooling
 - 위젯 카탈로그(`widgetbook/`, Widgetbook): 앱 위젯을 앱 테마(라이트·다크 모드), 화면 크기(Galaxy S20·iPhone 13·iPad Air 4·MacBook Pro), 글자 배율(1~2), 언어(ko-KR·en-US)를 바꿔 가며 브라우저에서 본다. 앱과 같은 `material_ui`의 `Theme`·`MaterialApp`·`Localizations`로 감싼다
+  - 모임: 추천 시간 카드(고정, 안 되는 사람, '내 달력에 일정 만들기', 긴 이름, 카드 폭), 참여자 이름 칩, 질문의 답 버튼, 모임 첫날 달력. 공통: 빈 화면 안내, 불러오기 실패 안내, 오류 배너
   - CI 정적 검사 잡은 `widgetbook/`의 의존성을 받고 코드를 생성한 뒤 루트 `dart analyze`로 함께 분석한다
   - Widgetbook 생성기의 사용 통계 전송 빌더는 끈다(`widgetbook/build.yaml`)
 
