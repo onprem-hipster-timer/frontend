@@ -176,6 +176,30 @@ cd packages/momeet_lints && fvm dart test
 
 > 한 줄만 예외로 둘 때는 `// ignore: momeet_lints/<규칙>`을 쓴다. 플러그인 코드를 바꾸면 IDE의 분석 서버를 재시작해야 반영된다.
 
+### 위젯 카탈로그 (Widgetbook)
+
+`widgetbook/`은 앱 위젯을 앱 테마·화면 크기·글자 배율·언어를 바꿔 가며 보는 카탈로그다. main에 push하면 `.github/workflows/widgetbook.yml`이 https://onprem-hipster-timer.github.io/frontend/ 에 배포한다.
+
+```bash
+# 카탈로그가 앱 코드를 가져오므로 앱의 코드 생성을 먼저 한다
+fvm dart run build_runner build --delete-conflicting-outputs
+
+cd widgetbook
+fvm flutter pub get
+fvm dart run build_runner build   # lib/main.directories.g.dart
+fvm flutter run -d chrome
+```
+
+use case 추가:
+
+1. `widgetbook/lib/<기능>/<위젯 파일 이름>.dart`에 `@widgetbook.UseCase(name: …, type: <위젯>, path: '[모임]')`을 단 최상위 함수를 둔다. `path`의 `[…]`는 카탈로그의 분류다. `name`과 knob의 `label`은 앱 화면의 말로 쓴다.
+2. 바꿔 볼 상태는 `context.knobs`로 받는다. 카탈로그는 공개 사이트라 예시 이름·문구는 실제 사람이 아닌 것으로 쓴다.
+3. `widgetbook/`에서 `fvm dart run build_runner build`를 다시 돌린다. 생성 파일은 커밋하지 않는다.
+
+카탈로그에는 `ProviderScope`가 없어 Provider를 읽는 위젯(자식 포함)은 담지 못한다. 값만 받는 위젯을 담는다.
+
+루트 `pubspec.yaml`의 의존성을 바꾸면 `widgetbook/`에서도 `fvm flutter pub get`을 돌려 `widgetbook/pubspec.lock`을 함께 커밋한다. CI는 `--enforce-lockfile`로 받는다.
+
 ---
 
 ## 코딩 표준

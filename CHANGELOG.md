@@ -291,6 +291,14 @@ _No unreleased changes._
 - 렌더링 테스트 뷰포트 프리셋을 `packages/layout_audit`로 옮기고 iPhone SE·mini, Z Flip, Surface Duo, 폴드 내부, 가로 폰 추가
 - 모임 만들기·만든 뒤·모임 화면 레이아웃 전수 점검(`test/layout_audit/meeting_screens_layout_test.dart`). 모임 화면은 방식 셋(참여자 다섯, 그중 게스트 하나), 아무도 없는 모임, 저장하지 못한 상태, 주인의 편집, 로그인하지 않은 방문자(방식 셋, 참여자 없음), 찾을 수 없음(방문자·회원), 게스트 입장 폼(처음 쓰는 이름·이미 참여한 이름), 게스트의 모임 화면(시간별·요일별), 게스트의 약관 동의, 게스트 편집 시트, 게스트 세션 안내를 본다
 
+#### Tooling
+- 위젯 카탈로그(`widgetbook/`, Widgetbook): 앱 위젯을 앱 테마(라이트·다크 모드), 화면 크기(Galaxy S20·iPhone 13·iPad Air 4·MacBook Pro), 글자 배율(1~2), 언어(ko-KR·en-US)를 바꿔 가며 브라우저에서 본다. 앱과 같은 `material_ui`의 `Theme`·`MaterialApp`·`Localizations`로 감싼다
+  - 모임: 추천 시간 카드(고정, 안 되는 사람, '내 달력에 일정 만들기', 긴 이름, 카드 폭), 참여자 이름 칩, 질문의 답 버튼, 모임 첫날 달력. 공통: 빈 화면 안내, 불러오기 실패 안내, 오류 배너
+  - CI 정적 검사 잡은 `widgetbook/`의 의존성을 받고 코드를 생성한 뒤 루트 `dart analyze`로 함께 분석한다
+  - Widgetbook 생성기의 사용 통계 전송 빌더는 끈다(`widgetbook/build.yaml`)
+  - main에 push하면 카탈로그를 빌드해 GitHub Pages(`/frontend/`)에 배포한다(`.github/workflows/widgetbook.yml`). `lib/`·`assets/`·루트 pubspec·`.fvmrc`·`widgetbook/`·이 워크플로가 바뀐 push와 수동 실행에서만 돈다
+  - 로컬 실행과 use case 추가 방법을 `CONTRIBUTING.ko.md`·`CONTRIBUTING.md`의 위젯 카탈로그 절에 적는다
+
 ### Removed
 
 #### UI

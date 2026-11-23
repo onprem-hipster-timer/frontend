@@ -176,6 +176,30 @@ Rules enforced:
 
 > To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
 
+### Widget Catalog (Widgetbook)
+
+`widgetbook/` is a catalog for viewing app widgets across the app themes, screen sizes, text scales and locales. Pushing to main deploys it to https://onprem-hipster-timer.github.io/frontend/ via `.github/workflows/widgetbook.yml`.
+
+```bash
+# The catalog imports app code, so run the app's code generation first
+fvm dart run build_runner build --delete-conflicting-outputs
+
+cd widgetbook
+fvm flutter pub get
+fvm dart run build_runner build   # lib/main.directories.g.dart
+fvm flutter run -d chrome
+```
+
+Adding a use case:
+
+1. In `widgetbook/lib/<feature>/<widget file name>.dart`, add a top-level function annotated with `@widgetbook.UseCase(name: …, type: <Widget>, path: '[모임]')`. The `[…]` in `path` is the catalog category. Write `name` and knob `label`s in the app's on-screen Korean wording.
+2. Take the states to vary from `context.knobs`. The catalog is a public site, so example names and text must not be real people.
+3. Run `fvm dart run build_runner build` in `widgetbook/` again. Generated files are not committed.
+
+The catalog has no `ProviderScope`, so widgets that read providers (themselves or their children) cannot be added. Add widgets that take plain values.
+
+When you change dependencies in the root `pubspec.yaml`, also run `fvm flutter pub get` in `widgetbook/` and commit `widgetbook/pubspec.lock`. CI installs it with `--enforce-lockfile`.
+
 ---
 
 ## Coding Standards
