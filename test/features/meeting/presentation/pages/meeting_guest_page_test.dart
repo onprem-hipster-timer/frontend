@@ -200,7 +200,7 @@ void main() {
     final (participantId, slots) = meetings.puts.single;
     expect(participantId, 'participant-guest');
     expect(slots.single.startTime, seoul(2, 9));
-    expect(find.text('저장됨'), findsOneWidget);
+    expect(find.text('자동 저장됐어요'), findsOneWidget);
   });
 
   testWidgets('이미 참여한 게스트가 다시 열면 그 참여자를 그대로 쓴다', (tester) async {
@@ -365,7 +365,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      expect(find.text('저장하지 못했습니다'), findsNothing);
+      expect(find.text('저장하지 못했어요'), findsNothing);
       expect(find.text('지금은 게스트로 이 모임을 볼 수 없습니다'), findsOneWidget);
     });
 

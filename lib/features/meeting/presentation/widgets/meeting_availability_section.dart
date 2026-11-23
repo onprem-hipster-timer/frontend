@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_shading.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
-import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_answer_reset.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_brush_texts.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
@@ -11,33 +10,28 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_availabilit
 import 'package:momeet/features/meeting/presentation/widgets/meeting_brush_zone.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_grid_geometry.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_help_icon.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_save_indicator.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_timezone_label.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// '내 시간 선택하기'를 영역으로 나눠 쌓는다: 제목 줄(시간별이면 하루 범위, 도움말, 저장 상태)과 시간 기준
+/// '내 시간 선택하기'를 영역으로 나눠 쌓는다: 제목 줄(시간별이면 하루 범위, 도움말)과 시간 기준
 /// 한 줄 → 칠하기 조작(붓 고르기) → 격자와 그 아래 옅은 색 설명. 영역 사이는 영역 안보다 넓게 띄운다.
 ///
-/// 붓은 '가능'으로 시작한다([MeetingBrushZone]). 끌기와 붓 쓰는 법은 도움말에 둔다. [onPaint]가 없으면(로그인 전) 도움말·저장
-/// 상태·붓 대신 조작 자리에 로그인하면 칠할 수 있다고 적고, 칸을 누르면 [onLocked]를 부른다.
+/// 붓은 '가능'으로 시작한다([MeetingBrushZone]). 끌기와 붓 쓰는 법은 도움말에 둔다. [onPaint]가 없으면(로그인 전) 도움말·붓
+/// 대신 조작 자리에 로그인하면 칠할 수 있다고 적고, 칸을 누르면 [onLocked]를 부른다.
 class MeetingAvailabilitySection extends StatefulWidget {
   const MeetingAvailabilitySection({
     super.key,
     required this.meeting,
     required this.shading,
-    this.status = MeetingSaveStatus.idle,
     this.onPaint,
-    this.onRetry,
     this.onLocked,
     this.highlight,
   });
 
   final MeetingRead meeting;
   final MeetingShading shading;
-  final MeetingSaveStatus status;
   final MeetingPaint? onPaint;
-  final VoidCallback? onRetry;
   final VoidCallback? onLocked;
 
   /// 강조할 추천 시간 카드
@@ -83,11 +77,9 @@ class _MeetingAvailabilitySectionState
         _Heading(
           meeting: widget.meeting,
           hourly: shading.grid.mode == MeetingMode.hourly,
-          status: widget.status,
           help: onPaint == null
               ? null
               : meetingBrushHelp(shading.grid.mode, touch: touch),
-          onRetry: widget.onRetry,
         ),
         const SizedBox(height: _zoneGap),
         if (onPaint == null)
@@ -112,27 +104,22 @@ class _MeetingAvailabilitySectionState
   }
 }
 
-/// 제목 영역: '내 시간 선택하기'와 하루 범위·도움말([help]가 있을 때)·저장 상태, 그 아래 시간 기준 한 줄
+/// 제목 영역: '내 시간 선택하기'와 하루 범위·도움말([help]가 있을 때), 그 아래 시간 기준 한 줄
 class _Heading extends StatelessWidget {
   const _Heading({
     required this.meeting,
     required this.hourly,
-    required this.status,
     required this.help,
-    required this.onRetry,
   });
 
   final MeetingRead meeting;
   final bool hourly;
-  final MeetingSaveStatus status;
   final String? help;
-  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final help = this.help;
-    final onRetry = this.onRetry;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -152,8 +139,6 @@ class _Heading extends StatelessWidget {
             ),
             if (hourly) _RangeChip(meetingHoursText(meeting)),
             if (help != null) MeetingHelpIcon(help),
-            if (help != null && onRetry != null)
-              MeetingSaveIndicator(status: status, onRetry: onRetry),
           ],
         ),
         const SizedBox(height: 4),
