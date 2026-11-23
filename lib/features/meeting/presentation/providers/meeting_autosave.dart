@@ -11,13 +11,13 @@ enum MeetingSaveStatus {
   /// 마지막으로 바꾼 것까지 저장했다
   saved,
 
-  /// 저장하지 못했다. 바꾼 것은 그대로 있고 다시 시도하거나 또 바꾸면 다시 보낸다
+  /// 저장하지 못했다. 바꾼 것은 그대로 있고 [MeetingAutosave.flush]나 또 바꾸면 다시 보낸다
   failed,
 }
 
 /// 바뀔 때마다 [delay]만큼 기다렸다가 한 번 저장한다. 저장하는 사이 또 바뀌면 끝난 뒤 한 번 더 저장한다.
 ///
-/// [save]는 부르는 때의 최신 값을 보낸다. 실패하면 바뀐 것을 남겨 두고 [retry]나 다음 [changed]가 다시 보낸다.
+/// [save]는 부르는 때의 최신 값을 보낸다. 실패하면 바뀐 것을 남겨 두고 [flush]나 다음 [changed]가 다시 보낸다.
 /// [flush]는 기다리지 않고 남은 것을 저장하고 그 결과를 돌려준다('저장하기').
 ///
 /// 테스트: test/features/meeting/presentation/providers/meeting_autosave_test.dart
@@ -49,13 +49,6 @@ class MeetingAutosave {
     _timer?.cancel();
     _timer = Timer(delay, _flush);
     onStatus(MeetingSaveStatus.saving);
-  }
-
-  /// 기다리지 않고 바로 저장한다. 저장할 것이 없거나 저장하는 중이면 아무것도 하지 않는다
-  void retry() {
-    if (!_dirty || _saving) return;
-    _timer?.cancel();
-    unawaited(_flush());
   }
 
   /// 기다리지 않고 남은 것을 모두 저장한다. 보내는 중이면 그것을(그사이 또 바뀌었으면 그것까지) 기다리고,

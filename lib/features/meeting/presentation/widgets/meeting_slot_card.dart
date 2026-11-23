@@ -255,6 +255,7 @@ class _HeadCount extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.person, size: 16, color: color),
+          const SizedBox(width: 4),
           Text(
             '$count',
             style: theme.textTheme.titleSmall?.copyWith(

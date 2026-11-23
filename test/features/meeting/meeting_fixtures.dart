@@ -216,6 +216,9 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
   /// 설정하면 저장이 이것이 끝날 때까지 기다린다
   Completer<void>? putGate;
 
+  /// 설정하면 가능 시간 조회가 이것이 끝날 때까지 기다린다
+  Completer<void>? availabilityGate;
+
   @override
   Future<List<AvailabilityRead>>
   getAvailabilityV1MeetingsMeetingIdAvailabilityGet({
@@ -224,6 +227,7 @@ class FakeMeetingsClient extends Fake implements MeetingsClient {
     RequestOptions? options,
   }) async {
     availabilityReads++;
+    await availabilityGate?.future;
     if (availabilityError != null) await _raise(availabilityError!);
     return [...availability];
   }

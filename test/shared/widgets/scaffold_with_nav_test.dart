@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
 const _tabs = ['캘린더', '할 일', '타이머', '태그', '마이페이지'];
@@ -37,10 +40,28 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
             ),
         ],
       ),
+      GoRoute(
+        path: '/out',
+        builder: (context, state) => const Scaffold(body: Text('셸 밖 화면')),
+      ),
     ],
   );
-  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  await tester.pumpWidget(
+    MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
+  );
   await tester.pumpAndSettle();
+}
+
+/// 알림의 보이는 면. SnackBar 자체 영역은 바깥 여백까지 잡는다
+Rect _noticeRect(WidgetTester tester, String message) => tester.getRect(
+  find.ancestor(of: find.text(message), matching: find.byType(Material)).first,
+);
+
+Rect _navRect(WidgetTester tester) {
+  final rail = find.byType(NavigationRail);
+  return tester.getRect(
+    rail.evaluate().isEmpty ? find.byType(BottomNavigationBar) : rail,
+  );
 }
 
 void main() {
@@ -53,6 +74,17 @@ void main() {
     await tester.tap(_barTab('타이머'));
     await tester.pumpAndSettle();
     expect(find.text('타이머 화면'), findsOneWidget);
+  });
+
+  testWidgets('하단 바는 탭 화면 아래에 놓여 그 화면을 가리지 않는다', (tester) async {
+    await _pumpShell(tester, const Size(390, 844));
+
+    final page = tester.getRect(
+      find
+          .ancestor(of: find.text('캘린더 화면'), matching: find.byType(Scaffold))
+          .first,
+    );
+    expect(page.bottom, lessThanOrEqualTo(_navRect(tester).top));
   });
 
   testWidgets('낮은 화면은 왼쪽 세로 내비로 탭을 옮기고 콘텐츠 아래를 비우지 않는다', (tester) async {
@@ -111,5 +143,69 @@ void main() {
     await _pumpShell(tester, const Size(360, 800));
 
     expect(find.byTooltip('화면 이동'), findsNothing);
+  });
+
+  group('탭 화면에서 띄운 알림은 화면 안에서 내비를 가리지 않는다', () {
+    for (final (layout, size) in const [
+      ('휴대폰 세로의 하단 바', Size(390, 844)),
+      ('넓은 화면의 하단 바', Size(1000, 1400)),
+      ('낮은 화면의 세로 내비', Size(844, 390)),
+    ]) {
+      testWidgets(layout, (tester) async {
+        await _pumpShell(tester, size);
+        final page = tester.element(find.text('캘린더 화면'));
+        final screen = Offset.zero & size;
+
+        void expectClear(String message) {
+          final notice = _noticeRect(tester, message);
+          final nav = _navRect(tester);
+          expect(notice.overlaps(nav), isFalse, reason: '알림 $notice, 내비 $nav');
+          expect(screen.intersect(notice), notice);
+        }
+
+        showAppSnackBar(page, '일정이 삭제되었습니다', kind: AppNoticeKind.success);
+        await tester.pumpAndSettle();
+        expectClear('일정이 삭제되었습니다');
+
+        unawaited(ScaffoldMessenger.of(page).showAppUndoSnackBar('일정을 지웠습니다'));
+        await tester.pumpAndSettle();
+        expectClear('일정을 지웠습니다');
+      });
+    }
+  });
+
+  testWidgets('떠 있던 알림은 창 높이가 바뀌어 내비 모양이 바뀌어도 새 내비를 가리지 않는다', (tester) async {
+    await _pumpShell(tester, const Size(844, 800));
+    showAppSnackBar(tester.element(find.text('캘린더 화면')), '저장했습니다');
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(844, 390);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    final notice = _noticeRect(tester, '저장했습니다');
+    expect(notice.overlaps(_navRect(tester)), isFalse);
+  });
+
+  group('내비가 없는 곳의 알림은 화면 바닥에 뜬다', () {
+    testWidgets('셸 밖 화면', (tester) async {
+      await _pumpShell(tester, const Size(1000, 1400));
+      GoRouter.of(tester.element(find.text('캘린더 화면'))).go('/out');
+      await tester.pumpAndSettle();
+
+      showAppSnackBar(tester.element(find.text('셸 밖 화면')), '저장했습니다');
+      await tester.pumpAndSettle();
+
+      expect(1400 - _noticeRect(tester, '저장했습니다').bottom, lessThan(16));
+    });
+
+    testWidgets('아주 작은 화면의 탭 화면', (tester) async {
+      await _pumpShell(tester, const Size(360, 374));
+
+      showAppSnackBar(tester.element(find.text('캘린더 화면')), '저장했습니다');
+      await tester.pumpAndSettle();
+
+      expect(374 - _noticeRect(tester, '저장했습니다').bottom, lessThan(16));
+    });
   });
 }
