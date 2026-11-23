@@ -228,7 +228,7 @@ void main() {
     });
   });
 
-  test('겹친다고 거절되면(422) 저장하지 못한 상태로 두고 다시 시도하면 다시 보낸다', () {
+  test('겹친다고 거절되면(422) 저장하지 못한 상태로 두고, 저장하기가 다시 참여하지 않고 같은 본문을 다시 보낸다', () {
     fakeAsync((async) {
       final request = RequestOptions(
         path: '/v1/meetings/meeting-1/availability',
@@ -249,8 +249,11 @@ void main() {
         unavailable,
       );
 
-      notifier.retrySave();
+      bool? saved;
+      notifier.finishSaving().then((value) => saved = value);
       async.flushMicrotasks();
+      expect(saved, isTrue);
+      expect(meetings.participations, hasLength(1));
       expect(meetings.puts, hasLength(2));
       expect(meetings.puts.last.$2, meetings.puts.first.$2);
       expect(read(container).status, MeetingSaveStatus.saved);
@@ -336,7 +339,7 @@ void main() {
     });
   });
 
-  test('저장하지 못하면 칠한 칸을 남겨 두고 다시 시도하면 참여부터 이어서 저장한다', () {
+  test('저장하지 못하면 칠한 칸을 남겨 두고, 저장하기가 참여부터 이어서 저장한다', () {
     fakeAsync((async) {
       meetings.participateError = StateError('끊김');
       final (container, _) = open(async);
@@ -351,8 +354,10 @@ void main() {
         available,
       );
 
-      notifier.retrySave();
+      bool? saved;
+      notifier.finishSaving().then((value) => saved = value);
       async.flushMicrotasks();
+      expect(saved, isTrue);
       expect(meetings.participations, ['지현', '지현']);
       expect(slotsOf(meetings.puts.single.$2), [(seoul(6), seoul(6, 30))]);
       expect(read(container).status, MeetingSaveStatus.saved);
@@ -412,7 +417,7 @@ void main() {
     });
   });
 
-  test('저장하지 못한 채 떠나면 값을 버리지 않고 돌아와서 다시 시도할 수 있다', () {
+  test('저장하지 못한 채 떠나면 값을 버리지 않고 돌아와서 저장하기로 다시 보낼 수 있다', () {
     fakeAsync((async) {
       meetings.putError = StateError('끊김');
       final (container, subscription) = open(async);
@@ -428,8 +433,13 @@ void main() {
       expect(back.read().requireValue.status, MeetingSaveStatus.failed);
       expect(meetings.availabilityReads, 1, reason: '다시 불러오지 않는다');
 
-      container.read(provider.notifier).retrySave();
+      bool? saved;
+      container
+          .read(provider.notifier)
+          .finishSaving()
+          .then((value) => saved = value);
       async.flushMicrotasks();
+      expect(saved, isTrue);
       expect(meetings.puts, hasLength(2));
       expect(read(container).status, MeetingSaveStatus.saved);
       container.dispose();

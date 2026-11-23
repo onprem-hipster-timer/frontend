@@ -248,9 +248,6 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
     _autosave.changed();
   }
 
-  /// 저장하지 못한 내 가능 시간을 바로 다시 보낸다
-  void retrySave() => _autosave.retry();
-
   /// '저장하기': 남은 저장을 기다리지 않고 보내고 끝날 때까지 기다린다(저장하지 못한 것은 다시 보낸다). 모두
   /// 저장했으면 true
   Future<bool> finishSaving() => _autosave.flush();
