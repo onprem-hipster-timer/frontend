@@ -86,12 +86,17 @@ class _FinishFails extends _FailedSave {
   Future<bool> finishSaving() async => false;
 }
 
-/// 저장하지 못한 상태로 여는 모임 화면 값
+/// 저장하지 못한 상태(또는 [status])로 여는 모임 화면 값
 class _FailedSave extends MeetingBoardNotifier {
-  _FailedSave(this.meeting, this.availability);
+  _FailedSave(
+    this.meeting,
+    this.availability, [
+    this.status = MeetingSaveStatus.failed,
+  ]);
 
   final MeetingRead meeting;
   final List<AvailabilityRead> availability;
+  final MeetingSaveStatus status;
 
   @override
   Future<MeetingBoardState> build(String meetingId) async => MeetingBoardState(
@@ -101,7 +106,7 @@ class _FailedSave extends MeetingBoardNotifier {
       userId: 'user-1',
       selfName: '지현',
     ),
-    status: MeetingSaveStatus.failed,
+    status: status,
   );
 
   @override
@@ -1064,7 +1069,29 @@ void main() {
         ),
       ]);
     },
+    verify: (tester) => expect(find.text('저장하지 못했어요'), findsOneWidget),
   );
+
+  for (final (name, status, shown) in [
+    ('meeting_page_autosaving', MeetingSaveStatus.saving, '자동 저장 중'),
+    ('meeting_page_autosaved', MeetingSaveStatus.saved, '그래도 저장하기'),
+  ]) {
+    testLayoutAudit(
+      name,
+      subject: '참여자 이름',
+      texts: const [StressTexts.koreanLong],
+      build: (text) {
+        final meeting = meetingIn('hourly', title: '팀 회의');
+        return routed(const MeetingPage(meetingId: 'meeting-1'), [
+          ...meetingOverrides(meetings: FakeMeetingsClient(meeting: meeting)),
+          meetingBoardProvider.overrideWith(
+            () => _FailedSave(meeting, _fivePeople(text.value), status),
+          ),
+        ]);
+      },
+      verify: (tester) => expect(find.text(shown), findsOneWidget),
+    );
+  }
 
   for (final (name, fails, shown) in [
     ('meeting_page_save_finished', false, '입력을 마쳤어요'),
@@ -1079,7 +1106,7 @@ void main() {
         final people = _fivePeople(text.value);
         return routed(
           const _PressWhenLoaded(
-            label: '저장하기',
+            label: '다시 저장하기',
             child: MeetingPage(meetingId: 'meeting-1'),
           ),
           [

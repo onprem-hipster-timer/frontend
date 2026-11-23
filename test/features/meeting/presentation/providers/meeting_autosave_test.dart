@@ -112,7 +112,7 @@ void main() {
     });
   });
 
-  test('실패하면 바꾼 것을 남겨 두고 다시 시도하면 최신 값을 보낸다', () {
+  test('실패하면 바꾼 것을 남겨 두고 저절로 다시 보내지 않으며, 저장 마치기가 최신 값을 보낸다', () {
     fakeAsync((async) {
       final h = Harness()
         ..failNext = true
@@ -126,9 +126,11 @@ void main() {
       expect(h.saved, isEmpty, reason: '저절로 다시 보내지 않는다');
 
       h.value = 2;
-      h.autosave.retry();
+      bool? done;
+      h.autosave.flush().then((value) => done = value);
       async.flushMicrotasks();
       expect(h.saved, [2]);
+      expect(done, isTrue);
       expect(h.statuses.last, MeetingSaveStatus.saved);
       expect(h.autosave.busy, isFalse);
     });
@@ -169,9 +171,10 @@ void main() {
     });
   });
 
-  test('저장할 것이 없거나 저장하는 중이면 다시 시도해도 보내지 않는다', () {
+  test('저장할 것이 없으면 저장 마치기는 상태를 바꾸지 않고, 보내는 중이면 겹쳐 보내지 않는다', () {
     fakeAsync((async) {
-      final h = Harness()..autosave.retry();
+      final h = Harness();
+      unawaited(h.autosave.flush());
       async.flushMicrotasks();
       expect(h.saved, isEmpty);
       expect(h.statuses, isEmpty);
@@ -180,23 +183,13 @@ void main() {
         ..gate = Completer()
         ..change(1);
       async.elapse(delay);
-      h.autosave.retry();
+      bool? done;
+      h.autosave.flush().then((value) => done = value);
       h.gate!.complete();
       h.gate = null;
       async.flushMicrotasks();
       expect(h.saved, [1]);
-    });
-  });
-
-  test('다시 시도는 기다리지 않고 바로 보낸다', () {
-    fakeAsync((async) {
-      final h = Harness()..change(1);
-      h.autosave.retry();
-      async.flushMicrotasks();
-      expect(h.saved, [1]);
-
-      async.elapse(delay);
-      expect(h.saved, [1], reason: '취소한 기다림이 또 보내지 않는다');
+      expect(done, isTrue);
     });
   });
 
@@ -230,6 +223,9 @@ void main() {
         expect(h.saved, [1], reason: '600ms를 기다리지 않는다');
         expect(done, isTrue);
         expect(h.statuses.last, MeetingSaveStatus.saved);
+
+        async.elapse(delay);
+        expect(h.saved, [1], reason: '취소한 기다림이 또 보내지 않는다');
       });
     });
 

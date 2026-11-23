@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart'
     show DioException, DioExceptionType, RequestOptions;
 import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -164,6 +165,17 @@ void main() {
     expect(meetings.reads, isEmpty);
     expect(meetings.availabilityReads, 0);
     semantics.dispose();
+  });
+
+  testWidgets('칠할 수 없으니 Ctrl+S를 받지 않는다', (tester) async {
+    await pumpMeeting(tester);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    final handled = await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+
+    expect(handled, isFalse);
   });
 
   testWidgets('링크 칸에는 공유하기와 막힌 수정하기가 있다', (tester) async {

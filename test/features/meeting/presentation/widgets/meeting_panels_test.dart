@@ -4,12 +4,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_runs.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
-import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_crown.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_participants_panel.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_save_indicator.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -445,44 +443,6 @@ void main() {
         tester.getSize(find.byType(MeetingNameChip)).width,
         lessThanOrEqualTo(300),
       );
-    });
-  });
-
-  group('저장 상태', () {
-    Future<void> pumpStatus(
-      WidgetTester tester,
-      MeetingSaveStatus status, {
-      VoidCallback? onRetry,
-    }) => pumpPanel(
-      tester,
-      MeetingSaveIndicator(status: status, onRetry: onRetry ?? () {}),
-    );
-
-    testWidgets('바꾼 것이 없으면 아무것도 보이지 않는다', (tester) async {
-      await pumpStatus(tester, MeetingSaveStatus.idle);
-
-      expect(find.byType(Text), findsNothing);
-    });
-
-    testWidgets('저장 중, 저장됨을 보인다', (tester) async {
-      await pumpStatus(tester, MeetingSaveStatus.saving);
-      expect(find.text('저장 중'), findsOneWidget);
-
-      await pumpStatus(tester, MeetingSaveStatus.saved);
-      expect(find.text('저장됨'), findsOneWidget);
-    });
-
-    testWidgets('실패하면 알리고 다시 시도를 누르면 부른다', (tester) async {
-      var retries = 0;
-      await pumpStatus(
-        tester,
-        MeetingSaveStatus.failed,
-        onRetry: () => retries++,
-      );
-
-      expect(find.text('저장하지 못했습니다'), findsOneWidget);
-      await tester.tap(find.text('다시 시도'));
-      expect(retries, 1);
     });
   });
 }

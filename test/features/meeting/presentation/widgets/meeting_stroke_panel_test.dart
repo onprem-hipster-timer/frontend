@@ -57,7 +57,6 @@ void main() {
                         }),
                       );
                     }),
-                    onRetry: () {},
                   ),
                 ),
                 SizedBox(

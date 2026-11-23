@@ -83,9 +83,7 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
             final availability = MeetingAvailabilitySection(
               meeting: board.meeting,
               shading: board,
-              status: state.status,
               onPaint: notifier.paint,
-              onRetry: notifier.retrySave,
               highlight: _highlight,
             );
             // 넓으면 오른쪽 칸, 좁으면 격자 아래에 하나만 그린다
