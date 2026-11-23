@@ -55,7 +55,7 @@ jobs:
       # 이 저장소의 Pages 주소는 https://<owner>.github.io/frontend/ 다
       - name: Build Widgetbook
         working-directory: widgetbook
-        run: flutter build web --base-href /frontend/
+        run: flutter build web --wasm --base-href /frontend/
 
       - uses: actions/upload-pages-artifact@v5
         with:
