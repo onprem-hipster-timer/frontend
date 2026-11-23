@@ -23,36 +23,40 @@ class MoMeetWidgetbook extends StatelessWidget {
   Widget build(BuildContext context) {
     return Widgetbook(
       directories: directories,
-      appBuilder: (context, child) =>
-          MaterialApp(debugShowCheckedModeBanner: false, home: child),
-      addons: [
-        ViewportAddon([
-          AndroidViewports.samsungGalaxyS20,
-          IosViewports.iPhone13,
-          IosViewports.iPadAir4,
-          MacosViewports.macbookPro,
-        ]),
-        ThemeAddon<ThemeData>(
-          themes: [
-            WidgetbookTheme(name: '라이트 모드', data: AppTheme.light()),
-            WidgetbookTheme(name: '다크 모드', data: AppTheme.dark()),
-          ],
-          themeBuilder: (context, theme, child) => Theme(
-            data: theme,
-            child: Material(color: theme.scaffoldBackgroundColor, child: child),
-          ),
-        ),
-        TextScaleAddon(min: 1, max: 2, divisions: 4),
-        // lib/app.dart와 같은 언어·delegate
-        LocalizationAddon(
-          locales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-        ),
-      ],
+      appBuilder: widgetbookAppBuilder,
+      addons: widgetbookAddons,
     );
   }
 }
+
+Widget widgetbookAppBuilder(BuildContext context, Widget child) =>
+    MaterialApp(debugShowCheckedModeBanner: false, home: child);
+
+final widgetbookAddons = <WidgetbookAddon>[
+  ViewportAddon([
+    AndroidViewports.samsungGalaxyS20,
+    IosViewports.iPhone13,
+    IosViewports.iPadAir4,
+    MacosViewports.macbookPro,
+  ]),
+  ThemeAddon<ThemeData>(
+    themes: [
+      WidgetbookTheme(name: '라이트 모드', data: AppTheme.light()),
+      WidgetbookTheme(name: '다크 모드', data: AppTheme.dark()),
+    ],
+    themeBuilder: (context, theme, child) => Theme(
+      data: theme,
+      child: Material(color: theme.scaffoldBackgroundColor, child: child),
+    ),
+  ),
+  TextScaleAddon(min: 1, max: 2, divisions: 4),
+  // lib/app.dart와 같은 언어·delegate
+  LocalizationAddon(
+    locales: const [Locale('ko', 'KR'), Locale('en', 'US')],
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+  ),
+];

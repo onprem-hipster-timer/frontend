@@ -60,6 +60,9 @@ jobs:
       - name: Prepare widgetbook for analysis
         run: cd widgetbook && flutter pub get --enforce-lockfile && dart run build_runner build
 
+      - name: Widgetbook use case tests
+        run: cd widgetbook && flutter test
+
       # flutter analyze는 analyzer 플러그인(momeet_lints) 결과를 기다리지 않는다
       - name: Analyze
         run: dart analyze --fatal-infos
