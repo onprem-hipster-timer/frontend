@@ -102,16 +102,16 @@ void main() {
     await tester.tapAt(cellCenter(tester, first));
     await settleSave(tester);
     expect(meetings.puts, hasLength(1));
-    expect(find.text('저장됨'), findsOneWidget);
+    expect(find.text('자동 저장됐어요'), findsOneWidget);
 
     await press(tester, [ctrl, z]);
     expect(valueOf(first), isEmpty);
-    expect(find.text('저장 중'), findsOneWidget);
+    expect(find.text('자동 저장 중'), findsOneWidget);
 
     await settleSave(tester);
     expect(meetings.puts, hasLength(2));
     expect(meetings.puts.last.$2, isEmpty);
-    expect(find.text('저장됨'), findsOneWidget);
+    expect(find.text('자동 저장됐어요'), findsOneWidget);
     semantics.dispose();
   });
 
@@ -193,7 +193,7 @@ void main() {
     await press(tester, [ctrl, z]);
     await settleSave(tester);
     expect(meetings.puts, hasLength(1));
-    expect(find.text('저장됨'), findsOneWidget);
+    expect(find.text('자동 저장됐어요'), findsOneWidget);
     semantics.dispose();
   });
 
