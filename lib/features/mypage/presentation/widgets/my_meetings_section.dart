@@ -97,7 +97,7 @@ class _Shown extends StatelessWidget {
               Icons.chevron_right,
               color: theme.colorScheme.primary,
             ),
-            onTap: () => context.pushNamed(AppRoute.myMeetings.name),
+            onTap: () => context.goNamed(AppRoute.myMeetings.name),
           ),
         ],
       ],
