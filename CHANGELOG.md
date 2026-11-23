@@ -293,6 +293,7 @@ _No unreleased changes._
   - 모임: 추천 시간 카드(고정, 안 되는 사람, '내 달력에 일정 만들기', 긴 이름, 카드 폭), 참여자 이름 칩, 질문의 답 버튼, 모임 첫날 달력. 공통: 빈 화면 안내, 불러오기 실패 안내, 오류 배너
   - CI 정적 검사 잡은 `widgetbook/`의 의존성을 받고 코드를 생성한 뒤 루트 `dart analyze`로 함께 분석한다
   - Widgetbook 생성기의 사용 통계 전송 빌더는 끈다(`widgetbook/build.yaml`)
+  - main에 push하면 카탈로그를 빌드해 GitHub Pages(`/frontend/`)에 배포한다(`.github/workflows/widgetbook.yml`). `lib/`·`assets/`·루트 pubspec·`.fvmrc`·`widgetbook/`·이 워크플로가 바뀐 push와 수동 실행에서만 돈다
 
 ### Removed
 
