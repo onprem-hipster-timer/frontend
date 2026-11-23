@@ -192,11 +192,16 @@ String? authRedirect({
   return null;
 }
 
-/// [route]가 로그인하지 않아도 머무는 화면(모임)이면 [route], 아니면 null. 라우터를 새로 만들 때 이어 갈 곳이다
-String? signedOutStay(String? route) =>
-    route != null && AppRoute.allowsSignedOutPath(Uri.parse(route).path)
-    ? route
-    : null;
+/// [route]가 로그인하지 않아도 머무는 화면(모임, 로그인 같은 공개 화면)이면 [route], 아니면 null. 라우터를 새로
+/// 만들 때 이어 갈 곳이다
+String? signedOutStay(String? route) {
+  if (route == null) return null;
+  final path = Uri.parse(route).path;
+  return AppRoute.allowsSignedOutPath(path) ||
+          AppRoute.publicPaths.contains(path)
+      ? route
+      : null;
+}
 
 /// [page]로 보내며 [from]을 돌아갈 곳으로 기억한다. 돌아갈 곳이 없거나 루트(/)면 붙이지 않는다.
 String _gate(String page, {required String? from}) {

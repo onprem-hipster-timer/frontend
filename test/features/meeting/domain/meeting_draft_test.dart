@@ -43,9 +43,9 @@ void main() {
       expect(over(1, 7, excluded: [6, 7]).hourlyAvailable, isFalse);
     });
 
-    test('남은 날이 5일 이하여도 기간이 7일을 넘으면 고를 수 없다', () {
-      expect(over(1, 8, excluded: [2, 3, 4]).hourlyAvailable, isFalse);
-      expect(over(1, 7, excluded: [2, 3, 4]).hourlyAvailable, isTrue);
+    test('남은 날이 5일 이하면 기간이 7일을 넘어도 고를 수 있다', () {
+      expect(over(1, 8, excluded: [2, 3, 4]).hourlyAvailable, isTrue);
+      expect(over(1, 8, excluded: [2, 3]).hourlyAvailable, isFalse);
     });
 
     test('고를 수 없는 기간이면 시간별로 바꾸지 않는다', () {

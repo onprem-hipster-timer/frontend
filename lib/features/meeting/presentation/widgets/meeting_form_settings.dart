@@ -1,8 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_draft.dart';
 import 'package:momeet/features/meeting/domain/meeting_edit.dart';
+import 'package:momeet/features/meeting/domain/meeting_flow.dart';
 import 'package:momeet/features/meeting/domain/meeting_mode.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_adjustment_notice.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_choice_row.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_field_refusal.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_mode_selector.dart';
@@ -16,7 +18,8 @@ import 'package:momeet/shared/domain/terms.dart';
 /// 펼친 모임 만들기 폼의 설정: '모임 시간'(받는 방식, 시간별 하루 범위, 시간 기준)과 '공개 여부'(공개가 아니면 그 아래
 /// [access])·'게스트 로그인'.
 /// 공개가 아니면 게스트 로그인을 고를 수 없다. 값이 규칙에 걸려 저절로 바뀐 자리는 [modeShakes]·[guestShakes]가
-/// 늘 때 떤다. 모임 설정에서 서버가 거절한 것은 그 자리 아래에 [refusals]의 말로 알린다
+/// 늘 때 떤다. 방식을 바꾸며 묻지 않고 맞춘 것([adjusted])은 받는 방식 아래에 알린다. 모임 설정에서 서버가
+/// 거절한 것은 그 자리 아래에 [refusals]의 말로 알린다
 class MeetingFormSettings extends StatelessWidget {
   const MeetingFormSettings({
     super.key,
@@ -25,7 +28,9 @@ class MeetingFormSettings extends StatelessWidget {
     required this.modeShakes,
     required this.guestShakes,
     required this.onChanged,
+    required this.onModeChanged,
     required this.onPublicChanged,
+    this.adjusted = const {},
     this.access,
     this.refusals = const {},
   });
@@ -38,7 +43,9 @@ class MeetingFormSettings extends StatelessWidget {
   final int modeShakes;
   final int guestShakes;
   final ValueChanged<MeetingDraft> onChanged;
+  final ValueChanged<MeetingMode> onModeChanged;
   final ValueChanged<bool> onPublicChanged;
+  final Set<MeetingAdjustment> adjusted;
 
   /// 공개가 아닐 때 '공개 여부' 아래에 두는 참여할 사람 칸
   final Widget? access;
@@ -58,9 +65,11 @@ class MeetingFormSettings extends StatelessWidget {
           draft: draft,
           timezone: timezone,
           modeShakes: modeShakes,
+          adjusted: adjusted,
           refusal:
               refusals[MeetingEditPart.mode] ?? refusals[MeetingEditPart.time],
           onChanged: onChanged,
+          onModeChanged: onModeChanged,
         ),
         const SizedBox(height: 24),
         MeetingSectionTitle(
@@ -102,21 +111,25 @@ class MeetingFormSettings extends StatelessWidget {
   }
 }
 
-/// '모임 시간': 받는 방식, 시간별 하루 범위, 거절된 까닭, 시간 기준
+/// '모임 시간': 받는 방식, 방식을 바꾸며 맞춘 것, 시간별 하루 범위, 거절된 까닭, 시간 기준
 class _TimeSettings extends StatelessWidget {
   const _TimeSettings({
     required this.draft,
     required this.timezone,
     required this.modeShakes,
+    required this.adjusted,
     required this.refusal,
     required this.onChanged,
+    required this.onModeChanged,
   });
 
   final MeetingDraft draft;
   final String? timezone;
   final int modeShakes;
+  final Set<MeetingAdjustment> adjusted;
   final String? refusal;
   final ValueChanged<MeetingDraft> onChanged;
+  final ValueChanged<MeetingMode> onModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -140,9 +153,14 @@ class _TimeSettings extends StatelessWidget {
           child: MeetingModeSelector(
             mode: draft.mode,
             hourlyEnabled: draft.hourlyAvailable,
-            onChanged: (mode) => onChanged(draft.withMode(mode)),
+            onChanged: onModeChanged,
           ),
         ),
+        if (adjusted.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          MeetingAdjustmentNotice(adjusted: adjusted, draft: draft),
+          const SizedBox(height: 8),
+        ],
         Text(
           meetingHourlyRule,
           style: theme.textTheme.bodySmall?.copyWith(

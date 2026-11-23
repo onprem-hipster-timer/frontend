@@ -85,6 +85,11 @@ void main() {
           builder: (context, state) => const Text('모임 설정 화면'),
         ),
         GoRoute(
+          path: AppRoute.meetings.path,
+          name: AppRoute.meetings.name,
+          builder: (context, state) => const Text('모임 만들기 화면'),
+        ),
+        GoRoute(
           path: AppRoute.meeting.path,
           name: AppRoute.meeting.name,
           builder: (context, state) =>
@@ -283,6 +288,31 @@ void main() {
       await tapText(tester, '수정하기');
 
       expect(find.text('모임 설정 화면'), findsOneWidget);
+    });
+
+    testWidgets('주인이 아니면 나도 모임 만들기로 모임 만들기 화면을 열고 뒤로 가면 보던 모임이다', (
+      tester,
+    ) async {
+      await pumpMeeting(tester);
+
+      expect(find.text('새 모임 만들기'), findsNothing);
+      await tapText(tester, '나도 모임 만들기');
+      expect(find.text('모임 만들기 화면'), findsOneWidget);
+
+      tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('모임 만들기 화면'), findsNothing);
+      expect(find.text('공유하기'), findsOneWidget);
+    });
+
+    testWidgets('주인이면 새 모임 만들기로 모임 만들기 화면을 연다', (tester) async {
+      meetings.meeting = makeMeeting(ownerId: testUser.id);
+      await pumpMeeting(tester);
+
+      expect(find.text('나도 모임 만들기'), findsNothing);
+      await tapText(tester, '새 모임 만들기');
+
+      expect(find.text('모임 만들기 화면'), findsOneWidget);
     });
 
     testWidgets('비공개 모임이면 단추 아래에 누가 열 수 있는지 알린다', (tester) async {

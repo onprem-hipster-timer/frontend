@@ -51,6 +51,10 @@ Future<void> shareMeetingLink(
   }
 }
 
+/// 모임 만들기 화면을 연다. 뒤로 가면 보던 화면으로 돌아온다
+void openMeetingCreate(BuildContext context) =>
+    context.push(AppRoute.meetings.path);
+
 /// 모임 [meetingId]의 설정 화면을 연다(주인만)
 void openMeetingEdit(BuildContext context, String meetingId) =>
     context.pushNamed(

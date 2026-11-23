@@ -238,6 +238,14 @@ void main() {
       expect(find.byType(MeetingVisitorBody), findsOneWidget);
     });
 
+    testWidgets('로그인 화면에 있었으면 돌아갈 곳을 담은 그 로그인 화면에서 이어 간다', (tester) async {
+      final login =
+          '${AppRoute.login.path}?redirect=${Uri.encodeComponent('/meetings/meeting-1')}';
+      final router = await pumpRouter(tester, browserRoute: login);
+
+      expect(location(router), login);
+    });
+
     testWidgets('로그인해야 보는 화면에 있었으면 처음 화면으로 간다', (tester) async {
       final router = await pumpRouter(tester, browserRoute: AppRoute.todo.path);
 
@@ -437,7 +445,7 @@ void main() {
       expect(location(router), '/meetings/meeting-new-1/created');
     });
 
-    testWidgets('게스트는 모임 만들기 화면 대신 게스트 세션 안내를 본다', (tester) async {
+    testWidgets('게스트는 모임 만들기 화면에 머문다', (tester) async {
       harness = await KratosTestHarness.create();
       harness.stubGuestSession();
       await harness.prefs.setString(guestMeetingKey, 'guest-uid meeting-1');
@@ -446,9 +454,9 @@ void main() {
       router.go(AppRoute.meetings.path);
       await pumpAWhile(tester);
 
-      expect(location(router), startsWith(AppRoute.guestSession.path));
-      expect(find.byType(MeetingCreatePage), findsNothing);
-      expect(find.text('로그인이 필요합니다'), findsOneWidget);
+      expect(location(router), AppRoute.meetings.path);
+      expect(find.byType(MeetingCreatePage), findsOneWidget);
+      expect(find.text('로그인이 필요합니다'), findsNothing);
     });
   });
 }

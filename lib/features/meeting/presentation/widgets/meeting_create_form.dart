@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/domain/meeting_edit.dart';
 import 'package:momeet/features/meeting/domain/meeting_flow.dart';
@@ -8,6 +9,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_field_refus
 import 'package:momeet/features/meeting/presentation/widgets/meeting_form_access.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_form_settings.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_section_title.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_shake.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -15,7 +17,8 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 날짜를 왼쪽, 나머지를 오른쪽에 두고, 좁으면 같은 순서로 쌓는다.
 ///
 /// 달력은 '기간'이면 시작하는 날과 끝나는 날을 차례로(요일별은 시작하는 날만) 고르고, '제외할 날'이면 기간
-/// 안의 날을 빼거나 되돌린다. 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다. 공개를 끄면
+/// 안의 날을 빼거나 되돌린다. 값이 규칙에 걸려 저절로 바뀌면 묻지 않고 바꾼 뒤 그 자리를 떤다(방식을 바꿔
+/// 날짜가 바뀌면 날짜를 떨고 받는 방식 아래에 알린다). 공개를 끄면
 /// 참여할 사람(이메일·도메인 또는 나만 보기)을 정해야 만든다([MeetingFormAccess]).
 ///
 /// 모임 설정도 이 폼으로 고친다. 그때는 [titleField] 자리에 제목과 저장하기를, [footer]에 모임 삭제를 두고, 서버가
@@ -76,6 +79,9 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
   /// 공개를 꺼서 게스트 로그인이 저절로 꺼진 횟수
   var _guestShakes = 0;
 
+  /// 방식을 바꿔 날짜가 저절로 바뀐 횟수
+  var _dateShakes = 0;
+
   MeetingFlow get _flow => widget.flow;
 
   /// 기간 안에 뺄 수 있는 날이 있고 요일별이 아니면 제외할 날을 고를 수 있다
@@ -95,6 +101,14 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
     widget.onChanged(next);
   }
 
+  void _changeMode(MeetingMode mode) {
+    final next = _flow.changeMode(mode);
+    if (!listEquals(next.draft.dates.days, _flow.draft.dates.days)) {
+      setState(() => _dateShakes++);
+    }
+    widget.onChanged(next);
+  }
+
   void _setPublic(bool value) {
     final next = _flow.draft.withPublic(value);
     if (next.allowGuests != _flow.draft.allowGuests) {
@@ -109,32 +123,35 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
     return MeetingCreateLayout(
       footer: widget.footer,
       builder: (context, wide) {
-        final dates = _FormDates(
-          excluding: _excludingNow,
-          canExclude: _canExclude,
-          weekly: flow.draft.mode == MeetingMode.weekly,
-          rangeStart: flow.rangeStart,
-          canExcludeWeekends:
-              _excludingNow &&
-              flow.draft.dates.weekendsInside.any(flow.draft.dates.contains),
-          refusal: widget.refusals[MeetingEditPart.dates],
-          onExcludingChanged: (value) => setState(() => _excluding = value),
-          onExcludeWeekends: () => widget.onChanged(
-            flow.withDraft(
-              flow.draft.withDates(flow.draft.dates.withoutWeekends()),
+        final dates = MeetingShake(
+          count: _dateShakes,
+          child: _FormDates(
+            excluding: _excludingNow,
+            canExclude: _canExclude,
+            weekly: flow.draft.mode == MeetingMode.weekly,
+            rangeStart: flow.rangeStart,
+            canExcludeWeekends:
+                _excludingNow &&
+                flow.draft.dates.weekendsInside.any(flow.draft.dates.contains),
+            refusal: widget.refusals[MeetingEditPart.dates],
+            onExcludingChanged: (value) => setState(() => _excluding = value),
+            onExcludeWeekends: () => widget.onChanged(
+              flow.withDraft(
+                flow.draft.withDates(flow.draft.dates.withoutWeekends()),
+              ),
             ),
-          ),
-          calendar: MeetingCalendar(
-            firstDay: widget.today,
-            shownDay:
-                flow.rangeStart ??
-                (flow.draft.dates.isEmpty ? null : flow.draft.dates.first),
-            stateOf: (day) => flow.dayState(
-              day,
-              today: widget.today,
-              excluding: _excludingNow,
+            calendar: MeetingCalendar(
+              firstDay: widget.today,
+              shownDay:
+                  flow.rangeStart ??
+                  (flow.draft.dates.isEmpty ? null : flow.draft.dates.first),
+              stateOf: (day) => flow.dayState(
+                day,
+                today: widget.today,
+                excluding: _excludingNow,
+              ),
+              onDayTap: _tapDay,
             ),
-            onDayTap: _tapDay,
           ),
         );
         final settings = Column(
@@ -145,7 +162,9 @@ class _MeetingCreateFormState extends State<MeetingCreateForm> {
               timezone: widget.timezone,
               modeShakes: _modeShakes,
               guestShakes: _guestShakes,
+              adjusted: flow.adjusted,
               onChanged: (draft) => widget.onChanged(flow.withDraft(draft)),
+              onModeChanged: _changeMode,
               onPublicChanged: _setPublic,
               refusals: widget.refusals,
               access: MeetingFormAccess(

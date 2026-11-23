@@ -24,7 +24,8 @@ class PendingMeetingStore {
 
   final SharedPreferences _prefs;
 
-  /// 폼을 둔다. 펼친 폼이 아니면 답한 질문을 함께 둔다(기간을 고르던 중인 시작일은 두지 않는다)
+  /// 폼을 둔다. 펼친 폼이 아니면 답한 질문을, 요일별이면 요일별로 바꾸기 전의 날짜를 함께 둔다(기간을 고르던 중인
+  /// 시작일은 두지 않는다)
   Future<void> save(PendingMeeting pending) {
     final flow = pending.flow;
     final draft = flow.draft;
@@ -43,6 +44,11 @@ class PendingMeetingStore {
         'emails': draft.emails,
         'domains': draft.domains,
         'only_me': draft.onlyMe,
+        if (draft.beforeWeekly case final before?)
+          'days_before_weekly': [
+            for (final day in before.days)
+              day.toIso8601String().substring(0, 10),
+          ],
         if (!flow.expanded)
           'answered': [for (final question in flow.answered) question.name],
         'title': pending.title,
@@ -66,6 +72,12 @@ class PendingMeetingStore {
           for (final day in json['days']! as List)
             DateTime.parse(day as String),
         ],
+        daysBeforeWeekly: switch (json['days_before_weekly']) {
+          final List<Object?> days => [
+            for (final day in days) DateTime.parse(day! as String),
+          ],
+          _ => null,
+        },
         startHour: json['start_hour']! as int,
         endHour: json['end_hour']! as int,
         isPublic: json['public']! as bool,

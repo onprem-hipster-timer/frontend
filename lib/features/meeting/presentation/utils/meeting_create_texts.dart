@@ -33,7 +33,7 @@ String meetingModeDescription(MeetingMode mode) => switch (mode) {
 };
 
 /// 시간별을 고를 수 없을 때의 까닭
-const meetingHourlyUnavailable = '일주일 안에서 $hourlyMaxDays일까지만 받을 수 있어요';
+const meetingHourlyUnavailable = '$hourlyMaxDays일까지만 받을 수 있어요';
 
 /// 펼친 폼의 시간별 규칙
 const meetingHourlyRule = '시간별은 $meetingHourlyUnavailable';
@@ -156,6 +156,10 @@ String meetingAdjustmentText(
   MeetingAdjustment.weeklyPeriod =>
     '요일별은 7일로 받아서 기간을 ${meetingRangeText(draft.dates).withJosa('으로', '로')} 맞췄어요',
   MeetingAdjustment.weeklyExclusionsDropped => '요일별이라 제외한 날짜를 되돌렸어요',
+  MeetingAdjustment.weeklyRestored =>
+    '요일별을 벗어나 기간을 ${meetingRangeText(draft.dates).withJosa('으로', '로')} 되돌렸어요',
+  MeetingAdjustment.hourlyTrimmed =>
+    '시간별은 $hourlyMaxDays일까지라 기간을 ${meetingRangeText(draft.dates).withJosa('으로', '로')} 맞췄어요',
   MeetingAdjustment.hourlyToDaily => '이 날짜는 시간별로 받을 수 없어 날짜별로 바꿨어요',
   MeetingAdjustment.weeklyToDaily => '이어진 7일이 아니라서 요일별을 날짜별로 바꿨어요',
   MeetingAdjustment.guestsDropped => '비공개라 게스트는 받지 않아요',

@@ -374,24 +374,13 @@ body.landing-active {
 .cta {
   padding: 6rem 2rem;
   text-align: center;
-  position: relative;
   background: var(--ink);
   color: var(--surface);
-}
-
-.cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('svg/bg-cta-dots.svg') repeat;
-  pointer-events: none;
 }
 
 .cta-inner {
   max-width: 480px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1;
 }
 
 .cta h2 {
