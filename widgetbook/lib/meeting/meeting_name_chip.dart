@@ -3,7 +3,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.d
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-@widgetbook.UseCase(name: '참여자 이름 칩', type: MeetingNameChip, path: '[모임]')
+@widgetbook.UseCase(name: '참여자 이름 칩', type: MeetingNameChip, path: '[모임]/참여자')
 Widget meetingNameChip(BuildContext context) {
   final knobs = context.knobs;
   final name = knobs.string(label: '이름', initialValue: '모모');

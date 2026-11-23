@@ -15,7 +15,7 @@ const _longPeople = <MeetingSlotPerson>[
   (name: '게스트로 들어온 이름 긴 곰돌이 손님', owner: false, guest: true, self: false),
 ];
 
-@widgetbook.UseCase(name: '추천 시간 카드', type: MeetingSlotCard, path: '[모임]')
+@widgetbook.UseCase(name: '추천 시간 카드', type: MeetingSlotCard, path: '[모임]/추천 시간')
 Widget meetingSlotCard(BuildContext context) {
   final knobs = context.knobs;
   final title = knobs.string(label: '날짜', initialValue: '3월 2일 (화)');

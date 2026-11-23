@@ -11,7 +11,11 @@ const _questions = {
   '게스트': [meetingAllowGuests, meetingRefuseGuests],
 };
 
-@widgetbook.UseCase(name: '질문의 답 버튼', type: MeetingAnswerButtons, path: '[모임]')
+@widgetbook.UseCase(
+  name: '질문의 답 버튼',
+  type: MeetingAnswerButtons,
+  path: '[모임]/모임 만들기',
+)
 Widget meetingAnswerButtons(BuildContext context) {
   final knobs = context.knobs;
   final question = knobs.object.dropdown(

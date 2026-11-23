@@ -3,7 +3,11 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_date_badge.
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-@widgetbook.UseCase(name: '모임 첫날 달력', type: MeetingDateBadge, path: '[모임]')
+@widgetbook.UseCase(
+  name: '모임 첫날 달력',
+  type: MeetingDateBadge,
+  path: '[모임]/모임 만들기',
+)
 Widget meetingDateBadge(BuildContext context) {
   final day = context.knobs.dateTimeOrNull(
     label: '첫날',
