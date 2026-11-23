@@ -45,28 +45,14 @@ class SheetPreview extends StatelessWidget {
   }
 }
 
-/// 화면을 덮는 어두운 바탕 위의 다이얼로그. 단추가 창을 닫아도 다시 띄워 미리보기가 비지 않게 한다.
-class DialogPreview extends StatefulWidget {
+/// 화면을 덮는 어두운 바탕 위의 다이얼로그. 단추가 창을 닫으면 카탈로그가 다시 띄운다.
+class DialogPreview extends StatelessWidget {
   const DialogPreview({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<DialogPreview> createState() => _DialogPreviewState();
-}
-
-class _DialogPreviewState extends State<DialogPreview> {
-  var _shown = 0;
-
-  @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.black54,
-      child: Navigator(
-        key: ValueKey(_shown),
-        pages: [MaterialPage<void>(child: widget.child)],
-        onDidRemovePage: (_) => setState(() => _shown++),
-      ),
-    );
+    return ColoredBox(color: Colors.black54, child: child);
   }
 }

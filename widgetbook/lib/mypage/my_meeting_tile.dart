@@ -52,7 +52,7 @@ Widget myMeetingTile(BuildContext context) {
     updatedAt: start,
     visibilityLevel: _visibility[visibility],
   );
-  // 앱에서는 '내 모임' 카드 안에 이 줄이 구분선을 두고 이어진다. 누르면 모임 화면으로 가는데 카탈로그에는 화면 이동이 없다
+  // 앱에서는 '내 모임' 카드 안에 이 줄이 구분선을 두고 이어진다. 누르면 모임 화면 안내가 뜬다
   return SingleChildScrollView(
     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
     child: Card(

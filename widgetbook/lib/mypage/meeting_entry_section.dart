@@ -8,7 +8,7 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
   path: '[마이페이지]',
 )
 Widget meetingEntrySection(BuildContext context) {
-  // 앱에서는 '내 모임' 카드의 맨 위 줄이다. 누르면 모임 만들기 화면으로 가는데 카탈로그에는 화면 이동이 없다
+  // 앱에서는 '내 모임' 카드의 맨 위 줄이다. 누르면 모임 만들기 화면 안내가 뜬다
   return const SingleChildScrollView(
     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
     child: Card(clipBehavior: Clip.antiAlias, child: MeetingEntrySection()),
