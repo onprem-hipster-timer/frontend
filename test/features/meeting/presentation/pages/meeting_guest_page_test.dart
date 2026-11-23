@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -365,6 +366,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('저장하지 못했습니다'), findsNothing);
+      expect(find.text('지금은 게스트로 이 모임을 볼 수 없습니다'), findsOneWidget);
+    });
+
+    testWidgets('칠한 것을 저장하다 거절된 뒤에는 Ctrl+Z를 눌러도 되돌려 다시 보내지 않는다', (
+      tester,
+    ) async {
+      await pumpGuest(tester);
+      meetings.putError = guestError(403, 'GuestAccessDeniedError');
+      await tester.tapAt(cellCenter(tester, '3월 2일 (화) 9:00 ~ 9:30'));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('지금은 게스트로 이 모임을 볼 수 없습니다'), findsOneWidget);
+      expect(meetings.puts, hasLength(1));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(meetings.puts, hasLength(1));
       expect(find.text('지금은 게스트로 이 모임을 볼 수 없습니다'), findsOneWidget);
     });
 

@@ -8,6 +8,7 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_glass_scaffold.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_member_body.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_page_title.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_paint_keys.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_visitor_body.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -16,7 +17,8 @@ import 'package:momeet/shared/ui/ui.dart';
 ///
 /// 로그인했거나 이 모임의 게스트면 내 시간을 칠하고 이름을 보는 본문([MeetingMemberBody]), 아니면 공개 모임의
 /// 사람 수만 보는 방문자 본문([MeetingVisitorBody])이다. 보는 중에 세션이 끝나면 방문자 본문으로 바뀌고, 거절된
-/// 게스트가 지워진 것이면 그렇다고 알린다. 주인에게는 제목 옆에 모임 설정을 여는 연필이 있다.
+/// 게스트가 지워진 것이면 그렇다고 알린다. 주인에게는 제목 옆에 모임 설정을 여는 연필이 있다. 내 시간을 칠하는
+/// 본문에서는 칠한 것을 키보드로 되돌린다([MeetingPaintKeys]).
 class MeetingPage extends ConsumerStatefulWidget {
   const MeetingPage({super.key, required this.meetingId});
 
@@ -91,7 +93,10 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
         onEdit: owner ? () => openMeetingEdit(context, meetingId) : null,
       ),
       body: signedIn
-          ? MeetingMemberBody(meetingId: meetingId, guest: guest)
+          ? MeetingPaintKeys(
+              meetingId: meetingId,
+              child: MeetingMemberBody(meetingId: meetingId, guest: guest),
+            )
           : MeetingVisitorBody(meetingId: meetingId),
     );
   }
