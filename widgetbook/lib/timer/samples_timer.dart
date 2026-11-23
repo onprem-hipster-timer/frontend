@@ -1,6 +1,10 @@
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/timer/domain/timer_repository.dart';
+import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_control_button.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/providers/friend_providers.dart';
 
 /// 대시보드가 보이는 타이머 상태. 노브 선택지로 쓴다
 enum SampleTimerState {
@@ -104,3 +108,68 @@ TimerControlButton sampleControlButton(
   onResume: () {},
   onExtend: () {},
 );
+
+final _friendsSince = DateTime.utc(2026, 1, 5);
+
+final _friends = [
+  for (final (i, name) in ['모모', '토끼', '곰돌이', '다람쥐'].indexed)
+    FriendRead(
+      userId: 'friend-$i',
+      friendshipId: 'friendship-$i',
+      since: _friendsSince,
+      displayName: name,
+    ),
+];
+
+/// 공유 설정 버튼이 여는 시트가 읽는 Provider. [timer]의 공유 범위를 지금 설정으로 읽고,
+/// 선택한 친구면 모모·토끼를 고른 채로 연다. 저장은 아무 데도 보내지 않는다
+List<Override> sampleShareOverrides(TimerRead timer) => [
+  timerRepositoryProvider.overrideWithValue(_SampleTimers(timer)),
+  friendsProvider.overrideWith((ref) async => _friends),
+  timerViewsProvider.overrideWith(TimerViewsNotifier.new),
+];
+
+/// [timer] 하나의 공유 설정만 견본으로 돌려주고, 저장은 받기만 한다
+class _SampleTimers implements TimerRepository {
+  _SampleTimers(this.timer);
+
+  final TimerRead timer;
+
+  VisibilityRead _visibility(VisibilityLevel level, List<String> userIds) =>
+      VisibilityRead(
+        id: 'visibility-${timer.id}',
+        resourceType: ResourceType.timer,
+        resourceId: timer.id,
+        ownerId: 'me',
+        level: level,
+        createdAt: timer.createdAt,
+        updatedAt: timer.updatedAt,
+        allowedUserIds: userIds,
+      );
+
+  @override
+  Future<VisibilityRead?> getVisibility(String timerId) async =>
+      switch (timer.visibilityLevel) {
+        null => null,
+        final level => _visibility(level, [
+          if (level == VisibilityLevel.selected)
+            for (final friend in _friends.take(2)) friend.userId,
+        ]),
+      };
+
+  @override
+  Future<VisibilityRead> setVisibility(
+    String timerId,
+    VisibilityUpdate data,
+  ) async => _visibility(data.level, data.allowedUserIds ?? const []);
+
+  @override
+  Future<void> clearVisibility(String timerId) async {}
+
+  @override
+  Future<TimerRead> getTimer(String timerId) async => timer;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('공유 설정 시트는 ${invocation.memberName}을 쓰지 않는다');
+}

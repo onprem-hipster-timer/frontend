@@ -27,10 +27,12 @@ class MoMeetWidgetbook extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Widgetbook(
-      directories: labelSingleUseCases(directories),
-      appBuilder: widgetbookAppBuilder,
-      addons: widgetbookAddons,
+    return CatalogRoot(
+      child: Widgetbook(
+        directories: labelSingleUseCases(directories),
+        appBuilder: widgetbookAppBuilder,
+        addons: widgetbookAddons,
+      ),
     );
   }
 }

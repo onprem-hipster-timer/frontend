@@ -19,9 +19,30 @@ class SampleProviderScope extends StatelessWidget {
     return ProviderScope(
       overrides: overrides,
       observers: [_OnlyOverridden(overrides)],
-      child: child,
+      child: Builder(
+        builder: (context) => _CapturedScope(
+          container: ProviderScope.containerOf(context, listen: false),
+          child: child,
+        ),
+      ),
     );
   }
+}
+
+/// 시트·다이얼로그·메뉴는 use case 바깥의 Navigator에 놓이므로, 띄울 때 함께 옮겨지는 테마([InheritedTheme])로
+/// 같은 견본 Provider를 그 안까지 잇는다
+class _CapturedScope extends InheritedTheme {
+  const _CapturedScope({required this.container, required super.child});
+
+  final ProviderContainer container;
+
+  @override
+  Widget wrap(BuildContext context, Widget child) =>
+      UncontrolledProviderScope(container: container, child: child);
+
+  @override
+  bool updateShouldNotify(_CapturedScope oldWidget) =>
+      container != oldWidget.container;
 }
 
 final class _OnlyOverridden extends ProviderObserver {

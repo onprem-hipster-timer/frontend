@@ -201,7 +201,7 @@ use case 추가:
 2. 위젯 하나에 use case 하나를 두고, 판단에 필요한 상태(빈 상태·긴 글·오류·비활성·좁은 폭 등)는 `context.knobs`로 받는다. 앱에서 놓이는 폭과 바탕에 맞춰 담고, 눌러서 바뀌는 위젯은 use case 안에서 상태를 들어 반응하게 한다. 카탈로그는 공개 사이트라 예시 이름·문구는 실제 사람이 아닌 것으로, 날짜·시각은 고정 값으로 쓴다.
 3. `widgetbook/`에서 `fvm dart run build_runner build`를 다시 돌린다. 생성 파일은 커밋하지 않는다.
 
-카탈로그는 앱 이미지, 시간대 데이터, 화면 이동을 갖춘다(`widgetbook/lib/main.dart`). 앱 화면으로 가는 누르기는 어느 화면이 열리는지 알리는 안내 화면을 띄우고, 스스로 닫는 시트·확인 창은 다시 그린다. use case 안에 라우터가 따로 필요하면 `PreviewRouter`(`widgetbook/lib/preview_router.dart`)를 쓴다. `MaterialApp.router`는 카탈로그 사이트의 주소를 바꾸므로 쓰지 않는다.
+카탈로그는 앱 이미지, 시간대 데이터, 화면 이동을 갖춘다(`widgetbook/lib/main.dart`). 앱 화면으로 가는 누르기는 어느 화면이 열리는지 알리는 안내 화면을 띄우고, 스스로 닫는 시트·확인 창은 다시 그린다. 앱이 `showApp…`으로 여는 시트·확인 창·고르기는 미리보기 안에서 고른 테마로 열리고, use case의 `SampleProviderScope` 값을 그대로 읽는다. use case 안에 라우터가 따로 필요하면 `PreviewRouter`(`widgetbook/lib/preview_router.dart`)를 쓴다. `MaterialApp.router`는 카탈로그 사이트의 주소를 바꾸므로 쓰지 않는다.
 
 카탈로그 전체를 감싸는 `ProviderScope`는 없다. Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope(overrides: […])`(`widgetbook/lib/sample_provider_scope.dart`)로 감싸고, 그 트리가 읽는 Provider를 모두 고정 값으로 덮어쓴다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다.
 

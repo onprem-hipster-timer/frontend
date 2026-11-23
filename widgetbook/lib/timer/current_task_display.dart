@@ -46,7 +46,11 @@ Widget currentTaskDisplay(BuildContext context) {
   );
   // 앱에서는 대시보드 양옆 24 여백 안, 다이얼 위 가운데 줄이다
   return SampleProviderScope(
-    overrides: [todoMutationsProvider.overrideWith(SampleTodoMutations.new)],
+    overrides: [
+      todoMutationsProvider.overrideWith(SampleTodoMutations.new),
+      // 제목 뒤 공유 설정 버튼을 누르면 시트가 열린다
+      ...sampleShareOverrides(sampleTimer()),
+    ],
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Align(

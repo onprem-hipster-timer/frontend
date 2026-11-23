@@ -9,6 +9,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
+import '../sample_provider_scope.dart';
 import 'samples_timer.dart';
 
 @widgetbook.UseCase(name: '타이머 대시보드', type: TimerDashboardLayout, path: '[타이머]')
@@ -55,12 +56,16 @@ Widget timerDashboardLayout(BuildContext context) {
     label: '가로 휴대폰',
     description: '높이 400보다 낮고 넓은 칸은 다이얼을 왼쪽에 둔다. 800x360 칸을 화면 폭에 맞춰 줄여 보인다',
   );
-  final dashboard = _Dashboard(
-    state: state,
-    count: count,
-    allocated: Duration(minutes: allocated),
-    remaining: Duration(minutes: minutes, seconds: seconds),
-    focus: focus,
+  // 작업 제목 뒤 공유 설정 버튼을 누르면 시트가 열린다
+  final dashboard = SampleProviderScope(
+    overrides: sampleShareOverrides(sampleTimer()),
+    child: _Dashboard(
+      state: state,
+      count: count,
+      allocated: Duration(minutes: allocated),
+      remaining: Duration(minutes: minutes, seconds: seconds),
+      focus: focus,
+    ),
   );
   if (!landscape) return dashboard;
   return Center(

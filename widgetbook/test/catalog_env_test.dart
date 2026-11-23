@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_home_button.dart';
 import 'package:momeet/features/mypage/presentation/widgets/my_meeting_tile.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet_widgetbook/calendar/holiday_detail_sheet.dart';
 import 'package:momeet_widgetbook/calendar/schedule_list_sheet.dart';
 import 'package:momeet_widgetbook/meeting/meeting_home_button.dart';
@@ -155,5 +156,62 @@ void main() {
     );
 
     expect(tester.takeException(), isStateError);
+  });
+
+  testWidgets('앱이 rootNavigator로 띄운 시트는 use case의 테마·언어·애셋 번들 안에 그려진다', (
+    tester,
+  ) async {
+    late BuildContext useCase;
+    await _pump(tester, (context) {
+      useCase = context;
+      return Center(
+        child: TextButton(
+          onPressed: () =>
+              showAppSheet<void>(context, builder: (_) => const Text('시트')),
+          child: const Text('열기'),
+        ),
+      );
+    }, brightness: Brightness.dark);
+
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    final sheet = tester.element(find.text('시트'));
+    expect(Theme.of(sheet).brightness, Brightness.dark);
+    expect(Localizations.localeOf(sheet), const Locale('ko', 'KR'));
+    expect(MaterialLocalizations.of(sheet), isNotNull);
+    expect(DefaultAssetBundle.of(sheet), same(DefaultAssetBundle.of(useCase)));
+
+    Navigator.of(sheet).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('시트'), findsNothing);
+    expect(find.text('열기'), findsOneWidget);
+  });
+
+  testWidgets('rootNavigator로 띄운 다이얼로그도 use case의 견본 Provider를 읽는다', (
+    tester,
+  ) async {
+    final sample = Provider((ref) => '진짜');
+    await _pump(
+      tester,
+      (context) => SampleProviderScope(
+        overrides: [sample.overrideWithValue('견본')],
+        child: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showAppDialog<void>(
+              context,
+              builder: (_) =>
+                  Consumer(builder: (_, ref, _) => Text(ref.watch(sample))),
+            ),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('견본'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

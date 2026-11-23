@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' as flutter show DialogRoute;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
@@ -29,8 +30,21 @@ class _PreviewRouterState extends State<PreviewRouter> {
     _router.routeInformationProvider,
   );
 
+  _CatalogRootState? _root;
+
+  /// 앱이 rootNavigator로 띄우는 시트·다이얼로그는 앱처럼 go_router의 맨 아래 Navigator에 놓는다
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _root = context.findAncestorStateOfType<_CatalogRootState>()
+      ?.._preview = _router.routerDelegate.navigatorKey;
+  }
+
   @override
   void dispose() {
+    if (_root?._preview == _router.routerDelegate.navigatorKey) {
+      _root?._preview = null;
+    }
     _router.dispose();
     super.dispose();
   }
@@ -64,10 +78,11 @@ class _UnreportedRouteInformation extends RouteInformationProvider {
 const _useCaseLocation = '/use-case';
 
 /// 카탈로그의 화면 이동: use case 한 화면 위로, 앱 라우트([AppRoute])마다 앱이 열 화면 이름을 알리는 안내 화면을
-/// 띄운다. use case를 바꿔 열면 라우터를 새로 만든다.
+/// 띄운다. Widgetbook이 use case를 새로 그릴 때(use case·노브·애드온을 바꿀 때) 라우터도 새로 만들어, 띄워 둔
+/// 시트·다이얼로그와 안내 화면도 함께 닫는다.
 Widget catalogRouter(BuildContext context, Widget child) {
   return PreviewRouter(
-    key: ValueKey(WidgetbookState.of(context).path),
+    key: ValueKey(WidgetbookState.of(context).uri),
     initialLocation: _useCaseLocation,
     routes: [
       GoRoute(
@@ -165,5 +180,71 @@ class _ReshownOnPopState extends State<_ReshownOnPop> {
       pages: [MaterialPage<void>(child: widget.child)],
       onDidRemovePage: (_) => setState(() => _shown++),
     );
+  }
+}
+
+/// 카탈로그의 맨 바깥 Navigator. Widgetbook을 감싼다.
+///
+/// 앱은 시트·다이얼로그를 rootNavigator로 띄우는데, 그대로 두면 Widgetbook의 Navigator에 놓여 카탈로그의
+/// 테마·언어·뷰포트 밖에서 그려진다. 이 Navigator가 맨 바깥이 되어 그런 route를 지금 보이는 use case의
+/// go_router Navigator로 넘긴다. Widgetbook 자신의 창(flutter/material의 날짜·색 고르기)은 Widgetbook의 Navigator로 넘긴다.
+class CatalogRoot extends StatelessWidget {
+  const CatalogRoot({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: _CatalogRoot(pages: [_OnlyPage(child)], onDidRemovePage: (_) {}),
+    );
+  }
+}
+
+class _OnlyPage extends Page<void> {
+  const _OnlyPage(this.child);
+
+  final Widget child;
+
+  @override
+  Route<void> createRoute(BuildContext context) => PageRouteBuilder<void>(
+    settings: this,
+    pageBuilder: (context, animation, secondaryAnimation) => child,
+  );
+}
+
+class _CatalogRoot extends Navigator {
+  const _CatalogRoot({super.pages, super.onDidRemovePage});
+
+  @override
+  NavigatorState createState() => _CatalogRootState();
+}
+
+class _CatalogRootState extends NavigatorState {
+  GlobalKey<NavigatorState>? _preview;
+
+  @override
+  Future<T?> push<T extends Object?>(Route<T> route) {
+    final target = route is flutter.DialogRoute
+        ? _widgetbook
+        : _preview?.currentState ?? _widgetbook;
+    return target?.push(route) ?? super.push(route);
+  }
+
+  /// 이 Navigator 아래 첫 Navigator(Widgetbook의 것)
+  NavigatorState? get _widgetbook {
+    NavigatorState? found;
+    void visit(Element element) {
+      if (found != null) return;
+      if (element is StatefulElement && element.state is NavigatorState) {
+        found = element.state as NavigatorState;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    context.visitChildElements(visit);
+    return found;
   }
 }
