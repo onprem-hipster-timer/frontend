@@ -211,7 +211,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
     }
     context.goNamed(
       AppRoute.scheduleDetail.name,
-      queryParameters: {'id': scheduleId},
+      pathParameters: {'scheduleId': scheduleId},
     );
   }
 
