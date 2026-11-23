@@ -294,6 +294,7 @@ _No unreleased changes._
   - CI 정적 검사 잡은 `widgetbook/`의 의존성을 받고 코드를 생성한 뒤 루트 `dart analyze`로 함께 분석한다
   - Widgetbook 생성기의 사용 통계 전송 빌더는 끈다(`widgetbook/build.yaml`)
   - main에 push하면 카탈로그를 빌드해 GitHub Pages(`/frontend/`)에 배포한다(`.github/workflows/widgetbook.yml`). `lib/`·`assets/`·루트 pubspec·`.fvmrc`·`widgetbook/`·이 워크플로가 바뀐 push와 수동 실행에서만 돈다
+  - 로컬 실행과 use case 추가 방법을 `CONTRIBUTING.ko.md`·`CONTRIBUTING.md`의 위젯 카탈로그 절에 적는다
 
 ### Removed
 
