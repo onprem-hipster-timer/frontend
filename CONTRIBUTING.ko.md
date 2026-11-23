@@ -173,6 +173,7 @@ cd packages/momeet_lints && fvm dart test
 | `unused_consumer_ref` | `ref`를 쓰지 않는 `ConsumerWidget`·`ConsumerState`는 `StatelessWidget`·`State`로 |
 | `prefer_media_query_aspect` | `MediaQuery.of(context).size` 대신 `MediaQuery.sizeOf(context)` 같은 개별 접근자 |
 | `prefer_when_or_null` | `loading`·`error`가 `null`만 돌려주는 `when`은 `whenOrNull(data: …)` |
+| `require_widgetbook_use_case` | `lib/shared/ui/`·`lib/shared/widgets/`·`lib/features/<기능>/presentation/widgets/`의 공개 위젯에는 Widgetbook use case(아래 위젯 카탈로그 절) |
 
 > 한 줄만 예외로 둘 때는 `// ignore: momeet_lints/<규칙>`을 쓴다. 플러그인 코드를 바꾸면 IDE의 분석 서버를 재시작해야 반영된다.
 
@@ -190,13 +191,24 @@ fvm dart run build_runner build   # lib/main.directories.g.dart
 fvm flutter run -d chrome
 ```
 
+`lib/shared/ui/`·`lib/shared/widgets/`·`lib/features/<기능>/presentation/widgets/` 아래(하위 폴더 포함)의 공개·비추상 위젯은 use case가 있어야 한다(InheritedWidget·Consumer 위젯 제외, `require_widgetbook_use_case`가 검사). use case는 `widgetbook/lib/<shared 또는 기능>/<같은 파일 이름>.dart`에 두고, 하위 폴더는 펼친다.
+
+카탈로그는 기획·디자인이 화면 요소를 보고 판단하는 곳이기도 하다. use case는 사용자가 앱에서 만나는 모습대로 담는다.
+
 use case 추가:
 
-1. `widgetbook/lib/<기능>/<위젯 파일 이름>.dart`에 `@widgetbook.UseCase(name: …, type: <위젯>, path: '[모임]')`을 단 최상위 함수를 둔다. `path`의 `[…]`는 카탈로그의 분류다. `name`과 knob의 `label`은 앱 화면의 말로 쓴다.
-2. 바꿔 볼 상태는 `context.knobs`로 받는다. 카탈로그는 공개 사이트라 예시 이름·문구는 실제 사람이 아닌 것으로 쓴다.
+1. `widgetbook/lib/<shared 또는 기능>/<위젯 파일 이름>.dart`에 `@widgetbook.UseCase(name: …, type: <위젯>, path: '[모임]/추천 시간')`을 단 최상위 함수를 둔다. `path`의 `[…]`는 카탈로그의 분류, 그 뒤는 폴더다. `name`은 그 요소를 앱 화면의 말로 부르는 이름이고, knob의 `label`도 앱 화면의 말로 쓴다. use case가 하나인 위젯은 메뉴에 `name (클래스 이름)`으로 보인다.
+2. 위젯 하나에 use case 하나를 두고, 판단에 필요한 상태(빈 상태·긴 글·오류·비활성·좁은 폭 등)는 `context.knobs`로 받는다. 앱에서 놓이는 폭과 바탕에 맞춰 담고, 눌러서 바뀌는 위젯은 use case 안에서 상태를 들어 반응하게 한다. 카탈로그는 공개 사이트라 예시 이름·문구는 실제 사람이 아닌 것으로, 날짜·시각은 고정 값으로 쓴다.
 3. `widgetbook/`에서 `fvm dart run build_runner build`를 다시 돌린다. 생성 파일은 커밋하지 않는다.
 
-카탈로그에는 `ProviderScope`가 없어 Provider를 읽는 위젯(자식 포함)은 담지 못한다. 값만 받는 위젯을 담는다.
+카탈로그는 앱 이미지, 시간대 데이터, 화면 이동을 갖춘다(`widgetbook/lib/main.dart`). 앱 화면으로 가는 누르기는 어느 화면이 열리는지 알리는 안내 화면을 띄우고, 스스로 닫는 시트·확인 창은 다시 그린다. use case 안에 라우터가 따로 필요하면 `PreviewRouter`(`widgetbook/lib/preview_router.dart`)를 쓴다. `MaterialApp.router`는 카탈로그 사이트의 주소를 바꾸므로 쓰지 않는다.
+
+카탈로그 전체를 감싸는 `ProviderScope`는 없다. Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope(overrides: […])`(`widgetbook/lib/sample_provider_scope.dart`)로 감싸고, 그 트리가 읽는 Provider를 모두 고정 값으로 덮어쓴다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다.
+
+```bash
+# 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외(넘침 포함)가 없는지 본다. CI도 돌린다
+cd widgetbook && fvm flutter test
+```
 
 루트 `pubspec.yaml`의 의존성을 바꾸면 `widgetbook/`에서도 `fvm flutter pub get`을 돌려 `widgetbook/pubspec.lock`을 함께 커밋한다. CI는 `--enforce-lockfile`로 받는다.
 
