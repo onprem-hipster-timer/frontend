@@ -209,7 +209,7 @@ class _CalendarViewWidgetState extends ConsumerState<CalendarViewWidget> {
       onScheduleTap(scheduleId);
       return;
     }
-    context.pushNamed(
+    context.goNamed(
       AppRoute.scheduleDetail.name,
       queryParameters: {'id': scheduleId},
     );
