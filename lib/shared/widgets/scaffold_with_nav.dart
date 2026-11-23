@@ -47,48 +47,38 @@ class ScaffoldWithNavBar extends StatelessWidget {
       );
     }
     if (size.height < _railBelowHeight) {
-      return Scaffold(
-        body: Row(
+      // SnackBar는 가장 바깥 Scaffold 안에 뜨므로 Scaffold는 세로 내비를 빼고 콘텐츠만 덮는다
+      return ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Row(
           children: [
             _SideNav(current: current, onSelect: _onTap),
             const VerticalDivider(width: 1),
             Expanded(
-              child: ShellScope(
-                compact: false,
-                current: current,
-                onSelect: _onTap,
-                openTabs: () {},
-                child: navigationShell,
+              child: Scaffold(
+                body: ShellScope(
+                  compact: false,
+                  current: current,
+                  onSelect: _onTap,
+                  openTabs: () {},
+                  child: navigationShell,
+                ),
               ),
             ),
           ],
         ),
       );
     }
+    // 하단 바를 Scaffold의 아래 자리에 두어 콘텐츠와 SnackBar가 그 위에 놓인다
     return Scaffold(
-      body: Stack(
-        children: [
-          // 하단 바가 콘텐츠를 가리지 않게 그 높이만큼 비운다
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 100),
-              child: ShellScope(
-                compact: false,
-                current: current,
-                onSelect: _onTap,
-                openTabs: () {},
-                child: navigationShell,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _FloatingNavBar(current: current, onSelect: _onTap),
-          ),
-        ],
+      body: ShellScope(
+        compact: false,
+        current: current,
+        onSelect: _onTap,
+        openTabs: () {},
+        child: navigationShell,
       ),
+      bottomNavigationBar: _FloatingNavBar(current: current, onSelect: _onTap),
     );
   }
 
@@ -141,7 +131,7 @@ class _FloatingNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: AppRadius.pillAll,
