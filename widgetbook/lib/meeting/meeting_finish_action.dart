@@ -14,7 +14,7 @@ const _phases = {
 @widgetbook.UseCase(
   name: '저장하기 버튼과 저장 상태',
   type: MeetingFinishAction,
-  path: '[모임]/되는 시간 칠하기',
+  path: '[모임]/내 시간 선택하기',
 )
 Widget meetingFinishAction(BuildContext context) {
   final knobs = context.knobs;

@@ -6,7 +6,7 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 @widgetbook.UseCase(
   name: '붓 고르기',
   type: MeetingBrushPicker,
-  path: '[모임]/되는 시간 칠하기',
+  path: '[모임]/내 시간 선택하기',
 )
 Widget meetingBrushPicker(BuildContext context) {
   return const Center(

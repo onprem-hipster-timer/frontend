@@ -6,7 +6,7 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 @widgetbook.UseCase(
   name: '받지 않는 시간 띠',
   type: MeetingHourlyBand,
-  path: '[모임]/되는 시간 칠하기',
+  path: '[모임]/내 시간 선택하기',
 )
 Widget meetingHourlyBand(BuildContext context) {
   final knobs = context.knobs;
