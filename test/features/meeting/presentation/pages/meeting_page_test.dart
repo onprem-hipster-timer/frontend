@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -379,6 +380,129 @@ void main() {
         contains('입력을 마쳤어요. 언제든 다시 고칠 수 있어요'),
       );
       semantics.dispose();
+    });
+
+    group('Ctrl+S', () {
+      const finished = '입력을 마쳤어요. 언제든 다시 고칠 수 있어요';
+      const platforms = TargetPlatformVariant({
+        TargetPlatform.android,
+        TargetPlatform.macOS,
+      });
+
+      /// Ctrl+S(macOS는 Cmd+S)를 눌렀다 떼고, 앱이 S 누름을 받았는지 돌려준다
+      Future<bool> pressSave(WidgetTester tester) async {
+        final modifier = defaultTargetPlatform == TargetPlatform.macOS
+            ? LogicalKeyboardKey.metaLeft
+            : LogicalKeyboardKey.controlLeft;
+        await tester.sendKeyDownEvent(modifier);
+        final handled = await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(modifier);
+        return handled;
+      }
+
+      /// 지금까지 스크린 리더에 알린 말(가져오면 비운다)
+      List<String> announced(WidgetTester tester) => [
+        for (final announcement in tester.takeAnnouncements())
+          announcement.message,
+      ];
+
+      testWidgets('자동 저장 중이면 저장하기처럼 기다리던 저장을 바로 보내고 마쳤다고 알린다', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpMeeting(tester, size: const Size(400, 800));
+        await tester.tapAt(cellCenter(tester, cell));
+        await tester.pump();
+        expect(inFinish(find.text('자동 저장 중')), findsOneWidget);
+        expect(meetings.puts, isEmpty);
+
+        expect(await pressSave(tester), isTrue);
+        await tester.pump();
+        await tester.pump();
+        expect(meetings.puts, hasLength(1), reason: '기다리지 않고 바로 보낸다');
+        await tester.pumpAndSettle();
+        expect(find.text('입력을 마쳤어요'), findsOneWidget);
+        expect(announced(tester), contains(finished));
+        expectSlotsInView(
+          tester,
+          bottom: tester.getRect(find.text('입력을 마쳤어요')).top,
+        );
+        semantics.dispose();
+      }, variant: platforms);
+
+      testWidgets('저절로 저장했으면 그래도 저장하기처럼 다시 보내지 않고 마쳤다고 알린다', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpMeeting(tester, size: const Size(400, 800));
+        await tester.tapAt(cellCenter(tester, cell));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        expect(inFinish(find.text('자동 저장됐어요')), findsOneWidget);
+
+        expect(await pressSave(tester), isTrue);
+        await tester.pumpAndSettle();
+        expect(find.text('입력을 마쳤어요'), findsOneWidget);
+        expect(meetings.puts, hasLength(1), reason: '이미 저장했다');
+        expect(announced(tester), contains(finished));
+        semantics.dispose();
+      }, variant: platforms);
+
+      testWidgets('저장하지 못했으면 다시 저장하기처럼 다시 보내 마친다', (tester) async {
+        final semantics = tester.ensureSemantics();
+        meetings.putError = Exception('끊김');
+        await pumpMeeting(tester, size: const Size(400, 800));
+        await tester.tapAt(cellCenter(tester, cell));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        expect(inFinish(find.text('저장하지 못했어요')), findsOneWidget);
+        expect(meetings.puts, hasLength(1));
+
+        expect(await pressSave(tester), isTrue);
+        await tester.pumpAndSettle();
+        expect(meetings.puts, hasLength(2));
+        expect(find.text('입력을 마쳤어요'), findsOneWidget);
+        expect(announced(tester), contains(finished));
+        semantics.dispose();
+      }, variant: platforms);
+
+      testWidgets('누를 단추가 없으면(바꾸기 전, 저장하는 중, 마친 뒤) 저장하거나 알리지 않고 키만 받는다', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        meetings.putGate = Completer<void>();
+        await pumpMeeting(tester, size: const Size(400, 800));
+        announced(tester);
+
+        expect(await pressSave(tester), isTrue, reason: '브라우저의 페이지 저장을 막는다');
+        await tester.pumpAndSettle();
+        expect(meetings.puts, isEmpty);
+        expect(finish(), findsNothing);
+        expect(announced(tester), isEmpty);
+
+        await tester.tapAt(cellCenter(tester, cell));
+        await tester.pump(const Duration(seconds: 1));
+        expect(meetings.puts, hasLength(1));
+        await tester.tap(finish());
+        await tester.pump();
+        expect(find.text('저장하는 중'), findsOneWidget);
+        expect(await pressSave(tester), isTrue);
+        await tester.pump();
+        expect(find.text('저장하는 중'), findsOneWidget);
+
+        meetings.putGate!.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('입력을 마쳤어요'), findsOneWidget);
+        expect(
+          announced(tester).where((message) => message == finished),
+          hasLength(1),
+          reason: '저장하는 중에 눌러도 한 번만 마친다',
+        );
+
+        expect(await pressSave(tester), isTrue);
+        await tester.pumpAndSettle();
+        expect(announced(tester), isEmpty);
+        expect(find.text('입력을 마쳤어요'), findsOneWidget);
+        expect(meetings.puts, hasLength(1));
+        semantics.dispose();
+      }, variant: platforms);
     });
   });
 

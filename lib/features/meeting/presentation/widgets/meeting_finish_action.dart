@@ -16,7 +16,15 @@ enum MeetingFinishPhase {
   done,
 
   /// 저절로든 눌러서든 저장하지 못했다(다시 누를 수 있다)
-  failed,
+  failed;
+
+  /// 단추를 누를 수 있는지. Ctrl+S도 이때만 단추를 누른다
+  bool get pressable => switch (this) {
+    MeetingFinishPhase.autosaving ||
+    MeetingFinishPhase.autosaved ||
+    MeetingFinishPhase.failed => true,
+    MeetingFinishPhase.saving || MeetingFinishPhase.done => false,
+  };
 }
 
 /// 내 시간을 바꾼 뒤의 저장 상태 한 줄과 '저장하기', 누른 뒤의 결과. 저장은 누르지 않아도 저절로 되므로 상태
@@ -100,7 +108,7 @@ class _StatusAndButton extends StatelessWidget {
         MeetingFinishPhase.failed => '다시 저장하기',
         MeetingFinishPhase.autosaving || MeetingFinishPhase.done => '저장하기',
       },
-      onPressed: phase == MeetingFinishPhase.saving ? null : onPressed,
+      onPressed: phase.pressable ? onPressed : null,
       pinned: pinned,
       // 이미 저장했으니 누르지 않아도 된다
       tonal: phase == MeetingFinishPhase.autosaved,
