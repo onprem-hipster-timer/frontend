@@ -1,20 +1,17 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_account_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_finish_action.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_audience.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_name_chip.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_slot_card.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_participants_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-const _people = <MeetingSlotPerson>[
-  (name: '모모', owner: true, guest: false, self: false),
-  (name: '토끼', owner: false, guest: false, self: true),
-  (name: '곰돌이', owner: false, guest: true, self: false),
-];
+import 'samples_grid.dart';
 
 @widgetbook.UseCase(name: '모임 화면 배치', type: MeetingLayout, path: '[모임]/화면 틀')
 Widget meetingLayout(BuildContext context) {
@@ -64,135 +61,65 @@ Widget meetingLayout(BuildContext context) {
       ],
     ),
   );
-  final participants = MeetingPanel(
-    title: '일정 참여자',
-    child: Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final person in [..._people, _squirrel])
-          MeetingNameChip(
-            name: person.name,
-            owner: person.owner,
-            guest: person.guest,
-            self: person.self,
-          ),
-      ],
-    ),
-  );
-  Widget slots({bool fill = false}) {
-    final scheme = Theme.of(context).colorScheme;
-    final cards = [
-      for (final (title, detail) in const [
-        ('3월 2일 (화)', '10:00 ~ 12:00'),
-        ('3월 4일 (목)', '14:00 ~ 15:30'),
-        ('3월 5일 (금)', '19:00 ~ 21:00'),
-      ])
-        MeetingSlotCard(
-          title: title,
-          detail: detail,
-          people: _people,
-          unavailable: const ['다람쥐'],
-          pinned: false,
-          onTap: () {},
-          onCopy: () {},
-          onAddToCalendar: () {},
+  final meeting = gridMeeting(MeetingMode.hourly);
+  // 앱의 모임 화면(로그인한 주인 모모)처럼 격자·추천 시간·일정 참여자가 한 값을 나눠 쓴다. 칠하면 추천 시간도 바뀐다
+  final layout = GridHost(
+    board: gridBoard(meeting, viewer: GridViewer.owner),
+    builder: (context, host) {
+      Widget slots({bool fill = false}) => MeetingSlotsPanel(
+        board: host.board,
+        fill: fill,
+        highlight: host.highlight,
+        link: Uri.parse('https://momeet.example.com/meetings/sample-meeting'),
+        onAddToCalendar: (_) {},
+      );
+      final participants = MeetingParticipantsPanel(
+        board: host.board,
+        onRename: () {},
+        onRemove: host.remove,
+      );
+      return MeetingLayout(
+        main: MeetingAvailabilitySection(
+          meeting: meeting,
+          shading: host.board,
+          onPaint: host.paint,
+          highlight: host.highlight,
         ),
-    ];
-    return MeetingPanel(
-      title: '추천 시간',
-      color: scheme.primaryContainer,
-      foreground: scheme.onPrimaryContainer,
-      fill: fill,
-      child: fill
-          ? ListView.separated(
-              itemCount: cards.length,
-              itemBuilder: (context, i) => cards[i],
-              separatorBuilder: (context, i) => const SizedBox(height: 8),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 8,
-              children: cards,
-            ),
-    );
-  }
-
-  final layout = MeetingLayout(
-    main: const _GridStandIn(),
-    side: [account, link, participants],
-    sideFill: slots(fill: true),
-    header: account,
-    secondary: [slots()],
-    tertiary: [participants, link],
-    action: action
-        ? (pinned) => MeetingFinishAction(
-            phase: MeetingFinishPhase.autosaved,
-            pinned: pinned,
-            onPressed: () {},
-          )
-        : null,
-  );
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      if (width <= constraints.maxWidth) {
-        return Center(
-          child: SizedBox(width: width, child: layout),
-        );
-      }
-      // 화면보다 넓은 폭은 같은 비율로 줄여 한눈에 보인다
-      final scale = constraints.maxWidth / width;
-      return FittedBox(
-        alignment: Alignment.topCenter,
-        child: SizedBox(
-          width: width,
-          height: constraints.maxHeight / scale,
-          child: layout,
-        ),
+        side: [account, link, participants],
+        sideFill: slots(fill: true),
+        header: account,
+        secondary: [slots()],
+        tertiary: [participants, link],
+        action: action
+            ? (pinned) => MeetingFinishAction(
+                phase: MeetingFinishPhase.autosaved,
+                pinned: pinned,
+                onPressed: () {},
+              )
+            : null,
       );
     },
   );
-}
-
-const MeetingSlotPerson _squirrel = (
-  name: '다람쥐',
-  owner: false,
-  guest: false,
-  self: false,
-);
-
-/// '내 시간 선택하기'(격자) 자리. 격자는 시간대 자료가 있어야 그려져 카탈로그에서는 자리만 잡는다
-class _GridStandIn extends StatelessWidget {
-  const _GridStandIn();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          '내 시간 선택하기',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+  // 앱의 모임 화면처럼 Scaffold 안에 두어 복사·하루 지우기 알림이 뜬다
+  return Scaffold(
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        if (width <= constraints.maxWidth) {
+          return Center(
+            child: SizedBox(width: width, child: layout),
+          );
+        }
+        // 화면보다 넓은 폭은 같은 비율로 줄여 한눈에 보인다
+        final scale = constraints.maxWidth / width;
+        return FittedBox(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: width,
+            height: constraints.maxHeight / scale,
+            child: layout,
           ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          height: 560,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '시간 격자',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+        );
+      },
+    ),
+  );
 }
