@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,16 +31,21 @@ const cmd = LogicalKeyboardKey.metaLeft;
 const shift = LogicalKeyboardKey.shiftLeft;
 const z = LogicalKeyboardKey.keyZ;
 const y = LogicalKeyboardKey.keyY;
+const s = LogicalKeyboardKey.keyS;
 
-/// [keys]를 차례로 누른 뒤 거꾸로 뗀다(마지막 키가 단축키의 글자)
-Future<void> press(WidgetTester tester, List<LogicalKeyboardKey> keys) async {
+/// [keys]를 차례로 누른 뒤 거꾸로 뗀다(마지막 키가 단축키의 글자). [frame]이면 그 뒤 한 프레임을 그린다
+Future<void> press(
+  WidgetTester tester,
+  List<LogicalKeyboardKey> keys, {
+  bool frame = true,
+}) async {
   for (final key in keys) {
     await tester.sendKeyDownEvent(key);
   }
   for (final key in keys.reversed) {
     await tester.sendKeyUpEvent(key);
   }
-  await tester.pump();
+  if (frame) await tester.pump();
 }
 
 /// [label] 칸의 내 답('가능', 답하지 않았으면 빈 글)
@@ -273,5 +280,138 @@ void main() {
 
     expect(valueOf(first), isEmpty);
     semantics.dispose();
+  });
+
+  group('저장하기 자리와 함께', () {
+    const finished = '입력을 마쳤어요. 언제든 다시 고칠 수 있어요';
+
+    /// 마지막으로 보낸 저장 본문의 (시작, 끝)
+    List<(DateTime, DateTime)> lastSent() => [
+      for (final slot in meetings.puts.last.$2)
+        (slot.startTime.toUtc(), slot.endTime.toUtc()),
+    ];
+
+    /// 지금까지 입력을 마쳤다고 알린 횟수(가져오면 비운다)
+    int finishedAnnouncements(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .where((announcement) => announcement.message == finished)
+        .length;
+
+    testWidgets(
+      '자동 저장 뒤 Ctrl+S로 마치고 Ctrl+Z로 되돌리면 자동 저장 중부터 다시 보이고 되돌린 칸을 저장한다',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpMeeting(tester);
+        await tester.tapAt(cellCenter(tester, first));
+        await settleSave(tester);
+        expect(find.text('자동 저장됐어요'), findsOneWidget);
+
+        await press(tester, [ctrl, s]);
+        await tester.pumpAndSettle();
+        expect(find.text('입력을 마쳤어요'), findsOneWidget);
+        expect(meetings.puts, hasLength(1), reason: '이미 저장했다');
+
+        await press(tester, [ctrl, z]);
+        expect(find.text('입력을 마쳤어요'), findsNothing);
+        expect(find.text('자동 저장 중'), findsOneWidget);
+        expect(finish(), findsOneWidget);
+
+        await settleSave(tester);
+        expect(find.text('자동 저장됐어요'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, '그래도 저장하기'), findsOneWidget);
+        expect(meetings.puts, hasLength(2));
+        expect(meetings.puts.last.$2, isEmpty, reason: '되돌린 칸을 보낸다');
+        semantics.dispose();
+      },
+    );
+
+    testWidgets(
+      '저장하지 못한 뒤 Ctrl+Z로 되돌리면 되돌린 칸을 한 번 보내 저장하지 못했어요를 지우고, 다시 칠할 수 있다',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        meetings.putError = Exception('끊김');
+        await pumpMeeting(tester);
+        await tester.tapAt(cellCenter(tester, first));
+        await settleSave(tester);
+        expect(find.text('저장하지 못했어요'), findsOneWidget);
+        expect(meetings.puts, hasLength(1));
+
+        await press(tester, [ctrl, z]);
+        expect(valueOf(first), isEmpty);
+        expect(find.text('저장하지 못했어요'), findsNothing);
+        expect(find.text('자동 저장 중'), findsOneWidget);
+
+        await settleSave(tester);
+        expect(meetings.puts, hasLength(2), reason: '되돌린 것을 한 번만 보낸다');
+        expect(meetings.puts.last.$2, isEmpty);
+        expect(find.text('자동 저장됐어요'), findsOneWidget);
+        expect(find.text('저장하지 못했어요'), findsNothing);
+
+        await press(tester, [ctrl, y]);
+        expect(valueOf(first), '가능', reason: '실패한 뒤 되돌린 것도 다시 칠할 수 있다');
+        await settleSave(tester);
+        expect(lastSent(), [(seoul(1, 6), seoul(1, 6, 30))]);
+        semantics.dispose();
+      },
+    );
+
+    testWidgets('저장하는 중에 Ctrl+Z로 되돌리면 저장하는 중 그대로 되돌린 칸까지 저장한 뒤 한 번 마친다', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      meetings.putGate = Completer<void>();
+      await pumpMeeting(tester);
+      await tester.tapAt(cellCenter(tester, first));
+      await tester.pump(const Duration(seconds: 1));
+      expect(meetings.puts, hasLength(1));
+      await tester.tap(finish());
+      await tester.pump();
+      expect(find.text('저장하는 중'), findsOneWidget);
+
+      await press(tester, [ctrl, z]);
+      expect(valueOf(first), isEmpty);
+      expect(find.text('저장하는 중'), findsOneWidget);
+
+      meetings.putGate!.complete();
+      await tester.pump();
+      expect(find.text('입력을 마쳤어요'), findsNothing, reason: '되돌린 칸을 아직 보내지 않았다');
+      expect(find.text('저장하는 중'), findsOneWidget);
+
+      await settleSave(tester);
+      expect(meetings.puts, hasLength(2));
+      expect(meetings.puts.last.$2, isEmpty);
+      expect(find.text('입력을 마쳤어요'), findsOneWidget);
+      expect(finishedAnnouncements(tester), 1);
+      semantics.dispose();
+    });
+
+    for (final inFlight in [false, true]) {
+      testWidgets(
+        'Ctrl+S 바로 뒤에 Ctrl+Z와 Ctrl+Y를 눌러도 칠한 칸을 마지막으로 저장하고 마쳤다고 한 번만 알린다'
+        '${inFlight ? '(저장 응답을 기다리는 동안이면 그 뒤에 마친다)' : ''}',
+        (tester) async {
+          final semantics = tester.ensureSemantics();
+          await pumpMeeting(tester);
+          await tester.tapAt(cellCenter(tester, first));
+          await tester.pump();
+          if (inFlight) meetings.putGate = Completer<void>();
+
+          await press(tester, [ctrl, s], frame: false);
+          await press(tester, [ctrl, z], frame: false);
+          await press(tester, [ctrl, y], frame: false);
+          if (inFlight) {
+            await tester.pump();
+            expect(find.text('저장하는 중'), findsOneWidget);
+            meetings.putGate!.complete();
+          }
+          await settleSave(tester);
+
+          expect(lastSent(), [(seoul(1, 6), seoul(1, 6, 30))]);
+          expect(finishedAnnouncements(tester), 1);
+          if (inFlight) expect(find.text('입력을 마쳤어요'), findsOneWidget);
+          semantics.dispose();
+        },
+      );
+    }
   });
 }
