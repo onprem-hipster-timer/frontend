@@ -642,4 +642,158 @@ void main() {
       });
     });
   });
+
+  group('되돌리기', () {
+    /// 3월 1일 열 [row]줄 칸의 내 답
+    MeetingAnswer answerAt(ProviderContainer container, int row) {
+      final board = read(container).board;
+      return board.answerAt(board.grid.at(0, row)!);
+    }
+
+    test('되돌리면 칠하기 전 칸으로 바꿔 칠한 것처럼 저장하고, 다시 하면 칠한 칸으로 저장한다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier);
+        notifier.paint(answers(read(container), [0, 1], available));
+        async.elapse(wait);
+        expect(slotsOf(meetings.puts.single.$2), [(seoul(6), seoul(7))]);
+
+        notifier.undo();
+        expect(answerAt(container, 0), unanswered);
+        expect(answerAt(container, 1), unanswered);
+        expect(read(container).status, MeetingSaveStatus.saving);
+        async.elapse(wait);
+        expect(meetings.puts, hasLength(2));
+        expect(meetings.puts.last.$2, isEmpty);
+        expect(read(container).status, MeetingSaveStatus.saved);
+
+        notifier.redo();
+        expect(answerAt(container, 0), available);
+        expect(answerAt(container, 1), available);
+        async.elapse(wait);
+        expect(meetings.puts, hasLength(3));
+        expect(slotsOf(meetings.puts.last.$2), [(seoul(6), seoul(7))]);
+        container.dispose();
+      });
+    });
+
+    test('두 번 칠하면 나중에 칠한 것부터 한 번에 하나씩 되돌린다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier);
+        notifier.paint(answers(read(container), [0], available));
+        notifier.paint(answers(read(container), [0, 1], unavailable));
+
+        notifier.undo();
+        expect(answerAt(container, 0), available);
+        expect(answerAt(container, 1), unanswered);
+
+        notifier.undo();
+        expect(answerAt(container, 0), unanswered);
+        container.dispose();
+      });
+    });
+
+    test('되돌리거나 다시 할 것이 없으면 아무것도 바꾸지 않고 저장하지 않는다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final before = read(container);
+
+        container.read(provider.notifier)
+          ..undo()
+          ..redo();
+        async.elapse(wait);
+
+        expect(read(container), same(before));
+        expect(meetings.puts, isEmpty);
+        container.dispose();
+      });
+    });
+
+    test('게스트에서 옮겨 온 시간으로 내 칸이 바뀌면 그 전에 칠한 것은 되돌리지 않는다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier);
+        notifier.paint(answers(read(container), [0], available));
+
+        notifier
+          ..applyImported(
+            availabilityOf(
+              'participant-user-1',
+              userId: 'user-1',
+              slots: [(seoul(9), seoul(10))],
+            ),
+          )
+          ..undo();
+
+        expect(answerAt(container, 6), available, reason: '옮겨 온 시간');
+        expect(answerAt(container, 0), available);
+        container.dispose();
+      });
+    });
+
+    test('가능 시간을 다시 받으면(reload) 그 전에 칠한 것은 되돌리지 않는다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final notifier = container.read(provider.notifier);
+        notifier.paint(answers(read(container), [0], available));
+        unawaited(notifier.reload());
+        async.flushMicrotasks();
+
+        notifier.undo();
+
+        expect(answerAt(container, 0), available);
+        container.dispose();
+      });
+    });
+
+    test('모임을 다시 불러오는 사이에 이전 격자에 칠한 것은 새 격자에서 되돌리지 않는다', () {
+      fakeAsync((async) {
+        final (container, _) = open(async);
+        final gate = meetings.availabilityGate = Completer<void>();
+        meetings.meeting = makeMeeting(
+          mode: MeetingMode.daily,
+          startTime: '00:00:00',
+          endTime: '00:00:00',
+        );
+        container.invalidate(meetingProvider('meeting-1'));
+        async.elapse(Duration.zero);
+
+        // 다시 불러오는 동안에는 이전 격자가 남아 칠할 수 있다
+        container
+            .read(provider.notifier)
+            .paint(answers(read(container), [0], available));
+        gate.complete();
+        async.flushMicrotasks();
+        expect(read(container).board.grid.mode, MeetingMode.daily);
+
+        container.read(provider.notifier).undo();
+
+        expect(read(container).board.mine.edits, isEmpty);
+        container.dispose();
+      });
+    });
+
+    test('화면을 떠나면 기록을 버려 돌아와서 되돌려도 바뀌지 않는다', () {
+      fakeAsync((async) {
+        meetings.putError = StateError('끊김');
+        final (container, subscription) = open(async);
+        container
+            .read(provider.notifier)
+            .paint(answers(read(container), [0], available));
+        async.elapse(wait);
+        subscription.close();
+        async.elapse(wait);
+
+        final back = container.listen(provider, (_, _) {});
+        container.read(provider.notifier).undo();
+        async.elapse(wait);
+
+        expect(back.read().requireValue.status, MeetingSaveStatus.failed);
+        expect(answerAt(container, 0), available);
+        expect(meetings.puts, hasLength(1));
+        container.dispose();
+      });
+    });
+  });
 }

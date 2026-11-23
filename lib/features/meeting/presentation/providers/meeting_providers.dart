@@ -11,6 +11,7 @@ import 'package:momeet/features/meeting/domain/meeting_board.dart';
 import 'package:momeet/features/meeting/domain/meeting_grid.dart';
 import 'package:momeet/features/meeting/domain/meeting_headcount.dart';
 import 'package:momeet/features/meeting/domain/meeting_names.dart';
+import 'package:momeet/features/meeting/domain/meeting_paint_history.dart';
 import 'package:momeet/features/meeting/domain/my_availability.dart';
 import 'package:momeet/features/meeting/domain/time_span.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_autosave.dart';
@@ -117,6 +118,10 @@ class MeetingBoardState {
 /// 돌려받는다). 저장한 뒤에는 가능 시간을 다시 받아 다른 참여자의 변경도 반영한다.
 /// 저장하지 못한 것이 있는 동안에는 화면을 떠나도 값을 버리지 않고, 기다리던 저장은 그대로 보낸다.
 ///
+/// 내가 칠한 것은 한 번 칠한 단위로 되돌리고 다시 한다([undo]·[redo]). 다른 참여자와 저장한 뒤 다시 받은 값은
+/// 기록하지 않는다. 내 시간이 밖에서 바뀌면(다시 불러오기, [applyImported], [reload]) 지금 격자에 없는 칸이나
+/// 옛 답을 쓰지 않게 기록을 버리고, 화면을 떠나도 버린다.
+///
 /// 주인이 참여자를 빼면([remove]) 화면에서 바로 빼되 요청은 [confirmRemove]까지 미룬다. 게스트를 빼면
 /// 그 게스트 계정이 지워지고 backend에는 되돌리기가 없어서다. 빼기를 기다리거나 보내는 동안에도 화면을
 /// 떠나도 값을 버리지 않는다.
@@ -133,6 +138,9 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
   /// 보내는 중인 빼기 요청
   final _sendingRemovals = <String, Future<void>>{};
 
+  /// 내가 칠한 것의 되돌리기 기록
+  final _history = MeetingPaintHistory();
+
   @override
   Future<MeetingBoardState> build(String meetingId) async {
     final autosave = _autosave = MeetingAutosave(
@@ -145,6 +153,7 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
       _hold?.close();
       _hold = null;
     });
+    ref.onCancel(_history.clear);
     final (userId, name) = ref.watch(
       currentUserProvider.select((user) => (user?.id, user?.name)),
     );
@@ -172,18 +181,24 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
       selfId: joined?.id,
       selfName: meetingDisplayName(joined?.displayName ?? name),
     );
+    // 불러오는 사이 이전 격자에 칠한 것은 되돌리지 않는다
+    _history.clear();
     return MeetingBoardState(
       joined == null || board.me != null ? board : board.withSelf(joined),
     );
   }
 
   /// 가능 시간을 다시 받는다(게스트가 이름을 바꾼 뒤 참여자 이름을 새로 보인다)
-  Future<void> reload() => _refresh();
+  Future<void> reload() {
+    _history.clear();
+    return _refresh();
+  }
 
   /// 게스트에서 옮겨 와 합친 내 참여자([mine])로 내 칸을 바꾸고, 다른 참여자도 다시 받는다(옮긴 게스트는
   /// 서버에서 지워진다)
   void applyImported(AvailabilityRead mine) {
     if (state.value == null) return;
+    _history.clear();
     List<TimeSpan> spans(TimeSlotKind kind) => mergeSpans([
       for (final slot in mine.timeSlots)
         if (slot.kind == kind) TimeSpan(slot.startTime, slot.endTime),
@@ -201,9 +216,26 @@ class MeetingBoardNotifier extends _$MeetingBoardNotifier {
     unawaited(_refresh());
   }
 
-  /// 칸마다 [changes]의 답으로 칠하거나 지우고 저장을 맡긴다
+  /// 칸마다 [changes]의 답으로 칠하거나 지우고 저장을 맡긴다. 한 번 칠한 것이 되돌리기의 한 걸음이다
   void paint(Map<MeetingCell, MeetingAnswer> changes) {
-    if (changes.isEmpty || state.value == null) return;
+    final board = state.value?.board;
+    if (changes.isEmpty || board == null) return;
+    _history.record(changes, board.answerAt);
+    _paint(changes);
+  }
+
+  /// 마지막으로 칠한 것을 되돌린다. 칠한 것과 같이 보이고 저장한다. 되돌릴 것이 없으면 아무것도 하지 않는다
+  void undo() => _replay(_history.undo);
+
+  /// 되돌린 것을 다시 칠한다. 다시 할 것이 없으면 아무것도 하지 않는다
+  void redo() => _replay(_history.redo);
+
+  void _replay(Map<MeetingCell, MeetingAnswer>? Function() step) {
+    final changes = state.value == null ? null : step();
+    if (changes != null) _paint(changes);
+  }
+
+  void _paint(Map<MeetingCell, MeetingAnswer> changes) {
     _updateBoard(
       (board) => board.withMine(
         board.mine.paint({
