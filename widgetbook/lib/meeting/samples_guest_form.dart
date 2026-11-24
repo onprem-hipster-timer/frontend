@@ -1,4 +1,7 @@
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/analytics/usage_analytics.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_form_view.dart';
@@ -91,4 +94,21 @@ class _SampleGuestFormState extends State<SampleGuestForm> {
       onSubmit: () => _formKey.currentState!.validate(),
     );
   }
+}
+
+/// '로그인'·'Guest' 고르기와 게스트 폼이 읽는 Provider. 고른 것을 어디에도 보내지 않고, 약관 '보기'는 아무것도
+/// 열지 않는다
+final guestEntryOverrides = <Override>[
+  usageAnalyticsProvider.overrideWithValue(const _NoUsageAnalytics()),
+  openLinkProvider.overrideWithValue((_) async {}),
+];
+
+class _NoUsageAnalytics implements UsageAnalytics {
+  const _NoUsageAnalytics();
+
+  @override
+  void event(UsageEvent event) {}
+
+  @override
+  void tag(UsageTag tag) {}
 }

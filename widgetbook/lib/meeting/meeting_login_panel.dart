@@ -1,6 +1,4 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/core/analytics/usage_analytics.dart';
-import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_login_panel.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -38,10 +36,7 @@ Widget meetingLoginPanel(BuildContext context) {
   return SampleProviderScope(
     // 노브를 바꾸면 폼을 처음부터 다시 연다
     key: ValueKey((guests, guestOpen, turnstile)),
-    overrides: [
-      usageAnalyticsProvider.overrideWithValue(const _NoUsageAnalytics()),
-      openLinkProvider.overrideWithValue((_) async {}),
-    ],
+    overrides: guestEntryOverrides,
     child: SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       // 넓은 화면의 오른쪽 칸 맨 위, 380 폭이다
@@ -94,14 +89,4 @@ class _PanelState extends State<_Panel> {
       onCloseGuest: () => setState(() => _open = false),
     );
   }
-}
-
-class _NoUsageAnalytics implements UsageAnalytics {
-  const _NoUsageAnalytics();
-
-  @override
-  void event(UsageEvent event) {}
-
-  @override
-  void tag(UsageTag tag) {}
 }
