@@ -1,9 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/timer/presentation/widgets/current_task_display.dart';
-import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet_widgetbook/todo/samples_settings.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
@@ -46,11 +44,8 @@ Widget currentTaskDisplay(BuildContext context) {
   );
   // 앱에서는 대시보드 양옆 24 여백 안, 다이얼 위 가운데 줄이다
   return SampleProviderScope(
-    overrides: [
-      todoMutationsProvider.overrideWith(SampleTodoMutations.new),
-      // 제목 뒤 공유 설정 버튼을 누르면 시트가 열린다
-      ...sampleShareOverrides(sampleTimer()),
-    ],
+    // 제목 뒤 공유 설정 버튼을 누르면 시트가 열린다
+    overrides: sampleShareOverrides(sampleTimer()),
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Align(
@@ -104,7 +99,7 @@ class _TaskState extends State<_Task> {
             : sampleTodo(title: widget.title, status: status),
         isShared: widget.friend,
       ),
-      onTodoChanged: (todo) => setState(() => _status = todo.status),
+      onTodoStatusSelected: (status) => setState(() => _status = status),
     );
   }
 }

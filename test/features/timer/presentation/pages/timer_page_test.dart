@@ -27,7 +27,7 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/api/ws/timer_ws_messages.dart';
@@ -795,7 +795,7 @@ void main() {
     testWidgets('일시정지면 Todo 상태 선택기를 보여 주고 완료를 고르면 Todo만 바꾼다', (tester) async {
       final controller = await pump(tester, withTodo(TimerStatus.paused));
 
-      await tester.tap(find.byType(TodoStatusSelector));
+      await tester.tap(find.byType(TodoStatusSelectorView));
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
@@ -868,7 +868,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(todoListReads, 1);
 
-      await tester.tap(find.byType(TodoStatusSelector));
+      await tester.tap(find.byType(TodoStatusSelectorView));
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
@@ -880,7 +880,7 @@ void main() {
 
       final icon = tester.widget<Icon>(
         find.descendant(
-          of: find.byType(TodoStatusSelector),
+          of: find.byType(TodoStatusSelectorView),
           matching: find.byIcon(TodoStatus.scheduled.icon),
         ),
       );
@@ -895,7 +895,7 @@ void main() {
     testWidgets('실행 중이면 Todo 상태 아이콘만 보여 준다', (tester) async {
       await pump(tester, withTodo(TimerStatus.running));
 
-      expect(find.byType(TodoStatusSelector), findsNothing);
+      expect(find.byType(TodoStatusSelectorView), findsNothing);
       final icon = tester.widget<Icon>(
         find.descendant(
           of: find.byType(CurrentTaskDisplay),
@@ -911,7 +911,7 @@ void main() {
     testWidgets('연결된 Todo가 없으면 상태를 보여 주지 않는다', (tester) async {
       await pump(tester, makeTimer(id: 'timer-1', status: TimerStatus.paused));
 
-      expect(find.byType(TodoStatusSelector), findsNothing);
+      expect(find.byType(TodoStatusSelectorView), findsNothing);
       expect(
         find.descendant(
           of: find.byType(CurrentTaskDisplay),
@@ -2529,13 +2529,13 @@ void main() {
             todo: makeTodo(),
           ),
         );
-        expect(find.byType(TodoStatusSelector), findsOneWidget);
+        expect(find.byType(TodoStatusSelectorView), findsOneWidget);
 
         await tester.tap(_dashboardFabByIcon(Icons.coffee));
         await tester.pumpAndSettle();
 
         expect(inDashboard(find.text('휴식')), findsOneWidget);
-        expect(find.byType(TodoStatusSelector), findsNothing);
+        expect(find.byType(TodoStatusSelectorView), findsNothing);
         expect(
           inDashboard(find.byIcon(TodoStatus.unscheduled.icon)),
           findsNothing,

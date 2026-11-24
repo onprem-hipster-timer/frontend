@@ -16,6 +16,7 @@ import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_actio
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_controls.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_layout.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_model.dart';
+import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart' show ShellScope;
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -325,9 +326,17 @@ class _DashboardHeader extends ConsumerWidget {
     }
     return CurrentTaskDisplay(
       timer: timer,
-      onTodoChanged: (todo) {
+      onTodoStatusSelected: (status) async {
+        final todo = timer?.todo;
+        if (todo == null || status == todo.status) return;
+        final updated = await updateTodoMutation.run(
+          ref,
+          (tsx) => tsx
+              .get(todoMutationsProvider.notifier)
+              .changeStatus(todo.id, status),
+        );
         if (!context.mounted) return;
-        ref.read(myActiveTimersProvider.notifier).updateTodo(todo);
+        ref.read(myActiveTimersProvider.notifier).updateTodo(updated);
       },
     );
   }
