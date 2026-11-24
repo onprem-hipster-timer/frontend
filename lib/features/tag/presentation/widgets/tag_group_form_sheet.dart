@@ -4,12 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/tag_providers.dart';
-import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
 import 'package:momeet/core/utils/color_utils.dart';
-import 'package:momeet/features/tag/presentation/widgets/group_form_fields.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet_view.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// 태그 그룹 생성/수정 폼 시트. 칸은 [GroupFormFields]
+/// 태그 그룹 생성/수정 폼 시트. 칸은 [TagGroupFormSheetView]
 class TagGroupFormSheet extends ConsumerStatefulWidget {
   /// 수정할 태그 그룹 (null인 경우 생성 모드)
   final TagGroupReadWithTags? tagGroup;
@@ -21,34 +20,6 @@ class TagGroupFormSheet extends ConsumerStatefulWidget {
 }
 
 class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-
-  late Color _selectedColor;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // 수정 모드인 경우 기존 값으로 초기화
-    if (widget.tagGroup != null) {
-      _nameController.text = widget.tagGroup!.name;
-      _descriptionController.text = widget.tagGroup!.description ?? '';
-      _selectedColor = HexColor.fromHex(widget.tagGroup!.color);
-    } else {
-      // 생성 모드인 경우 기본값 설정
-      _selectedColor = TagColorPalette.defaultColor;
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.tagGroup != null;
@@ -56,42 +27,28 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
         ? ref.watch(updateTagGroupMutation).isPending
         : ref.watch(createTagGroupMutation).isPending;
 
-    return AppFormSheet(
-      title: isEditMode ? '${Terms.tagGroup} 수정' : '새 ${Terms.tagGroup} 만들기',
-      formKey: _formKey,
-      actions: AppFormActionBar(
-        submitLabel: isEditMode ? '수정' : '생성',
-        onSubmit: _handleSubmit,
-        busy: isLoading,
-      ),
-      children: [
-        GroupFormFields(
-          noun: Terms.tagGroup,
-          nameController: _nameController,
-          descriptionController: _descriptionController,
-          color: _selectedColor,
-          onColorChanged: (color) => setState(() => _selectedColor = color),
-        ),
-      ],
+    return TagGroupFormSheetView(
+      tagGroup: widget.tagGroup,
+      busy: isLoading,
+      onSubmit: _handleSubmit,
     );
   }
 
   /// 폼 제출 처리
-  Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+  Future<void> _handleSubmit(
+    String name,
+    String description,
+    Color color,
+  ) async {
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
       if (widget.tagGroup != null) {
         // 수정 모드
-        final description = _descriptionController.text.trim();
         final updateData = TagGroupUpdate(
-          name: _nameController.text.trim(),
-          color: _selectedColor.toHex(),
+          name: name,
+          color: color.toHex(),
           description: description.isEmpty ? null : description,
         );
 
@@ -118,11 +75,9 @@ class _TagGroupFormSheetState extends ConsumerState<TagGroupFormSheet> {
       } else {
         // 생성 모드
         final createData = TagGroupCreate(
-          name: _nameController.text.trim(),
-          color: _selectedColor.toHex(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
+          name: name,
+          color: color.toHex(),
+          description: description.isEmpty ? null : description,
         );
 
         await createTagGroupMutation.run(
