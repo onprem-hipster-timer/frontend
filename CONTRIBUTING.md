@@ -193,6 +193,8 @@ fvm flutter run -d chrome
 
 Every public, non-abstract widget under `lib/shared/ui/`, `lib/shared/widgets/`, or `lib/features/<feature>/presentation/widgets/` (including subfolders) must have a use case, except InheritedWidgets and Consumer widgets (checked by `require_widgetbook_use_case`). The use case goes in `widgetbook/lib/<shared or feature>/<same file name>.dart`, with subfolders flattened.
 
+A widget that reads providers (a Consumer widget) is split in two. The widget with the original name only reads providers and owns side effects such as requests and notices; the rendering lives in `<Widget>View` in the neighbouring file `<widget file name>_view.dart`, which takes only values and callbacks. `<Widget>View` does not import provider files or use `ref`, and the use case is written for `<Widget>View`. A `<Widget>View` that renders its own loading and error states takes an `AsyncValue`. State used only on screen, such as text fields and checkboxes, belongs to `<Widget>View`; state that comes from requests, such as submitting, belongs to the original widget. If a type `<Widget>View` needs is declared in a provider file, move it to `domain/` and re-export it from the provider file. Do not split a widget whose rendering is only an assembly of widgets that already have use cases.
+
 The catalog is also where planning and design look at screen elements and judge them. Show each widget the way a user meets it in the app.
 
 Adding a use case:

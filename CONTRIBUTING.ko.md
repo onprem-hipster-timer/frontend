@@ -193,6 +193,8 @@ fvm flutter run -d chrome
 
 `lib/shared/ui/`·`lib/shared/widgets/`·`lib/features/<기능>/presentation/widgets/` 아래(하위 폴더 포함)의 공개·비추상 위젯은 use case가 있어야 한다(InheritedWidget·Consumer 위젯 제외, `require_widgetbook_use_case`가 검사). use case는 `widgetbook/lib/<shared 또는 기능>/<같은 파일 이름>.dart`에 두고, 하위 폴더는 펼친다.
 
+Provider를 읽는 위젯(Consumer 위젯)은 둘로 나눈다. 원래 이름의 위젯은 Provider 읽기와 요청·알림 같은 부수 효과만 맡고, 그리는 부분은 옆 파일 `<위젯 파일 이름>_view.dart`의 `<위젯>View`가 값과 콜백만 받아 그린다. `<위젯>View`는 Provider 파일을 가져오지 않고 `ref`를 쓰지 않으며, use case는 이 `<위젯>View`에 둔다. 불러오는 중·오류를 스스로 그리는 `<위젯>View`는 `AsyncValue`를 받는다. 입력 칸·체크처럼 화면 안에서만 쓰는 상태는 `<위젯>View`가, 요청에서 오는 상태(보내는 중 등)는 원래 위젯이 갖는다. `<위젯>View`가 쓰는 타입이 Provider 파일에 있으면 `domain/`으로 옮기고 Provider 파일에서 다시 내보낸다. 그리는 부분이 이미 use case가 있는 위젯들의 조립뿐이면 나누지 않는다.
+
 카탈로그는 기획·디자인이 화면 요소를 보고 판단하는 곳이기도 하다. use case는 사용자가 앱에서 만나는 모습대로 담는다.
 
 use case 추가:
