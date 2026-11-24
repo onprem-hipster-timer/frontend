@@ -5,6 +5,8 @@ import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
+export 'package:momeet/features/todo/domain/todo_groups.dart';
+
 part 'todo_group_providers.g.dart';
 
 /// 할 일 그룹 목록과 생성·수정·삭제.
@@ -51,10 +53,6 @@ class TodoGroups extends _$TodoGroups {
     ref.invalidate(todosProvider);
   }
 }
-
-/// 기본 할 일 그룹. 목록을 받기 전이면 null
-TodoGroupRead? defaultTodoGroupOf(List<TodoGroupRead>? groups) =>
-    groups?.where((group) => group.isDefault).firstOrNull;
 
 final createTodoGroupMutation = Mutation<void>(label: 'createTodoGroup');
 final updateTodoGroupMutation = Mutation<void>(label: 'updateTodoGroup');
