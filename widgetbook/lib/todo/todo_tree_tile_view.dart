@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_child_count_badge.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tag_indicators.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
@@ -8,9 +7,6 @@ import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet_widgetbook/calendar/samples_plan.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
-
-import '../sample_provider_scope.dart';
-import 'samples_settings.dart';
 
 const _statuses = {
   '미예정': TodoStatus.unscheduled,
@@ -65,52 +61,48 @@ Widget todoTreeTileView(BuildContext context) {
       : children > 0
       ? const Icon(Icons.chevron_right, size: 24)
       : null;
-  return SampleProviderScope(
-    overrides: [todoMutationsProvider.overrideWith(SampleTodoMutations.new)],
-    child: ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _Tile(
-          // 노브를 바꾸면 고른 상태를 버리고 노브 값으로 돌아간다
-          key: ValueKey(status),
-          initialStatus: _statuses[status]!,
-          builder: (current, onChanged) {
-            final todo = TodoRead(
-              id: 'todo-1',
-              title: long
-                  ? '중간 발표 자료 만들기: 지난 회의에서 나온 의견 반영하고 시연 영상까지 다시 찍기'
-                  : '중간 발표 자료 만들기',
-              todoGroupId: 'todo-group-1',
-              status: current,
-              createdAt: planStamp,
-              tags: planTags.take(tagCount).toList(),
-              description: description ? '모모와 역할 나누기, 금요일까지 초안' : null,
-              deadline: DateTime(2026, 3, 13),
-            );
-            return TodoTreeTileView(
-              todo: todo,
-              depth: depth,
-              leading: leading,
-              // 할 일 목록에서는 상태 아이콘을 눌러 상태를 고른다
-              status: picker
-                  ? null
-                  : TodoStatusSelector(
-                      todo: todo,
-                      onChanged: (todo) => onChanged(todo.status),
-                    ),
-              meta: [
-                if (!picker && todo.tags.isNotEmpty)
-                  TodoTagIndicators(tags: todo.tags),
-                if (!picker && children > 0)
-                  TodoChildCountBadge(count: children),
-              ],
-              selected: selected,
-              onTap: () {},
-            );
-          },
-        ),
-      ],
-    ),
+  return ListView(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    children: [
+      _Tile(
+        // 노브를 바꾸면 고른 상태를 버리고 노브 값으로 돌아간다
+        key: ValueKey(status),
+        initialStatus: _statuses[status]!,
+        builder: (current, onChanged) {
+          final todo = TodoRead(
+            id: 'todo-1',
+            title: long
+                ? '중간 발표 자료 만들기: 지난 회의에서 나온 의견 반영하고 시연 영상까지 다시 찍기'
+                : '중간 발표 자료 만들기',
+            todoGroupId: 'todo-group-1',
+            status: current,
+            createdAt: planStamp,
+            tags: planTags.take(tagCount).toList(),
+            description: description ? '모모와 역할 나누기, 금요일까지 초안' : null,
+            deadline: DateTime(2026, 3, 13),
+          );
+          return TodoTreeTileView(
+            todo: todo,
+            depth: depth,
+            leading: leading,
+            // 할 일 목록에서는 상태 아이콘을 눌러 상태를 고른다
+            status: picker
+                ? null
+                : TodoStatusSelectorView(
+                    status: todo.status,
+                    onSelected: onChanged,
+                  ),
+            meta: [
+              if (!picker && todo.tags.isNotEmpty)
+                TodoTagIndicators(tags: todo.tags),
+              if (!picker && children > 0) TodoChildCountBadge(count: children),
+            ],
+            selected: selected,
+            onTap: () {},
+          );
+        },
+      ),
+    ],
   );
 }
 
