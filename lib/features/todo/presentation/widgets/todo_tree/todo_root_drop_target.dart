@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_root_drop_target_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/ui/ui.dart';
 
 /// 루트 드롭 타겟 (루트로 이동)
 ///
@@ -28,52 +28,7 @@ class TodoRootDropTarget extends ConsumerWidget {
         );
       },
       builder: (context, candidateData, rejectedData) {
-        final isValidTarget = candidateData.isNotEmpty;
-        final theme = Theme.of(context);
-
-        return Container(
-          height: 40,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: isValidTarget
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outline.withValues(alpha: 0.3),
-              width: isValidTarget ? 2 : 1,
-              style: BorderStyle.solid,
-            ),
-            borderRadius: AppRadius.mdAll,
-            color: isValidTarget
-                ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                : Colors.transparent,
-          ),
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.arrow_upward,
-                  size: 16,
-                  color: isValidTarget
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '루트로 이동',
-                  style: TextStyle(
-                    color: isValidTarget
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                    fontWeight: isValidTarget
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return TodoRootDropTargetView(highlighted: candidateData.isNotEmpty);
       },
     );
   }
