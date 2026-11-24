@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/core/analytics/usage_analytics.dart';
@@ -17,14 +16,7 @@ import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
 import '../sample_provider_scope.dart';
-
-const _turnstileStates = {
-  '확인됨': TurnstileStatus.ready,
-  '확인하는 중': TurnstileStatus.verifying,
-  '눌러야 함': TurnstileStatus.interactive,
-  '확인 실패': TurnstileStatus.failed,
-  '불러오지 못함': TurnstileStatus.unavailable,
-};
+import 'samples_turnstile.dart';
 
 @widgetbook.UseCase(
   name: '로그인 상자',
@@ -44,10 +36,9 @@ Widget meetingLoginPanel(BuildContext context) {
         "'Guest'를 누르면 그 자리에서 게스트 폼으로 바뀐다. 닉네임 칸을 벗어나면 이름을 찾는다: "
         "'모모'는 이미 참여한 닉네임(들어가기), 다른 이름은 처음 쓰는 닉네임(약관 동의 뒤 참여하기)",
   );
-  final turnstile = knobs.object.dropdown(
-    label: '확인 상자',
+  final turnstile = turnstileKnob(
+    context,
     description: '게스트 폼의 사람 확인 상자(Cloudflare Turnstile) 상태',
-    options: _turnstileStates.keys.toList(),
   );
   final shakes = knobs.int.slider(
     label: '칠하려 한 횟수',
@@ -60,7 +51,7 @@ Widget meetingLoginPanel(BuildContext context) {
     overrides: [
       usageAnalyticsProvider.overrideWithValue(const _NoUsageAnalytics()),
       turnstileFactoryProvider.overrideWithValue(
-        () => _SampleTurnstile(_turnstileStates[turnstile]!),
+        () => SampleTurnstile(turnstile),
       ),
       guestsApiProvider.overrideWithValue(const _SampleGuests()),
       authProvider.overrideWith(_SampleAuth.new),
@@ -123,55 +114,6 @@ class _NoUsageAnalytics implements UsageAnalytics {
 
   @override
   void tag(UsageTag tag) {}
-}
-
-/// 사람 확인 상자 자리. 고른 상태로 머물고, 확인됐으면 토큰을 바로 준다
-class _SampleTurnstile implements TurnstileController {
-  _SampleTurnstile(TurnstileStatus status) : _status = ValueNotifier(status);
-
-  final ValueNotifier<TurnstileStatus> _status;
-
-  @override
-  ValueListenable<TurnstileStatus> get status => _status;
-
-  @override
-  Widget buildBox(BuildContext context) => const _TurnstileBox();
-
-  @override
-  Future<String> nextToken() => _status.value == TurnstileStatus.ready
-      ? Future.value('sample-token')
-      : Future.error(TurnstileException(_status.value));
-
-  @override
-  void reset() {}
-
-  @override
-  void dispose() => _status.dispose();
-}
-
-/// 웹에서 Cloudflare가 그리는 확인 상자와 같은 크기의 빈 자리
-class _TurnstileBox extends StatelessWidget {
-  const _TurnstileBox();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Container(
-        width: 300,
-        height: 65,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(color: scheme.outlineVariant),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          '사람 확인 상자',
-          style: TextStyle(color: scheme.onSurfaceVariant),
-        ),
-      ),
-    );
-  }
 }
 
 /// '모모'만 이미 참여한 닉네임으로 찾는다
