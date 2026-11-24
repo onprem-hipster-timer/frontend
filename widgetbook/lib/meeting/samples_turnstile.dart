@@ -37,7 +37,7 @@ class SampleTurnstileField extends StatefulWidget {
 }
 
 class _SampleTurnstileFieldState extends State<SampleTurnstileField> {
-  late final _controller = SampleTurnstile(widget.status);
+  late final _controller = _SampleTurnstile(widget.status);
 
   @override
   void didUpdateWidget(SampleTurnstileField oldWidget) {
@@ -56,8 +56,8 @@ class _SampleTurnstileFieldState extends State<SampleTurnstileField> {
 }
 
 /// 사람 확인 상자 자리. 고른 상태로 머물고, 확인됐으면 토큰을 바로 준다
-class SampleTurnstile implements TurnstileController {
-  SampleTurnstile(TurnstileStatus status) : _status = ValueNotifier(status);
+class _SampleTurnstile implements TurnstileController {
+  _SampleTurnstile(TurnstileStatus status) : _status = ValueNotifier(status);
 
   final ValueNotifier<TurnstileStatus> _status;
 
