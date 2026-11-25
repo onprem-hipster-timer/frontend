@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +12,9 @@ import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_v
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_start_button_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile_view.dart';
 import 'package:momeet/features/trial/domain/trial_flow.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -190,6 +194,45 @@ void main() {
       await tester.pumpAndSettle();
       expect(headlineOf(TrialStep.end), findsOneWidget);
     });
+
+    testWidgets('끝 화면에서 펼친 모임 화면 그림의 글과 컨트롤을 누르거나 길게 눌러도 아무것도 열리지 않고 끝에 머문다', (
+      tester,
+    ) async {
+      final created = _Created();
+      await openTrial(tester, observers: [created]);
+      await goToEnd(tester);
+      await openMeetingAnswer(tester);
+      final picture = find.byType(TrialMeetingPreview);
+      final shown = Offset.zero & tester.view.physicalSize;
+      final targets = [
+        for (final element
+            in find
+                .descendant(
+                  of: picture,
+                  matching: find.byWidgetPredicate(
+                    (w) => w is Text || w is Icon,
+                  ),
+                )
+                .evaluate())
+          tester
+              .getRect(find.byElementPredicate((e) => identical(e, element)))
+              .center,
+        tester.getCenter(picture),
+      ].where(shown.contains);
+      expect(targets, isNotEmpty);
+
+      for (final target in targets) {
+        await tester.tapAt(target);
+        await tester.longPressAt(target);
+        await tester.pumpAndSettle();
+      }
+
+      _expectNothingOpened();
+      expect(headlineOf(TrialStep.end), findsOneWidget);
+      expect(find.text(meetingsScreen), findsNothing);
+      expect(created.providers, isEmpty);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
   });
 
   group('키보드와 스크린 리더로도 길 밖의 것은 반응하지 않는다', () {
@@ -352,6 +395,133 @@ void main() {
       expect(find.byType(PopupMenuItem<TodoStatus>), findsNothing);
     });
 
+    testWidgets(
+      '끝 화면에서 Tab으로 물음에 닿아 Enter로 펼치고 Space로 접었다 펼치며, 돌아도 그림에는 닿지 않고 모임 만들기는 Enter로 열린다',
+      (tester) async {
+        await openTrial(tester);
+        await goToEnd(tester);
+        final picture = find.byType(TrialMeetingPreview);
+        final question = find.ancestor(
+          of: meetingQuestion,
+          matching: find.byType(TextButton),
+        );
+        final action = find.ancestor(
+          of: find.text(trialMeetingAction),
+          matching: find.byType(TextButton),
+        );
+
+        while (!_focusWithin(question)) {
+          await _tab(tester);
+        }
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(picture, findsOneWidget);
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pumpAndSettle();
+        expect(picture, findsNothing);
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pumpAndSettle();
+        expect(picture, findsOneWidget);
+
+        var reachedAction = false;
+        for (final reverse in [false, true]) {
+          for (var i = 0; i < 12; i++) {
+            await _tab(tester, reverse: reverse);
+            expect(_focusWithin(picture), isFalse);
+            if (_focusWithin(action)) reachedAction = true;
+          }
+        }
+        for (final key in arrows) {
+          await tester.sendKeyEvent(key);
+          await tester.pump();
+          expect(_focusWithin(picture), isFalse);
+        }
+        expect(reachedAction, isTrue);
+
+        while (!_focusWithin(action)) {
+          await _tab(tester);
+        }
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(find.text(meetingsScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '끝 화면의 물음은 스크린 리더로 눌러 펼치고, 펼친 그림은 한 줄로 읽히며 누르기 동작이 없고, 모임 만들기는 스크린 리더로 눌러 연다',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await openTrial(tester);
+        await goToEnd(tester);
+
+        // 물음의 버튼과 펼친 상태는 한 노드로 합쳐 읽힌다
+        final question = find.semantics.byPredicate(
+          (node) =>
+              !node.isMergedIntoParent &&
+              node.getSemanticsData().label == trialMeetingQuestion,
+        );
+        expect(_pressable(question), isTrue);
+        expect(
+          question
+              .evaluate()
+              .single
+              .getSemanticsData()
+              .flagsCollection
+              .isExpanded,
+          Tristate.isFalse,
+        );
+        expect(find.byType(TrialMeetingPreview), findsNothing);
+        tester.semantics.tap(question);
+        await tester.pumpAndSettle();
+        expect(
+          question
+              .evaluate()
+              .single
+              .getSemanticsData()
+              .flagsCollection
+              .isExpanded,
+          Tristate.isTrue,
+        );
+
+        final picture = find.semantics.byPredicate(
+          (node) => node.getSemanticsData().label == trialMeetingPreviewLabel,
+        );
+        expect(picture, findsOne);
+        expect(_pressable(picture), isFalse);
+        _pressBySemantics(tester, picture);
+        await tester.pumpAndSettle();
+        _expectNothingOpened();
+        expect(headlineOf(TrialStep.end), findsOneWidget);
+        // 그림 속 모임 화면의 글(계정·참여자 이름)은 따로 읽히지 않는다. 물음은 약속 제목에 친구 이름이 들어 있어 뺀다
+        final inPicture = [
+          trialMeetingEmail,
+          for (final participant in trialMeeting(
+            trialStart(trialTestNow),
+          ).participants)
+            participant.displayName,
+        ];
+        for (final text in inPicture) {
+          expect(
+            find.semantics.byPredicate((node) {
+              final label = node.getSemanticsData().label;
+              return label != trialMeetingQuestion && label.contains(text);
+            }),
+            findsNothing,
+            reason: text,
+          );
+        }
+
+        final action = find.semantics.byPredicate(
+          (node) => node.getSemanticsData().label == trialMeetingAction,
+        );
+        expect(_pressable(action), isTrue);
+        tester.semantics.tap(action);
+        await tester.pumpAndSettle();
+        expect(find.text(meetingsScreen), findsOneWidget);
+        semantics.dispose();
+      },
+    );
+
     final steps = <String, Future<void> Function(WidgetTester)>{
       '달력 단계': (_) async {},
       '일정 상세 단계': goToSchedule,
@@ -371,6 +541,7 @@ void main() {
             // 누른 것이 체험을 앞으로 넘기면 넘어간 단계에서 이어 누른다
             for (var i = 0; i < 40; i++) {
               await _tab(tester);
+              expect(_focusWithin(find.byType(TrialMeetingPreview)), isFalse);
               if (_focusOnHeader()) continue;
               await _press(tester);
               await tester.pump(const Duration(milliseconds: 400));

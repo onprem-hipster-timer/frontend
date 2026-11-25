@@ -43,22 +43,29 @@ Interval meetingStepInterval(int order) {
 /// 질문을 바꿀 때의 움직임을 한 곳에서 맡는다. [step]이 바뀌면 앞 질문은 누른 답을 잠깐 보인 뒤 위쪽을 기준으로
 /// 조금 작아지며 흐려지고 높이가 접혀 사라진다(그동안 누를 수 없고 스크린 리더도 읽지 않는다). 새 질문은 그
 /// 아래에서 조각마다([MeetingStagger]) 차례로 올라오며 나타나고, 스크린 리더에 [announcement]를 알린다. 앞
-/// 질문이 다 접히면 새 질문이 화면에 들게 부드럽게 굴린다.
+/// 질문이 다 접히면 새 질문이 화면에 들게 부드럽게 굴린다. 화면보다 긴 질문은 끝이 보이게 굴리고, [revealStart]면
+/// 첫머리가 보이게 굴린다.
 ///
 /// 상태가 먼저다. 넘어가는 중에 또 답하면 지금 질문도 바로 사라지기 시작하고 새 질문이 들어온다. 처음 그리는
-/// 질문은 움직이지 않는다. 애니메이션을 줄였으면 한 프레임에 바꾸고 바로 굴린다
+/// 질문은 움직이지 않는다. 애니메이션을 줄였으면 한 프레임에 바꾸고 바로 굴린다.
+///
+/// 테스트: test/features/meeting/presentation/widgets/meeting_step_switcher_test.dart
 class MeetingStepSwitcher extends StatefulWidget {
   const MeetingStepSwitcher({
     super.key,
     required this.step,
     required this.announcement,
     required this.child,
+    this.revealStart = false,
   });
 
   /// 지금 질문을 가리는 값. 바뀌면 넘어간다
   final Object step;
   final String announcement;
   final Widget child;
+
+  /// 화면보다 긴 새 질문을 첫머리가 보이게 굴린다(누를 것이 위에 있는 질문)
+  final bool revealStart;
 
   @override
   State<MeetingStepSwitcher> createState() => _MeetingStepSwitcherState();
@@ -133,19 +140,26 @@ class _MeetingStepSwitcherState extends State<MeetingStepSwitcher>
   void _gone(_Entry entry) {
     if (!mounted || !_leaving.remove(entry)) return;
     setState(() {});
-    // 다음 프레임에 그 질문을 그리지 않은 뒤 버린다
-    WidgetsBinding.instance.addPostFrameCallback((_) => entry.dispose());
-    if (_leaving.isEmpty) _show(meetingStepItem);
+    // 다음 프레임에 떠난 질문을 뺀 뒤 버리고, 남은 질문도 배치가 끝난 뒤 크기를 잰다.
+    // 보상 줄처럼 크기를 다시 계산하는 자식이 움직이는 중에는 아직 배치가 필요할 수 있다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      entry.dispose();
+      if (_leaving.isEmpty) _show(meetingStepItem);
+    });
   }
 
   void _show(Duration duration) {
     final target = _current.key.currentContext;
     if (!mounted || target == null) return;
+    final viewport = Scrollable.maybeOf(target)?.position.viewportDimension;
+    final taller = viewport != null && (target.size?.height ?? 0) > viewport;
     Scrollable.ensureVisible(
       target,
       duration: duration,
       curve: Easing.emphasizedDecelerate,
-      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      alignmentPolicy: widget.revealStart && taller
+          ? ScrollPositionAlignmentPolicy.keepVisibleAtStart
+          : ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
     );
   }
 

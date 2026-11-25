@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/title/page_title.dart';
 import 'package:momeet/features/calendar/calendar.dart'
     show ScheduleDetailBody, ScheduleTimerSectionView, showTodoConvertedNotice;
 import 'package:momeet/features/meeting/meeting.dart'
@@ -20,6 +21,7 @@ import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_calendar.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_spotlights.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_prompt.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
@@ -39,7 +41,9 @@ const _stageHeight = 440.0;
 /// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]). 방금 누른 것으로 얻은 것을 말하는
 /// 앞 줄은 보상 줄로 먼저 보이고 큰 한 줄이 그 뒤에 온다([TrialPrompt], [trialLeadRewards]).
 ///
-/// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와 모임 만들기를 둔다.
+/// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와, 누르면 모임
+/// 만들기와 견본 모임([trialMeeting])의 모임 화면 그림이 펼쳐지는 물음을 둔다([TrialEnd]). 끝이 화면보다 길면(가로로
+/// 눕힌 휴대폰) 첫머리(앞 줄과 한 줄)가 보이게 굴린다.
 ///
 /// 테스트: test/features/trial/presentation/pages/trial_page_test.dart
 class TrialPage extends StatelessWidget {
@@ -51,7 +55,10 @@ class TrialPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 알림이 이 화면에만 뜨고 화면을 떠나면 함께 사라진다
-    return ScaffoldMessenger(child: _Trial(start: now()));
+    return PageTitle(
+      title: trialDocumentTitle,
+      child: ScaffoldMessenger(child: _Trial(start: now())),
+    );
   }
 }
 
@@ -152,6 +159,7 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
           child: MeetingStepSwitcher(
             step: step,
             announcement: trialAnnouncement(flow),
+            revealStart: step == TrialStep.end,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -261,6 +269,10 @@ class _TrialStage extends StatelessWidget {
         recordedSeconds: flow.recordedSeconds,
         onSignUp: onSignUp,
         onCreateMeeting: onCreateMeeting,
+        meetingPreview: TrialMeetingPreview(
+          board: trialMeeting(flow),
+          email: trialMeetingEmail,
+        ),
       ),
     };
   }

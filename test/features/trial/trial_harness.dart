@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell_view.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_brush_texts.dart';
 import 'package:momeet/features/trial/domain/trial_flow.dart';
@@ -15,6 +16,10 @@ import 'package:momeet/features/trial/presentation/pages/trial_page.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../../helpers/start_timer_sheet_driver.dart';
 
 /// 체험을 연 시각. 시험은 12월 2일, 약속은 12월 5일이다
 final trialTestNow = DateTime(2026, 11, 25, 10);
@@ -31,6 +36,7 @@ const trialSizes = {'휴대폰': Size(360, 800), '넓은 화면': Size(800, 1280
 Widget trialApp({List<ProviderObserver> observers = const []}) => ProviderScope(
   observers: observers,
   child: MaterialApp.router(
+    title: AppConfig.appName,
     localizationsDelegates: const [
       GlobalMaterialLocalizations.delegate,
       GlobalWidgetsLocalizations.delegate,
@@ -90,6 +96,14 @@ final convertedLead = find.text(keepWords(trialConvertedLead));
 /// 타이머를 시작한 뒤의 앞 줄
 final startedLead = find.text(keepWords(trialStartedLead));
 
+/// [finder]가 굴리지 않아도 머리띠 아래 화면 안에 보인다
+void expectShown(WidgetTester tester, Finder finder) {
+  final rect = tester.getRect(finder);
+  final height = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+  expect(rect.top, greaterThanOrEqualTo(kToolbarHeight), reason: '$finder');
+  expect(rect.bottom, lessThanOrEqualTo(height), reason: '$finder');
+}
+
 /// 타이머를 시작한 뒤 큰 한 줄 아래 안내
 final startedGuide = find.text(keepWords(trialStartedGuide));
 
@@ -100,13 +114,14 @@ final convertedHeadline = find.text(keepWords(trialConvertedHeadline));
 final startedHeadline = find.text(keepWords(trialStartedHeadline));
 
 /// [size] 화면에 체험하기를 연다. 누를 것 강조가 끝없이 움직이지 않도록 애니메이션을 줄인 채로 연다([motion]이면
-/// 그대로)
+/// 그대로). 끝의 견본 모임을 그리도록 앱처럼 시간대 DB를 불러 둔다
 Future<void> openTrial(
   WidgetTester tester, {
   Size size = const Size(360, 800),
   List<ProviderObserver> observers = const [],
   bool motion = false,
 }) async {
+  if (!tz.timeZoneDatabase.isInitialized) tz.initializeTimeZones();
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -166,12 +181,11 @@ Future<void> goToTodo(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// 할 일 단계에서 타이머를 시작한다(시트의 '시작'까지)
+/// 할 일 단계에서 타이머를 시작한다(시트의 '시작'까지. 낮은 화면이면 시트를 굴려 누른다)
 Future<void> startTimer(WidgetTester tester) async {
   await tester.tap(find.byTooltip('${Terms.timer} 시작'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('시작'));
-  await tester.pumpAndSettle();
+  await tester.startFromSheet();
 }
 
 /// 타이머를 시작하고 알림의 '타이머 보기'로 타이머 단계까지. 시간이 지나가기 시작한 첫 프레임에서 멈춘다
@@ -180,6 +194,15 @@ Future<void> goToTimer(WidgetTester tester) async {
   await startTimer(tester);
   await tester.tap(find.widgetWithText(SnackBarAction, '${Terms.timer} 보기'));
   await tester.pump();
+}
+
+/// 끝 화면의 물음
+final meetingQuestion = find.text(trialMeetingQuestion);
+
+/// 끝 화면에서 물음을 눌러 모임 만들기와 모임 화면 그림을 펼친다
+Future<void> openMeetingAnswer(WidgetTester tester) async {
+  await tester.tap(meetingQuestion);
+  await tester.pumpAndSettle();
 }
 
 /// 타이머 단계에서 시간이 모두 지나가 끝까지

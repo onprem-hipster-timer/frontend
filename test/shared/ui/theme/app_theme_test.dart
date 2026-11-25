@@ -76,6 +76,14 @@ void main() {
     ]);
   });
 
+  testWidgets('나머지 굵기를 여러 번 불러도 처음 시작한 불러오기 하나를 같이 기다린다', (tester) async {
+    final first = appFontWeights();
+
+    expect(appFontWeights(), same(first));
+    await tester.runAsync(() => first);
+    expect(appFontWeights(), same(first));
+  });
+
   test('테마를 거치지 않는 글자의 바탕 스타일은 앱 글꼴이다', () {
     expect(AppTheme.font.fontFamily, AppTheme.fontFamily);
     expect(AppTheme.font.fontFamilyFallback, AppTheme.fontFamilyFallback);

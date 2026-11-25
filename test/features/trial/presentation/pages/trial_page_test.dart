@@ -12,10 +12,14 @@ import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_elapsed
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tag_indicators.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_chip_view.dart';
+import 'package:momeet/features/meeting/meeting.dart'
+    show MeetingMemberBodyView, MeetingParticipantsPanel;
+import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/features/timer/timer.dart' show defaultFocusDuration;
 import 'package:momeet/features/trial/domain/trial_flow.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/shared/api/rest/export.dart';
@@ -180,7 +184,7 @@ void main() {
         expect(find.text('00:25:00'), findsOneWidget);
         expect(find.byIcon(TodoStatus.done.icon), findsOneWidget);
         expect(find.text(trialSignUp), findsOneWidget);
-        expect(find.text(trialMeetingAction), findsOneWidget);
+        expect(meetingQuestion, findsOneWidget);
       });
 
       testWidgets('단계를 따라 누르면 단계마다 앞 줄과 누를 것이 함께 바뀌고, 안내는 타이머를 시작한 뒤에만 보인다', (
@@ -242,11 +246,12 @@ void main() {
         expect(find.text(signupScreen), findsOneWidget);
       });
 
-      testWidgets('끝에서 모임 만들기를 누르면 모임 만들기 화면으로 간다', (tester) async {
+      testWidgets('끝에서 물음을 펼쳐 모임 만들기를 누르면 모임 만들기 화면으로 간다', (tester) async {
         await openTrial(tester, size: size);
         await goToEnd(tester);
+        await openMeetingAnswer(tester);
 
-        await tester.ensureVisible(find.text(trialMeetingAction));
+        expectShown(tester, find.text(trialMeetingAction));
         await tester.tap(find.text(trialMeetingAction));
         await tester.pumpAndSettle();
         expect(find.text(meetingsScreen), findsOneWidget);
@@ -424,7 +429,7 @@ void main() {
     await goToEnd(tester);
 
     expect(headlineOf(TrialStep.end), findsOneWidget);
-    await tester.ensureVisible(find.text(trialSignUp));
+    expectShown(tester, find.text(trialSignUp));
     await tester.tap(find.text(trialSignUp));
     await tester.pumpAndSettle();
     expect(find.text(signupScreen), findsOneWidget);
@@ -447,15 +452,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(headlineOf(TrialStep.end), findsOneWidget);
-    await tester.ensureVisible(find.text(trialSignUp));
+    expectShown(tester, find.text(trialSignUp));
     await tester.tap(find.text(trialSignUp));
     await tester.pumpAndSettle();
     expect(find.text(signupScreen), findsOneWidget);
   });
 
-  testWidgets('끝 화면에서 모임 만들기는 가입하기 아래 구분선 밑의 글자 버튼이다', (tester) async {
+  testWidgets('끝 화면에서 물음과 펼친 모임 만들기는 가입하기 아래 구분선 밑의 글자 버튼이다', (tester) async {
     await openTrial(tester);
     await goToEnd(tester);
+    expect(
+      find.widgetWithText(TextButton, trialMeetingQuestion),
+      findsOneWidget,
+    );
+    await openMeetingAnswer(tester);
 
     expect(find.widgetWithText(FilledButton, trialSignUp), findsOneWidget);
     expect(find.widgetWithText(TextButton, trialMeetingAction), findsOneWidget);
@@ -463,12 +473,138 @@ void main() {
       find.widgetWithText(OutlinedButton, trialMeetingAction),
       findsNothing,
     );
-    final divider = tester.getTopLeft(find.byType(Divider)).dy;
+    // 모임 화면 그림 속 구분선보다 앞에 있다
+    final divider = tester.getTopLeft(find.byType(Divider).first).dy;
     expect(tester.getBottomLeft(find.text(trialSignUp)).dy, lessThan(divider));
     expect(
       tester.getTopLeft(find.text(trialMeetingAction)).dy,
-      greaterThan(divider),
+      greaterThan(tester.getBottomLeft(meetingQuestion).dy),
     );
+    expect(tester.getTopLeft(meetingQuestion).dy, greaterThan(divider));
+  });
+
+  group('끝 화면의 물음을 누르면 모임 만들기와 모임 화면 그림이 펼쳐진다', () {
+    final sizes = {
+      ...trialSizes,
+      '작은 휴대폰': const Size(320, 568),
+      '가로로 눕힌 휴대폰': const Size(844, 390),
+    };
+    final answer = [
+      find.text(trialMeetingLead),
+      find.text(trialMeetingAction),
+      find.byType(TrialMeetingPreview),
+    ];
+
+    for (final MapEntry(key: label, value: size) in sizes.entries) {
+      final landscape = size.width > size.height;
+      testWidgets(
+        landscape
+            ? '$label에서는 처음에 가입하기까지 보이고 물음은 조금만 굴리면 닿으며, 답과 그림은 접혀 있다'
+            : '$label에서는 처음에 앞 줄부터 물음까지 굴리지 않아도 보이고, 답과 그림은 접혀 있다',
+        (tester) async {
+          await openTrial(tester, size: size);
+          await goToEnd(tester);
+
+          expect(tester.takeException(), isNull);
+          if (landscape) {
+            // 앞 줄은 머리띠 뒤로 지나가고, 물음은 아래 끝이 화면 밖으로 3px 나간다
+            expectShown(tester, find.text(trialSignUp));
+            expect(tester.getRect(meetingQuestion).top, lessThan(size.height));
+            expect(
+              tester
+                  .getRect(
+                    find.widgetWithText(TextButton, trialMeetingQuestion),
+                  )
+                  .bottom,
+              lessThanOrEqualTo(size.height + 8),
+            );
+          } else {
+            for (final finder in [
+              leadOf(TrialStep.end),
+              headlineOf(TrialStep.end),
+              find.byType(TodoTreeTileView),
+              find.text(trialSignUp),
+              find.widgetWithText(TextButton, trialMeetingQuestion),
+            ]) {
+              expectShown(tester, finder);
+            }
+          }
+          for (final finder in answer) {
+            expect(finder, findsNothing);
+          }
+        },
+      );
+
+      testWidgets(
+        '$label에서 물음을 누르면 답 한 줄과 모임 만들기가 화면 안에 펼쳐지고 그 밑이나 옆에 앱의 모임 화면 그림이 있다',
+        (tester) async {
+          await openTrial(tester, size: size);
+          await goToEnd(tester);
+          await openMeetingAnswer(tester);
+
+          expect(tester.takeException(), isNull);
+          final board = trialMeeting(trialStart(trialTestNow));
+          final lead = find.text(trialMeetingLead);
+          final action = find.text(trialMeetingAction);
+          expectShown(tester, lead);
+          expectShown(tester, action);
+
+          final picture = find.byType(TrialMeetingPreview);
+          expect(picture, findsOneWidget);
+          for (final type in [
+            MeetingMemberBodyView,
+            MeetingSlotsPanel,
+            MeetingParticipantsPanel,
+          ]) {
+            expect(
+              find.descendant(of: picture, matching: find.byType(type)),
+              findsOneWidget,
+              reason: '$type',
+            );
+          }
+          final inPicture = [
+            trialDinnerTitle,
+            for (final participant in board.participants)
+              participant.displayName,
+          ];
+          for (final text in inPicture) {
+            expect(
+              find.descendant(of: picture, matching: find.text(text)),
+              findsWidgets,
+              reason: text,
+            );
+          }
+
+          // 물음 아래에서 답 한 줄과 같은 높이부터 시작하고, 넓은 화면에서도 작은 그림이다
+          final rect = tester.getRect(picture);
+          expect(
+            rect.top,
+            greaterThan(tester.getBottomLeft(meetingQuestion).dy),
+          );
+          expect(rect.top, greaterThanOrEqualTo(tester.getTopLeft(lead).dy));
+          expect(rect.width, lessThanOrEqualTo(200));
+          expect(tester.binding.hasScheduledFrame, isFalse);
+
+          await tester.tap(action);
+          await tester.pumpAndSettle();
+          expect(find.text(meetingsScreen), findsOneWidget);
+        },
+      );
+    }
+
+    testWidgets('펼친 물음을 다시 누르면 답과 그림이 접혀 사라진다', (tester) async {
+      await openTrial(tester);
+      await goToEnd(tester);
+      await openMeetingAnswer(tester);
+
+      await tester.tap(meetingQuestion);
+      await tester.pumpAndSettle();
+
+      for (final finder in answer) {
+        expect(finder, findsNothing);
+      }
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
   });
 
   testWidgets('변환한 뒤 1분이 지나도 할 일 보기가 있는 알림이 남아 있다', (tester) async {

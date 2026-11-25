@@ -12,11 +12,15 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/trial/presentation/pages/trial_page.dart';
+import 'package:momeet/features/trial/presentation/pages/trial_preview_page.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_preview_kind.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_todo_row.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 import '../helpers/layout_audit_app.dart';
 
@@ -32,8 +36,13 @@ void main() {
   const texts = [StressTexts.koreanLong];
 
   setUpAll(() async {
+    tz.initializeTimeZones();
     await initializeDateFormatting('ko');
   });
+
+  /// 끝 화면에 두는 견본 모임의 그림
+  Widget meetingPreview() =>
+      TrialMeetingPreview(board: trialMeeting(ended), email: trialMeetingEmail);
 
   /// 머리띠가 앞 화면을 보므로 GoRouter 안에 연 체험하기
   Widget routed(Widget page) => ProviderScope(
@@ -86,20 +95,49 @@ void main() {
     ),
   );
 
-  testLayoutAudit(
-    'trial_end',
-    subject: '체험하기 끝',
-    texts: texts,
-    build: (_) => wrapWithApp()(
-      SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: TrialEnd(
-          todo: ended.todo!,
-          recordedSeconds: ended.recordedSeconds,
-          onSignUp: () {},
-          onCreateMeeting: () {},
+  for (final expanded in [false, true]) {
+    testLayoutAudit(
+      expanded ? 'trial_end_expanded' : 'trial_end',
+      subject: expanded ? '체험하기 끝(물음을 펼침)' : '체험하기 끝',
+      texts: texts,
+      build: (_) => wrapWithApp()(
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: TrialEnd(
+            todo: ended.todo!,
+            recordedSeconds: ended.recordedSeconds,
+            onSignUp: () {},
+            onCreateMeeting: () {},
+            meetingPreview: meetingPreview(),
+            initiallyExpanded: expanded,
+          ),
         ),
       ),
+    );
+  }
+
+  testLayoutAudit(
+    'trial_meeting_preview',
+    subject: '체험하기 모임 화면 그림',
+    texts: texts,
+    build: (_) => wrapWithApp()(
+      Center(child: SizedBox(width: 180, height: 450, child: meetingPreview())),
     ),
   );
+
+  for (final kind in TrialPreviewKind.values) {
+    testLayoutAudit(
+      'trial_preview_${kind.name}',
+      subject: '랜딩 미리보기 ${kind.name}',
+      texts: texts,
+      build: (_) => wrapWithApp()(
+        TrialPreviewPage(
+          kind: kind,
+          now: () => now,
+          fontWeights: () async {},
+          onReady: (_) {},
+        ),
+      ),
+    );
+  }
 }

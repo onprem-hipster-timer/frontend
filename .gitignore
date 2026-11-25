@@ -460,3 +460,6 @@ lefthook-local.yml
 
 .*/*
 !.github/*
+
+# 랜딩 미리보기 캡처 스크립트의 의존성
+tool/landing_previews/node_modules/

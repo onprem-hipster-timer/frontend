@@ -9,6 +9,7 @@
 - [개요](#개요)
 - [배포 구조를 선택한 이유](#배포-구조를-선택한-이유)
 - [배포 흐름](#배포-흐름)
+- [랜딩 미리보기 그림](#랜딩-미리보기-그림)
 - [환경변수 관리](#환경변수-관리)
 - [Vercel 설정](#vercel-설정)
 - [GitHub 설정](#github-설정)
@@ -56,6 +57,7 @@ checkout
   → .env 생성 (GitHub vars)
   → build_runner (코드 생성)
   → flutter build web --wasm --release
+  → 랜딩 미리보기 그림 찍기 (build/web/landing/previews/)
   → vercel pull (프로젝트 설정)
   → vercel build --prod (build/web → .vercel/output/static/)
   → vercel deploy --prebuilt --prod (결과물만 업로드)
@@ -64,6 +66,39 @@ checkout
 !!! note "vercel build의 역할"
     `vercel.json`에서 `buildCommand: null`로 설정되어 있으므로, `vercel build`는 빌드를 실행하지 않습니다.
     `outputDirectory`에 지정된 `build/web`을 `.vercel/output/static/`으로 복사하는 역할만 합니다.
+
+---
+
+## 랜딩 미리보기 그림
+
+랜딩 기능 소개 카드와 모임 소개의 그림(`/landing/previews/*.webp`)은 저장소에 두지 않습니다. 배포할 때 방금 빌드한 앱의 미리보기 화면을 찍어 `build/web/landing/previews/`에 씁니다.
+
+- 무엇을 어떤 크기로 찍을지는 `web/` 맨 위 `*.html`(지금은 `index.html`·`meet.html`)의 `data-preview` 요소(`<img>`, `<picture>`의 `<source>`)가 정합니다. 값은 미리보기 종류(`calendar`·`todo`·`timer`·`meeting`), `width`·`height`는 찍는 화면 크기(3배 해상도로 찍음), `src`(`<source>`는 `srcset`)는 쓸 파일 경로입니다. 칸을 더하거나 크기를 바꿀 때는 이 요소만 고칩니다. 여러 페이지에 같은 경로의 그림이 있으면 한 번만 찍으므로, 종류와 크기가 페이지마다 같아야 합니다(다르면 두 페이지를 밝힌 오류로 실패합니다).
+- `tool/landing_previews/capture.mjs`가 빌드 폴더를 `127.0.0.1`에서 내보내고, 칸마다 헤드리스 Chrome으로 앱의 미리보기 화면 `/#/demo/preview?kind=<종류>`를 엽니다. 화면이 `window.__momeet.previewReady`로 준비를 알리면 WebP로 찍습니다.
+- 한 칸이라도 찍지 못하면 그 칸을 밝힌 오류와 함께 실패로 끝나고, 워크플로우는 배포 전에 멈춥니다.
+- Node 22와 Chrome이 필요합니다. 배포에서는 `actions/setup-node`로 Node 22를 두고 러너의 `/usr/bin/google-chrome`을 `CHROME_PATH`로 넘깁니다. Chrome 경로는 `CHROME_PATH` 또는 `PUPPETEER_EXECUTABLE_PATH`로 주고, 주지 않으면 `PATH`에서 `google-chrome`·`chromium-browser`·`chromium`을 찾습니다. 의존성은 `puppeteer-core` 하나이고 `tool/landing_previews/package-lock.json`으로 고정합니다.
+
+### 로컬에서 찍기
+
+`flutter run`이나 찍지 않은 빌드에서는 그림 파일이 없으므로 카드에 그림 없이 글만 보입니다. 빌드한 랜딩을 그림과 함께 보려면 `flutter build web` 뒤에 먼저 의존성을 받습니다.
+
+```bash
+(cd tool/landing_previews && npm ci)
+```
+
+Node 22와 Chrome이 있는 곳에서는 바로 찍습니다.
+
+```bash
+node tool/landing_previews/capture.mjs build/web
+```
+
+Chrome이 없으면 Chromium과 Node가 든 이미지로 찍을 수 있습니다.
+
+```bash
+docker run --rm -u $(id -u):$(id -g) -e CHROME_PATH=/usr/bin/chromium-browser \
+  -v "$PWD/tool/landing_previews":/tool:ro -v "$PWD/build/web":/build \
+  --entrypoint node zenika/alpine-chrome:with-puppeteer /tool/capture.mjs /build
+```
 
 ---
 
@@ -118,8 +153,13 @@ Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 
 
 ### 라우팅
 
-`/privacy`·`/terms`·`/meet`(모임 소개)는 정적 페이지 `privacy.html`·`terms.html`·`meet.html`로 보냅니다.
+`/privacy`·`/terms`·`/meet`(모임 소개)·`/timer`(집중 타이머 안내)·`/demo`(체험하기)는 정적 페이지 `privacy.html`·`terms.html`·`meet.html`·`timer.html`·`demo.html`로 보냅니다.
+`demo.html`은 랜딩 없이 체험하기의 제목·설명과 앱을 담은 페이지이고, `web/landing/kratos-paths.js`가 주소를 `/#/demo`로 바꿔
+체험하기 화면을 바로 엽니다. `$FLUTTER_BASE_HREF`는 `index.html`에서만 바뀌므로 `demo.html`에는 `<base href="/">`를 적습니다.
 그 밖의 경로는 SPA(Single Page Application) 라우팅을 위해 파일이 없으면 `index.html`로 폴백합니다.
+`index.html`의 canonical은 `https://mo.momeet.date/`이므로, `index.html`로 응답하는 앱 경로(`/login`, `/meetings/<모임 번호>`, 없는 경로 등)는 검색 엔진에 랜딩과 같은 주소로 잡힙니다.
+검색 엔진용 `sitemap.xml`(`/`·`/meet`·`/demo`·`/timer`)과 `robots.txt`는 `web/`에 있는 파일 그대로 내보냅니다. 공개 페이지를 더하면 `sitemap.xml`에도 적습니다.
+`index.html`·`meet.html`·`demo.html`·`timer.html`의 `<head>`에 있는 구조화 데이터(`application/ld+json`)는 그 페이지의 제목·설명과 같은 글을 쓰므로, 제목이나 설명을 고치면 함께 고칩니다. 자주 묻는 질문(`FAQPage`)도 화면에 보이는 질문·답과 같은 글입니다.
 앱의 해시 라우트로 쓴 모임 소개(`/#/meet`, 끝의 `/`·쿼리 포함)는 `web/landing/kratos-paths.js`가 앱이 뜨기 전이나 주소의
 해시가 바뀔 때 `/meet`(쿼리 그대로)로 바꿉니다.
 `flutter_service_worker.js`는 캐시 무효화를 위해 `Cache-Control: no-cache`로 설정합니다.
@@ -155,6 +195,8 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 | `API_BASE_URL` | 백엔드 API 서버 URL (인증은 `API_BASE_URL/auth`) |
 | `REALTIME_BACKEND` | 타이머 실시간 소켓 모드 (`inprocess` 또는 `cloudflare`, 비우면 `inprocess`) |
 | `TURNSTILE_SITE_KEY` | Cloudflare Turnstile 사이트 키 (infra `terraform output turnstile_site_key`). 비우면 게스트 입장이 없다 |
+| `SITE_URL` | 사이트 주소 (끝에 `/` 없이, 예: `https://example.com`). 소스에 적힌 기본 주소는 `https://mo.momeet.date`이고, 다른 값이면 빌드한 `index.html`·`meet.html`·`demo.html`·`timer.html`·`sitemap.xml`·`robots.txt`의 주소와 `twitter:domain`을 이 값으로 바꾼다. 비우면 기본 주소 그대로다 |
+| `NAVER_SITE_VERIFICATION` | 네이버 서치어드바이저 HTML 파일 확인의 파일 이름 (확장자 없이, 예: `naver0123abcd`). 값이 있으면 사이트 루트에 `<값>.html`을 만든다. 비우면 만들지 않는다 |
 
 !!! tip "환경변수 변경 시 재배포"
     GitHub vars를 변경해도 자동으로 재배포되지 않습니다.
@@ -169,3 +211,6 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 | `.github/workflows/deploy-production.yml` | 프로덕션 배포 워크플로우 |
 | `vercel.json` | Vercel 프로젝트 설정 |
 | `.github/workflows/test.yml` | CI (린트, 테스트) 워크플로우 |
+| `tool/landing_previews/capture.mjs` | 랜딩 미리보기 그림을 찍는 스크립트 |
+| `tool/landing_previews/package.json`, `package-lock.json` | 스크립트 의존성(`puppeteer-core`) |
+| `web/index.html`, `web/meet.html` | 미리보기 칸(`data-preview`)과 그 크기·파일 경로 |

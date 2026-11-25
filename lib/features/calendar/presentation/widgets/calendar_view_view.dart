@@ -38,6 +38,7 @@ class CalendarViewWidgetView extends StatefulWidget {
     this.onDateLongPress,
     required this.onDragEnd,
     required this.onResizeEnd,
+    this.monthWeeks = monthWeeksInView,
   });
 
   final CalendarSettingsState settings;
@@ -63,6 +64,10 @@ class CalendarViewWidgetView extends StatefulWidget {
   final void Function(DateTime date)? onDateLongPress;
   final ValueChanged<AppointmentDragEndDetails> onDragEnd;
   final ValueChanged<AppointmentResizeEndDetails> onResizeEnd;
+
+  /// 월 보기에 그리는 주 수(1~6). 6이면 [CalendarSettingsState.displayDate]의 달을, 그보다 적으면 그 날이 든
+  /// 주부터 그린다
+  final int monthWeeks;
 
   @override
   State<CalendarViewWidgetView> createState() => _CalendarViewWidgetViewState();
@@ -146,6 +151,7 @@ class _CalendarViewWidgetViewState extends State<CalendarViewWidgetView> {
               monthViewSettings: calendarMonthViewSettings(
                 colorScheme,
                 eventsPerDay,
+                weeks: widget.monthWeeks,
               ),
               timeSlotViewSettings: calendarTimeSlotViewSettings(
                 colorScheme,
@@ -191,7 +197,8 @@ class _CalendarViewWidgetViewState extends State<CalendarViewWidgetView> {
       autoMonthEventsPerDay(
         cellWidth: constraints.maxWidth / DateTime.daysPerWeek,
         cellHeight:
-            (constraints.maxHeight - _monthViewHeaderHeight) / monthWeeksInView,
+            (constraints.maxHeight - _monthViewHeaderHeight) /
+            widget.monthWeeks,
         textScale: MediaQuery.textScalerOf(context).scale(1),
       );
 

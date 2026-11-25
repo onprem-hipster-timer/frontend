@@ -111,6 +111,7 @@ String _screenName(AppRoute route) => switch (route) {
   AppRoute.verification => '이메일 인증',
   AppRoute.authError => '인증 오류',
   AppRoute.trial => '체험하기',
+  AppRoute.trialPreview => '랜딩 미리보기',
   AppRoute.consent => '약관 동의',
   AppRoute.accountDeletion => '탈퇴 대기',
   AppRoute.calendar => '캘린더',

@@ -60,6 +60,14 @@ enum AppRoute {
     allowsGuest: true,
   ),
 
+  // 랜딩의 기능 소개에 찍어 두는 미리보기 (탭 셸 밖, 종류는 `?kind=`). 체험하기처럼 로그인 여부와 상관없이, 게스트도 머문다
+  trialPreview(
+    path: '/demo/preview',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
+
   // 인증 필요 (보호된 페이지)
   // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
   consent(path: '/consent'),

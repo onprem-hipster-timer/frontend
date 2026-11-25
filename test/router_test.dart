@@ -571,6 +571,85 @@ void main() {
     });
 
     // ----------------------------------------------------------
+    // 랜딩 미리보기
+    // ----------------------------------------------------------
+    group('랜딩 미리보기 (/demo/preview)', () {
+      final preview = AppRoute.trialPreview.path;
+      const calendarPreview = '/demo/preview?kind=calendar';
+
+      test('로그인하지 않은 사용자는 미리보기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: preview,
+          queryParameters: const {'kind': 'calendar'},
+        );
+        expect(result, isNull);
+      });
+
+      test('약관 동의 전이거나 탈퇴 대기 중인 로그인 사용자도 미리보기에 머문다', () {
+        for (final (consent, deletion) in [
+          (false, false),
+          (true, true),
+          (null, null),
+        ]) {
+          final result = authRedirect(
+            isAuthenticated: true,
+            isAuthLoading: false,
+            matchedLocation: preview,
+            consentRequired: consent,
+            deletionPending: deletion,
+          );
+          expect(result, isNull, reason: '$consent $deletion');
+        }
+      });
+
+      test('게스트도 미리보기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: preview,
+          isGuest: true,
+          guestMeetingId: 'meeting-1',
+        );
+        expect(result, isNull);
+      });
+
+      test('인증을 확인하는 동안 미리보기를 열면 로딩 화면을 거쳐 종류까지 그대로 미리보기로 돌아온다', () {
+        final loading = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: preview,
+          queryParameters: const {'kind': 'calendar'},
+        );
+        expect(
+          loading,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(calendarPreview)}',
+        );
+        final back = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+          redirectAfterLogin: Uri.parse(loading!).queryParameters['redirect'],
+        );
+        expect(back, calendarPreview);
+      });
+
+      test('미리보기에 있다가 라우터를 새로 만들면 종류까지 그대로 미리보기에서 이어 간다', () {
+        expect(signedOutStay(calendarPreview), calendarPreview);
+      });
+
+      test('미리보기 아래 더 깊은 주소는 로그인하지 않은 사용자를 로그인 화면으로 보낸다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: '$preview/more',
+        );
+        expect(result, startsWith(AppRoute.login.path));
+      });
+    });
+
+    // ----------------------------------------------------------
     // 인증 상태
     // ----------------------------------------------------------
     group('인증 상태', () {

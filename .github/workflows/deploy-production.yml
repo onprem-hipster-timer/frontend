@@ -52,6 +52,50 @@ jobs:
       - name: Build Flutter Web
         run: flutter build web --no-pub --wasm --release
 
+      # 랜딩 기능 카드의 미리보기 그림은 방금 빌드한 앱의 미리보기 화면을 찍어 build/web/landing/previews/에 둔다. 하나라도 찍지 못하면 배포하지 않는다
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install preview capture dependencies
+        run: npm ci
+        working-directory: tool/landing_previews
+
+      - name: Capture landing previews
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tool/landing_previews/capture.mjs build/web
+
+      # 사이트 주소와 검색 엔진 소유 확인 파일은 저장소 변수로 받는다. 소스에는 기본 주소(https://mo.momeet.date) 말고 배포하는 곳의 값을 두지 않는다
+      - name: Apply site settings
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          NAVER_SITE_VERIFICATION: ${{ vars.NAVER_SITE_VERIFICATION }}
+        run: |
+          set -euo pipefail
+          cd build/web
+          default_url='https://mo.momeet.date'
+          if [ -n "${SITE_URL}" ] && [ "${SITE_URL}" != "${default_url}" ]; then
+            if [[ ! "${SITE_URL}" =~ ^https?://[^/[:space:]]+$ ]]; then
+              echo "SITE_URL은 끝에 /가 없는 주소여야 합니다(예: https://example.com): ${SITE_URL}" >&2
+              exit 1
+            fi
+            url_escaped="$(printf '%s' "${SITE_URL}" | sed 's/[&#\\]/\\&/g')"
+            host_escaped="$(printf '%s' "${SITE_URL#*://}" | sed 's/[&#\\]/\\&/g')"
+            sed -i \
+              -e "s#https://mo\.momeet\.date#${url_escaped}#g" \
+              -e "s#<meta property=\"twitter:domain\" content=\"mo\.momeet\.date\">#<meta property=\"twitter:domain\" content=\"${host_escaped}\">#" \
+              index.html meet.html demo.html timer.html sitemap.xml robots.txt
+          fi
+          if [ -n "${NAVER_SITE_VERIFICATION}" ]; then
+            if [[ ! "${NAVER_SITE_VERIFICATION}" =~ ^naver[0-9a-f]+$ ]]; then
+              echo "NAVER_SITE_VERIFICATION은 확장자를 뺀 네이버 확인 파일 이름이어야 합니다(예: naver0123abcd): ${NAVER_SITE_VERIFICATION}" >&2
+              exit 1
+            fi
+            printf 'naver-site-verification: %s.html\n' "${NAVER_SITE_VERIFICATION}" > "${NAVER_SITE_VERIFICATION}.html"
+          fi
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 

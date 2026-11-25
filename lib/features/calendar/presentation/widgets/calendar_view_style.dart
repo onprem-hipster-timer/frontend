@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -25,11 +26,13 @@ ViewHeaderStyle calendarViewHeaderStyle(ColorScheme colorScheme) =>
       ),
     );
 
-/// [eventsPerDay]는 월 칸 하나에 보일 일정 수. 0이면 점으로만 보인다
+/// [eventsPerDay]는 월 칸 하나에 보일 일정 수. 0이면 점으로만 보인다. [weeks]는 그리는 주 수다
 MonthViewSettings calendarMonthViewSettings(
   ColorScheme colorScheme,
-  int eventsPerDay,
-) => MonthViewSettings(
+  int eventsPerDay, {
+  int weeks = monthWeeksInView,
+}) => MonthViewSettings(
+  numberOfWeeksInView: weeks,
   showAgenda: false,
   // 일정 한 줄도 들어가지 않는 낮은 칸은 일정 막대 대신 점으로 있다는 것만 보인다
   appointmentDisplayMode: eventsPerDay == 0

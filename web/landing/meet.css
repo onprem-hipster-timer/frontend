@@ -20,8 +20,37 @@ body.meet-page {
 .meet-page h1,
 .meet-page h2,
 .meet-page h3,
-.meet-page p {
+.meet-page p,
+.meet-page dt,
+.meet-page dd {
   word-break: keep-all;
+}
+
+/* 첫 화면은 글을 왼쪽, 모임 화면 미리보기를 오른쪽에 두고, 좁으면 미리보기를 버튼 아래 가운데에 둔다 */
+.meet-hero {
+  max-width: 960px;
+}
+
+.meet-hero .hero-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.meet-hero .phone-preview {
+  margin: 3rem auto 0;
+}
+
+@media (min-width: 801px) {
+  .meet-hero {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    align-items: center;
+    column-gap: 3rem;
+  }
+
+  .meet-hero .phone-preview {
+    margin: 0;
+  }
 }
 
 .meet-modes {
@@ -42,7 +71,6 @@ body.meet-page {
 .meet-note {
   font-size: 0.9rem;
   color: var(--ink-light);
-  background: var(--surface-alt);
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   margin: 0;
@@ -53,6 +81,28 @@ body.meet-page {
   width: 160px;
   height: auto;
   margin: 0 auto 1.5rem;
+}
+
+/* 자주 묻는 질문. 질문과 답을 접지 않고 모두 보인다 */
+.faq-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.faq-item {
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+}
+
+.faq-item dt {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.faq-item dd {
+  margin: 0;
+  color: var(--ink-light);
 }
 
 @media (max-width: 640px) {
