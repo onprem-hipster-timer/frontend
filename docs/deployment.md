@@ -153,13 +153,13 @@ Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 
 
 ### 라우팅
 
-`/privacy`·`/terms`·`/meet`(모임 소개)·`/study-timer`(공부 타이머 안내)·`/demo`(체험하기)는 정적 페이지 `privacy.html`·`terms.html`·`meet.html`·`study-timer.html`·`demo.html`로 보냅니다.
+`/privacy`·`/terms`·`/meet`(모임 소개)·`/timer`(집중 타이머 안내)·`/demo`(체험하기)는 정적 페이지 `privacy.html`·`terms.html`·`meet.html`·`timer.html`·`demo.html`로 보냅니다.
 `demo.html`은 랜딩 없이 체험하기의 제목·설명과 앱을 담은 페이지이고, `web/landing/kratos-paths.js`가 주소를 `/#/demo`로 바꿔
 체험하기 화면을 바로 엽니다. `$FLUTTER_BASE_HREF`는 `index.html`에서만 바뀌므로 `demo.html`에는 `<base href="/">`를 적습니다.
 그 밖의 경로는 SPA(Single Page Application) 라우팅을 위해 파일이 없으면 `index.html`로 폴백합니다.
 `index.html`의 canonical은 `https://mo.momeet.date/`이므로, `index.html`로 응답하는 앱 경로(`/login`, `/meetings/<모임 번호>`, 없는 경로 등)는 검색 엔진에 랜딩과 같은 주소로 잡힙니다.
-검색 엔진용 `sitemap.xml`(`/`·`/meet`·`/demo`·`/study-timer`)과 `robots.txt`는 `web/`에 있는 파일 그대로 내보냅니다. 공개 페이지를 더하면 `sitemap.xml`에도 적습니다.
-`index.html`·`meet.html`·`demo.html`·`study-timer.html`의 `<head>`에 있는 구조화 데이터(`application/ld+json`)는 그 페이지의 제목·설명과 같은 글을 쓰므로, 제목이나 설명을 고치면 함께 고칩니다. 자주 묻는 질문(`FAQPage`)도 화면에 보이는 질문·답과 같은 글입니다.
+검색 엔진용 `sitemap.xml`(`/`·`/meet`·`/demo`·`/timer`)과 `robots.txt`는 `web/`에 있는 파일 그대로 내보냅니다. 공개 페이지를 더하면 `sitemap.xml`에도 적습니다.
+`index.html`·`meet.html`·`demo.html`·`timer.html`의 `<head>`에 있는 구조화 데이터(`application/ld+json`)는 그 페이지의 제목·설명과 같은 글을 쓰므로, 제목이나 설명을 고치면 함께 고칩니다. 자주 묻는 질문(`FAQPage`)도 화면에 보이는 질문·답과 같은 글입니다.
 앱의 해시 라우트로 쓴 모임 소개(`/#/meet`, 끝의 `/`·쿼리 포함)는 `web/landing/kratos-paths.js`가 앱이 뜨기 전이나 주소의
 해시가 바뀔 때 `/meet`(쿼리 그대로)로 바꿉니다.
 `flutter_service_worker.js`는 캐시 무효화를 위해 `Cache-Control: no-cache`로 설정합니다.
@@ -195,7 +195,7 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 | `API_BASE_URL` | 백엔드 API 서버 URL (인증은 `API_BASE_URL/auth`) |
 | `REALTIME_BACKEND` | 타이머 실시간 소켓 모드 (`inprocess` 또는 `cloudflare`, 비우면 `inprocess`) |
 | `TURNSTILE_SITE_KEY` | Cloudflare Turnstile 사이트 키 (infra `terraform output turnstile_site_key`). 비우면 게스트 입장이 없다 |
-| `SITE_URL` | 사이트 주소 (끝에 `/` 없이, 예: `https://example.com`). 소스에 적힌 기본 주소는 `https://mo.momeet.date`이고, 다른 값이면 빌드한 `index.html`·`meet.html`·`demo.html`·`study-timer.html`·`sitemap.xml`·`robots.txt`의 주소와 `twitter:domain`을 이 값으로 바꾼다. 비우면 기본 주소 그대로다 |
+| `SITE_URL` | 사이트 주소 (끝에 `/` 없이, 예: `https://example.com`). 소스에 적힌 기본 주소는 `https://mo.momeet.date`이고, 다른 값이면 빌드한 `index.html`·`meet.html`·`demo.html`·`timer.html`·`sitemap.xml`·`robots.txt`의 주소와 `twitter:domain`을 이 값으로 바꾼다. 비우면 기본 주소 그대로다 |
 | `NAVER_SITE_VERIFICATION` | 네이버 서치어드바이저 HTML 파일 확인의 파일 이름 (확장자 없이, 예: `naver0123abcd`). 값이 있으면 사이트 루트에 `<값>.html`을 만든다. 비우면 만들지 않는다 |
 
 !!! tip "환경변수 변경 시 재배포"
