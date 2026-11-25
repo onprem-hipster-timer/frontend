@@ -39,6 +39,8 @@ void showAppSnackBar(
 /// 시트를 닫은 뒤처럼 [BuildContext]가 사라진 다음에도 미리 잡아 둔 messenger로 띄운다.
 extension AppSnackBarMessenger on ScaffoldMessengerState {
   /// 알림을 띄우고 그 알림의 controller를 돌려준다(닫힐 때를 알 수 있다)
+  ///
+  /// 버튼이 있어도 다른 알림처럼 저절로 닫힌다. 스크린 리더를 쓰는 중에는 버튼이 있는 알림을 닫지 않는다.
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
     String message, {
     AppNoticeKind kind = AppNoticeKind.info,
@@ -46,12 +48,14 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
     VoidCallback? onAction,
   }) {
     final (background, foreground) = _colors(context, kind);
+    final hasAction = actionLabel != null && onAction != null;
     hideCurrentSnackBar();
     return showSnackBar(
       SnackBar(
         content: Text(message, style: TextStyle(color: foreground)),
         backgroundColor: background,
-        action: actionLabel != null && onAction != null
+        persist: hasAction && MediaQuery.accessibleNavigationOf(context),
+        action: hasAction
             ? SnackBarAction(
                 label: actionLabel,
                 textColor: foreground,

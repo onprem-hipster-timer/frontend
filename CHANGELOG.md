@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 운영 배포(`deploy-production.yml`)의 코드 생성은 `.github/actions/codegen`이 맡아 codegen 캐시를 쓴다. 배포용 `assets/.env`는 그 뒤에 쓴다
 - CI는 dev·main push에서 검사·테스트를 다시 돌리지 않고 캐시만 만든다(`Seed Caches` 잡: Flutter·pub 캐시, 앱과 `widgetbook/`의 codegen 캐시). 정적 검사·테스트 잡은 PR에서만 돈다
 
+#### UI
+- 버튼이 있는 알림도 다른 알림처럼 4초 뒤 저절로 닫힌다. 스크린 리더를 쓰는 중에는 닫지 않는다
+
 ### Added
 
 #### Tooling
@@ -30,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 카탈로그의 뷰포트 고르기에 레이아웃 점검이 보는 유난한 비율의 화면을 더한다: iPhone SE 1세대, Galaxy Z Flip 펼침·커버, Galaxy Z Fold 안쪽, Surface Duo 한쪽·두 화면, 가로로 눕힌 폰, 울트라와이드
   - Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope`로 고정 값을 준다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다
   - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI에서는 돌지 않는다
+
+#### Calendar
+- 새 일정을 만든 뒤 알림에 '일정 보기'를 두고, 누르면 만든 일정의 상세로 간다. 모임 화면의 '내 달력에 일정 만들기'로 만들어도 같다
+- 일정을 할 일로 바꾼 뒤 알림에 '할 일 보기'를 두고, 누르면 '연결된 할 일 보기'처럼 그 할 일이 있는 해야 할 일 목록 화면으로 간다. 상세를 떠난 뒤에 눌러도 간다
+
+#### Todo
+- 새 할 일을 만든 뒤 알림에 '할 일 보기'를 두고, 누르면 새 할 일이 든 해야 할 일 목록 화면으로 간다. 그 목록 화면에서 만들었으면 새 할 일이 이미 보이므로 두지 않는다
+- 새 해야 할 일 목록을 만든 뒤 알림에 '목록 보기'를 두고, 누르면 만든 목록 화면으로 간다
 
 ---
 

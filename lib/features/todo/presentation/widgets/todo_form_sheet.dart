@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
@@ -9,11 +10,16 @@ import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
 import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
 import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_form_submit.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
 /// Todo 생성/수정 폼 시트
 ///
 /// Modal Bottom Sheet로 표시되며, Todo의 제목, 설명, 태그, 상태를 편집할 수 있습니다.
+/// 새로 만들면 알림에 '할 일 보기'(새 할 일이 든 할 일 그룹 화면으로 이동)를 둔다. 지금 그 그룹 화면이면 새 할 일이 이미 보이므로 두지 않는다.
+///
+/// 테스트: test/features/todo/presentation/pages/todo_dashboard_page_test.dart,
+/// test/features/todo/presentation/pages/todo_group_detail_page_test.dart
 class TodoFormSheet extends ConsumerStatefulWidget {
   /// 수정할 Todo (null인 경우 생성 모드)
   final TodoRead? todo;
@@ -61,6 +67,7 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
   Future<void> _handleSubmit(TodoFormValues values) async {
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    VoidCallback? openGroup;
 
     try {
       if (_isEditMode) {
@@ -73,7 +80,14 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         );
         if (!sent) return;
       } else {
-        await createTodoFromForm(ref, values, parentId: widget.defaultParentId);
+        // 시트를 닫은 뒤에도 알림에서 이동할 수 있게 라우터를 잡아 둔다
+        final router = GoRouter.of(context);
+        final created = await createTodoFromForm(
+          ref,
+          values,
+          parentId: widget.defaultParentId,
+        );
+        openGroup = _openGroupAction(router, created.todoGroupId);
       }
       if (mounted) {
         navigator.pop();
@@ -86,6 +100,8 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
                 )
               : '${Terms.todo.withJosa('이', '가')} 생성되었습니다',
           kind: AppNoticeKind.success,
+          actionLabel: openGroup == null ? null : '${Terms.todo} 보기',
+          onAction: openGroup,
         );
       }
     } catch (error) {
@@ -100,6 +116,19 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
       }
     }
   }
+}
+
+/// [groupId] 할 일 그룹 화면으로 가는 동작. 지금 그 화면이면 null
+VoidCallback? _openGroupAction(GoRouter router, String groupId) {
+  final state = router.state;
+  if (state.name == AppRoute.todoGroupDetail.name &&
+      state.pathParameters['groupId'] == groupId) {
+    return null;
+  }
+  return () => router.goNamed(
+    AppRoute.todoGroupDetail.name,
+    pathParameters: {'groupId': groupId},
+  );
 }
 
 /// Todo 폼 시트를 표시하는 헬퍼 함수

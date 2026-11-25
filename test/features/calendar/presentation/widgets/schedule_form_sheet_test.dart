@@ -1,7 +1,15 @@
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show GlobalCupertinoLocalizations;
+import 'package:flutter_localizations/flutter_localizations.dart'
+    show GlobalWidgetsLocalizations;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
@@ -15,6 +23,7 @@ void main() {
   });
 
   late FakeSchedulesClient schedules;
+  late GoRouter router;
 
   // 날짜 고르기 창은 오늘 기준 1년 전~2년 뒤만 받으므로 이번 달 안에서 고른다
   final now = DateTime.now();
@@ -25,32 +34,46 @@ void main() {
     schedules = FakeSchedulesClient();
   });
 
+  /// 일정 상세 자리. 받은 id를 글자로 보인다
+  final detailRoute = GoRoute(
+    path: AppRoute.scheduleDetail.path,
+    name: AppRoute.scheduleDetail.name,
+    builder: (context, state) =>
+        Text('일정 상세 ${state.pathParameters['scheduleId']}'),
+  );
+
   Future<void> openCreate(
     WidgetTester tester, {
     DateTime? initialStartTime,
     DateTime? initialEndTime,
     DateTime? initialDate,
     String? initialTitle,
-  }) => pumpSheetHost(
-    tester,
-    overrides: [schedulesApiProvider.overrideWithValue(schedules)],
-    open: (context) => showScheduleFormSheet(
-      context,
-      initialStartTime: initialStartTime,
-      initialEndTime: initialEndTime,
-      initialDate: initialDate,
-      initialTitle: initialTitle,
-    ),
-  );
-
-  Future<void> openEdit(WidgetTester tester, ScheduleRead schedule) {
-    schedules.schedules.add(schedule);
-    return pumpSheetHost(
+  }) async {
+    router = await pumpSheetHost(
       tester,
       overrides: [schedulesApiProvider.overrideWithValue(schedules)],
+      routes: [detailRoute],
+      open: (context) => showScheduleFormSheet(
+        context,
+        initialStartTime: initialStartTime,
+        initialEndTime: initialEndTime,
+        initialDate: initialDate,
+        initialTitle: initialTitle,
+      ),
+    );
+  }
+
+  Future<void> openEdit(WidgetTester tester, ScheduleRead schedule) async {
+    schedules.schedules.add(schedule);
+    router = await pumpSheetHost(
+      tester,
+      overrides: [schedulesApiProvider.overrideWithValue(schedules)],
+      routes: [detailRoute],
       open: (context) => showScheduleEditSheet(context, schedule),
     );
   }
+
+  Finder viewAction() => find.widgetWithText(SnackBarAction, '일정 보기');
 
   Finder field(String label) => find.widgetWithText(TextFormField, label);
 
@@ -226,6 +249,135 @@ void main() {
       expect(find.text('새 일정'), findsNothing);
       expect(schedules.created, isEmpty);
     });
+
+    testWidgets('만든 뒤 알림에 일정 보기가 있고, 누르기 전에는 화면을 옮기지 않는다', (tester) async {
+      await openCreate(tester, initialStartTime: start, initialEndTime: end);
+      await tester.enterText(field('제목'), '회의');
+      await tapVisible(tester, find.text('저장'));
+
+      expect(viewAction(), findsOneWidget);
+      expect(router.state.uri.path, '/');
+      expect(find.text('열기'), findsOneWidget);
+    });
+
+    testWidgets('닫힌 시트의 알림에서 일정 보기를 누르면 만든 일정의 상세로 간다', (tester) async {
+      await openCreate(tester, initialStartTime: start, initialEndTime: end);
+      await tester.enterText(field('제목'), '회의');
+      await tapVisible(tester, find.text('저장'));
+      expect(find.text('새 일정'), findsNothing);
+
+      await tester.tap(viewAction());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, '/schedule/schedule-new-1');
+      expect(find.text('일정 상세 schedule-new-1'), findsOneWidget);
+    });
+
+    testWidgets('보내기에 실패하면 일정 보기가 없다', (tester) async {
+      schedules.writeError = Exception('서버 오류');
+      await openCreate(tester, initialStartTime: start, initialEndTime: end);
+      await tester.enterText(field('제목'), '회의');
+      await tapVisible(tester, find.text('저장'));
+
+      expect(find.textContaining('일정 생성에 실패했습니다'), findsOneWidget);
+      expect(find.text('일정 보기'), findsNothing);
+    });
+
+    testWidgets('일정을 이어서 두 번 만들면 알림의 일정 보기는 두 번째 일정을 연다', (tester) async {
+      await openCreate(tester, initialStartTime: start, initialEndTime: end);
+      await tester.enterText(field('제목'), '회의');
+      await tapVisible(tester, find.text('저장'));
+      await tapVisible(tester, find.text('열기'));
+      await tester.enterText(field('제목'), '점심');
+      await tapVisible(tester, find.text('저장'));
+
+      await tester.tap(viewAction());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, '/schedule/schedule-new-2');
+    });
+
+    testWidgets('모임 화면에서 일정을 만든 뒤 알림의 일정 보기를 누르면 상세로 가고, 거기서 뒤로 가면 달력이 나온다', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      router = GoRouter(
+        initialLocation: '/m/meeting-1',
+        routes: [
+          GoRoute(
+            path: '/m/:id',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => showScheduleFormSheet(
+                    context,
+                    initialStartTime: start,
+                    initialEndTime: end,
+                    initialTitle: '팀 모임',
+                  ),
+                  child: const Text('모임 화면'),
+                ),
+              ),
+            ),
+          ),
+          StatefulShellRoute.indexedStack(
+            builder: (context, state, shell) => Scaffold(body: shell),
+            branches: [
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: AppRoute.calendar.path,
+                    name: AppRoute.calendar.name,
+                    builder: (context, state) => const Text('달력 화면'),
+                    routes: [
+                      GoRoute(
+                        path: 'schedule/:scheduleId',
+                        name: AppRoute.scheduleDetail.name,
+                        builder: (context, state) =>
+                            Text('일정 상세 ${state.pathParameters['scheduleId']}'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: appRetry,
+          overrides: [schedulesApiProvider.overrideWithValue(schedules)],
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('ko', 'KR')],
+            locale: const Locale('ko', 'KR'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('모임 화면'));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('저장'));
+
+      expect(schedules.created.single.title, '팀 모임');
+      await tester.tap(viewAction());
+      await tester.pumpAndSettle();
+      expect(find.text('일정 상세 schedule-new-1'), findsOneWidget);
+      expect(find.text('모임 화면'), findsNothing);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, '/');
+      expect(find.text('달력 화면'), findsOneWidget);
+    });
   });
 
   group('일정 수정', () {
@@ -257,6 +409,7 @@ void main() {
       expect(explicitNullFields(options), isEmpty);
       expect(find.text('일정 수정'), findsNothing);
       expect(find.text('일정이 수정되었습니다'), findsOneWidget);
+      expect(find.byType(SnackBarAction), findsNothing);
     });
 
     testWidgets('설명을 비우면 description을 null로 보내라고 표시한다', (tester) async {

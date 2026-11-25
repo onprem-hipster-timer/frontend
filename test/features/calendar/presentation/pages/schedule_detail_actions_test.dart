@@ -47,6 +47,38 @@ class _GatedTodosClient extends FakeTodosClient {
   }
 }
 
+/// 할 일로 바꾸면 서버처럼 기본 할 일 그룹에 할 일을 만들고 일정에 잇는 가짜 클라이언트
+class _LinkingSchedulesClient extends FakeSchedulesClient {
+  _LinkingSchedulesClient(super.schedules, this.todos);
+
+  final FakeTodosClient todos;
+
+  @override
+  Future<void> createTodoFromScheduleV1SchedulesScheduleIdTodoPost({
+    required String scheduleId,
+    String? todoGroupId,
+    RequestOptions? options,
+  }) async {
+    await super.createTodoFromScheduleV1SchedulesScheduleIdTodoPost(
+      scheduleId: scheduleId,
+      todoGroupId: todoGroupId,
+    );
+    todos.todos.add(
+      TodoRead(
+        id: 'todo-converted',
+        title: '팀 회의',
+        todoGroupId: defaultTodoGroupId,
+        status: TodoStatus.scheduled,
+        createdAt: DateTime.utc(2026, 1, 1),
+      ),
+    );
+    final index = schedules.indexWhere((s) => s.id == scheduleId);
+    schedules[index] = schedules[index].copyWith(
+      sourceTodoId: 'todo-converted',
+    );
+  }
+}
+
 /// 일정 상세의 수정·할 일로 바꾸기·삭제·연결된 할 일로 가기
 void main() {
   setUpAll(() async {
@@ -84,7 +116,7 @@ void main() {
   });
 
   Future<void> pumpDetail(WidgetTester tester, ScheduleRead item) async {
-    schedules = FakeSchedulesClient([item]);
+    schedules = _LinkingSchedulesClient([item], todos);
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -148,6 +180,9 @@ void main() {
 
   String location() => router.routerDelegate.currentConfiguration.uri.path;
 
+  Finder viewTodoAction() =>
+      find.widgetWithText(SnackBarAction, '${Terms.todo} 보기');
+
   testWidgets('수정은 이 일정으로 채운 수정 시트를 연다', (tester) async {
     await pumpDetail(tester, schedule());
     await tapVisible(tester, find.text('수정'));
@@ -171,6 +206,63 @@ void main() {
       await tapVisible(tester, find.text(_convertLabel));
 
       expect(find.textContaining('변환에 실패했습니다'), findsOneWidget);
+      expect(viewTodoAction(), findsNothing);
+    });
+
+    testWidgets('바꾼 뒤 알림에 할 일 보기가 있고, 누르기 전에는 상세에 머문다', (tester) async {
+      await pumpDetail(tester, schedule());
+      await tapVisible(tester, find.text(_convertLabel));
+
+      expect(viewTodoAction(), findsOneWidget);
+      expect(find.text('일정 상세'), findsOneWidget);
+      expect(find.text('할 일 화면'), findsNothing);
+    });
+
+    testWidgets('알림의 할 일 보기를 누르면 바꾼 할 일이 있는 할 일 그룹으로 간다', (tester) async {
+      await pumpDetail(tester, schedule());
+      await tapVisible(tester, find.text(_convertLabel));
+      await tester.tap(viewTodoAction());
+      await tester.pumpAndSettle();
+
+      expect(location(), '/todo/$defaultTodoGroupId');
+      expect(find.text('그룹 화면 $defaultTodoGroupId'), findsOneWidget);
+    });
+
+    testWidgets('상세를 떠난 뒤 알림의 할 일 보기를 눌러도 그 할 일 그룹으로 간다', (tester) async {
+      await pumpDetail(tester, schedule());
+      await tapVisible(tester, find.text(_convertLabel));
+      await tapVisible(tester, find.byIcon(Icons.arrow_back));
+      expect(find.text('일정 상세'), findsNothing);
+      expect(find.text('달력 화면'), findsOneWidget);
+
+      await tester.tap(viewTodoAction());
+      await tester.pumpAndSettle();
+
+      expect(location(), '/todo/$defaultTodoGroupId');
+    });
+
+    testWidgets('알림의 할 일 보기에서 할 일을 받지 못하면 할 일 탭으로 간다', (tester) async {
+      await pumpDetail(tester, schedule());
+      await tapVisible(tester, find.text(_convertLabel));
+      todos.readError = Exception('끊김');
+      await tester.tap(viewTodoAction());
+      await tester.pumpAndSettle();
+
+      expect(location(), '/todo');
+    });
+
+    testWidgets('상세를 떠난 뒤 알림의 할 일 보기를 눌렀는데 일정을 받지 못하면 할 일 탭으로 간다', (
+      tester,
+    ) async {
+      await pumpDetail(tester, schedule());
+      await tapVisible(tester, find.text(_convertLabel));
+      await tapVisible(tester, find.byIcon(Icons.arrow_back));
+      schedules.readError = Exception('끊김');
+
+      await tester.tap(viewTodoAction());
+      await tester.pumpAndSettle();
+
+      expect(location(), '/todo');
     });
   });
 

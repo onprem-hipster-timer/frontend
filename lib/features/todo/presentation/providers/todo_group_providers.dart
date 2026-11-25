@@ -20,12 +20,13 @@ class TodoGroups extends _$TodoGroups {
   Future<List<TodoGroupRead>> build() =>
       ref.watch(todosApiProvider).readTodoGroupsV1TodosGroupsGet();
 
-  /// 할 일 그룹 생성
-  Future<void> createGroup(TodoGroupCreate data) async {
-    await ref
+  /// 할 일 그룹을 만들어 돌려준다
+  Future<TodoGroupRead> createGroup(TodoGroupCreate data) async {
+    final created = await ref
         .read(todosApiProvider)
         .createTodoGroupV1TodosGroupsPost(body: data);
     ref.invalidateSelf();
+    return created;
   }
 
   /// 할 일 그룹 수정 (기본 그룹도 이름·색·설명을 바꿀 수 있다)
@@ -54,6 +55,8 @@ class TodoGroups extends _$TodoGroups {
   }
 }
 
-final createTodoGroupMutation = Mutation<void>(label: 'createTodoGroup');
+final createTodoGroupMutation = Mutation<TodoGroupRead>(
+  label: 'createTodoGroup',
+);
 final updateTodoGroupMutation = Mutation<void>(label: 'updateTodoGroup');
 final deleteTodoGroupMutation = Mutation<void>(label: 'deleteTodoGroup');
