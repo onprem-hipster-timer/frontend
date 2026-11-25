@@ -140,9 +140,12 @@ class _MeetingStepSwitcherState extends State<MeetingStepSwitcher>
   void _gone(_Entry entry) {
     if (!mounted || !_leaving.remove(entry)) return;
     setState(() {});
-    // 다음 프레임에 그 질문을 그리지 않은 뒤 버린다
-    WidgetsBinding.instance.addPostFrameCallback((_) => entry.dispose());
-    if (_leaving.isEmpty) _show(meetingStepItem);
+    // 다음 프레임에 떠난 질문을 뺀 뒤 버리고, 남은 질문도 배치가 끝난 뒤 크기를 잰다.
+    // 보상 줄처럼 크기를 다시 계산하는 자식이 움직이는 중에는 아직 배치가 필요할 수 있다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      entry.dispose();
+      if (_leaving.isEmpty) _show(meetingStepItem);
+    });
   }
 
   void _show(Duration duration) {
