@@ -40,8 +40,9 @@ const _stageHeight = 440.0;
 ///
 /// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]).
 ///
-/// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와 모임 만들기,
-/// 견본 모임([trialMeeting])의 모임 화면 그림을 둔다. 끝이 화면보다 길면 첫머리(한 줄과 가입하기)가 보이게 굴린다.
+/// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와, 누르면 모임
+/// 만들기와 견본 모임([trialMeeting])의 모임 화면 그림이 펼쳐지는 물음을 둔다([TrialEnd]). 끝이 화면보다 길면(가로로
+/// 눕힌 휴대폰) 첫머리(앞 줄과 한 줄)가 보이게 굴린다.
 ///
 /// 테스트: test/features/trial/presentation/pages/trial_page_test.dart
 class TrialPage extends StatelessWidget {

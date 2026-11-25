@@ -95,23 +95,26 @@ void main() {
     ),
   );
 
-  testLayoutAudit(
-    'trial_end',
-    subject: '체험하기 끝',
-    texts: texts,
-    build: (_) => wrapWithApp()(
-      SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: TrialEnd(
-          todo: ended.todo!,
-          recordedSeconds: ended.recordedSeconds,
-          onSignUp: () {},
-          onCreateMeeting: () {},
-          meetingPreview: meetingPreview(),
+  for (final expanded in [false, true]) {
+    testLayoutAudit(
+      expanded ? 'trial_end_expanded' : 'trial_end',
+      subject: expanded ? '체험하기 끝(물음을 펼침)' : '체험하기 끝',
+      texts: texts,
+      build: (_) => wrapWithApp()(
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: TrialEnd(
+            todo: ended.todo!,
+            recordedSeconds: ended.recordedSeconds,
+            onSignUp: () {},
+            onCreateMeeting: () {},
+            meetingPreview: meetingPreview(),
+            initiallyExpanded: expanded,
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   testLayoutAudit(
     'trial_meeting_preview',
