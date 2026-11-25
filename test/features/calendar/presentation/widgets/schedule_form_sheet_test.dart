@@ -298,6 +298,20 @@ void main() {
       expect(find.text('일정 보기'), findsNothing);
     });
 
+    testWidgets('일정을 이어서 두 번 만들면 알림의 일정 보기는 두 번째 일정을 연다', (tester) async {
+      await openCreate(tester, initialStartTime: start, initialEndTime: end);
+      await tester.enterText(field('제목'), '회의');
+      await tapVisible(tester, find.text('저장'));
+      await tapVisible(tester, find.text('열기'));
+      await tester.enterText(field('제목'), '점심');
+      await tapVisible(tester, find.text('저장'));
+
+      await tester.tap(viewAction());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.queryParameters['id'], 'schedule-new-2');
+    });
+
     testWidgets('달력 탭 밖 화면(모임)에서 연 시트로 만들어도 일정 보기로 상세에 가고, 뒤로 가면 그 화면으로 돌아온다', (
       tester,
     ) async {

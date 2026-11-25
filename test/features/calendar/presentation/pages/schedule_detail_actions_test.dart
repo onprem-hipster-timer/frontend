@@ -250,6 +250,20 @@ void main() {
 
       expect(location(), '/todo');
     });
+
+    testWidgets('상세를 떠난 뒤 알림의 할 일 보기를 눌렀는데 일정을 받지 못하면 할 일 탭으로 간다', (
+      tester,
+    ) async {
+      await pumpDetail(tester, schedule());
+      await tapVisible(tester, find.text(_convertLabel));
+      await tapVisible(tester, find.byIcon(Icons.arrow_back));
+      schedules.readError = Exception('끊김');
+
+      await tester.tap(viewTodoAction());
+      await tester.pumpAndSettle();
+
+      expect(location(), '/todo');
+    });
   });
 
   group('삭제', () {

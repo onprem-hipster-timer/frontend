@@ -122,6 +122,21 @@ void main() {
     expect(find.text('할 일 보기'), findsNothing);
   });
 
+  testWidgets('그룹 목록을 받지 못해 그룹 없이 만든 뒤 알림의 할 일 보기를 누르면 기본 그룹 화면으로 간다', (
+    tester,
+  ) async {
+    todos.groupsReadError = Exception('끊김');
+    await pumpPage(tester);
+    await tapVisible(tester, find.byType(FloatingActionButton));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.text('생성'));
+    await tester.tap(viewTodoAction());
+    await tester.pumpAndSettle();
+
+    expect(todos.created.single.todoGroupId, isNull);
+    expect(router.state.uri.path, '/todo/$defaultTodoGroupId');
+  });
+
   testWidgets('그룹 목록을 받지 못해도 할 일 추가는 그룹 없이 보낸다', (tester) async {
     todos.groupsReadError = Exception('끊김');
     await pumpPage(tester);

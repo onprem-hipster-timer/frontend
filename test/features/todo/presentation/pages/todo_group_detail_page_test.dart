@@ -155,6 +155,81 @@ void main() {
     expect(find.text('다른 그룹 일'), findsOneWidget);
   });
 
+  /// 앱처럼 탭 셸 안에 그룹 화면을 둔다
+  Future<void> pumpPageInShell(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    router = GoRouter(
+      initialLocation: '/todo/group-work',
+      routes: [
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, shell) => shell,
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoute.todo.path,
+                  name: AppRoute.todo.name,
+                  builder: (context, state) =>
+                      const Scaffold(body: Text('대시보드 화면')),
+                  routes: [
+                    GoRoute(
+                      path: ':groupId',
+                      name: AppRoute.todoGroupDetail.name,
+                      builder: (context, state) => TodoGroupDetailPage(
+                        groupId: state.pathParameters['groupId']!,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: appRetry,
+        overrides: [
+          todosApiProvider.overrideWithValue(todos),
+          tagsApiProvider.overrideWithValue(tags),
+          activeTimersProvider.overrideWith((ref) async => const []),
+          todoTimerAggregationsProvider.overrideWith((ref) async => const {}),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('탭 셸 안에서도 이 그룹에 할 일을 만들면 알림에 할 일 보기가 없다', (tester) async {
+    await pumpPageInShell(tester);
+    await tapVisible(tester, find.byTooltip('이 목록에 할 일 추가'));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.text('생성'));
+
+    expect(find.text('할 일이 생성되었습니다'), findsOneWidget);
+    expect(find.byType(SnackBarAction), findsNothing);
+  });
+
+  testWidgets('탭 셸 안에서도 다른 그룹을 골라 만든 뒤 알림의 할 일 보기를 누르면 그 그룹 화면으로 간다', (
+    tester,
+  ) async {
+    await pumpPageInShell(tester);
+    await tapVisible(tester, find.byTooltip('이 목록에 할 일 추가'));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.byType(TodoGroupFieldView));
+    await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+    await tapVisible(tester, find.text('생성'));
+    await tester.tap(viewTodoAction());
+    await tester.pumpAndSettle();
+
+    expect(location(), '/todo/group-study');
+  });
+
   testWidgets('할 일을 누르면 그 할 일의 수정 시트를 연다', (tester) async {
     await pumpPage(tester);
     await tapVisible(tester, find.text('회의 준비'));
