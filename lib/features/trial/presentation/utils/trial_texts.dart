@@ -9,6 +9,9 @@ const trialTitle = '체험하기';
 const trialDocumentTitle = '가입 없이 체험하기 | 모모밋';
 const trialSkip = '건너뛰기';
 
+/// 견본 모임 화면 그림을 스크린 리더가 읽는 한 줄
+const trialMeetingPreviewLabel = '친구들이 되는 시간을 칠한 ${Terms.meeting} 화면';
+
 /// 단계 표시('1/4'). 끝에는 두지 않는다
 String trialStepLabel(int number) => '$number/$trialStepCount';
 
