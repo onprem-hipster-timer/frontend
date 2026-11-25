@@ -15,7 +15,7 @@ Widget meetingSlotsPanel(BuildContext context) {
   final viewer = gridViewerKnob(
     context,
     viewers: const [GridViewer.member, GridViewer.guest],
-    description: '게스트는 달력이 없어 카드에 \'내 달력에 일정 만들기\'가 없다',
+    description: '게스트는 달력이 없어 카드에 \'내 달력에 넣기\'가 없다',
   );
   final answers = gridAnswersKnob(
     context,

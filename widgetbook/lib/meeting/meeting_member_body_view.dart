@@ -65,7 +65,7 @@ Widget meetingMemberBodyView(BuildContext context) {
       GridViewer.newcomer,
     ],
     description:
-        "게스트는 게스트 이름과 '안전한 정규 유저로 바꾸기'가 보이고, 카드에 '내 달력에 일정 만들기'가 없다. "
+        "게스트는 게스트 이름과 '안전한 정규 유저로 바꾸기'가 보이고, 카드에 '내 달력에 넣기'가 없다. "
         "주인만 '수정하기'를 누를 수 있다",
   );
   final mode = gridModeKnob(context, description: '모임을 만들 때 고른 방식');
