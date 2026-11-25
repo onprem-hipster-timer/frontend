@@ -182,11 +182,11 @@ void main() {
     });
   }
 
-  testWidgets('추천 시간 카드에 내 달력에 일정 만들기가 없다', (tester) async {
+  testWidgets('게스트가 보는 추천 시간 카드에는 달력 단추가 없다', (tester) async {
     await pumpGuest(tester);
 
     expect(find.text('3월 1일 (월)'), findsWidgets);
-    expect(find.byTooltip('내 달력에 일정 만들기'), findsNothing);
+    expect(find.text('내 달력에 넣기'), findsNothing);
   });
 
   testWidgets('칠하면 참여해 받은 내 참여자로 저장한다', (tester) async {
