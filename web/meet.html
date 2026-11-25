@@ -121,17 +121,25 @@
   </nav>
 
   <main>
-    <section class="hero">
-      <div class="hero-badge">모임 일정 조율</div>
-      <h1>모두 되는 시간,<br><span>링크 하나로</span> 찾으세요</h1>
-      <p class="hero-desc">
-        날짜를 고르고 링크를 보내면 각자 되는 시간을 칠하고,
-        모두가 되는 시간이 추천 시간으로 바로 보입니다.
-      </p>
-      <div class="hero-actions">
-        <a href="/meetings" class="btn-primary">모임 만들기</a>
-        <a href="/#/landing" class="btn-ghost">모모밋 둘러보기 →</a>
+    <section class="hero meet-hero">
+      <div class="hero-text">
+        <div class="hero-badge">모임 일정 조율</div>
+        <h1>모두 되는 시간,<br><span>링크 하나로</span> 찾으세요</h1>
+        <p class="hero-desc">
+          날짜를 고르고 링크를 보내면 각자 되는 시간을 칠하고,
+          모두가 되는 시간이 추천 시간으로 바로 보입니다.
+        </p>
+        <div class="hero-actions">
+          <a href="/meetings" class="btn-primary">모임 만들기</a>
+          <a href="/#/landing" class="btn-ghost">모모밋 둘러보기 →</a>
+        </div>
       </div>
+      <figure class="phone-preview">
+        <picture>
+          <source media="(max-width: 640px)" srcset="/landing/previews/meeting-narrow.webp" data-preview="meeting" width="304" height="760">
+          <img src="/landing/previews/meeting.webp" data-preview="meeting" width="360" height="900" alt="네 사람이 되는 시간을 칠하고, 모두 되는 시간이 추천으로 뜬 모임 화면" loading="lazy" decoding="async">
+        </picture>
+      </figure>
     </section>
 
     <section class="how">
@@ -310,6 +318,8 @@
       <button type="button" class="consent-banner-btn primary" data-consent="granted">허용</button>
     </div>
   </div>
+
+  <script src="/landing/previews.js"></script>
 
   <script src="/landing/consent-banner.js"></script>
 </body>

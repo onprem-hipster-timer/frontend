@@ -26,6 +26,33 @@ body.meet-page {
   word-break: keep-all;
 }
 
+/* 첫 화면은 글을 왼쪽, 모임 화면 미리보기를 오른쪽에 두고, 좁으면 미리보기를 버튼 아래 가운데에 둔다 */
+.meet-hero {
+  max-width: 960px;
+}
+
+.meet-hero .hero-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.meet-hero .phone-preview {
+  margin: 3rem auto 0;
+}
+
+@media (min-width: 801px) {
+  .meet-hero {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    align-items: center;
+    column-gap: 3rem;
+  }
+
+  .meet-hero .phone-preview {
+    margin: 0;
+  }
+}
+
 .meet-modes {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
