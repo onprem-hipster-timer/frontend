@@ -20,7 +20,7 @@ const trialStepCount = 4;
 
 // 단계마다 한 줄: 다음에 누를 것. 누를 것이 없는 타이머는 화면에 보이는 것을, 끝은 얻은 것을 말한다
 
-const trialCalendarHeadline = '달력에서 $trialExamTitle 시험을 눌러 보세요';
+const trialCalendarHeadline = '달력에서 $trialExamTitle을 눌러 보세요';
 final trialScheduleHeadline = "'${Terms.todo.withJosa('으로', '로')} 변환'을 눌러 보세요";
 
 /// 할 일로 바꾼 뒤. 변환 단추가 바뀐 단추를 가리킨다
@@ -37,10 +37,10 @@ const trialSignUp = '가입하고 내 일정으로 시작하기';
 const trialMeetingLead = '친구와 만날 날짜는 링크 하나로 같이 정해 보세요.';
 const trialMeetingAction = '${Terms.meeting} 만들기';
 
-const trialExamTitle = '토익';
+const trialExamTitle = '어학 시험';
 const trialExamDescription = '수험표 출력하기';
 const trialExamTag = '공부';
-const trialDinnerTitle = '민지랑 저녁';
+const trialDinnerTitle = '길동이랑 저녁';
 const trialDinnerDescription = '이번 주쯤, 날짜는 같이 정하기';
 const trialDinnerTag = '친구';
 
