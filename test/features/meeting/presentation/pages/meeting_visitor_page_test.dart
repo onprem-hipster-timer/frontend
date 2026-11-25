@@ -160,7 +160,7 @@ void main() {
     }
     expect(find.text('추천 시간'), findsNothing);
     expect(find.text('편집'), findsNothing);
-    expect(find.byTooltip('내 달력에 일정 만들기'), findsNothing);
+    expect(find.text('내 달력에 넣기'), findsNothing);
     expect(meetings.resultReads, 1);
     expect(meetings.reads, isEmpty);
     expect(meetings.availabilityReads, 0);

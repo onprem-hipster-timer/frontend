@@ -14,7 +14,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel
 /// 안에서 굴린다). 좁으면 계정은 격자 앞의 조용한 한 줄이고, 격자 → 추천 시간 → 일정 참여자 → 링크 순서로 뒤로
 /// 갈수록 덜 눈에 띈다. [notice]가 있으면 격자 바로 위에 둔다. [action]은 '저장하기' 자리다.
 ///
-/// [onAddToCalendar]가 없으면(게스트) 카드에 '내 달력에 일정 만들기'가 없다. 추천 시간 카드에 마우스를 올리거나
+/// [onAddToCalendar]가 없으면(게스트) 카드에 '내 달력에 넣기'가 없다. 추천 시간 카드에 마우스를 올리거나
 /// 누르면 격자의 그 칸을 강조한다([highlight]).
 class MeetingMemberBodyView extends StatelessWidget {
   const MeetingMemberBodyView({

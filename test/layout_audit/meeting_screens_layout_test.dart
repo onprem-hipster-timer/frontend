@@ -8,7 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart'
-    show Finder, Tags, expect, find, findsOneWidget, setUpAll;
+    show Finder, Tags, expect, find, findsOneWidget, findsWidgets, setUpAll;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:layout_audit/layout_audit.dart';
@@ -796,6 +796,8 @@ void main() {
           )..availability = _fivePeople(text.value),
         ),
       ),
+      verify: (tester) =>
+          expect(find.text('내 달력에 넣기', skipOffstage: false), findsWidgets),
     );
   }
 

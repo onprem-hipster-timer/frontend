@@ -25,15 +25,17 @@ Widget meetingSlotCard(BuildContext context) {
     description: '카드를 눌러 이름을 카드 안에 둔 상태. 고정하지 않으면 마우스를 올릴 때 이름이 카드 아래에 뜬다',
   );
   final unavailable = knobs.boolean(label: '안 되는 사람 있음', initialValue: true);
-  final calendar = knobs.boolean(label: '내 달력에 일정 만들기', initialValue: true);
+  final calendar = knobs.boolean(label: '내 달력에 넣기', initialValue: true);
   final long = knobs.boolean(label: '긴 이름');
   final width = knobs.double.slider(
     label: '카드 폭',
-    description: '260보다 좁으면 펼침 표시와 버튼이 시각 아래 줄로 내려간다',
+    description:
+        '260보다 좁으면 펼침 표시와 버튼이 시각 아래 줄로 내려가고, 넓으면 \'내 달력에 넣기\'만 맨 아래 줄에 선다. '
+        '좁은데 한 줄에 안 들어가면 \'내 달력에 넣기\'를 아래 줄로 내린다',
     initialValue: 328,
-    min: 168,
+    min: 192,
     max: 480,
-    divisions: 39,
+    divisions: 36,
     precision: 0,
   );
   // 앱에서는 '추천 시간' 상자의 primaryContainer 바탕 위, 높이 제한 없는 줄에 놓여 내용 높이만큼이다
