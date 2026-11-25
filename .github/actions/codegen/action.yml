@@ -3,8 +3,17 @@ description: Restores build_runner outputs from cache, or runs build_runner and 
 
 inputs:
   api-base-url:
-    description: API_BASE_URL written to assets/.env (the generated env class reads it).
-    required: true
+    description: API_BASE_URL written to assets/.env (the generated env class reads it). Used only for the app (empty directory).
+    required: false
+    default: ''
+  directory:
+    description: Package directory relative to the repository root, with a trailing slash (e.g. widgetbook/). Empty for the app.
+    required: false
+    default: ''
+  cache-key:
+    description: Cache key prefix. Give each directory its own.
+    required: false
+    default: codegen
 
 runs:
   using: composite
@@ -14,15 +23,16 @@ runs:
       id: codegen-cache
       with:
         path: |
-          .dart_tool/build
-          lib/**/*.g.dart
-          lib/**/*.freezed.dart
+          ${{ inputs.directory }}.dart_tool/build
+          ${{ inputs.directory }}lib/**/*.g.dart
+          ${{ inputs.directory }}lib/**/*.freezed.dart
         # 생성 파일(*.g.dart, *.freezed.dart)은 저장소에 없어 체크아웃 직후 해시에 들어가지 않는다
-        key: codegen-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'build.yaml', 'lib/**/*.dart') }}
+        key: ${{ inputs.cache-key }}-${{ runner.os }}-${{ hashFiles(format('{0}pubspec.lock', inputs.directory), format('{0}build.yaml', inputs.directory), format('{0}lib/**/*.dart', inputs.directory)) }}
         restore-keys: |
-          codegen-${{ runner.os }}-
+          ${{ inputs.cache-key }}-${{ runner.os }}-
 
     - name: Create .env for analysis
+      if: inputs.directory == ''
       shell: bash
       env:
         API_BASE_URL: ${{ inputs.api-base-url }}
@@ -34,6 +44,7 @@ runs:
       id: codegen
       if: steps.codegen-cache.outputs.cache-hit != 'true'
       shell: bash
+      working-directory: ./${{ inputs.directory }}
       run: dart run build_runner build --delete-conflicting-outputs
 
     # 코드 생성이 끝까지 성공했을 때만 저장한다 (취소·실패한 실행의 빈 결과를 저장하지 않는다)
@@ -42,7 +53,7 @@ runs:
       uses: actions/cache/save@v6
       with:
         path: |
-          .dart_tool/build
-          lib/**/*.g.dart
-          lib/**/*.freezed.dart
+          ${{ inputs.directory }}.dart_tool/build
+          ${{ inputs.directory }}lib/**/*.g.dart
+          ${{ inputs.directory }}lib/**/*.freezed.dart
         key: ${{ steps.codegen-cache.outputs.cache-primary-key }}

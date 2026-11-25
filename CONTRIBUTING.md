@@ -209,7 +209,7 @@ The catalog provides app images, the timezone database and navigation (`widgetbo
 There is no catalog-wide `ProviderScope`. For a widget whose children read providers, wrap the use case in `SampleProviderScope(overrides: […])` (`widgetbook/lib/sample_provider_scope.dart`) and override every provider that tree reads with a fixed value. Reading a provider that is not overridden throws.
 
 ```bash
-# Renders every use case on a 360x800 screen in light and dark mode and fails on any exception (overflow included). CI runs it too
+# Renders every use case on a 360x800 screen in light and dark mode and fails on any exception (overflow included)
 cd widgetbook && fvm flutter test
 ```
 
