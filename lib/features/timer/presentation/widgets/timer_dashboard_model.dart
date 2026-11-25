@@ -1,15 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/core/network/server_clock.dart';
-import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
-import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/timer/domain/break_session.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/domain/timer_elapsed.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
 /// 대시보드가 그릴 값. 활성 타이머·휴식·내 타이머 목록과 서버 시각에서 한 번에 구한다
 class TimerDashboardModel {
-  TimerDashboardModel._({
+  const TimerDashboardModel({
     required this.activeTimer,
     required this.remaining,
     required this.breakSession,
@@ -19,51 +15,6 @@ class TimerDashboardModel {
     required this.pageNow,
     required this.timeUp,
   });
-
-  /// [ref]로 필요한 값을 구독해 만든다. 반드시 build 안에서 부른다
-  factory TimerDashboardModel.watch(WidgetRef ref) {
-    final activeTimer = ref
-        .watch(activeTimerProvider)
-        .whenOrNull(data: (timer) => timer);
-    final now = ref.watch(serverClockProvider).now();
-    final computed = activeTimer == null
-        ? Duration.zero
-        : displayRemaining(activeTimer, now);
-    final remaining = ref
-        .watch(timerTickerProvider)
-        .when(
-          data: (d) => d,
-          loading: () => computed,
-          error: (_, _) => computed,
-        );
-
-    final breakSession = ref.watch(breakTimerProvider);
-    final breakComputed = breakSession?.remainingAt(now) ?? Duration.zero;
-    final breakRemaining = ref
-        .watch(breakTickerProvider)
-        .when(
-          data: (d) => d,
-          loading: () => breakComputed,
-          error: (_, _) => breakComputed,
-        );
-    final myTimers = ref.watch(myActiveTimersProvider).value ?? const [];
-    final galleryShown = breakSession == null && myTimers.length >= 2;
-    return TimerDashboardModel._(
-      activeTimer: activeTimer,
-      remaining: remaining,
-      breakSession: breakSession,
-      breakRemaining: breakRemaining,
-      myTimers: myTimers,
-      // 보이는 타이머가 일시정지여도 시간이 남은 채 실행 중인 다른 내 타이머가 있으면 휴식 버튼을 두지 않는다
-      breakBlocked: blocksBreak(myTimers, now),
-      // 갤러리의 다른 쪽도 서버 기준 시각으로 1초마다 센다
-      pageNow: galleryShown ? ref.watch(serverNowProvider).value ?? now : now,
-      timeUp:
-          breakSession == null &&
-          activeTimer != null &&
-          (remaining == Duration.zero || isTimeUp(activeTimer, now)),
-    );
-  }
 
   final TimerRead? activeTimer;
 

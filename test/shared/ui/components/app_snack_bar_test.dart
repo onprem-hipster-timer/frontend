@@ -99,6 +99,100 @@ void main() {
     expect(find.text('둘'), findsNothing);
   });
 
+  testWidgets('시트 위 알림도 남기기를 고르면 1분이 지나도 남는다', (tester) async {
+    late BuildContext sheetContext;
+    await pumpSheetHost(
+      tester,
+      open: (context) => showAppSheet<void>(
+        context,
+        builder: (sheet) {
+          sheetContext = sheet;
+          return const SizedBox(height: 200);
+        },
+      ),
+    );
+
+    showAppSnackBar(sheetContext, '하나', persist: true);
+    await tester.pump(const Duration(minutes: 1));
+    expect(find.text('하나'), findsOneWidget);
+  });
+
+  group('버튼이 있는 알림', () {
+    late BuildContext page;
+
+    Future<void> open(WidgetTester tester, {bool screenReader = false}) async {
+      await pumpSheetHost(tester, open: (context) => page = context);
+      tester.platformDispatcher.accessibilityFeaturesTestValue = screenReader
+          ? const FakeAccessibilityFeatures(accessibleNavigation: true)
+          : const FakeAccessibilityFeatures();
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pump();
+    }
+
+    testWidgets('버튼이 있어도 4초 뒤 저절로 닫힌다', (tester) async {
+      await open(tester);
+      showAppSnackBar(page, '만들었습니다', actionLabel: '보기', onAction: () {});
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(SnackBarAction, '보기'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('닫히기 전에 버튼을 누르면 받은 동작을 부르고 닫힌다', (tester) async {
+      var pressed = 0;
+      await open(tester);
+      showAppSnackBar(
+        page,
+        '만들었습니다',
+        actionLabel: '보기',
+        onAction: () => pressed++,
+      );
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
+
+      await tester.tap(find.widgetWithText(SnackBarAction, '보기'));
+      await tester.pumpAndSettle();
+      expect(pressed, 1);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('스크린 리더를 쓰는 중에는 저절로 닫히지 않는다', (tester) async {
+      await open(tester, screenReader: true);
+      showAppSnackBar(page, '만들었습니다', actionLabel: '보기', onAction: () {});
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(SnackBarAction, '보기'), findsOneWidget);
+    });
+
+    testWidgets('남기기를 고르면 1분이 지나도 닫히지 않고, 버튼을 누르면 닫힌다', (tester) async {
+      var pressed = 0;
+      await open(tester);
+      showAppSnackBar(
+        page,
+        '만들었습니다',
+        actionLabel: '보기',
+        onAction: () => pressed++,
+        persist: true,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(SnackBarAction, '보기'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(SnackBarAction, '보기'));
+      await tester.pumpAndSettle();
+      expect(pressed, 1);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+  });
+
   group('되돌리기 알림', () {
     late BuildContext page;
     late List<bool> results;

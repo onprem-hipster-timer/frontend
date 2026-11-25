@@ -23,3 +23,9 @@ export 'presentation/providers/calendar_providers.dart';
 
 // State
 export 'presentation/state/calendar_state.dart';
+
+// 체험하기 흐름이 앱의 화면 그대로 쓰는 위젯·함수
+export 'presentation/widgets/calendar_view_view.dart';
+export 'presentation/widgets/schedule_list_sheet.dart';
+export 'presentation/widgets/schedule_detail_body.dart';
+export 'presentation/widgets/schedule_timer_section_view.dart';

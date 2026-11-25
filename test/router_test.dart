@@ -48,7 +48,6 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/timer'), true);
         expect(AppRoute.isKnownProtectedPath('/tags'), true);
         expect(AppRoute.isKnownProtectedPath('/mypage'), true);
-        expect(AppRoute.isKnownProtectedPath('/schedule/detail'), true);
         expect(AppRoute.isKnownProtectedPath('/timer/detail'), true);
       });
 
@@ -57,6 +56,17 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/todo/some-group-id'), true);
         expect(AppRoute.isKnownProtectedPath('/meetings/abc-123'), true);
         expect(AppRoute.isKnownProtectedPath('/meetings/abc-123/edit'), true);
+        expect(AppRoute.isKnownProtectedPath('/schedule/abc-123'), true);
+      });
+
+      test('일정 상세 경로는 일정 상세 라우트 하나에만 맞는다', () {
+        expect(
+          [
+            for (final route in AppRoute.values)
+              if (route.matches('/schedule/abc-123')) route,
+          ],
+          [AppRoute.scheduleDetail],
+        );
       });
     });
 
@@ -158,10 +168,10 @@ void main() {
     test('파라미터가 포함된 등록 경로를 허용한다', () {
       expect(isValidRedirectPath('/todo/group-abc'), true);
       expect(isValidRedirectPath('/todo/123'), true);
+      expect(isValidRedirectPath('/schedule/schedule-1'), true);
     });
 
     test('등록된 보호 경로를 허용한다', () {
-      expect(isValidRedirectPath('/schedule/detail'), true);
       expect(isValidRedirectPath('/timer/detail'), true);
     });
   });
@@ -211,13 +221,13 @@ void main() {
         final result = authRedirect(
           isAuthenticated: false,
           isAuthLoading: true,
-          matchedLocation: AppRoute.scheduleDetail.path,
-          queryParameters: {'id': 'schedule-1'},
+          matchedLocation: AppRoute.timerDetail.path,
+          queryParameters: {'id': 'timer-1'},
         );
         expect(
           result,
           '${AppRoute.loading.path}?redirect='
-          '${Uri.encodeComponent('${AppRoute.scheduleDetail.path}?id=schedule-1')}',
+          '${Uri.encodeComponent('${AppRoute.timerDetail.path}?id=timer-1')}',
         );
       });
 
@@ -278,7 +288,7 @@ void main() {
           for (final remembered in [
             '/meetings/meeting-1',
             AppRoute.todo.path,
-            '${AppRoute.scheduleDetail.path}?id=schedule-1',
+            '/schedule/schedule-1',
             '${AppRoute.verification.path}?flow=f&code=123456',
             AppRoute.login.path,
           ]) {
@@ -490,6 +500,153 @@ void main() {
           });
         }
       }
+    });
+
+    // ----------------------------------------------------------
+    // 체험하기
+    // ----------------------------------------------------------
+    group('체험하기 (/demo)', () {
+      test('로그인하지 않은 사용자는 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('로그인한 사용자도 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('약관 동의 전이거나 탈퇴 대기 중이어도 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+          consentRequired: true,
+          deletionPending: true,
+        );
+        expect(result, isNull);
+      });
+
+      test('게스트도 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+          isGuest: true,
+          guestMeetingId: 'meeting-1',
+        );
+        expect(result, isNull);
+      });
+
+      test('인증을 확인하는 동안 체험하기를 열면 로딩 화면을 거쳐 체험하기로 돌아온다', () {
+        final loading = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: AppRoute.trial.path,
+        );
+        expect(
+          loading,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(AppRoute.trial.path)}',
+        );
+        final back = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+          redirectAfterLogin: AppRoute.trial.path,
+        );
+        expect(back, AppRoute.trial.path);
+      });
+
+      test('체험하기에 있다가 라우터를 새로 만들면 체험하기에서 이어 간다', () {
+        expect(signedOutStay(AppRoute.trial.path), AppRoute.trial.path);
+      });
+    });
+
+    // ----------------------------------------------------------
+    // 랜딩 미리보기
+    // ----------------------------------------------------------
+    group('랜딩 미리보기 (/demo/preview)', () {
+      final preview = AppRoute.trialPreview.path;
+      const calendarPreview = '/demo/preview?kind=calendar';
+
+      test('로그인하지 않은 사용자는 미리보기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: preview,
+          queryParameters: const {'kind': 'calendar'},
+        );
+        expect(result, isNull);
+      });
+
+      test('약관 동의 전이거나 탈퇴 대기 중인 로그인 사용자도 미리보기에 머문다', () {
+        for (final (consent, deletion) in [
+          (false, false),
+          (true, true),
+          (null, null),
+        ]) {
+          final result = authRedirect(
+            isAuthenticated: true,
+            isAuthLoading: false,
+            matchedLocation: preview,
+            consentRequired: consent,
+            deletionPending: deletion,
+          );
+          expect(result, isNull, reason: '$consent $deletion');
+        }
+      });
+
+      test('게스트도 미리보기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: preview,
+          isGuest: true,
+          guestMeetingId: 'meeting-1',
+        );
+        expect(result, isNull);
+      });
+
+      test('인증을 확인하는 동안 미리보기를 열면 로딩 화면을 거쳐 종류까지 그대로 미리보기로 돌아온다', () {
+        final loading = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: preview,
+          queryParameters: const {'kind': 'calendar'},
+        );
+        expect(
+          loading,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(calendarPreview)}',
+        );
+        final back = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+          redirectAfterLogin: Uri.parse(loading!).queryParameters['redirect'],
+        );
+        expect(back, calendarPreview);
+      });
+
+      test('미리보기에 있다가 라우터를 새로 만들면 종류까지 그대로 미리보기에서 이어 간다', () {
+        expect(signedOutStay(calendarPreview), calendarPreview);
+      });
+
+      test('미리보기 아래 더 깊은 주소는 로그인하지 않은 사용자를 로그인 화면으로 보낸다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: '$preview/more',
+        );
+        expect(result, startsWith(AppRoute.login.path));
+      });
     });
 
     // ----------------------------------------------------------
@@ -1130,7 +1287,7 @@ void main() {
           AppRoute.timer.path,
           AppRoute.tags.path,
           '/todo/group-1',
-          AppRoute.scheduleDetail.path,
+          '/schedule/schedule-1',
           '/meetings/meeting-1',
         ]) {
           expect(
@@ -1321,12 +1478,13 @@ void main() {
           AppRoute.accountDeletion.path,
           AppRoute.landing.path,
           '/todo/group-1',
+          '/schedule/s1',
         ]) {
           expect(guest(path), notice(path), reason: path);
         }
         expect(
-          guest(AppRoute.scheduleDetail.path, query: {'id': 's1'}),
-          notice('${AppRoute.scheduleDetail.path}?id=s1'),
+          guest(AppRoute.timerDetail.path, query: {'id': 't1'}),
+          notice('${AppRoute.timerDetail.path}?id=t1'),
         );
       });
 
@@ -1473,7 +1631,7 @@ void main() {
           AppRoute.todo.path,
           AppRoute.mypage.path,
           '/todo/group-1',
-          AppRoute.scheduleDetail.path,
+          '/schedule/schedule-1',
         ]) {
           expect(
             signedIn(path, deletionPending: true),

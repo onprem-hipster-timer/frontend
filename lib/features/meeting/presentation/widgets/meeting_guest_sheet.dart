@@ -4,13 +4,11 @@ import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/core/turnstile/turnstile_field.dart';
-import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_leave.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_password_field.dart';
-import 'package:momeet/shared/domain/terms.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet_view.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -161,86 +159,22 @@ class _MeetingGuestSheetState extends ConsumerState<MeetingGuestSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final message = _message;
-    return AppFormSheet(
-      title: '내 닉네임',
+    return MeetingGuestSheetView(
       formKey: _formKey,
-      actions: AppFormActionBar(
-        submitLabel: '저장',
-        onSubmit: _save,
-        busy: _busy,
-      ),
-      children: [
-        TextFormField(
-          controller: _name,
-          autofocus: true,
-          decoration: InputDecoration(
-            // 큰 글자에서는 칸 이름을 자르지 않고 두 줄까지 보인다
-            label: Text('이 ${Terms.meeting}에서 보일 닉네임', maxLines: 2),
-            prefixIcon: const Icon(Icons.badge_outlined),
-            errorText: _nameError,
-            errorMaxLines: 3,
-          ),
-          validator: (value) => meetingNameError(guestName(value ?? '')),
-          textInputAction: _reauth == null
-              ? TextInputAction.done
-              : TextInputAction.next,
-          onChanged: (_) {
-            if (_nameError != null) setState(() => _nameError = null);
-          },
-          onFieldSubmitted: (_) =>
-              _reauth == null ? _save() : _passwordFocus.requestFocus(),
-        ),
-        if (_reauth case final reason?)
-          MeetingGuestPasswordField(
-            controller: _password,
-            focusNode: _passwordFocus,
-            helper: reason,
-            errorText: _passwordError,
-            onSubmitted: _save,
-          ),
-        TurnstileField(controller: _turnstile),
-        if (message != null)
-          Text(
-            message,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-        _DeleteGuest(onPressed: _busy ? null : _delete),
-      ],
-    );
-  }
-}
-
-/// 게스트 계정 지우기. 지운 뒤 되돌리기 알림이 닫히면 되돌릴 수 없다고 미리 알린다
-class _DeleteGuest extends StatelessWidget {
-  const _DeleteGuest({required this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final error = theme.colorScheme.error;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(),
-        TextButton.icon(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(foregroundColor: error),
-          icon: const Icon(Icons.delete_outline),
-          label: const Text('게스트 계정 지우기'),
-        ),
-        Text(
-          '내 시간과 닉네임이 이 ${Terms.meeting}에서 지워집니다. 되돌리기 알림이 닫히면 되돌릴 수 없습니다.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+      nameController: _name,
+      passwordController: _password,
+      passwordFocusNode: _passwordFocus,
+      reauth: _reauth,
+      nameError: _nameError,
+      passwordError: _passwordError,
+      message: _message,
+      busy: _busy,
+      turnstile: TurnstileField(controller: _turnstile),
+      onNameChanged: () {
+        if (_nameError != null) setState(() => _nameError = null);
+      },
+      onSave: _save,
+      onDelete: _delete,
     );
   }
 }

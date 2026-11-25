@@ -10,7 +10,7 @@ on:
       - 'LICENSE'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/PULL_REQUEST_TEMPLATE.md'
-  # dev push는 dev 범위 캐시를 만들어 dev로 가는 PR이 복원할 수 있게 한다
+  # push는 그 브랜치 범위 캐시만 만들어(seed-cache) 그 브랜치로 가는 PR이 복원할 수 있게 한다. 검사·테스트는 PR에서만 돈다
   push:
     branches: [main, dev]
     paths-ignore:
@@ -25,15 +25,57 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  static:
-    name: Format, Analyze & Package Tests
+  seed-cache:
+    name: Seed Caches
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     timeout-minutes: 15
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - uses: ./.github/actions/codegen
+        with:
+          api-base-url: ${{ vars.API_BASE_URL }}
+
+      # pub 캐시는 잡이 끝날 때 저장되므로 PR 잡이 받는 패키지 의존성도 받아 둔다
+      - name: Install package dependencies
+        run: |
+          (cd packages/momeet_lints && dart pub get)
+          (cd packages/layout_audit && flutter pub get)
+
+      - name: Install widgetbook dependencies
+        run: cd widgetbook && flutter pub get --enforce-lockfile
+
+      - uses: ./.github/actions/codegen
+        with:
+          directory: widgetbook/
+          cache-key: codegen-widgetbook
+
+  static:
+    name: Format, Analyze & Package Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      # PR은 머지 커밋을 받으므로 첫 부모(베이스)와 비교하려면 깊이 2가 필요하다
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -56,27 +98,49 @@ jobs:
       - name: Install lint plugin dependencies
         run: cd packages/momeet_lints && dart pub get
 
+      # 루트 analyze가 widgetbook/도 분석하므로 그 의존성과 생성 파일(main.directories.g.dart)을 먼저 만든다
+      - name: Install widgetbook dependencies
+        run: cd widgetbook && flutter pub get --enforce-lockfile
+
+      # 생성 파일은 widgetbook/lib의 @widgetbook.UseCase 값으로만 정해져 캐시 키에 앱 lib/를 넣지 않는다.
+      # UseCase에서 path를 빼면 메뉴 위치가 앱 파일 위치를 따르게 되므로 path는 늘 적는다
+      - uses: ./.github/actions/codegen
+        with:
+          directory: widgetbook/
+          cache-key: codegen-widgetbook
+
       # flutter analyze는 analyzer 플러그인(momeet_lints) 결과를 기다리지 않는다
       - name: Analyze
         run: dart analyze --fatal-infos
 
-      - name: Layout audit library tests
-        run: cd packages/layout_audit && flutter pub get && flutter test
+      # 패키지 테스트는 PR이 packages/, .fvmrc, 이 워크플로를 바꿨을 때만 돈다. 비교에 실패하면 돈다
+      - name: Check package changes
+        id: packages
+        run: |
+          if git diff --quiet HEAD^1 HEAD -- packages/ .fvmrc .github/workflows/test.yml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Lint rule tests
-        run: cd packages/momeet_lints && dart test
+      - name: Package tests
+        if: steps.packages.outputs.changed == 'true'
+        run: |
+          (cd packages/layout_audit && flutter test)
+          (cd packages/momeet_lints && dart test)
 
   test:
     name: Tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     timeout-minutes: 15
     permissions:
       contents: read
-    # 샤드마다 셋업·코드 생성 비용이 붙어 2개를 넘기면 이득이 거의 없다
+    # 샤드는 자기 파일만 컴파일한다. 정적 검사 잡보다 빨라지면 더 늘려도 PR이 끝나는 시간은 줄지 않는다
     strategy:
       fail-fast: true
       matrix:
-        shard: [0, 1]
+        shard: [0, 1, 2, 3]
 
     steps:
       - uses: actions/checkout@v7
@@ -94,11 +158,18 @@ jobs:
         with:
           api-base-url: ${{ vars.API_BASE_URL }}
 
-      # 레이아웃 점검(test/layout_audit의 화면 전수 점검, 위젯 테스트마다의 점검)은 main으로 가는 PR에서만 한다
+      # 레이아웃 점검(test/layout_audit의 화면 전수 점검, 위젯 테스트마다의 점검)은 CI에서 돌리지 않는다
       - name: Run tests
         env:
-          LAYOUT_AUDIT_ARGS: ${{ github.base_ref != 'main' && '--exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false' || '' }}
-        run: flutter test --total-shards=2 --shard-index=${{ matrix.shard }} $LAYOUT_AUDIT_ARGS
+          SHARD: ${{ matrix.shard }}
+        # 테스트 파일을 큰 것부터 그때 가장 가벼운 샤드에 넣어 샤드마다 분량(파일 크기 합)을 맞춘다. 샤드는 자기 파일만 컴파일한다
+        run: |
+          mapfile -t files < <(
+            find test -name '*_test.dart' -not -path 'test/layout_audit/*' -printf '%s %p\n' \
+              | sort -k1,1nr -k2,2 \
+              | awk -v n=4 -v shard="$SHARD" '{ m = 0; for (i = 1; i < n; i++) if (w[i] < w[m]) m = i; w[m] += $1; if (m == shard) print $2 }'
+          )
+          flutter test --no-pub --exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false "${files[@]}"
 
   arch-guard:
     name: Auth Architecture Guard

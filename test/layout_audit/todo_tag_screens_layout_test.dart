@@ -12,7 +12,7 @@ import 'package:momeet/features/todo/presentation/pages/todo_dashboard_page.dart
 import 'package:momeet/features/todo/presentation/pages/todo_group_detail_page.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_picker_page.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';

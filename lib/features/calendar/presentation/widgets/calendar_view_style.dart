@@ -1,8 +1,11 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/calendar/presentation/utils/calendar_date_utils.dart';
 import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+
+// 달력 패키지는 넘긴 글자 스타일을 테마 없이 그대로 그리므로 모두 앱 글꼴([AppTheme.font])에서 시작한다
 
 // 달력 화면(CalendarViewWidget)이 SfCalendar에 넘기는 보기별 스타일 설정
 
@@ -11,23 +14,25 @@ ViewHeaderStyle calendarViewHeaderStyle(ColorScheme colorScheme) =>
       backgroundColor: colorScheme.surfaceContainerHighest.withValues(
         alpha: 0.5,
       ),
-      dayTextStyle: TextStyle(
+      dayTextStyle: AppTheme.font.copyWith(
         color: colorScheme.onSurface.withValues(alpha: 0.7),
         fontSize: 12,
         fontWeight: FontWeight.w500,
       ),
-      dateTextStyle: TextStyle(
+      dateTextStyle: AppTheme.font.copyWith(
         color: colorScheme.onSurface,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
     );
 
-/// [eventsPerDay]는 월 칸 하나에 보일 일정 수. 0이면 점으로만 보인다
+/// [eventsPerDay]는 월 칸 하나에 보일 일정 수. 0이면 점으로만 보인다. [weeks]는 그리는 주 수다
 MonthViewSettings calendarMonthViewSettings(
   ColorScheme colorScheme,
-  int eventsPerDay,
-) => MonthViewSettings(
+  int eventsPerDay, {
+  int weeks = monthWeeksInView,
+}) => MonthViewSettings(
+  numberOfWeeksInView: weeks,
   showAgenda: false,
   // 일정 한 줄도 들어가지 않는 낮은 칸은 일정 막대 대신 점으로 있다는 것만 보인다
   appointmentDisplayMode: eventsPerDay == 0
@@ -35,12 +40,15 @@ MonthViewSettings calendarMonthViewSettings(
       : MonthAppointmentDisplayMode.appointment,
   appointmentDisplayCount: eventsPerDay == 0 ? 1 : eventsPerDay,
   monthCellStyle: MonthCellStyle(
-    textStyle: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-    trailingDatesTextStyle: TextStyle(
+    textStyle: AppTheme.font.copyWith(
+      color: colorScheme.onSurface,
+      fontSize: 14,
+    ),
+    trailingDatesTextStyle: AppTheme.font.copyWith(
       color: colorScheme.onSurface.withValues(alpha: 0.4),
       fontSize: 14,
     ),
-    leadingDatesTextStyle: TextStyle(
+    leadingDatesTextStyle: AppTheme.font.copyWith(
       color: colorScheme.onSurface.withValues(alpha: 0.4),
       fontSize: 14,
     ),
@@ -60,7 +68,7 @@ TimeSlotViewSettings calendarTimeSlotViewSettings(
   endHour: 24,
   timeIntervalHeight: textScaler.scale(60),
   timeFormat: use24HourFormat ? 'HH:mm' : 'h:mm a',
-  timeTextStyle: TextStyle(
+  timeTextStyle: AppTheme.font.copyWith(
     color: colorScheme.onSurface.withValues(alpha: 0.6),
     fontSize: 11,
   ),
@@ -69,42 +77,46 @@ TimeSlotViewSettings calendarTimeSlotViewSettings(
   dateFormat: 'd',
 );
 
-ScheduleViewSettings calendarScheduleViewSettings(
-  ColorScheme colorScheme,
-) => ScheduleViewSettings(
-  appointmentTextStyle: TextStyle(color: colorScheme.onPrimary, fontSize: 13),
-  dayHeaderSettings: DayHeaderSettings(
-    dayFormat: 'EEEE',
-    width: 70,
-    dayTextStyle: TextStyle(
-      color: colorScheme.primary,
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-    ),
-    dateTextStyle: TextStyle(
-      color: colorScheme.primary,
-      fontSize: 20,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-  weekHeaderSettings: WeekHeaderSettings(
-    startDateFormat: 'MMM d',
-    endDateFormat: 'MMM d, yyyy',
-    textAlign: TextAlign.center,
-    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-  ),
-  monthHeaderSettings: MonthHeaderSettings(
-    monthFormat: 'MMMM yyyy',
-    height: 50,
-    backgroundColor: colorScheme.surfaceContainerHighest,
-    textAlign: TextAlign.center,
-    monthTextStyle: TextStyle(
-      color: colorScheme.onSurface,
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-);
+ScheduleViewSettings calendarScheduleViewSettings(ColorScheme colorScheme) =>
+    ScheduleViewSettings(
+      appointmentTextStyle: AppTheme.font.copyWith(
+        color: colorScheme.onPrimary,
+        fontSize: 13,
+      ),
+      dayHeaderSettings: DayHeaderSettings(
+        dayFormat: 'EEEE',
+        width: 70,
+        dayTextStyle: AppTheme.font.copyWith(
+          color: colorScheme.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        dateTextStyle: AppTheme.font.copyWith(
+          color: colorScheme.primary,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      weekHeaderSettings: WeekHeaderSettings(
+        startDateFormat: 'MMM d',
+        endDateFormat: 'MMM d, yyyy',
+        textAlign: TextAlign.center,
+        backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.3,
+        ),
+      ),
+      monthHeaderSettings: MonthHeaderSettings(
+        monthFormat: 'MMMM yyyy',
+        height: 50,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        textAlign: TextAlign.center,
+        monthTextStyle: AppTheme.font.copyWith(
+          color: colorScheme.onSurface,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
 
 BoxDecoration calendarSelectionDecoration(ColorScheme colorScheme) =>
     BoxDecoration(
@@ -127,7 +139,7 @@ List<TimeRegion> calendarHolidayRegions(
           text: holiday.dateName,
           color: color.withValues(alpha: 0.1),
           enablePointerInteraction: false,
-          textStyle: TextStyle(
+          textStyle: AppTheme.font.copyWith(
             color: color,
             fontSize: 12,
             fontWeight: FontWeight.w500,

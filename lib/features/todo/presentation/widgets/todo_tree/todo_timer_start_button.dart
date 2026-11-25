@@ -5,10 +5,25 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
     show defaultFocusDuration, timerControllerProvider;
 import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_start_button_view.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
+
+/// 할 일에서 타이머를 시작한 뒤의 알림. '타이머 보기'를 누르면 [onShowTimer]를 부른다.
+/// 할 일 화면과 체험하기 흐름이 같은 알림을 띄우려고 공개한다.
+/// [persist]면 누르거나 닫을 때까지 남는다(체험하기가 알림의 버튼을 다음 할 일로 남겨 두려고 쓴다).
+void showTimerStartedNotice(
+  ScaffoldMessengerState messenger, {
+  required VoidCallback onShowTimer,
+  bool persist = false,
+}) => messenger.showAppSnackBar(
+  '${Terms.timer.withJosa('을', '를')} 시작했습니다',
+  actionLabel: '${Terms.timer} 보기',
+  onAction: onShowTimer,
+  persist: persist,
+);
 
 /// [todo]를 연결해 새 타이머를 시작하는 버튼. Todo에 활성 타이머가 있으면 표시하지 않는다
 ///
@@ -16,6 +31,8 @@ import 'package:momeet/shared/domain/terms.dart';
 /// 시작하면 떠 있던 알림을 닫고 '타이머 보기'(타이머 화면으로 이동)가 있는 알림을 띄운다.
 /// 실패하면 알린다. 시트에서 할 일을 여럿 고르면 할 일마다 시작하고, 시작하지 못한 할 일만 알린다.
 /// 새 타이머를 시작하는 동안에는 누를 수 없다.
+///
+/// 모양은 [TodoTimerStartButtonView]
 ///
 /// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
 class TodoTimerStartButton extends ConsumerWidget {
@@ -62,10 +79,9 @@ class TodoTimerStartButton extends ConsumerWidget {
     }
     // 알림이 떠 있는 사이 타일이 목록에서 빠져도 이동할 수 있게 라우터를 잡아 둔다
     final router = GoRouter.of(context);
-    messenger.showAppSnackBar(
-      '${Terms.timer.withJosa('을', '를')} 시작했습니다',
-      actionLabel: '${Terms.timer} 보기',
-      onAction: () => router.go(AppRoute.timer.path),
+    showTimerStartedNotice(
+      messenger,
+      onShowTimer: () => router.go(AppRoute.timer.path),
     );
   }
 
@@ -82,11 +98,9 @@ class TodoTimerStartButton extends ConsumerWidget {
     );
     if (active) return const SizedBox.shrink();
 
-    return IconButton(
-      icon: const Icon(Icons.play_circle_outline),
-      tooltip: '${Terms.timer} 시작',
-      visualDensity: VisualDensity.compact,
-      onPressed: starting ? null : () => _start(context, ref),
+    return TodoTimerStartButtonView(
+      starting: starting,
+      onPressed: () => _start(context, ref),
     );
   }
 }

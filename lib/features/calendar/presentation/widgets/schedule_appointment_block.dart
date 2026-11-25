@@ -277,7 +277,11 @@ class _BlockLines {
     final scaler = MediaQuery.textScalerOf(context);
     double lineHeight(TextStyle style) {
       final painter = TextPainter(
-        text: TextSpan(text: '가', style: style),
+        // 그리는 글자처럼 둘레의 글자 스타일(앱 글꼴)을 이어받아 잰다
+        text: TextSpan(
+          text: '가',
+          style: DefaultTextStyle.of(context).style.merge(style),
+        ),
         textScaler: scaler,
         textDirection: TextDirection.ltr,
       )..layout();

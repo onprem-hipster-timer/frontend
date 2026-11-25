@@ -29,8 +29,8 @@ class ScheduleMutations extends _$ScheduleMutations {
   /// 새로운 일정 생성
   ///
   /// [data] 생성할 일정 정보
-  /// 성공 시 일정 목록을 새로고침하고, UI 로딩 상태를 관리합니다.
-  Future<void> createSchedule(ScheduleCreate data) async {
+  /// 성공 시 일정 목록을 새로고침하고 만든 일정을 돌려준다.
+  Future<ScheduleRead> createSchedule(ScheduleCreate data) async {
     try {
       final api = ref.read(schedulesApiProvider);
       final createdSchedule = await api.createScheduleV1SchedulesPost(
@@ -38,6 +38,7 @@ class ScheduleMutations extends _$ScheduleMutations {
       );
       ref.invalidate(currentSchedulesProvider);
       debugPrint('일정이 성공적으로 생성되었습니다: ${createdSchedule.id}');
+      return createdSchedule;
     } catch (error) {
       debugPrint('일정 생성 실패: $error');
       rethrow;
@@ -159,7 +160,7 @@ class ScheduleMutations extends _$ScheduleMutations {
 ///
 /// 사용 예: `await deleteScheduleMutation.run(ref, (tsx) =>
 /// tsx.get(scheduleMutationsProvider.notifier).deleteSchedule(id));`
-final createScheduleMutation = Mutation<void>(label: 'createSchedule');
+final createScheduleMutation = Mutation<ScheduleRead>(label: 'createSchedule');
 final updateScheduleMutation = Mutation<void>(label: 'updateSchedule');
 final deleteScheduleMutation = Mutation<void>(label: 'deleteSchedule');
 final convertToTodoMutation = Mutation<void>(label: 'convertScheduleToTodo');

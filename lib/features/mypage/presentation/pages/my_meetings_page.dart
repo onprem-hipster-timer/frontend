@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/features/mypage/presentation/widgets/my_meeting_tile.dart';
-import 'package:momeet/features/mypage/presentation/widgets/my_meetings_section.dart';
+import 'package:momeet/features/mypage/presentation/widgets/my_meetings_section_view.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 

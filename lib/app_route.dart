@@ -52,13 +52,29 @@ enum AppRoute {
     allowsGuest: true,
   ),
 
+  // 체험하기 (탭 셸 밖). 서버에 보내지 않아 로그인 여부와 상관없이, 게스트도 머문다
+  trial(
+    path: '/demo',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
+
+  // 랜딩의 기능 소개에 찍어 두는 미리보기 (탭 셸 밖, 종류는 `?kind=`). 체험하기처럼 로그인 여부와 상관없이, 게스트도 머문다
+  trialPreview(
+    path: '/demo/preview',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
+
   // 인증 필요 (보호된 페이지)
   // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
   consent(path: '/consent'),
   // 탈퇴를 신청한 사용자는 다른 보호 페이지(약관 동의 포함) 대신 여기로 온다
   accountDeletion(path: '/account-deletion'),
   calendar(path: '/'),
-  scheduleDetail(path: '/schedule/detail'),
+  scheduleDetail(path: '/schedule/:scheduleId'),
   todo(path: '/todo'),
   todoGroupDetail(path: '/todo/:groupId'),
   timer(path: '/timer'),

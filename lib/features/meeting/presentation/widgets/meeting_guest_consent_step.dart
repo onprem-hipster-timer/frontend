@@ -8,7 +8,7 @@ import 'package:momeet/core/analytics/analytics_consent.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_panel.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent_step_view.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -51,8 +51,6 @@ class _MeetingGuestConsentStepState
   var _busy = false;
   String? _message;
 
-  bool get _agreed => _consent.age && _consent.terms && _consent.privacy;
-
   @override
   void dispose() {
     _turnstile.dispose();
@@ -94,56 +92,14 @@ class _MeetingGuestConsentStepState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final message = _message;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: MeetingPanel(
-            title: '약관 동의',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '약관이 바뀌었습니다. 계속하려면 다시 동의해 주세요.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                MeetingGuestConsent(
-                  value: _consent,
-                  onChanged: (value) => setState(() => _consent = value),
-                ),
-                const SizedBox(height: 12),
-                TurnstileField(controller: _turnstile),
-                if (message != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      message,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: _busy || !_agreed ? null : _agree,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  child: const Text('동의하고 계속하기'),
-                ),
-                TextButton(
-                  onPressed: _busy ? null : _signOut,
-                  child: const Text('동의하지 않고 로그아웃'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return MeetingGuestConsentStepView(
+      consent: _consent,
+      onConsentChanged: (value) => setState(() => _consent = value),
+      turnstile: TurnstileField(controller: _turnstile),
+      message: _message,
+      busy: _busy,
+      onAgree: _agree,
+      onSignOut: _signOut,
     );
   }
 }

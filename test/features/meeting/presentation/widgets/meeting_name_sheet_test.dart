@@ -68,6 +68,38 @@ void main() {
     expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
   });
 
+  testWidgets('저장을 잇달아 두 번 눌러도 한 번만 보낸다', (tester) async {
+    await openSheet(tester);
+
+    await tester.enterText(field(), '새 이름');
+    await tester.ensureVisible(find.text('저장'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('저장'));
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+
+    expect(meetings.participations, ['새 이름']);
+    expect(find.text('내 닉네임'), findsNothing);
+  });
+
+  testWidgets('바꾸지 못한 뒤 적은 이름이 남아 있고, 다시 저장하면 그 이름으로 보낸다', (tester) async {
+    meetings.participateError = Exception('끊김');
+    await openSheet(tester);
+    await tester.enterText(field(), '새 이름');
+    await tapVisible(tester, find.text('저장'));
+    expect(find.widgetWithText(TextFormField, '새 이름'), findsOneWidget);
+
+    meetings.participateError = null;
+    // 오류 알림이 사라진 뒤 다시 누른다
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    await tapVisible(tester, find.text('저장'));
+
+    // 실패한 요청과 다시 보낸 요청
+    expect(meetings.participations, ['새 이름', '새 이름']);
+    expect(find.text('내 닉네임'), findsNothing);
+    expect(find.text('닉네임을 바꿨습니다'), findsOneWidget);
+  });
+
   testWidgets('바꾸지 못하면 시트를 두고 알린다', (tester) async {
     meetings.participateError = Exception('끊김');
     await openSheet(tester);

@@ -1,15 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/core/utils/color_utils.dart';
-import 'package:momeet/features/tag/presentation/utils/tag_color_palette.dart';
-import 'package:momeet/features/tag/presentation/widgets/group_form_fields.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet_view.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 할 일 그룹 생성/수정 폼 시트. 칸은 [GroupFormFields]
+/// 할 일 그룹 생성/수정 폼 시트. 칸은 [TodoGroupFormSheetView]
+///
+/// 새로 만들면 '목록 보기'(만든 그룹 화면으로 이동)가 있는 알림을 띄운다.
+///
+/// 테스트: test/features/todo/presentation/widgets/todo_group_form_sheet_test.dart
 class TodoGroupFormSheet extends ConsumerStatefulWidget {
   /// 수정할 할 일 그룹 (null이면 생성)
   final TodoGroupRead? group;
@@ -21,55 +26,28 @@ class TodoGroupFormSheet extends ConsumerStatefulWidget {
 }
 
 class _TodoGroupFormSheetState extends ConsumerState<TodoGroupFormSheet> {
-  final _formKey = GlobalKey<FormState>();
-  late final _nameController = TextEditingController(text: widget.group?.name);
-  late final _descriptionController = TextEditingController(
-    text: widget.group?.description,
-  );
-  late var _color = widget.group == null
-      ? TagColorPalette.defaultColor
-      : HexColor.fromHex(widget.group!.color);
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.group != null;
     final isLoading = isEditMode
         ? ref.watch(updateTodoGroupMutation).isPending
         : ref.watch(createTodoGroupMutation).isPending;
-    return AppFormSheet(
-      title: isEditMode ? '${Terms.todoGroup} 수정' : '새 ${Terms.todoGroup} 만들기',
-      formKey: _formKey,
-      actions: AppFormActionBar(
-        submitLabel: isEditMode ? '수정' : '생성',
-        onSubmit: _handleSubmit,
-        busy: isLoading,
-      ),
-      children: [
-        GroupFormFields(
-          noun: Terms.todoGroup,
-          nameController: _nameController,
-          descriptionController: _descriptionController,
-          color: _color,
-          onColorChanged: (color) => setState(() => _color = color),
-        ),
-      ],
+    return TodoGroupFormSheetView(
+      group: widget.group,
+      busy: isLoading,
+      onSubmit: _handleSubmit,
     );
   }
 
-  Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _handleSubmit(
+    String name,
+    String description,
+    Color color,
+  ) async {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final group = widget.group;
-    final name = _nameController.text.trim();
-    final description = _descriptionController.text.trim();
+    VoidCallback? openCreated;
     try {
       if (group != null) {
         await updateTodoGroupMutation.run(
@@ -80,7 +58,7 @@ class _TodoGroupFormSheetState extends ConsumerState<TodoGroupFormSheet> {
                 group.id,
                 TodoGroupUpdate(
                   name: name,
-                  color: _color.toHex(),
+                  color: color.toHex(),
                   description: description.isEmpty ? null : description,
                 ),
                 options: description.isEmpty
@@ -89,17 +67,23 @@ class _TodoGroupFormSheetState extends ConsumerState<TodoGroupFormSheet> {
               ),
         );
       } else {
-        await createTodoGroupMutation.run(
+        // 시트를 닫은 뒤에도 알림에서 이동할 수 있게 라우터를 잡아 둔다
+        final router = GoRouter.of(context);
+        final created = await createTodoGroupMutation.run(
           ref,
           (tsx) => tsx
               .get(todoGroupsProvider.notifier)
               .createGroup(
                 TodoGroupCreate(
                   name: name,
-                  color: _color.toHex(),
+                  color: color.toHex(),
                   description: description.isEmpty ? null : description,
                 ),
               ),
+        );
+        openCreated = () => router.goNamed(
+          AppRoute.todoGroupDetail.name,
+          pathParameters: {'groupId': created.id},
         );
       }
       if (!mounted) return;
@@ -109,6 +93,8 @@ class _TodoGroupFormSheetState extends ConsumerState<TodoGroupFormSheet> {
             ? '${Terms.todoGroup.withJosa('이', '가')} 수정되었습니다'
             : '${Terms.todoGroup.withJosa('이', '가')} 생성되었습니다',
         kind: AppNoticeKind.success,
+        actionLabel: openCreated == null ? null : '${Terms.list} 보기',
+        onAction: openCreated,
       );
     } catch (error) {
       if (!mounted) return;

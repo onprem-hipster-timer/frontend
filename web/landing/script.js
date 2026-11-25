@@ -16,7 +16,13 @@
   // ── Visibility (single source of truth) ──
   // flutter-host는 CSS(body.landing-active #flutter-host)가 제어 — JS에서 display 토글 금지
   function showLanding() {
-    if (landing) landing.style.display = '';
+    // 랜딩이 없는 페이지(demo.html)에서는 랜딩이 있는 index.html을 새로 연다
+    if (!landing) {
+      history.replaceState(null, '', '/#/landing');
+      window.location.reload();
+      return;
+    }
+    landing.style.display = '';
     if (loading) loading.style.display = 'none';
     document.body.classList.add('landing-active');
     initScrollAnimations();
@@ -51,6 +57,15 @@
     a.addEventListener('click', function (e) {
       e.preventDefault();
       document.getElementById('features').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // ── 체험하기: 앱이 이미 떴으면 페이지를 다시 불러오지 않고 해시만 바꿔 연다. 새 탭 열기 같은 누르기는 그대로 /demo로 간다 ──
+  document.querySelectorAll('a[href="/demo"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      if (!m.flutterReady || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      window.location.hash = '#/demo';
     });
   });
 

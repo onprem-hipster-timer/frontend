@@ -3,12 +3,11 @@ import 'package:momeet/core/network/turnstile_request.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/text/nfc.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
+import 'package:momeet/features/meeting/domain/guest_name.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
-/// 게스트 이름의 정규형: NFC로 바꾸고, 이어진 공백을 한 칸으로 줄이고, 앞뒤 공백을 뗀다(backend와 같다)
-String guestName(String input) =>
-    nfc(input).replaceAll(RegExp(r'\s+'), ' ').trim();
+export 'package:momeet/features/meeting/domain/guest_name.dart';
 
 /// 모임 [meetingId]의 게스트 단계: 들어가기(이름 찾기 → 처음이면 생성 → 로그인), 이름 바꾸기, 약관 동의.
 ///

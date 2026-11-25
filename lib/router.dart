@@ -19,6 +19,11 @@ import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart'
     deferred as timer;
 import 'package:momeet/features/todo/todo.dart' deferred as todo;
+import 'package:momeet/features/trial/presentation/pages/trial_page.dart'
+    deferred as trial;
+import 'package:momeet/features/trial/presentation/pages/trial_preview_page.dart'
+    deferred as trial_preview;
+import 'package:momeet/features/trial/presentation/utils/trial_preview_kind.dart';
 import 'package:momeet/features/tag/tag.dart' deferred as tag;
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
     deferred as mypage;
@@ -190,6 +195,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      // 체험하기 (탭 셸 밖의 독립 화면)
+      GoRoute(
+        path: AppRoute.trial.path,
+        name: AppRoute.trial.name,
+        builder: (context, state) => DeferredWidget(
+          loader: trial.loadLibrary,
+          builder: (_) => trial.TrialPage(),
+        ),
+      ),
+
+      // 랜딩의 기능 소개에 찍어 두는 미리보기 (탭 셸 밖의 독립 화면). 종류가 없거나 모르는 것이면 체험하기로 간다
+      GoRoute(
+        path: AppRoute.trialPreview.path,
+        name: AppRoute.trialPreview.name,
+        redirect: (context, state) =>
+            _previewKind(state) == null ? AppRoute.trial.path : null,
+        builder: (context, state) => DeferredWidget(
+          loader: trial_preview.loadLibrary,
+          builder: (_) =>
+              trial_preview.TrialPreviewPage(kind: _previewKind(state)!),
+        ),
+      ),
+
       // 모임 화면들 (탭 셸 밖의 독립 화면)
       ...meetingRoutes,
 
@@ -213,15 +241,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
                 routes: [
                   GoRoute(
-                    path: 'schedule/detail',
+                    path: 'schedule/:scheduleId',
                     name: AppRoute.scheduleDetail.name,
                     builder: (context, state) {
-                      final scheduleId = state.uri.queryParameters['id'];
-                      if (scheduleId == null) {
-                        return const Scaffold(
-                          body: Center(child: Text('잘못된 접근입니다')),
-                        );
-                      }
+                      final scheduleId = state.pathParameters['scheduleId']!;
                       return DeferredWidget(
                         loader: schedule_detail.loadLibrary,
                         builder: (_) => schedule_detail.ScheduleDetailPage(
@@ -339,6 +362,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
+/// 주소의 `?kind=`가 가리키는 미리보기 종류. 없거나 모르는 것이면 null
+TrialPreviewKind? _previewKind(GoRouterState state) =>
+    TrialPreviewKind.values.asNameMap()[state.uri.queryParameters['kind']];
 
 /// 라우터 리스너 프로바이더 (네비게이션 이벤트 감지용)
 final routeObserverProvider = Provider<NavigatorObserver>((ref) {

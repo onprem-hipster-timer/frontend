@@ -15,6 +15,7 @@ import 'variants.dart';
 /// 테스트 이름은 `'<텍스트 이름> <subject>에서 겹침·넘침·잘림을 보고한다'`, 보고서 라벨은
 /// `'<subject> · <텍스트 이름>'`이다. [build]는 MaterialApp 같은 앱 껍데기까지 포함한 위젯을 돌려준다.
 /// [verify]는 점검 뒤 예외가 없을 때 불리며 화면별 단언을 둔다.
+/// 등록하는 테스트에는 `layout_audit` 태그가 붙어 `--exclude-tags layout_audit`로 뺄 수 있다.
 /// [scale]의 배율 비교는 넣은 스트레스 텍스트를 사용자 글자로 보고 말줄임을 따지지 않는다.
 void testLayoutAudit(
   String name, {
@@ -30,7 +31,8 @@ void testLayoutAudit(
 }) {
   final cases = variant ?? LayoutAuditVariants.all;
   for (final text in texts) {
-    testWidgets('${text.label} $subject에서 겹침·넘침·잘림을 보고한다', variant: cases, (
+    testWidgets('${text.label} $subject에서 겹침·넘침·잘림을 보고한다',
+        variant: cases, tags: 'layout_audit', (
       tester,
     ) async {
       await tester.pumpAndAuditLayout(

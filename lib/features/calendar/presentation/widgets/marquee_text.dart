@@ -85,7 +85,11 @@ class _MarqueeTextState extends State<MarqueeText>
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
-          text: TextSpan(text: widget.text, style: widget.style),
+          // 그리는 글자처럼 둘레의 글자 스타일(앱 글꼴)을 이어받아 잰다
+          text: TextSpan(
+            text: widget.text,
+            style: DefaultTextStyle.of(context).style.merge(widget.style),
+          ),
           textScaler: MediaQuery.textScalerOf(context),
           textDirection: Directionality.of(context),
           maxLines: 1,

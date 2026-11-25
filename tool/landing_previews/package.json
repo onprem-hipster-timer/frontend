@@ -1,0 +1,8 @@
+{
+  "name": "landing-previews",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "25.18.1"
+  }
+}

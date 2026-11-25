@@ -1,0 +1,79 @@
+name: Widgetbook
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.fvmrc'
+      - 'widgetbook/**'
+      - '.github/workflows/widgetbook.yml'
+  workflow_dispatch:
+
+# 진행 중인 배포는 끊지 않고, 그사이 쌓인 실행은 마지막 것만 돈다
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Widgetbook
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # 카탈로그가 가져오는 앱 코드에 생성 파일(*.g.dart, *.freezed.dart)이 있어야 컴파일된다.
+      # 카탈로그는 API를 부르지 않지만, 앱 pubspec이 assets/.env를 에셋으로 넣어 파일은 있어야 한다
+      - uses: ./.github/actions/codegen
+        with:
+          api-base-url: ''
+
+      - name: Install widgetbook dependencies
+        working-directory: widgetbook
+        run: flutter pub get --enforce-lockfile
+
+      - uses: ./.github/actions/codegen
+        with:
+          directory: widgetbook/
+          cache-key: codegen-widgetbook
+
+      # 이 저장소의 Pages 주소는 https://<owner>.github.io/frontend/ 다
+      - name: Build Widgetbook
+        working-directory: widgetbook
+        run: flutter build web --no-pub --wasm --base-href /frontend/
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: widgetbook/build/web
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -6,29 +6,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/analytics/usage_analytics.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/kept_guest_session_store.dart';
+import 'package:momeet/features/meeting/domain/meeting_guest_import_phase.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
+export 'package:momeet/features/meeting/domain/meeting_guest_import_phase.dart';
+
 part 'meeting_guest_import.g.dart';
-
-/// 따로 둔 게스트 세션의 시간을 회원 계정으로 옮기는 단계
-enum MeetingGuestImportPhase {
-  /// 옮길 게스트 세션이 없다
-  none,
-
-  /// 옮기는 중
-  importing,
-
-  /// 옮겼다
-  moved,
-
-  /// 처음 시도에서 게스트를 찾지 못했다(따로 둔 세션은 지웠다)
-  notFound,
-
-  /// 연결 문제로 옮기지 못했다(따로 둔 세션은 두고 다시 시도할 수 있다)
-  failed,
-}
 
 /// 회원이 모임 [meetingId]를 열었을 때 그 모임에 따로 둔 게스트 세션([KeptGuestSessionStore])이 있으면 한 번
 /// 저절로 게스트 시간을 회원 계정으로 옮긴다(`guest-import`). 게스트 JWT는 따로 둔 세션으로 새로 받는다.

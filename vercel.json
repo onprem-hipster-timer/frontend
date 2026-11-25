@@ -32,6 +32,14 @@
       "dest": "/meet.html"
     },
     {
+      "src": "/timer/?",
+      "dest": "/timer.html"
+    },
+    {
+      "src": "/demo/?",
+      "dest": "/demo.html"
+    },
+    {
       "handle": "filesystem"
     },
     {

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/providers/auth_selectors.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_form.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_login_choice.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_login_request_view.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 좁은 화면의 방문자가 칠하려 하거나 '내 시간 입력하기'를 누르면 올리는 요청 시트를 연다. 애니메이션을
@@ -51,46 +51,13 @@ class _MeetingLoginRequestState extends ConsumerState<MeetingLoginRequest> {
     ref.listen(currentGuestProvider, (_, guest) {
       if (guest != null) Navigator.of(context).pop();
     });
-    final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                if (_guestOpen)
-                  IconButton(
-                    onPressed: () => setState(() => _guestOpen = false),
-                    tooltip: '뒤로',
-                    icon: const Icon(Icons.arrow_back),
-                  ),
-                Expanded(
-                  child: Text(
-                    _guestOpen ? '게스트로 참여' : '내 시간 입력하기',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (_guestOpen)
-              MeetingGuestForm(meetingId: widget.meetingId)
-            else
-              MeetingLoginChoice(
-                onLogin: () => Navigator.of(context).pop(true),
-                onGuest: widget.guests
-                    ? () => setState(() => _guestOpen = true)
-                    : null,
-              ),
-          ],
-        ),
-      ),
+    return MeetingLoginRequestView(
+      guestForm: _guestOpen
+          ? MeetingGuestForm(meetingId: widget.meetingId)
+          : null,
+      onBack: () => setState(() => _guestOpen = false),
+      onLogin: () => Navigator.of(context).pop(true),
+      onGuest: widget.guests ? () => setState(() => _guestOpen = true) : null,
     );
   }
 }
