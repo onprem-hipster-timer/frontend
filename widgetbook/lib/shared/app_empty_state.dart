@@ -3,7 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-@widgetbook.UseCase(name: '빈 화면 안내', type: AppEmptyState, path: '[공통]')
+@widgetbook.UseCase(name: '빈 화면 안내', type: AppEmptyState, path: '[공통]/상태 안내')
 Widget appEmptyState(BuildContext context) {
   final knobs = context.knobs;
   return AppEmptyState(

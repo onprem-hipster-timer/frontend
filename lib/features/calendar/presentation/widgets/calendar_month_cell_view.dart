@@ -1,37 +1,35 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
-import 'package:momeet/features/calendar/presentation/providers/holiday_provider.dart';
 import 'package:momeet/features/calendar/presentation/widgets/marquee_text.dart';
-import 'package:momeet/features/calendar/presentation/utils/schedule_formatters.dart'
-    as fmt;
 import 'package:momeet/shared/ui/ui.dart';
-import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-/// 월 보기의 날짜 칸. 날짜 숫자와, 공휴일이면 그 이름을 보인다.
-///
-/// 공휴일을 불러오는 중이거나 못 불러오면 날짜만 보인다.
-class CalendarMonthCell extends ConsumerWidget {
-  const CalendarMonthCell({super.key, required this.details});
+/// 월 보기의 날짜 칸. 날짜 숫자와, 공휴일이면 그 이름([holidayName])을 보인다.
+class CalendarMonthCellView extends StatelessWidget {
+  const CalendarMonthCellView({
+    super.key,
+    required this.date,
+    required this.isToday,
+    required this.isCurrentMonth,
+    required this.highlightWeekends,
+    this.holidayName,
+  });
 
-  final MonthCellDetails details;
+  final DateTime date;
+  final bool isToday;
+
+  /// 보고 있는 달의 날짜인지. 아니면 숫자를 흐리게 쓴다
+  final bool isCurrentMonth;
+  final bool highlightWeekends;
+
+  /// 그날 공휴일 이름. 공휴일이 아니면 null
+  final String? holidayName;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final date = details.date;
-    final isToday = fmt.isSameDay(date, DateTime.now());
-    final visible = details.visibleDates;
-    final isCurrentMonth = date.month == visible[visible.length ~/ 2].month;
-    final highlightWeekends = ref.watch(
-      calendarSettingsProvider.select((s) => s.highlightWeekends),
-    );
-    final holiday = ref
-        .watch(currentHolidaysProvider)
-        .whenOrNull(data: (holidays) => holidayOn(holidays, date));
+    final holidayName = this.holidayName;
     final dateStyle = _dateTextStyle(
       date: date,
-      isHoliday: holiday != null,
+      isHoliday: holidayName != null,
       isCurrentMonth: isCurrentMonth,
       highlightWeekends: highlightWeekends,
       colorScheme: colorScheme,
@@ -67,14 +65,14 @@ class CalendarMonthCell extends ConsumerWidget {
                 ),
               ),
             ),
-            if (holiday != null) ...[
+            if (holidayName != null) ...[
               const SizedBox(width: 4),
               // 칸에 다 들어가지 않는 이름은 두 번 흘려 보인 뒤 말줄임으로 둔다
               Expanded(
                 child: Align(
                   alignment: Alignment.topRight,
                   child: MarqueeText(
-                    holiday.dateName,
+                    holidayName,
                     active: true,
                     loops: 2,
                     style: TextStyle(

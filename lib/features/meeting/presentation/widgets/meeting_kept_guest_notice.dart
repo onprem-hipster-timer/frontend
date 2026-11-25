@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_import.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_kept_guest_notice_view.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 방문자의 모임 화면 위: 이 기기에 이 모임의 게스트 세션을 따로 두었으면(정규 유저로 바꾸려다 로그인을 그만둠)
@@ -48,25 +49,6 @@ class _MeetingKeptGuestNoticeState
         .watch(keptGuestSessionExistsProvider(widget.meetingId))
         .value;
     if (kept != true) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    final color = theme.colorScheme.onSurfaceVariant;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8,
-        children: [
-          Icon(Icons.person_outline, size: 18, color: color),
-          Text(
-            '이 기기에 게스트로 넣던 시간이 있어요',
-            style: theme.textTheme.bodyMedium?.copyWith(color: color),
-          ),
-          TextButton(
-            onPressed: _busy ? null : _continue,
-            child: const Text('게스트로 계속하기'),
-          ),
-        ],
-      ),
-    );
+    return MeetingKeptGuestNoticeView(busy: _busy, onContinue: _continue);
   }
 }

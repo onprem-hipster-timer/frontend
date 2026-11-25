@@ -1,0 +1,151 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/mypage/domain/my_page_models.dart';
+import 'package:momeet/shared/ui/ui.dart';
+
+/// 마이페이지 '사용한 태그': 많이 쓴 태그 8개까지 사용 횟수와 함께
+class TagStatsSectionView extends StatelessWidget {
+  const TagStatsSectionView({
+    super.key,
+    required this.tagStats,
+    required this.onRetry,
+  });
+
+  final AsyncValue<TagUsageStatistics> tagStats;
+
+  /// 불러오지 못했을 때 '다시 시도'
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '사용한 태그',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            child: tagStats.when(
+              data: (tagStats) {
+                final topTags = tagStats.getTopTags(8);
+
+                if (topTags.isEmpty) {
+                  return const AppEmptyState(
+                    icon: Icons.label_off_outlined,
+                    title: '아직 태그를 사용하지 않았습니다',
+                  );
+                }
+
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: topTags
+                      .map(
+                        (tagItem) => _TagChip(
+                          name: tagItem.tagName,
+                          count: tagItem.count,
+                          color: _getTagColor(context, tagItem.tagId),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+              loading: () => Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: List.generate(
+                  4,
+                  (index) => Container(
+                    width: 80 + (index % 3) * 20.0,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: AppRadius.pillAll,
+                    ),
+                  ),
+                ),
+              ),
+              error: (error, stack) =>
+                  AppErrorState(title: '태그 통계를 불러올 수 없습니다', onRetry: onRetry),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getTagColor(BuildContext context, String tagId) {
+    final colors = AppColors.of(context).categorical;
+
+    final index = tagId.hashCode.abs() % colors.length;
+    return colors[index];
+  }
+}
+
+/// 태그 이름과 사용 횟수를 담은 칩
+class _TagChip extends StatelessWidget {
+  const _TagChip({
+    required this.name,
+    required this.count,
+    required this.color,
+  });
+
+  final String name;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: AppRadius.pillAll,
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 긴 이름은 칩이 줄 폭을 넘지 않게 한 줄로 줄인다
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: AppRadius.lgAll,
+            ),
+            child: Text(
+              '$count',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

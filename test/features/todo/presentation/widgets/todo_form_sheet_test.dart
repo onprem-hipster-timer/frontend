@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart' show RequestOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -53,7 +53,7 @@ void main() {
 
   /// 할 일 그룹 칸에 보이는 글자
   Finder groupShown(String text) => find.descendant(
-    of: find.byType(TodoGroupField),
+    of: find.byType(TodoGroupFieldView),
     matching: find.text(text),
   );
 
@@ -126,7 +126,7 @@ void main() {
 
     testWidgets('할 일 그룹을 고르면 지금 그룹에 체크가 있고, 고른 그룹으로 만든다', (tester) async {
       await open(tester, defaultTodoGroupId: 'group-work');
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
 
       expect(find.text('해야 할 일 목록 고르기'), findsOneWidget);
       expect(
@@ -146,7 +146,7 @@ void main() {
 
     testWidgets('할 일 그룹 고르기를 취소하면 그대로 둔다', (tester) async {
       await open(tester, defaultTodoGroupId: 'group-work');
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
       await tapVisible(tester, find.widgetWithText(TextButton, '취소'));
 
       expect(find.text('해야 할 일 목록 고르기'), findsNothing);
@@ -162,7 +162,7 @@ void main() {
         defaultParentId: 'parent-1',
         defaultTodoGroupId: 'group-work',
       );
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
 
       expect(find.text('해야 할 일 목록 고르기'), findsNothing);
       expect(groupShown('업무'), findsOneWidget);
@@ -173,7 +173,7 @@ void main() {
       await open(tester);
 
       expect(find.text('해야 할 일 목록을 불러오지 못했습니다'), findsOneWidget);
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
       expect(find.text('해야 할 일 목록 고르기'), findsNothing);
 
       await tester.enterText(field('할 일 제목'), '정리');
@@ -326,6 +326,31 @@ void main() {
       expect(find.textContaining('할 일 생성에 실패했습니다'), findsOneWidget);
     });
 
+    testWidgets('보내기에 실패해도 적은 값이 남아 있고, 다시 보내면 그 값으로 만든다', (tester) async {
+      todos.writeError = Exception('서버 오류');
+      await open(tester);
+      await tester.enterText(field('할 일 제목'), '정리');
+      await tester.enterText(field('설명 (선택사항)'), '책상');
+      await tapVisible(tester, find.widgetWithText(FilterChip, '공부'));
+      await tapVisible(tester, find.text('생성'));
+      expect(todos.created, isEmpty);
+
+      expect(find.text('정리'), findsOneWidget);
+      expect(find.text('책상'), findsOneWidget);
+      expect(find.text('선택된 태그 (1)'), findsOneWidget);
+
+      todos.writeError = null;
+      // 오류 알림이 사라진 뒤 다시 누른다
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tapVisible(tester, find.text('생성'));
+
+      final body = todos.created.single;
+      expect(body.title, '정리');
+      expect(body.description, '책상');
+      expect(body.tagIds, ['tag-study']);
+      expect(find.text('새 할 일 만들기'), findsNothing);
+    });
+
     testWidgets('취소는 보내지 않고 닫는다', (tester) async {
       await open(tester);
       await tester.enterText(field('할 일 제목'), '정리');
@@ -374,7 +399,7 @@ void main() {
 
     testWidgets('같은 할 일 그룹을 다시 고르면 그룹을 보내지 않는다', (tester) async {
       await open(tester, todo: existing());
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
       await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
       await tapVisible(tester, find.text('수정'));
 
@@ -383,7 +408,7 @@ void main() {
 
     testWidgets('다른 할 일 그룹을 고르면 그 그룹으로 옮긴다', (tester) async {
       await open(tester, todo: existing());
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
 
       expect(
         find.text('할 일을 옮길 해야 할 일 목록입니다. 하위 할 일이 있으면 함께 옮겨집니다.'),
@@ -400,7 +425,7 @@ void main() {
 
     testWidgets('상위 할 일이 있으면 옮길 때 상위 연결이 풀린다고 알린다', (tester) async {
       await open(tester, todo: existing(parentId: 'todo-parent'));
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
 
       expect(find.textContaining('하위 할 일이 있으면 함께 옮겨집니다.'), findsOneWidget);
       expect(
@@ -411,7 +436,7 @@ void main() {
 
     testWidgets('상위 할 일이 없으면 상위 연결을 말하지 않는다', (tester) async {
       await open(tester, todo: existing());
-      await tapVisible(tester, find.byType(TodoGroupField));
+      await tapVisible(tester, find.byType(TodoGroupFieldView));
 
       expect(find.textContaining('상위'), findsNothing);
     });

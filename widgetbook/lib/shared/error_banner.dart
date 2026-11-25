@@ -3,7 +3,7 @@ import 'package:momeet/shared/widgets/error_banner.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-@widgetbook.UseCase(name: '오류 배너', type: ErrorBanner, path: '[공통]')
+@widgetbook.UseCase(name: '오류 배너', type: ErrorBanner, path: '[공통]/상태 안내')
 Widget errorBanner(BuildContext context) {
   final knobs = context.knobs;
   final message = knobs.stringOrNull(

@@ -2,121 +2,86 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/core/utils/color_utils.dart';
 import 'package:momeet/shared/api/rest/export.dart';
-import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
+import 'package:momeet/shared/domain/tag_group_with_tags.dart';
 import 'package:momeet/shared/ui/ui.dart';
-import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
-import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_group_row.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
 /// 할 일 폼의 태그 고르기. 고른 태그를 위에 모아 보이고, 태그 그룹별로 태그 칩을 늘어놓는다.
 /// 할 일에는 어느 태그 그룹의 태그든 붙일 수 있다.
-class TodoTagPicker extends ConsumerWidget {
-  const TodoTagPicker({
+class TodoTagPickerView extends StatelessWidget {
+  const TodoTagPickerView({
     super.key,
+    required this.tagGroups,
     required this.selectedTagIds,
     required this.onToggle,
+    required this.onCreateTag,
   });
 
+  final AsyncValue<List<TagGroupWithTags>> tagGroups;
   final Set<String> selectedTagIds;
   final void Function(String tagId, bool selected) onToggle;
 
+  /// 새 태그를 만든다. 태그 그룹 줄에서 누르면 그 그룹 id, 아니면 null
+  final ValueChanged<String?> onCreateTag;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final content = ref
-        .watch(tag_providers.tagTreeProvider)
-        .when(
-          data: (tagGroups) {
-            final selectedTags = [
-              for (final group in tagGroups)
-                for (final tag in group.tags)
-                  if (selectedTagIds.contains(tag.id)) tag,
-            ];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (selectedTags.isNotEmpty) ...[
-                  _SelectedTags(
-                    tags: selectedTags,
-                    onRemove: (tag) => onToggle(tag.id, false),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (tagGroups.isEmpty)
-                  AppEmptyState(
-                    icon: Icons.label_outline,
-                    title: '아직 태그가 없습니다',
-                    message:
-                        '${Terms.tagGroup.withJosa('을', '를')} 만든 뒤 그 안에 태그를 만들어 '
-                        '${Terms.todo.withJosa('을', '를')} 분류해보세요',
-                    actionLabel: '첫 태그 만들기',
-                    onAction: () => _createTag(context, ref),
-                  ),
-                for (final group in tagGroups)
-                  if (group.tags.isNotEmpty)
-                    TodoTagGroupRow(
-                      group: group,
-                      selectedTagIds: selectedTagIds,
-                      onToggle: onToggle,
-                      onAdd: () =>
-                          _createTag(context, ref, groupId: group.group.id),
-                    ),
-              ],
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          error: (error, _) => _LoadError(error: error),
+  Widget build(BuildContext context) {
+    final content = tagGroups.when(
+      data: (tagGroups) {
+        final selectedTags = [
+          for (final group in tagGroups)
+            for (final tag in group.tags)
+              if (selectedTagIds.contains(tag.id)) tag,
+        ];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (selectedTags.isNotEmpty) ...[
+              _SelectedTags(
+                tags: selectedTags,
+                onRemove: (tag) => onToggle(tag.id, false),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (tagGroups.isEmpty)
+              AppEmptyState(
+                icon: Icons.label_outline,
+                title: '아직 태그가 없습니다',
+                message:
+                    '${Terms.tagGroup.withJosa('을', '를')} 만든 뒤 그 안에 태그를 만들어 '
+                    '${Terms.todo.withJosa('을', '를')} 분류해보세요',
+                actionLabel: '첫 태그 만들기',
+                onAction: () => onCreateTag(null),
+              ),
+            for (final group in tagGroups)
+              if (group.tags.isNotEmpty)
+                TodoTagGroupRow(
+                  group: group,
+                  selectedTagIds: selectedTagIds,
+                  onToggle: onToggle,
+                  onAdd: () => onCreateTag(group.group.id),
+                ),
+          ],
         );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, _) => _LoadError(error: error),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TagHeader(onCreate: () => _createTag(context, ref)),
+        _TagHeader(onCreate: () => onCreateTag(null)),
         const SizedBox(height: 8),
         content,
       ],
     );
   }
-}
-
-/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다.
-///
-/// 태그 그룹이 없으면 태그 그룹 폼을 먼저 열고, 태그 그룹이 생기면 그 그룹을 고른 채 태그 폼으로 잇는다.
-/// 태그 그룹 폼을 닫으면 아무것도 하지 않는다. 태그 목록을 아직 받지 못했으면 열지 않는다.
-/// 태그 목록 조회가 실패한 상태면 목록을 다시 받아 이어 가고, 또 실패하면 목록 자리의 오류 안내로 둔다.
-Future<void> _createTag(
-  BuildContext context,
-  WidgetRef ref, {
-  String? groupId,
-}) async {
-  final tree = ref.read(tag_providers.tagTreeProvider);
-  var groups = tree.value;
-  try {
-    if (tree.hasError) {
-      ref.invalidate(tag_providers.tagGroupsRawProvider);
-      groups = await ref.read(tag_providers.tagTreeProvider.future);
-      if (!context.mounted) return;
-    }
-    if (groups == null) return;
-    if (groups.isEmpty) {
-      await showTagGroupFormSheet(context);
-      if (!context.mounted) return;
-      groups = await ref.read(tag_providers.tagTreeProvider.future);
-      if (!context.mounted || groups.isEmpty) return;
-    }
-  } catch (_) {
-    return;
-  }
-  await showTagFormSheet(
-    context,
-    defaultGroupId: groupId ?? groups.first.group.id,
-  );
-  // 새로 만든 태그를 목록에 반영한다
-  if (context.mounted) ref.invalidate(tag_providers.tagTreeProvider);
 }
 
 /// '태그' 제목과 새 태그 버튼

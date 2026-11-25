@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/core/utils/time_formatters.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_tree_builder.dart';
-import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_elapsed_badge_view.dart';
 
 /// Todo의 누적 집중 시간 배지 (하위 Todo 포함)
 ///
@@ -18,7 +17,6 @@ class TodoElapsedBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final finished =
         ref
             .watch(todoTimerAggregationProvider(node.id))
@@ -47,30 +45,9 @@ class TodoElapsedBadge extends ConsumerWidget {
       }),
     );
 
-    if (finished == 0 && active == null) return const SizedBox.shrink();
-
-    final isActive = active != null;
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, right: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: isActive
-              ? theme.colorScheme.primaryContainer
-              : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: AppRadius.mdAll,
-        ),
-        child: Text(
-          formatDuration(Duration(seconds: finished + (active ?? 0))),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: isActive
-                ? theme.colorScheme.onPrimaryContainer
-                : theme.colorScheme.onSurface,
-            fontFamily: 'monospace',
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+    return TodoElapsedBadgeView(
+      finishedSeconds: finished,
+      activeSeconds: active,
     );
   }
 }

@@ -1,22 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
+import 'package:momeet/features/todo/domain/todo_groups.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
-/// 할 일 폼의 할 일 그룹 칸. 누르면 그룹을 고르는 대화상자를 연다.
+/// 할 일 폼의 할 일 그룹 칸. 누르면 [groups] 중에서 고르는 대화상자를 연다.
 ///
 /// [selectedId]가 null이면 기본 그룹을 보인다(보내지 않으면 서버가 기본 그룹에 넣는다).
-class TodoGroupField extends ConsumerWidget {
-  const TodoGroupField({
+/// [groups]를 불러오는 동안에는 누를 수 없고, 불러오지 못하면 칸 아래에 알린다.
+class TodoGroupFieldView extends StatelessWidget {
+  const TodoGroupFieldView({
     super.key,
+    required this.groups,
     required this.selectedId,
     required this.onChanged,
     this.locked = false,
     this.pickerContent,
   });
 
+  final AsyncValue<List<TodoGroupRead>> groups;
   final String? selectedId;
   final ValueChanged<String> onChanged;
 
@@ -27,8 +30,7 @@ class TodoGroupField extends ConsumerWidget {
   final bool locked;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final groups = ref.watch(todoGroupsProvider);
+  Widget build(BuildContext context) {
     final list = groups.value ?? const <TodoGroupRead>[];
     final selected =
         list.where((group) => group.id == selectedId).firstOrNull ??

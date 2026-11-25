@@ -11,8 +11,7 @@ import 'package:momeet/features/meeting/domain/meeting_names.dart';
 import 'package:momeet/features/meeting/presentation/providers/meeting_guest_steps.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_guest_errors.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_password_field.dart';
-import 'package:momeet/shared/domain/terms.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_form_view.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
 /// 찾은 이름. [handle]이 없으면 처음 쓰는 이름이다. [consentVersion]은 지금 약관 버전이다
@@ -191,53 +190,25 @@ class _MeetingGuestFormState extends ConsumerState<MeetingGuestForm> {
   @override
   Widget build(BuildContext context) {
     final found = _current;
-    final isNew = found != null && found.handle == null;
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _NameField(
-            controller: _name,
-            focusNode: _nameFocus,
-            known: found?.handle != null,
-            checking: _lookingUp != null && _lookingUp == _typedName,
-            onSubmitted: _passwordFocus.requestFocus,
-          ),
-          const SizedBox(height: 12),
-          MeetingGuestPasswordField(
-            controller: _password,
-            focusNode: _passwordFocus,
-            helper: isNew ? _newGuestPasswordHelper : null,
-            errorText: _passwordError,
-            onSubmitted: _submit,
-          ),
-          if (isNew) ...[
-            const SizedBox(height: 8),
-            MeetingGuestConsent(
-              value: _consent,
-              onChanged: (value) => setState(() => _consent = value),
-            ),
-          ],
-          const SizedBox(height: 12),
-          TurnstileField(controller: _turnstile),
-          if (_message case final message?) _Message(message),
-          const SizedBox(height: 12),
-          _SubmitButton(
-            label: isNew ? '참여하기' : '들어가기',
-            busy: _busy,
-            onPressed: isNew && !_agreed ? null : _submit,
-          ),
-        ],
-      ),
+    return MeetingGuestFormView(
+      formKey: _formKey,
+      nameController: _name,
+      nameFocusNode: _nameFocus,
+      passwordController: _password,
+      passwordFocusNode: _passwordFocus,
+      known: found?.handle != null,
+      checking: _lookingUp != null && _lookingUp == _typedName,
+      isNew: found != null && found.handle == null,
+      consent: _consent,
+      onConsentChanged: (value) => setState(() => _consent = value),
+      turnstile: TurnstileField(controller: _turnstile),
+      message: _message,
+      passwordError: _passwordError,
+      busy: _busy,
+      onSubmit: _submit,
     );
   }
 }
-
-/// 처음 쓰는 이름의 비밀번호 칸 아래 안내
-const _newGuestPasswordHelper =
-    '게스트는 비밀번호를 바꾸거나 찾을 수 없습니다. 잊으면 이 닉네임으로 다시 들어올 수 없습니다. '
-    '분실이 우려되면 로그인을 이용해 주세요!';
 
 /// 게스트로 들어간 것을 사용성 분석에 알린다. [created]면 이 폼에서 새로 만든 게스트다
 void _reportEntered(WidgetRef ref, {required bool created}) => ref
@@ -247,109 +218,3 @@ void _reportEntered(WidgetRef ref, {required bool created}) => ref
           ? UsageEvent.meetingGuestEnteredNew
           : UsageEvent.meetingGuestEnteredReturning,
     );
-
-/// 이름 칸. 이미 참여한 이름이면 로그인하라고 안내하고, 찾는 중이면 끝에 작게 돈다
-class _NameField extends StatelessWidget {
-  const _NameField({
-    required this.controller,
-    required this.focusNode,
-    required this.known,
-    required this.checking,
-    required this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool known;
-  final bool checking;
-  final VoidCallback onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      focusNode: focusNode,
-      autofocus: true,
-      textInputAction: TextInputAction.next,
-      decoration: InputDecoration(
-        labelText: '닉네임',
-        prefixIcon: const Icon(Icons.badge_outlined),
-        helperText: known
-            ? '이미 참여한 닉네임입니다. 본인이면 비밀번호를 입력하세요'
-            : '이 ${Terms.meeting}에서 보일 닉네임',
-        helperMaxLines: 6,
-        suffixIcon: checking ? const _Checking() : null,
-      ),
-      validator: (value) => meetingNameError(guestName(value ?? '')),
-      onFieldSubmitted: (_) => onSubmitted(),
-    );
-  }
-}
-
-/// 들어가기 단추. 보내는 중이면 누를 수 없고 돌아간다
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.label,
-    required this.busy,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool busy;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: busy ? null : onPressed,
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-      child: busy
-          ? const SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Text(label),
-    );
-  }
-}
-
-/// 닉네임을 찾는 중인 작은 표시
-class _Checking extends StatelessWidget {
-  const _Checking();
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: '닉네임을 찾는 중',
-    child: const Padding(
-      padding: EdgeInsets.all(14),
-      child: SizedBox.square(
-        dimension: 20,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-    ),
-  );
-}
-
-/// 폼 아래의 거절 안내 한 줄
-class _Message extends StatelessWidget {
-  const _Message(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Semantics(
-        liveRegion: true,
-        child: Text(
-          text,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.error,
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -3,7 +3,7 @@ import 'package:momeet/shared/ui/ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-@widgetbook.UseCase(name: '불러오기 실패 안내', type: AppErrorState, path: '[공통]')
+@widgetbook.UseCase(name: '불러오기 실패 안내', type: AppErrorState, path: '[공통]/상태 안내')
 Widget appErrorState(BuildContext context) {
   final knobs = context.knobs;
   final retry = knobs.boolean(label: '다시 시도', initialValue: true);

@@ -4,8 +4,7 @@ import 'package:momeet/core/auth/guest_user.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/turnstile/turnstile.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_consent_step.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_not_found.dart';
-import 'package:momeet/shared/domain/terms.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_problem_view.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 게스트가 모임을 볼 수 없을 때의 화면. 까닭은 요청 파이프라인이 게스트 상태에 적은 거절([denial])과
@@ -46,33 +45,18 @@ class MeetingGuestProblem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canAgree = ref.watch(turnstileFactoryProvider) != null;
-    final error = this.error;
-    return switch (denial) {
-      GuestDenial.consentRequired when canAgree => MeetingGuestConsentStep(
-        meetingId: meetingId,
-        guest: guest,
-        onAgreed: onRetry,
-      ),
-      GuestDenial.notAcceptingGuests => AppErrorState(
-        title: '지금은 게스트로 이 ${Terms.meeting.withJosa('을', '를')} 볼 수 없습니다',
-        error:
-            '${Terms.meeting} 주인이 게스트 참여나 공개를 껐습니다. '
-            '다시 열리면 남긴 시간 그대로 이어서 쓸 수 있습니다.',
-        onRetry: onRetry,
-        secondaryLabel: '로그아웃',
-        secondaryIcon: Icons.logout,
-        onSecondary: () => _signOut(context, ref),
-      ),
-      _ when error != null && isMeetingNotFound(error) =>
-        const MeetingNotFound(),
-      _ => AppErrorState(
-        title: '${Terms.meeting.withJosa('을', '를')} 불러오지 못했습니다',
-        error: error,
-        onRetry: onRetry,
-        secondaryLabel: '로그아웃',
-        secondaryIcon: Icons.logout,
-        onSecondary: () => _signOut(context, ref),
-      ),
-    };
+    return MeetingGuestProblemView(
+      denial: denial,
+      error: error,
+      consentStep: canAgree
+          ? MeetingGuestConsentStep(
+              meetingId: meetingId,
+              guest: guest,
+              onAgreed: onRetry,
+            )
+          : null,
+      onRetry: onRetry,
+      onSignOut: () => _signOut(context, ref),
+    );
   }
 }
