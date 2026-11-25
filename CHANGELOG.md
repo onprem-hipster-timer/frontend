@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provider를 읽는 위젯은 Provider 읽기와 부수 효과를 맡는 원래 위젯과, 값과 콜백만 받아 그리는 `<위젯>View`(`<위젯 파일 이름>_view.dart`)로 나누고 `<위젯>View`를 카탈로그에 담는다: 마이페이지의 프로필·활동 요약·사용한 태그·내 모임·회원 탈퇴 확인 창, 할 일과 태그의 입력 시트·상태 메뉴·목록 칸·태그 고르기, 달력 본체·일정 입력 시트·보기 설정, 타이머 기록·조작 단추·시작 시트, 구글 로그인 단추·약관 동의 줄, 시간대 고르기, 할 일 목록 줄·타이머 시작 단추, 타이머 대시보드, 모임의 링크·로그인 고르기·게스트 입력·닉네임 시트·로그인 전후 본문·모임 설정 폼·저장하기 자리·되돌리기 키
   - 카탈로그의 뷰포트 고르기에 레이아웃 점검이 보는 유난한 비율의 화면을 더한다: iPhone SE 1세대, Galaxy Z Flip 펼침·커버, Galaxy Z Fold 안쪽, Surface Duo 한쪽·두 화면, 가로로 눕힌 폰, 울트라와이드
   - Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope`로 고정 값을 준다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다
-  - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI 정적 검사 잡에서 함께 돈다
+  - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI에서는 돌지 않는다
 
 ---
 
