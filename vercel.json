@@ -32,6 +32,10 @@
       "dest": "/meet.html"
     },
     {
+      "src": "/demo/?",
+      "dest": "/demo.html"
+    },
+    {
       "handle": "filesystem"
     },
     {

@@ -612,6 +612,14 @@ body.landing-active #flutter-host {
   color: var(--ink-muted);
 }
 
+/* 체험하기(demo.html) 로딩 화면의 제목 */
+.loading-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 0.5rem;
+}
+
 /* ===== Footer ===== */
 .landing-footer {
   padding: 2rem;
@@ -627,9 +635,10 @@ body.landing-active #flutter-host {
 }
 
 /* ===== Responsive ===== */
-/* 랜딩 머리띠는 폭 400 이하에서 배지까지 두면 링크가 두 줄이 되어 글자 로고만 둔다 */
+/* 랜딩·모임 소개 머리띠는 폭 400 이하에서 배지까지 두면 링크가 두 줄이 되어 글자 로고만 둔다 */
 @media (max-width: 400px) {
-  #landing .nav-badge {
+  #landing .nav-badge,
+  .meet-page .nav-badge {
     display: none;
   }
 }
