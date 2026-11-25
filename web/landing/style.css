@@ -99,6 +99,12 @@ body.landing-active {
   padding: 0.5rem 0.75rem;
 }
 
+/* 지금 보고 있는 페이지의 링크 */
+.nav-link[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 650;
+}
+
 /* ===== Hero ===== */
 .hero {
   display: flex;
@@ -724,33 +730,6 @@ body.landing-active #flutter-host {
 }
 
 /* ===== Responsive ===== */
-/* 랜딩·모임 소개 머리띠는 폭 400 이하에서 배지까지 두면 링크가 두 줄이 되어 글자 로고만 둔다 */
-@media (max-width: 400px) {
-  #landing .nav-badge,
-  .meet-page .nav-badge {
-    display: none;
-  }
-}
-
-/* 모임 소개 머리띠는 폭 360 미만에서 링크가 두 줄이 되지 않도록 여백을 줄인다 */
-@media (max-width: 359px) {
-  .meet-page .landing-nav {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .meet-page .nav-link {
-    white-space: nowrap;
-    padding-left: 0.625rem;
-    padding-right: 0.625rem;
-  }
-
-  .meet-page .nav-link-plain {
-    padding-left: 0.375rem;
-    padding-right: 0.375rem;
-  }
-}
-
 @media (max-width: 640px) {
   .landing-nav {
     padding: 0.75rem 1.25rem;
@@ -803,6 +782,30 @@ body.landing-active #flutter-host {
 
   .cta h2 {
     font-size: 1.4rem;
+  }
+}
+
+/* 머리띠는 폭 400 이하에서 링크가 한 줄에 들도록 로고를 배지만 보이고(글자는 링크 이름으로 남는다) 여백을 줄인다 */
+@media (max-width: 400px) {
+  .nav-logo {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .landing-nav {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .nav-link {
+    white-space: nowrap;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .nav-link-plain {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 }
 
