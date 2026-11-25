@@ -125,7 +125,7 @@ jobs:
 
       - name: Layout audit library tests
         if: steps.packages.outputs.changed == 'true'
-        run: cd packages/layout_audit && flutter pub get && flutter test
+        run: cd packages/layout_audit && flutter test
 
       - name: Lint rule tests
         if: steps.packages.outputs.changed == 'true'
@@ -168,7 +168,7 @@ jobs:
         # 테스트 파일을 이름순으로 번갈아 나눠 샤드마다 자기 파일만 컴파일한다
         run: |
           mapfile -t files < <(find test -name '*_test.dart' | sort | awk -v shard="$SHARD" 'NR % 2 == shard')
-          flutter test $LAYOUT_AUDIT_ARGS "${files[@]}"
+          flutter test --no-pub $LAYOUT_AUDIT_ARGS "${files[@]}"
 
   arch-guard:
     name: Auth Architecture Guard

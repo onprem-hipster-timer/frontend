@@ -50,7 +50,7 @@ jobs:
           EOF
 
       - name: Build Flutter Web
-        run: flutter build web --wasm --release
+        run: flutter build web --no-pub --wasm --release
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
