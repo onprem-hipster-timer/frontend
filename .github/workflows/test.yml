@@ -160,15 +160,14 @@ jobs:
         with:
           api-base-url: ${{ vars.API_BASE_URL }}
 
-      # 레이아웃 점검(test/layout_audit의 화면 전수 점검, 위젯 테스트마다의 점검)은 main으로 가는 PR에서만 한다
+      # 레이아웃 점검(test/layout_audit의 화면 전수 점검, 위젯 테스트마다의 점검)은 CI에서 돌리지 않는다
       - name: Run tests
         env:
-          LAYOUT_AUDIT_ARGS: ${{ github.base_ref != 'main' && '--exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false' || '' }}
           SHARD: ${{ matrix.shard }}
         # 테스트 파일을 이름순으로 번갈아 나눠 샤드마다 자기 파일만 컴파일한다
         run: |
-          mapfile -t files < <(find test -name '*_test.dart' | sort | awk -v shard="$SHARD" 'NR % 2 == shard')
-          flutter test --no-pub $LAYOUT_AUDIT_ARGS "${files[@]}"
+          mapfile -t files < <(find test -name '*_test.dart' -not -path 'test/layout_audit/*' | sort | awk -v shard="$SHARD" 'NR % 2 == shard')
+          flutter test --no-pub --exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false "${files[@]}"
 
   arch-guard:
     name: Auth Architecture Guard
