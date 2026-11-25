@@ -1,8 +1,9 @@
 // 빌드한 웹 앱의 미리보기 화면(/#/demo/preview?kind=<종류>)을 찍어 랜딩의 미리보기 이미지로 둔다.
-// 무엇을 어떤 크기로 찍을지는 빌드된 index.html의 data-preview 요소(width·height·src/srcset)가 정한다.
+// 무엇을 어떤 크기로 찍을지는 빌드 폴더 맨 위 *.html의 data-preview 요소(width·height·src/srcset)가 정한다.
+// 여러 페이지에 같은 그림이 있으면 한 번만 찍는다.
 // 사용: node capture.mjs <웹 빌드 폴더>   (Chrome 경로: CHROME_PATH 또는 PUPPETEER_EXECUTABLE_PATH)
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
@@ -62,25 +63,35 @@ function serve() {
   });
 }
 
-// 스크립트를 끈 채 index.html을 열어 data-preview 요소(<img>, <picture>의 <source>)를 모은다
+// 스크립트를 끈 채 맨 위 *.html을 하나씩 열어 data-preview 요소(<img>, <picture>의 <source>)를 모은다.
+// 같은 그림(경로)은 한 번만 찍으므로 페이지마다 종류·크기가 같아야 한다
 async function readSlots(browser, origin) {
-  const page = await browser.newPage();
-  await page.setJavaScriptEnabled(false);
-  await page.goto(`${origin}/`);
-  const slots = await page.$$eval('[data-preview]', (els) => els.map((el) => ({
-    kind: el.getAttribute('data-preview'),
-    width: Number(el.getAttribute('width')),
-    height: Number(el.getAttribute('height')),
-    url: (el.getAttribute('src') || el.getAttribute('srcset') || '').trim().split(/\s+/)[0],
-  })));
-  await page.close();
-  if (slots.length === 0) throw new Error('index.html에 data-preview 요소가 없습니다.');
-  for (const s of slots) {
-    if (!Number.isInteger(s.width) || !Number.isInteger(s.height) || !s.url.startsWith('/')) {
-      throw new Error(`data-preview="${s.kind}" 요소의 width·height·src(srcset)가 올바르지 않습니다: ${JSON.stringify(s)}`);
+  const slots = new Map();
+  const pages = (await readdir(root)).filter((name) => name.endsWith('.html')).sort();
+  for (const name of pages) {
+    const page = await browser.newPage();
+    await page.setJavaScriptEnabled(false);
+    await page.goto(`${origin}/${name}`);
+    const found = await page.$$eval('[data-preview]', (els) => els.map((el) => ({
+      kind: el.getAttribute('data-preview'),
+      width: Number(el.getAttribute('width')),
+      height: Number(el.getAttribute('height')),
+      url: (el.getAttribute('src') || el.getAttribute('srcset') || '').trim().split(/\s+/)[0],
+    })));
+    await page.close();
+    for (const s of found) {
+      if (!Number.isInteger(s.width) || !Number.isInteger(s.height) || !s.url.startsWith('/')) {
+        throw new Error(`${name}의 data-preview="${s.kind}" 요소의 width·height·src(srcset)가 올바르지 않습니다: ${JSON.stringify(s)}`);
+      }
+      const seen = slots.get(s.url);
+      if (seen && (seen.kind !== s.kind || seen.width !== s.width || seen.height !== s.height)) {
+        throw new Error(`${s.url}이 ${seen.page}(${seen.kind} ${seen.width}×${seen.height})와 ${name}(${s.kind} ${s.width}×${s.height})에서 다릅니다.`);
+      }
+      if (!seen) slots.set(s.url, { ...s, page: name });
     }
   }
-  return slots;
+  if (slots.size === 0) throw new Error('빌드 폴더의 *.html에 data-preview 요소가 없습니다.');
+  return [...slots.values()];
 }
 
 // WebP 머리에서 픽셀 크기를 읽는다 (VP8 손실, VP8L 무손실, VP8X 확장)

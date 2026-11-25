@@ -71,9 +71,9 @@ checkout
 
 ## 랜딩 미리보기 그림
 
-랜딩 기능 소개 카드의 그림(`/landing/previews/*.webp`)은 저장소에 두지 않습니다. 배포할 때 방금 빌드한 앱의 미리보기 화면을 찍어 `build/web/landing/previews/`에 씁니다.
+랜딩 기능 소개 카드와 모임 소개의 그림(`/landing/previews/*.webp`)은 저장소에 두지 않습니다. 배포할 때 방금 빌드한 앱의 미리보기 화면을 찍어 `build/web/landing/previews/`에 씁니다.
 
-- 무엇을 어떤 크기로 찍을지는 `web/index.html`의 `data-preview` 요소(`<img>`, `<picture>`의 `<source>`)가 정합니다. 값은 미리보기 종류(`calendar`·`todo`·`timer`), `width`·`height`는 찍는 화면 크기(3배 해상도로 찍음), `src`(`<source>`는 `srcset`)는 쓸 파일 경로입니다. 칸을 더하거나 크기를 바꿀 때는 이 요소만 고칩니다.
+- 무엇을 어떤 크기로 찍을지는 `web/` 맨 위 `*.html`(지금은 `index.html`·`meet.html`)의 `data-preview` 요소(`<img>`, `<picture>`의 `<source>`)가 정합니다. 값은 미리보기 종류(`calendar`·`todo`·`timer`·`meeting`), `width`·`height`는 찍는 화면 크기(3배 해상도로 찍음), `src`(`<source>`는 `srcset`)는 쓸 파일 경로입니다. 칸을 더하거나 크기를 바꿀 때는 이 요소만 고칩니다. 여러 페이지에 같은 경로의 그림이 있으면 한 번만 찍으므로, 종류와 크기가 페이지마다 같아야 합니다(다르면 두 페이지를 밝힌 오류로 실패합니다).
 - `tool/landing_previews/capture.mjs`가 빌드 폴더를 `127.0.0.1`에서 내보내고, 칸마다 헤드리스 Chrome으로 앱의 미리보기 화면 `/#/demo/preview?kind=<종류>`를 엽니다. 화면이 `window.__momeet.previewReady`로 준비를 알리면 WebP로 찍습니다.
 - 한 칸이라도 찍지 못하면 그 칸을 밝힌 오류와 함께 실패로 끝나고, 워크플로우는 배포 전에 멈춥니다.
 - Node 22와 Chrome이 필요합니다. 배포에서는 `actions/setup-node`로 Node 22를 두고 러너의 `/usr/bin/google-chrome`을 `CHROME_PATH`로 넘깁니다. Chrome 경로는 `CHROME_PATH` 또는 `PUPPETEER_EXECUTABLE_PATH`로 주고, 주지 않으면 `PATH`에서 `google-chrome`·`chromium-browser`·`chromium`을 찾습니다. 의존성은 `puppeteer-core` 하나이고 `tool/landing_previews/package-lock.json`으로 고정합니다.
@@ -213,4 +213,4 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 | `.github/workflows/test.yml` | CI (린트, 테스트) 워크플로우 |
 | `tool/landing_previews/capture.mjs` | 랜딩 미리보기 그림을 찍는 스크립트 |
 | `tool/landing_previews/package.json`, `package-lock.json` | 스크립트 의존성(`puppeteer-core`) |
-| `web/index.html` | 미리보기 칸(`data-preview`)과 그 크기·파일 경로 |
+| `web/index.html`, `web/meet.html` | 미리보기 칸(`data-preview`)과 그 크기·파일 경로 |
