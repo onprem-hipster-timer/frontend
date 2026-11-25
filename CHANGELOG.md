@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope`로 고정 값을 준다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다
   - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI에서는 돌지 않는다
 - 운영 배포는 저장소 변수 `SITE_URL`이 있으면 빌드한 공개 페이지·`sitemap.xml`·`robots.txt`의 사이트 주소를 그 값으로 바꾸고, `NAVER_SITE_VERIFICATION`이 있으면 네이버 사이트 소유 확인 파일을 만든다. 소스의 기본 주소는 `https://mo.momeet.date`다
+- 운영 배포는 빌드한 웹 앱의 미리보기 화면(`/demo/preview?kind=<종류>`)을 찍어 랜딩 기능 소개 카드의 미리보기 그림(`landing/previews/`)을 만든다. 무엇을 어떤 크기로 찍을지는 `web/index.html`의 `data-preview` 칸이 정하고, 그림을 손으로 바꿔 두지 않는다. 하나라도 찍지 못하면 배포하지 않는다. 로컬에서는 `tool/landing_previews/capture.mjs`로 찍는다
 
 #### Calendar
 - 새 일정을 만든 뒤 알림에 '일정 보기'를 두고, 누르면 만든 일정의 상세로 간다. 모임 화면의 '내 달력에 일정 만들기'로 만들어도 같다
@@ -55,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 랜딩·모임 소개·체험하기 페이지에 구조화 데이터(JSON-LD)를 둔다. 랜딩은 사이트(`WebSite`)와 앱(`WebApplication`, 일정 관리·할 일·타이머·모임 일정 조율), 모임 소개는 모임 일정 조율 앱(`WebApplication`), 체험하기는 페이지(`WebPage`)다
 - 모임 소개 페이지 끝의 안내 앞에 자주 묻는 질문(가입, 휴대폰, 날짜만 받기, 만든 뒤 고치기, 웬투밋을 써 본 사람)을 두고, 구조화 데이터(`FAQPage`)에도 같은 글로 담는다
 - 공부 타이머를 찾는 사람을 위한 정적 페이지 `/study-timer`(`web/study-timer.html`)를 둔다. 할 일 고르기 → 타이머 시작 → 집중한 시간이 남음, 휴식·시간 늘리기·친구와 공유, 자주 묻는 질문을 담고, '체험하기'는 `/demo`로 간다. 자주 묻는 질문은 구조화 데이터(`FAQPage`)에도 같은 글로 담는다. 랜딩의 집중 타이머 소개에서 이 페이지로 간다
+- 랜딩 기능 소개의 카드(캘린더·투두리스트·집중 타이머)마다 앱 화면 미리보기 그림과 '체험하기'(`/demo`)를 둔다. 카드는 세 색이 옅게 비치는 유리 카드다. 미리보기 그림이 없으면 그 칸을 숨긴다
 
 ---
 

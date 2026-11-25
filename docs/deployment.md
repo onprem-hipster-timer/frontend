@@ -9,6 +9,7 @@
 - [개요](#개요)
 - [배포 구조를 선택한 이유](#배포-구조를-선택한-이유)
 - [배포 흐름](#배포-흐름)
+- [랜딩 미리보기 그림](#랜딩-미리보기-그림)
 - [환경변수 관리](#환경변수-관리)
 - [Vercel 설정](#vercel-설정)
 - [GitHub 설정](#github-설정)
@@ -56,6 +57,7 @@ checkout
   → .env 생성 (GitHub vars)
   → build_runner (코드 생성)
   → flutter build web --wasm --release
+  → 랜딩 미리보기 그림 찍기 (build/web/landing/previews/)
   → vercel pull (프로젝트 설정)
   → vercel build --prod (build/web → .vercel/output/static/)
   → vercel deploy --prebuilt --prod (결과물만 업로드)
@@ -64,6 +66,39 @@ checkout
 !!! note "vercel build의 역할"
     `vercel.json`에서 `buildCommand: null`로 설정되어 있으므로, `vercel build`는 빌드를 실행하지 않습니다.
     `outputDirectory`에 지정된 `build/web`을 `.vercel/output/static/`으로 복사하는 역할만 합니다.
+
+---
+
+## 랜딩 미리보기 그림
+
+랜딩 기능 소개 카드의 그림(`/landing/previews/*.webp`)은 저장소에 두지 않습니다. 배포할 때 방금 빌드한 앱의 미리보기 화면을 찍어 `build/web/landing/previews/`에 씁니다.
+
+- 무엇을 어떤 크기로 찍을지는 `web/index.html`의 `data-preview` 요소(`<img>`, `<picture>`의 `<source>`)가 정합니다. 값은 미리보기 종류(`calendar`·`todo`·`timer`), `width`·`height`는 찍는 화면 크기(3배 해상도로 찍음), `src`(`<source>`는 `srcset`)는 쓸 파일 경로입니다. 칸을 더하거나 크기를 바꿀 때는 이 요소만 고칩니다.
+- `tool/landing_previews/capture.mjs`가 빌드 폴더를 `127.0.0.1`에서 내보내고, 칸마다 헤드리스 Chrome으로 앱의 미리보기 화면 `/#/demo/preview?kind=<종류>`를 엽니다. 화면이 `window.__momeet.previewReady`로 준비를 알리면 WebP로 찍습니다.
+- 한 칸이라도 찍지 못하면 그 칸을 밝힌 오류와 함께 실패로 끝나고, 워크플로우는 배포 전에 멈춥니다.
+- Node 22와 Chrome이 필요합니다. 배포에서는 `actions/setup-node`로 Node 22를 두고 러너의 `/usr/bin/google-chrome`을 `CHROME_PATH`로 넘깁니다. Chrome 경로는 `CHROME_PATH` 또는 `PUPPETEER_EXECUTABLE_PATH`로 주고, 주지 않으면 `PATH`에서 `google-chrome`·`chromium-browser`·`chromium`을 찾습니다. 의존성은 `puppeteer-core` 하나이고 `tool/landing_previews/package-lock.json`으로 고정합니다.
+
+### 로컬에서 찍기
+
+`flutter run`이나 찍지 않은 빌드에서는 그림 파일이 없으므로 카드에 그림 없이 글만 보입니다. 빌드한 랜딩을 그림과 함께 보려면 `flutter build web` 뒤에 먼저 의존성을 받습니다.
+
+```bash
+(cd tool/landing_previews && npm ci)
+```
+
+Node 22와 Chrome이 있는 곳에서는 바로 찍습니다.
+
+```bash
+node tool/landing_previews/capture.mjs build/web
+```
+
+Chrome이 없으면 Chromium과 Node가 든 이미지로 찍을 수 있습니다.
+
+```bash
+docker run --rm -u $(id -u):$(id -g) -e CHROME_PATH=/usr/bin/chromium-browser \
+  -v "$PWD/tool/landing_previews":/tool:ro -v "$PWD/build/web":/build \
+  --entrypoint node zenika/alpine-chrome:with-puppeteer /tool/capture.mjs /build
+```
 
 ---
 
@@ -176,3 +211,6 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 | `.github/workflows/deploy-production.yml` | 프로덕션 배포 워크플로우 |
 | `vercel.json` | Vercel 프로젝트 설정 |
 | `.github/workflows/test.yml` | CI (린트, 테스트) 워크플로우 |
+| `tool/landing_previews/capture.mjs` | 랜딩 미리보기 그림을 찍는 스크립트 |
+| `tool/landing_previews/package.json`, `package-lock.json` | 스크립트 의존성(`puppeteer-core`) |
+| `web/index.html` | 미리보기 칸(`data-preview`)과 그 크기·파일 경로 |
