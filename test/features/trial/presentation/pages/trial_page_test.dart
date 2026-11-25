@@ -12,8 +12,11 @@ import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_elapsed
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tag_indicators.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_chip_view.dart';
+import 'package:momeet/features/timer/timer.dart' show defaultFocusDuration;
 import 'package:momeet/features/trial/domain/trial_flow.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -58,7 +61,7 @@ void main() {
         expect(find.text(trialExamDescription), findsOneWidget);
         expect(find.text(linkedLabel), findsNothing);
 
-        // 변환하면 앱의 알림이 뜨고 버튼이 '연결된 할 일 보기'로 바뀌며, 한 줄이 다음에 누를 것을 말한다
+        // 변환하면 앱의 알림이 뜨고 버튼이 '연결된 할 일 보기'로 바뀌며, 앞 줄과 한 줄이 바뀐다
         tester.takeAnnouncements();
         await tester.tap(find.text(convertLabel));
         await tester.pumpAndSettle();
@@ -75,7 +78,9 @@ void main() {
         expect(convertedHeadline, findsOneWidget);
         expect(
           tester.takeAnnouncements().map((a) => a.message),
-          contains(trialConvertedHeadline),
+          contains(
+            trialAnnouncement(trialStart(trialTestNow).openExam().convert()),
+          ),
         );
 
         // 3. 알림의 '할 일 보기'를 누르면 바꾼 할 일
@@ -101,7 +106,7 @@ void main() {
           '25',
         );
 
-        // 시작하면 할 일에 머물며 남은 시간을 보이고 앱의 알림을 띄우며, 한 줄이 다음에 누를 것을 말한다
+        // 시작하면 할 일에 머물며 남은 시간을 보이고 앱의 알림을 띄우며, 앞 줄과 한 줄이 바뀐다
         tester.takeAnnouncements();
         await tester.tap(StartSheet.startButton);
         await tester.pumpAndSettle();
@@ -110,7 +115,15 @@ void main() {
         expect(startedHeadline, findsOneWidget);
         expect(
           tester.takeAnnouncements().map((a) => a.message),
-          contains(trialStartedHeadline),
+          contains(
+            trialAnnouncement(
+              trialStart(trialTestNow)
+                  .openExam()
+                  .convert()
+                  .openTodo()
+                  .startTimer(defaultFocusDuration),
+            ),
+          ),
         );
         expect(
           find.widgetWithText(SnackBar, '${Terms.timer}를 시작했습니다'),
@@ -170,6 +183,55 @@ void main() {
         expect(find.text(trialMeetingAction), findsOneWidget);
       });
 
+      testWidgets('단계를 따라 누르면 단계마다 앞 줄과 누를 것이 함께 바뀌고, 안내는 타이머를 시작한 뒤에만 보인다', (
+        tester,
+      ) async {
+        await openTrial(tester, size: size);
+        expect(leadOf(TrialStep.calendar), findsOneWidget);
+        expect(headlineOf(TrialStep.calendar), findsOneWidget);
+        expect(startedGuide, findsNothing);
+
+        await goToSchedule(tester);
+        expect(leadOf(TrialStep.calendar), findsNothing);
+        expect(leadOf(TrialStep.schedule), findsOneWidget);
+        expect(headlineOf(TrialStep.schedule), findsOneWidget);
+        expect(startedGuide, findsNothing);
+
+        await tester.tap(find.text(convertLabel));
+        await tester.pumpAndSettle();
+        expect(leadOf(TrialStep.schedule), findsNothing);
+        expect(convertedLead, findsOneWidget);
+        expect(convertedHeadline, findsOneWidget);
+        expect(startedGuide, findsNothing);
+
+        await tester.tap(find.text(linkedLabel));
+        await tester.pumpAndSettle();
+        expect(leadOf(TrialStep.todo), findsOneWidget);
+        expect(headlineOf(TrialStep.todo), findsOneWidget);
+        expect(startedGuide, findsNothing);
+
+        await startTimer(tester);
+        expect(leadOf(TrialStep.todo), findsNothing);
+        expect(startedLead, findsOneWidget);
+        expect(startedHeadline, findsOneWidget);
+        expect(startedGuide, findsOneWidget);
+
+        await tester.tap(
+          find.widgetWithText(SnackBarAction, '${Terms.timer} 보기'),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(leadOf(TrialStep.timer), findsOneWidget);
+        expect(headlineOf(TrialStep.timer), findsOneWidget);
+        expect(startedGuide, findsNothing);
+
+        await tester.pump(trialTimerSweep);
+        await tester.pumpAndSettle();
+        expect(leadOf(TrialStep.end), findsOneWidget);
+        expect(headlineOf(TrialStep.end), findsOneWidget);
+        expect(startedGuide, findsNothing);
+      });
+
       testWidgets('끝에서 가입하기를 누르면 회원가입 화면으로 간다', (tester) async {
         await openTrial(tester, size: size);
         await goToEnd(tester);
@@ -191,6 +253,84 @@ void main() {
       });
     });
   }
+
+  testWidgets('단계나 앞 줄이 바뀔 때마다 스크린 리더가 앞 줄과 누를 것을 한 번 읽는다', (tester) async {
+    await openTrial(tester);
+    final starts = trialStart(trialTestNow);
+
+    /// [press]로 넘어간 뒤 알린 글 중 [lead]가 든 것
+    Future<List<String>> announced(
+      Future<void> Function() press,
+      String lead,
+    ) async {
+      tester.takeAnnouncements();
+      await press();
+      return [
+        for (final a in tester.takeAnnouncements())
+          if (a.message.contains(lead)) a.message,
+      ];
+    }
+
+    final schedule = starts.openExam();
+    expect(await announced(() => goToSchedule(tester), trialScheduleLead), [
+      trialAnnouncement(schedule),
+    ]);
+
+    final converted = schedule.convert();
+    expect(
+      await announced(() async {
+        await tester.tap(find.text(convertLabel));
+        await tester.pumpAndSettle();
+      }, trialConvertedLead),
+      [trialAnnouncement(converted)],
+    );
+
+    final todo = converted.openTodo();
+    expect(
+      await announced(() async {
+        await tester.tap(find.text(linkedLabel));
+        await tester.pumpAndSettle();
+      }, trialTodoLead),
+      [trialAnnouncement(todo)],
+    );
+
+    final started = todo.startTimer(defaultFocusDuration);
+    final startedAnnounced = await announced(
+      () => startTimer(tester),
+      trialStartedLead,
+    );
+    expect(startedAnnounced, [trialAnnouncement(started)]);
+    // 앞 줄, 큰 한 줄, 안내 차례로 한 번씩
+    final message = startedAnnounced.single;
+    expect(trialStartedGuide.allMatches(message), hasLength(1));
+    expect(
+      message.indexOf(trialStartedLead),
+      lessThan(message.indexOf(trialStartedHeadline)),
+    );
+    expect(
+      message.indexOf(trialStartedHeadline),
+      lessThan(message.indexOf(trialStartedGuide)),
+    );
+
+    final timer = started.openTimer();
+    expect(
+      await announced(() async {
+        await tester.tap(
+          find.widgetWithText(SnackBarAction, '${Terms.timer} 보기'),
+        );
+        await tester.pump();
+      }, trialTimerLead),
+      [trialAnnouncement(timer)],
+    );
+
+    expect(
+      await announced(() async {
+        await tester.pump(trialTimerSweep);
+        await tester.pumpAndSettle();
+      }, trialEndLead),
+      [trialAnnouncement(timer.finishTimer())],
+    );
+  });
 
   testWidgets('변환한 뒤 연결된 할 일 보기를 누르면 할 일 단계로 가고 떠 있던 알림이 닫힌다', (tester) async {
     await openTrial(tester);
@@ -261,6 +401,22 @@ void main() {
 
     await goToSchedule(tester);
     expect(headlineOf(TrialStep.schedule), findsOneWidget);
+  });
+
+  testWidgets('작은 휴대폰(320×568)에서 타이머를 시작하면 안내가 더해져도 강조한 남은 시간이 화면 안에 있다', (
+    tester,
+  ) async {
+    await openTrial(tester, size: const Size(320, 568));
+    await goToTodo(tester);
+    await startTimer(tester);
+
+    expect(startedGuide, findsOneWidget);
+    final ring = tester.getRect(find.byKey(TrialSpotlight.ringKey));
+    expect(
+      (Offset.zero & const Size(320, 568)).contains(ring.bottomRight),
+      isTrue,
+    );
+    expect(ring.top, greaterThanOrEqualTo(0));
   });
 
   testWidgets('작은 휴대폰(320×568)에서도 끝까지 따라갈 수 있다', (tester) async {
