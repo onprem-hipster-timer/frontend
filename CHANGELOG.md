@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 랜딩 첫 화면의 큰 버튼은 '체험하기'이고 체험하기 화면을 연다. 가입은 랜딩 아래쪽의 '무료로 시작하기'와 로그인 화면에서 한다
 - 체험하기는 `https://momeet.date/demo`로도 열린다. 체험하기의 제목과 설명이 담긴 페이지가 앱을 띄워 바로 체험하기 화면을 연다. 체험하기를 보는 동안 브라우저 탭 제목도 이 페이지의 제목이다. 랜딩의 '체험하기'와 모임 소개 머리띠의 '체험하기'가 이 주소로 간다
 - 검색 엔진이 랜딩·모임 소개·체험하기 주소를 찾도록 `sitemap.xml`과 `robots.txt`를 둔다
+- 랜딩·모임 소개·체험하기 페이지는 공유 미리보기 이미지를 전체 주소(`https://momeet.date/preview.webp`)로 적고, 각 페이지의 주소를 `og:url`과 canonical로 밝힌다
 
 ---
 
