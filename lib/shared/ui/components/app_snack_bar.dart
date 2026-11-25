@@ -10,13 +10,14 @@ enum AppNoticeKind { info, success, error }
 /// 짧은 알림을 띄운다. 이전 알림은 닫는다.
 ///
 /// [context]가 시트·다이얼로그 안이면 그 위에 띄워 가려지지 않게 하고,
-/// 아니면 화면의 SnackBar로 띄운다.
+/// 아니면 화면의 SnackBar로 띄운다. [persist]면 누르거나 닫을 때까지 남는다.
 void showAppSnackBar(
   BuildContext context,
   String message, {
   AppNoticeKind kind = AppNoticeKind.info,
   String? actionLabel,
   VoidCallback? onAction,
+  bool persist = false,
 }) {
   if (ModalRoute.of(context) is PopupRoute) {
     _OverlayNotice.show(
@@ -25,6 +26,7 @@ void showAppSnackBar(
       kind: kind,
       actionLabel: actionLabel,
       onAction: onAction,
+      persist: persist,
     );
     return;
   }
@@ -33,6 +35,7 @@ void showAppSnackBar(
     kind: kind,
     actionLabel: actionLabel,
     onAction: onAction,
+    persist: persist,
   );
 }
 
@@ -41,11 +44,13 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
   /// 알림을 띄우고 그 알림의 controller를 돌려준다(닫힐 때를 알 수 있다)
   ///
   /// 버튼이 있어도 다른 알림처럼 저절로 닫힌다. 스크린 리더를 쓰는 중에는 버튼이 있는 알림을 닫지 않는다.
+  /// [persist]면 누르거나 닫을 때까지 남는다(체험하기처럼 알림의 버튼이 다음 할 일인 화면이 쓴다).
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackBar(
     String message, {
     AppNoticeKind kind = AppNoticeKind.info,
     String? actionLabel,
     VoidCallback? onAction,
+    bool persist = false,
   }) {
     final (background, foreground) = _colors(context, kind);
     final hasAction = actionLabel != null && onAction != null;
@@ -54,7 +59,9 @@ extension AppSnackBarMessenger on ScaffoldMessengerState {
       SnackBar(
         content: Text(message, style: TextStyle(color: foreground)),
         backgroundColor: background,
-        persist: hasAction && MediaQuery.accessibleNavigationOf(context),
+        persist:
+            persist ||
+            (hasAction && MediaQuery.accessibleNavigationOf(context)),
         action: hasAction
             ? SnackBarAction(
                 label: actionLabel,
@@ -106,6 +113,7 @@ class _OverlayNotice extends StatefulWidget {
     required this.kind,
     required this.actionLabel,
     required this.onAction,
+    required this.persist,
     required this.onDone,
   });
 
@@ -113,6 +121,9 @@ class _OverlayNotice extends StatefulWidget {
   final AppNoticeKind kind;
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  /// 저절로 닫지 않는다
+  final bool persist;
   final VoidCallback onDone;
 
   static final _current = Expando<OverlayEntry>();
@@ -123,6 +134,7 @@ class _OverlayNotice extends StatefulWidget {
     required AppNoticeKind kind,
     String? actionLabel,
     VoidCallback? onAction,
+    required bool persist,
   }) {
     final overlay = Overlay.of(context, rootOverlay: true);
     _current[overlay]?.remove();
@@ -133,6 +145,7 @@ class _OverlayNotice extends StatefulWidget {
         kind: kind,
         actionLabel: actionLabel,
         onAction: onAction,
+        persist: persist,
         onDone: () {
           if (_current[overlay] == entry) _current[overlay] = null;
           if (entry.mounted) entry.remove();
@@ -161,7 +174,7 @@ class _OverlayNoticeState extends State<_OverlayNotice>
   void initState() {
     super.initState();
     _controller.forward();
-    _timer = Timer(_shown, _hide);
+    if (!widget.persist) _timer = Timer(_shown, _hide);
   }
 
   void _hide() {

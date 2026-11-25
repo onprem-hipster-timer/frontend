@@ -13,13 +13,16 @@ import 'package:momeet/shared/domain/terms.dart';
 
 /// 할 일에서 타이머를 시작한 뒤의 알림. '타이머 보기'를 누르면 [onShowTimer]를 부른다.
 /// 할 일 화면과 체험하기 흐름이 같은 알림을 띄우려고 공개한다.
+/// [persist]면 누르거나 닫을 때까지 남는다(체험하기가 알림의 버튼을 다음 할 일로 남겨 두려고 쓴다).
 void showTimerStartedNotice(
   ScaffoldMessengerState messenger, {
   required VoidCallback onShowTimer,
+  bool persist = false,
 }) => messenger.showAppSnackBar(
   '${Terms.timer.withJosa('을', '를')} 시작했습니다',
   actionLabel: '${Terms.timer} 보기',
   onAction: onShowTimer,
+  persist: persist,
 );
 
 /// [todo]를 연결해 새 타이머를 시작하는 버튼. Todo에 활성 타이머가 있으면 표시하지 않는다

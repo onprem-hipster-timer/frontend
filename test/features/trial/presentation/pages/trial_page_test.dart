@@ -314,4 +314,33 @@ void main() {
       greaterThan(divider),
     );
   });
+
+  testWidgets('변환한 뒤 1분이 지나도 할 일 보기가 있는 알림이 남아 있다', (tester) async {
+    await openTrial(tester);
+    await goToSchedule(tester);
+    await tester.tap(find.text(convertLabel));
+    await tester.pumpAndSettle();
+
+    await tester.pump(const Duration(minutes: 1));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(SnackBarAction, '${Terms.todo} 보기'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('타이머를 시작한 뒤 1분이 지나도 타이머 보기가 있는 알림이 남아 있다', (tester) async {
+    await openTrial(tester);
+    await goToTodo(tester);
+    await startTimer(tester);
+
+    await tester.pump(const Duration(minutes: 1));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(SnackBarAction, '${Terms.timer} 보기'),
+      findsOneWidget,
+    );
+  });
 }

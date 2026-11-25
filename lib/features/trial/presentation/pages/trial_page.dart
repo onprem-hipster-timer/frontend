@@ -102,7 +102,12 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
 
   void _convert() {
     _go(_flow.convert());
-    showTodoConvertedNotice(context, onShowTodo: () => _go(_flow.openTodo()));
+    // 체험하기의 알림은 누르거나 단계가 바뀔 때까지 남는다
+    showTodoConvertedNotice(
+      context,
+      onShowTodo: () => _go(_flow.openTodo()),
+      persist: true,
+    );
   }
 
   /// 앱처럼 할 일을 고르고 기본 집중 시간을 채운 새 작업 시트를 연다. 다른 할 일은 고를 수 없다
@@ -123,6 +128,7 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
     showTimerStartedNotice(
       ScaffoldMessenger.of(context),
       onShowTimer: () => _go(_flow.openTimer()),
+      persist: true,
     );
   }
 

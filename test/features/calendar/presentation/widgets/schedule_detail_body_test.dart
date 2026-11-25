@@ -120,4 +120,47 @@ void main() {
     await tester.pumpWidget(body(enabled: false));
     expect(background(false), isNot(error));
   });
+
+  Future<void> showConverted(
+    WidgetTester tester, {
+    bool persist = false,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showTodoConvertedNotice(
+                context,
+                onShowTodo: () {},
+                persist: persist,
+              ),
+              child: const Text('띄우기'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('띄우기'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('변환 알림은 4초 뒤 저절로 닫힌다', (tester) async {
+    await showConverted(tester);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
+  testWidgets('남기기를 고르면 변환 알림이 1분이 지나도 남는다', (tester) async {
+    await showConverted(tester, persist: true);
+
+    await tester.pump(const Duration(minutes: 1));
+    await tester.pumpAndSettle();
+    expect(
+      find.widgetWithText(SnackBarAction, '${Terms.todo} 보기'),
+      findsOneWidget,
+    );
+  });
 }
