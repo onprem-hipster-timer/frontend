@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 운영 배포(`deploy-production.yml`)의 코드 생성은 `.github/actions/codegen`이 맡아 codegen 캐시를 쓴다. 배포용 `assets/.env`는 그 뒤에 쓴다
 - CI는 dev·main push에서 검사·테스트를 다시 돌리지 않고 캐시만 만든다(`Seed Caches` 잡: Flutter·pub 캐시, 앱과 `widgetbook/`의 codegen 캐시). 정적 검사·테스트 잡은 PR에서만 돈다
 
+#### UI
+- 버튼이 있는 알림도 다른 알림처럼 4초 뒤 저절로 닫힌다. 스크린 리더를 쓰는 중에는 닫지 않는다
+
 ### Added
 
 #### Tooling
