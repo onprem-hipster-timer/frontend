@@ -19,7 +19,7 @@ part 'trial_prompt_reveal.dart';
 /// [trialRewardWord] 동안 흐림 [trialRewardBlur]에서 또렷해지며 [trialRewardRiseBy]만큼 올라와 나타난다. 그동안
 /// 글은 주색에서 옆 색으로 번지는 색이다. 낱말이 다 놓이면 밝은 띠가 [trialRewardSheen] 동안 글을 한 번 지나가고,
 /// 글은 [trialRewardRelax] 동안 보통 앞 줄의 색으로 돌아온다. 큰 한 줄은 다음에 누를 것의 강조와 같이
-/// [TrialSpotlight.settle]에 모임 만들기의 질문처럼 나타난다
+/// [TrialSpotlight.settle]에 모임 만들기의 질문처럼 나타나고, 안내는 그보다 [meetingStepStagger] 늦게 맨 끝에 나타난다
 const trialRewardLeave = meetingStepEnterDelay;
 const trialRewardWord = Durations.medium2;
 const trialRewardWordStagger = meetingStepStagger;
@@ -35,7 +35,7 @@ const trialRewardBlur = 4.0;
 /// 밝은 띠의 너비(글 너비에 대한 몫)
 const _sheenWidth = 0.25;
 
-/// 체험하기 단계의 글: 앞 줄([lead])과 큰 한 줄([headline]). 큰 한 줄은 스크린 리더에 머리글로 읽힌다.
+/// 체험하기 단계의 글: 앞 줄([lead]), 큰 한 줄([headline]), 아래 안내([guide]). 큰 한 줄은 스크린 리더에 머리글로 읽힌다.
 ///
 /// [reward]가 아니면 [MeetingQuestionPrompt]로 그린다. [reward]면 앞 줄은 방금 누른 것으로 얻은 것이다: 나타날
 /// 때 앞 줄이 낱말마다 먼저 들어오고 큰 한 줄이 그 뒤에 들어온다. 같은 자리에서 글이 보상 줄로 바뀌면 앞 글은
@@ -50,6 +50,7 @@ class TrialPrompt extends StatefulWidget {
     super.key,
     required this.lead,
     required this.headline,
+    this.guide,
     this.reward = false,
   });
 
@@ -58,6 +59,7 @@ class TrialPrompt extends StatefulWidget {
 
   final String lead;
   final String headline;
+  final String? guide;
   final bool reward;
 
   @override
@@ -74,7 +76,8 @@ class _Timeline {
     _sheenAt = landed;
     _relaxAt = landed + trialRewardSheen;
     final settled = _relaxAt + trialRewardRelax;
-    final entered = TrialSpotlight.settle + meetingStepItem;
+    final entered =
+        TrialSpotlight.settle + meetingStepStagger + meetingStepItem;
     total = settled > entered ? settled : entered;
   }
 
@@ -103,6 +106,12 @@ class _Timeline {
 
   Interval get headline => _span(
     TrialSpotlight.settle,
+    meetingStepItem,
+    Easing.emphasizedDecelerate,
+  );
+
+  Interval get guide => _span(
+    TrialSpotlight.settle + meetingStepStagger,
     meetingStepItem,
     Easing.emphasizedDecelerate,
   );
@@ -142,6 +151,7 @@ class _TrialPromptState extends State<TrialPrompt>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.lead == widget.lead &&
         oldWidget.headline == widget.headline &&
+        oldWidget.guide == widget.guide &&
         oldWidget.reward == widget.reward) {
       return;
     }
@@ -172,10 +182,15 @@ class _TrialPromptState extends State<TrialPrompt>
         ? _Reward(
             lead: widget.lead,
             headline: widget.headline,
+            guide: widget.guide,
             play: _play,
             timeline: _timeline,
           )
-        : MeetingQuestionPrompt(lead: widget.lead, headline: widget.headline);
+        : MeetingQuestionPrompt(
+            lead: widget.lead,
+            headline: widget.headline,
+            guide: widget.guide,
+          );
     final leaving = _leaving;
     if (leaving == null) return current;
     return Stack(
@@ -196,6 +211,7 @@ class _TrialPromptState extends State<TrialPrompt>
                 child: MeetingQuestionPrompt(
                   lead: leaving.lead,
                   headline: leaving.headline,
+                  guide: leaving.guide,
                 ),
               ),
             ),
@@ -211,19 +227,21 @@ class _Reward extends StatelessWidget {
   const _Reward({
     required this.lead,
     required this.headline,
+    required this.guide,
     required this.play,
     required this.timeline,
   });
 
   final String lead;
   final String headline;
+  final String? guide;
   final AnimationController play;
   final _Timeline timeline;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final entered = play.drive(CurveTween(curve: timeline.headline));
+    final guide = this.guide;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,27 +252,31 @@ class _Reward extends StatelessWidget {
               : _Reveal(lead: lead, play: play, timeline: timeline),
         ),
         const SizedBox(height: 16),
-        FadeTransition(
-          opacity: entered,
-          alwaysIncludeSemantics: true,
-          child: AnimatedBuilder(
-            animation: entered,
-            builder: (context, child) => Transform.translate(
-              offset: Offset(0, meetingStepRise * (1 - entered.value)),
-              child: child,
-            ),
-            child: Semantics(
-              header: true,
-              child: Text(
-                keepWords(headline),
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.onSurface,
-                ),
+        _Enter(
+          shown: play.drive(CurveTween(curve: timeline.headline)),
+          child: Semantics(
+            header: true,
+            child: Text(
+              keepWords(headline),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
         ),
+        if (guide != null) ...[
+          const SizedBox(height: 6),
+          _Enter(
+            shown: play.drive(CurveTween(curve: timeline.guide)),
+            child: Text(
+              keepWords(guide),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

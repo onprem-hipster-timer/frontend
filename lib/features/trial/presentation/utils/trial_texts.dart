@@ -41,6 +41,10 @@ final trialTodoLead = '${Terms.todo.withJosa('을', '를')} 정해 놓고도 시
 
 /// 타이머를 시작한 뒤
 const trialStartedLead = '시작이 반이라죠. 방금 그 반을 했어요.';
+
+/// 타이머를 시작한 뒤 큰 한 줄 아래
+final trialStartedGuide =
+    '이 ${Terms.timer.withJosa('은', '는')} 다른 기기에서도 실시간으로 같이 흘러요. 곧 친구에게도 보여 줄 수 있어요.';
 const trialTimerLead = '이 시간에는 이 일 하나만 하면 돼요.';
 const trialEndLead = '앱 세 개를 오가던 일이 한곳에서 이어졌어요.';
 
@@ -84,6 +88,15 @@ bool trialLeadRewards(TrialFlow flow) => switch (flow.step) {
   TrialStep.calendar || TrialStep.timer => false,
 };
 
-/// [flow]에서 스크린 리더에 알리는 글: 앞 줄과 큰 한 줄
-String trialAnnouncement(TrialFlow flow) =>
-    '${trialLead(flow)} ${trialHeadline(flow)}';
+/// [flow]의 큰 한 줄 아래 안내. 타이머를 시작한 뒤에만 있다
+String? trialGuide(TrialFlow flow) =>
+    flow.step == TrialStep.todo && flow.timer != null
+    ? trialStartedGuide
+    : null;
+
+/// [flow]에서 스크린 리더에 알리는 글: 앞 줄, 큰 한 줄, (있으면) 안내
+String trialAnnouncement(TrialFlow flow) {
+  final shown = '${trialLead(flow)} ${trialHeadline(flow)}';
+  final guide = trialGuide(flow);
+  return guide == null ? shown : '$shown. $guide';
+}

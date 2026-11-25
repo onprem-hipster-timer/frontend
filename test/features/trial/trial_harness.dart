@@ -90,6 +90,9 @@ final convertedLead = find.text(keepWords(trialConvertedLead));
 /// 타이머를 시작한 뒤의 앞 줄
 final startedLead = find.text(keepWords(trialStartedLead));
 
+/// 타이머를 시작한 뒤 큰 한 줄 아래 안내
+final startedGuide = find.text(keepWords(trialStartedGuide));
+
 /// 할 일로 바꾼 뒤의 큰 질문
 final convertedHeadline = find.text(keepWords(trialConvertedHeadline));
 

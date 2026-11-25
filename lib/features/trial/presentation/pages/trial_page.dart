@@ -158,6 +158,7 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
                 TrialPrompt(
                   lead: trialLead(flow),
                   headline: trialHeadline(flow),
+                  guide: trialGuide(flow),
                   reward: trialLeadRewards(flow),
                 ),
                 const SizedBox(height: 24),

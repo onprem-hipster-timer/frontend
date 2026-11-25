@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_body.dart';
+import 'package:momeet/features/meeting/meeting.dart' show meetingStepItem;
 import 'package:momeet/features/trial/domain/trial_flow.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
@@ -68,7 +69,24 @@ void main() {
     );
   });
 
-  testWidgets('새 작업 시트에서 시작을 누르면 보상 줄이 먼저 나타나고 다음에 누를 것과 그 강조가 뒤따른다', (
+  testWidgets('새 작업 시트에서 시작을 누르면 큰 한 줄 다음에 안내가 맨 끝으로 나타난다', (tester) async {
+    await openTrial(tester);
+    await goToTodo(tester);
+    await tester.tap(find.byTooltip('${Terms.timer} 시작'));
+    await tester.pumpAndSettle();
+    await turnMotionOn(tester);
+
+    await tester.tap(StartSheet.startButton);
+    await tester.pump();
+    // 안내는 큰 한 줄이 다 나타난 때에도 아직 다 나타나지 않은 맨 끝이다
+    await pumpFrames(tester, TrialSpotlight.settle + meetingStepItem);
+    expect(shownOf(tester, startedHeadline), 1);
+    expect(shownOf(tester, startedGuide), lessThan(1));
+    await pumpFrames(tester, const Duration(seconds: 3));
+    expect(shownOf(tester, startedGuide), 1);
+  });
+
+  testWidgets('새 작업 시트에서 시작을 누르면 앞 줄이 먼저 나타나는 동안 할 일 줄은 움직이지 않는다', (
     tester,
   ) async {
     await openTrial(tester);

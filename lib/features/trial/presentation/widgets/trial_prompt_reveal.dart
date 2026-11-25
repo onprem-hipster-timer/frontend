@@ -160,3 +160,27 @@ class _Word extends StatelessWidget {
     );
   }
 }
+
+/// [shown]에 따라 흐림과 아래 [meetingStepRise] 자리에서 올라오며 나타난다. 흐린 동안에도 스크린 리더는 읽는다
+class _Enter extends StatelessWidget {
+  const _Enter({required this.shown, required this.child});
+
+  final Animation<double> shown;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: shown,
+      alwaysIncludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: shown,
+        builder: (context, child) => Transform.translate(
+          offset: Offset(0, meetingStepRise * (1 - shown.value)),
+          child: child,
+        ),
+        child: child,
+      ),
+    );
+  }
+}
