@@ -12,6 +12,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:layout_audit/layout_audit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/trial/presentation/pages/trial_page.dart';
+import 'package:momeet/features/trial/presentation/pages/trial_preview_page.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_preview_kind.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
@@ -102,4 +104,20 @@ void main() {
       ),
     ),
   );
+
+  for (final kind in TrialPreviewKind.values) {
+    testLayoutAudit(
+      'trial_preview_${kind.name}',
+      subject: '랜딩 미리보기 ${kind.name}',
+      texts: texts,
+      build: (_) => wrapWithApp()(
+        TrialPreviewPage(
+          kind: kind,
+          now: () => now,
+          fontWeights: () async {},
+          onReady: (_) {},
+        ),
+      ),
+    );
+  }
 }
