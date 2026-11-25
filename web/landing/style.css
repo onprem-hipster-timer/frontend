@@ -238,12 +238,22 @@ body.landing-active {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
   gap: 1rem;
+}
+
+/* 유리 카드를 모은 칸(랜딩의 기능 카드, 모임·타이머 소개의 카드·질문·안내).
+   뒤에 카드 아이콘의 세 색을 옅게 위·오른쪽·아래에 둬 카드가 쌓여도 저마다 색이 비친다 */
+.bento-grid,
+.meet-modes,
+.faq-list,
+.meet-guest .meet-inner {
   position: relative;
   isolation: isolate;
 }
 
-/* 유리 카드 뒤에 비치는 색: 카드 아이콘의 세 색을 옅게 위·오른쪽·아래에 둬 카드가 쌓여도 저마다 색이 비친다 */
-.bento-grid::before {
+.bento-grid::before,
+.meet-modes::before,
+.faq-list::before,
+.meet-guest .meet-inner::before {
   content: '';
   position: absolute;
   inset: -3rem -1rem;
@@ -255,12 +265,18 @@ body.landing-active {
     radial-gradient(closest-side, rgba(234, 88, 12, 0.13), transparent) 0 100% / 70% 50% no-repeat;
 }
 
-.bento-card {
+/* 유리 카드 */
+.bento-card,
+.faq-item,
+.meet-note {
   background: rgba(255, 255, 255, 0.6);
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   backdrop-filter: blur(16px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+}
+
+.bento-card {
   border-radius: var(--radius-md);
   padding: 2rem;
   opacity: 0;
@@ -274,7 +290,9 @@ body.landing-active {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .bento-card {
+  .bento-card,
+  .faq-item,
+  .meet-note {
     background: rgba(255, 255, 255, 0.9);
   }
 }
