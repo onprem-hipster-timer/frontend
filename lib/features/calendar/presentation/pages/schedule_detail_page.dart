@@ -6,7 +6,7 @@ import 'package:momeet/features/calendar/presentation/providers/schedule_detail_
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/features/calendar/presentation/utils/linked_todo_navigation.dart';
 import 'package:momeet/features/calendar/presentation/utils/source_todo_policy_dialog.dart';
-import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_info.dart';
+import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_body.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
@@ -49,41 +49,25 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       body: scheduleAsync.when(
         data: (schedule) => SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ScheduleTitle(title: schedule.title),
-              const SizedBox(height: 24),
-              ScheduleDetailInfo(schedule: schedule),
-              const SizedBox(height: 16),
-              ScheduleTimerSection(scheduleId: schedule.id),
-              const SizedBox(height: 16),
-              _TodoConversionButton(
-                linked: schedule.sourceTodoId != null,
-                busy:
-                    _pendingAction == _PendingAction.convert ||
-                    _pendingAction == _PendingAction.openLinked,
-                onOpenLinked: isBusy
-                    ? null
-                    : () => _navigateToLinkedTodo(
-                        context,
-                        schedule.sourceTodoId!,
-                      ),
-                onConvert: isBusy
-                    ? null
-                    : () => _handleConvertToTodo(context, ref, schedule),
-              ),
-              const SizedBox(height: 16),
-              _EditDeleteButtons(
-                deleting: _pendingAction == _PendingAction.delete,
-                onEdit: isBusy
-                    ? null
-                    : () => showScheduleEditSheet(context, schedule),
-                onDelete: isBusy
-                    ? null
-                    : () => _handleDelete(context, ref, schedule),
-              ),
-            ],
+          child: ScheduleDetailBody(
+            schedule: schedule,
+            timerSection: ScheduleTimerSection(scheduleId: schedule.id),
+            converting:
+                _pendingAction == _PendingAction.convert ||
+                _pendingAction == _PendingAction.openLinked,
+            deleting: _pendingAction == _PendingAction.delete,
+            onOpenLinked: isBusy
+                ? null
+                : () => _navigateToLinkedTodo(context, schedule.sourceTodoId!),
+            onConvert: isBusy
+                ? null
+                : () => _handleConvertToTodo(context, ref, schedule),
+            onEdit: isBusy
+                ? null
+                : () => showScheduleEditSheet(context, schedule),
+            onDelete: isBusy
+                ? null
+                : () => _handleDelete(context, ref, schedule),
           ),
         ),
         loading: () => const AppLoading(),
@@ -209,155 +193,5 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     } finally {
       if (mounted) setState(() => _pendingAction = null);
     }
-  }
-}
-
-/// 상세 화면의 넓은 버튼 공통 모양
-final _actionButtonStyle = ButtonStyle(
-  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 12)),
-  shape: WidgetStatePropertyAll(
-    RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
-  ),
-);
-
-/// 일정 제목 줄
-class _ScheduleTitle extends StatelessWidget {
-  const _ScheduleTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Icon(Icons.event, color: theme.colorScheme.primary, size: 28),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 할 일과 이어졌으면 그 할 일로 가고, 아니면 할 일로 바꾼다
-class _TodoConversionButton extends StatelessWidget {
-  const _TodoConversionButton({
-    required this.linked,
-    required this.busy,
-    required this.onOpenLinked,
-    required this.onConvert,
-  });
-
-  final bool linked;
-
-  /// 할 일로 바꾸는 중이거나 연결된 할 일을 받는 중이다
-  final bool busy;
-
-  /// null이면 다른 작업이 진행 중이라 누를 수 없다
-  final VoidCallback? onOpenLinked;
-
-  /// null이면 다른 작업이 진행 중이라 누를 수 없다
-  final VoidCallback? onConvert;
-
-  @override
-  Widget build(BuildContext context) {
-    if (linked) {
-      return SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: onOpenLinked,
-          icon: busy
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.link),
-          label: const Text('연결된 ${Terms.todo} 보기'),
-          style: _actionButtonStyle,
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.tonal(
-        onPressed: onConvert,
-        style: _actionButtonStyle,
-        child: busy
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.transform, size: 18),
-                  const SizedBox(width: 8),
-                  Text('${Terms.todo.withJosa('으로', '로')} 변환'),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-/// 수정·삭제 버튼 줄. 콜백이 null이면 누를 수 없다
-class _EditDeleteButtons extends StatelessWidget {
-  const _EditDeleteButtons({
-    required this.deleting,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final bool deleting;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit),
-            label: const Text('수정'),
-            style: _actionButtonStyle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: onDelete,
-            icon: deleting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.delete),
-            label: Text(deleting ? '삭제 중...' : '삭제'),
-            style: _actionButtonStyle.copyWith(
-              backgroundColor: WidgetStatePropertyAll(
-                Theme.of(context).colorScheme.error,
-              ),
-              foregroundColor: WidgetStatePropertyAll(
-                Theme.of(context).colorScheme.onError,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

@@ -1,0 +1,80 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_body.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/domain/terms.dart';
+
+import '../../../../helpers/schedule_fixtures.dart';
+
+final _convertLabel = '${Terms.todo.withJosa('으로', '로')} 변환';
+const _linkedLabel = '연결된 ${Terms.todo} 보기';
+
+void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('ko');
+  });
+
+  final pressed = <String>[];
+
+  setUp(pressed.clear);
+
+  Widget body({ScheduleRead? schedule, bool enabled = true}) => MaterialApp(
+    home: Scaffold(
+      body: SingleChildScrollView(
+        child: ScheduleDetailBody(
+          schedule: schedule ?? makeSchedule(title: '팀 회의'),
+          timerSection: const Text('타이머 자리'),
+          onOpenLinked: enabled ? () => pressed.add('linked') : null,
+          onConvert: enabled ? () => pressed.add('convert') : null,
+          onEdit: enabled ? () => pressed.add('edit') : null,
+          onDelete: enabled ? () => pressed.add('delete') : null,
+        ),
+      ),
+    ),
+  );
+
+  testWidgets('제목과 받은 타이머 자리를 보인다', (tester) async {
+    await tester.pumpWidget(body());
+
+    expect(find.text('팀 회의'), findsOneWidget);
+    expect(find.text('타이머 자리'), findsOneWidget);
+  });
+
+  testWidgets('할 일과 이어지지 않은 일정은 변환을 누르면 받은 콜백을 부른다', (tester) async {
+    await tester.pumpWidget(body());
+
+    expect(find.text(_linkedLabel), findsNothing);
+    await tester.tap(find.text(_convertLabel));
+    expect(pressed, ['convert']);
+  });
+
+  testWidgets('할 일과 이어진 일정은 변환 대신 연결된 할 일 보기를 두고, 누르면 받은 콜백을 부른다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      body(schedule: makeSchedule(sourceTodoId: 'todo-1')),
+    );
+
+    expect(find.text(_convertLabel), findsNothing);
+    await tester.tap(find.text(_linkedLabel));
+    expect(pressed, ['linked']);
+  });
+
+  testWidgets('수정·삭제를 누르면 받은 콜백을 부른다', (tester) async {
+    await tester.pumpWidget(body());
+
+    await tester.tap(find.text('수정'));
+    await tester.tap(find.text('삭제'));
+    expect(pressed, ['edit', 'delete']);
+  });
+
+  testWidgets('콜백이 없으면 버튼을 누를 수 없다', (tester) async {
+    await tester.pumpWidget(body(enabled: false));
+
+    await tester.tap(find.text(_convertLabel));
+    await tester.tap(find.text('수정'));
+    await tester.tap(find.text('삭제'));
+    expect(pressed, isEmpty);
+  });
+}
