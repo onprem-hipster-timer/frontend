@@ -211,11 +211,12 @@ class _EditDeleteButtons extends StatelessWidget {
                   )
                 : const Icon(Icons.delete),
             label: Text(deleting ? '삭제 중...' : '삭제'),
+            // 누를 수 없으면 오류색 대신 기본 비활성 모양으로 둔다
             style: _actionButtonStyle.copyWith(
-              backgroundColor: WidgetStatePropertyAll(
+              backgroundColor: _whenEnabled(
                 Theme.of(context).colorScheme.error,
               ),
-              foregroundColor: WidgetStatePropertyAll(
+              foregroundColor: _whenEnabled(
                 Theme.of(context).colorScheme.onError,
               ),
             ),
@@ -225,3 +226,9 @@ class _EditDeleteButtons extends StatelessWidget {
     );
   }
 }
+
+/// 누를 수 있을 때만 [color], 아니면 기본값
+WidgetStateProperty<Color?> _whenEnabled(Color color) =>
+    WidgetStateProperty.resolveWith(
+      (states) => states.contains(WidgetState.disabled) ? null : color,
+    );

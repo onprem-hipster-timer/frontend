@@ -102,4 +102,22 @@ void main() {
     await tester.tap(find.text('${Terms.todo} 보기'));
     expect(pressed, ['show']);
   });
+
+  testWidgets('삭제를 누를 수 없으면 오류색이 아닌 비활성 모양으로 보인다', (tester) async {
+    Color? background(bool enabled) {
+      final button = tester.widget<FilledButton>(
+        find.ancestor(of: find.text('삭제'), matching: find.byType(FilledButton)),
+      );
+      return button.style!.backgroundColor!.resolve({
+        if (!enabled) WidgetState.disabled,
+      });
+    }
+
+    await tester.pumpWidget(body());
+    final error = Theme.of(tester.element(find.text('삭제'))).colorScheme.error;
+    expect(background(true), error);
+
+    await tester.pumpWidget(body(enabled: false));
+    expect(background(false), isNot(error));
+  });
 }
