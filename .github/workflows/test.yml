@@ -10,7 +10,7 @@ on:
       - 'LICENSE'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/PULL_REQUEST_TEMPLATE.md'
-  # dev push는 dev 범위 캐시를 만들어 dev로 가는 PR이 복원할 수 있게 한다
+  # push는 그 브랜치 범위 캐시만 만들어(seed-cache) 그 브랜치로 가는 PR이 복원할 수 있게 한다. 검사·테스트는 PR에서만 돈다
   push:
     branches: [main, dev]
     paths-ignore:
@@ -25,15 +25,54 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  static:
-    name: Format, Analyze & Package Tests
+  seed-cache:
+    name: Seed Caches
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     timeout-minutes: 15
     permissions:
       contents: read
 
     steps:
-      # PR 실행은 머지 커밋을 받으므로 첫 부모(베이스)와 비교하려면 깊이 2가 필요하다
+      - uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - uses: ./.github/actions/codegen
+        with:
+          api-base-url: ${{ vars.API_BASE_URL }}
+
+      # pub 캐시는 잡이 끝날 때 저장되므로 PR 잡이 받는 패키지 의존성도 받아 둔다
+      - name: Install package dependencies
+        run: |
+          (cd packages/momeet_lints && dart pub get)
+          (cd packages/layout_audit && flutter pub get)
+
+      - name: Install widgetbook dependencies
+        run: cd widgetbook && flutter pub get --enforce-lockfile
+
+      - uses: ./.github/actions/codegen
+        with:
+          directory: widgetbook/
+          cache-key: codegen-widgetbook
+
+  static:
+    name: Format, Analyze & Package Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      # PR은 머지 커밋을 받으므로 첫 부모(베이스)와 비교하려면 깊이 2가 필요하다
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
@@ -77,7 +116,6 @@ jobs:
       # 패키지 테스트는 PR이 packages/, .fvmrc, 이 워크플로를 바꿨을 때만 돈다. 비교에 실패하면 돈다
       - name: Check package changes
         id: packages
-        if: github.event_name == 'pull_request'
         run: |
           if git diff --quiet HEAD^1 HEAD -- packages/ .fvmrc .github/workflows/test.yml; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -86,16 +124,17 @@ jobs:
           fi
 
       - name: Layout audit library tests
-        if: github.event_name != 'pull_request' || steps.packages.outputs.changed == 'true'
+        if: steps.packages.outputs.changed == 'true'
         run: cd packages/layout_audit && flutter pub get && flutter test
 
       - name: Lint rule tests
-        if: github.event_name != 'pull_request' || steps.packages.outputs.changed == 'true'
+        if: steps.packages.outputs.changed == 'true'
         run: cd packages/momeet_lints && dart test
 
   test:
     name: Tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     timeout-minutes: 15
     permissions:
       contents: read
