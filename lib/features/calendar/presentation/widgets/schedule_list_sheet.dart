@@ -153,9 +153,9 @@ class _ScheduleTile extends StatelessWidget {
         Navigator.of(context).pop();
         final onTap = this.onTap;
         if (onTap != null) return onTap(schedule);
-        context.pushNamed(
+        context.goNamed(
           AppRoute.scheduleDetail.name,
-          queryParameters: {'id': schedule.id},
+          pathParameters: {'scheduleId': schedule.id},
         );
       },
     );

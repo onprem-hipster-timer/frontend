@@ -48,7 +48,6 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/timer'), true);
         expect(AppRoute.isKnownProtectedPath('/tags'), true);
         expect(AppRoute.isKnownProtectedPath('/mypage'), true);
-        expect(AppRoute.isKnownProtectedPath('/schedule/detail'), true);
         expect(AppRoute.isKnownProtectedPath('/timer/detail'), true);
       });
 
@@ -57,6 +56,17 @@ void main() {
         expect(AppRoute.isKnownProtectedPath('/todo/some-group-id'), true);
         expect(AppRoute.isKnownProtectedPath('/meetings/abc-123'), true);
         expect(AppRoute.isKnownProtectedPath('/meetings/abc-123/edit'), true);
+        expect(AppRoute.isKnownProtectedPath('/schedule/abc-123'), true);
+      });
+
+      test('일정 상세 경로는 일정 상세 라우트 하나에만 맞는다', () {
+        expect(
+          [
+            for (final route in AppRoute.values)
+              if (route.matches('/schedule/abc-123')) route,
+          ],
+          [AppRoute.scheduleDetail],
+        );
       });
     });
 
@@ -158,10 +168,10 @@ void main() {
     test('파라미터가 포함된 등록 경로를 허용한다', () {
       expect(isValidRedirectPath('/todo/group-abc'), true);
       expect(isValidRedirectPath('/todo/123'), true);
+      expect(isValidRedirectPath('/schedule/schedule-1'), true);
     });
 
     test('등록된 보호 경로를 허용한다', () {
-      expect(isValidRedirectPath('/schedule/detail'), true);
       expect(isValidRedirectPath('/timer/detail'), true);
     });
   });
@@ -211,13 +221,13 @@ void main() {
         final result = authRedirect(
           isAuthenticated: false,
           isAuthLoading: true,
-          matchedLocation: AppRoute.scheduleDetail.path,
-          queryParameters: {'id': 'schedule-1'},
+          matchedLocation: AppRoute.timerDetail.path,
+          queryParameters: {'id': 'timer-1'},
         );
         expect(
           result,
           '${AppRoute.loading.path}?redirect='
-          '${Uri.encodeComponent('${AppRoute.scheduleDetail.path}?id=schedule-1')}',
+          '${Uri.encodeComponent('${AppRoute.timerDetail.path}?id=timer-1')}',
         );
       });
 
@@ -278,7 +288,7 @@ void main() {
           for (final remembered in [
             '/meetings/meeting-1',
             AppRoute.todo.path,
-            '${AppRoute.scheduleDetail.path}?id=schedule-1',
+            '/schedule/schedule-1',
             '${AppRoute.verification.path}?flow=f&code=123456',
             AppRoute.login.path,
           ]) {
@@ -1198,7 +1208,7 @@ void main() {
           AppRoute.timer.path,
           AppRoute.tags.path,
           '/todo/group-1',
-          AppRoute.scheduleDetail.path,
+          '/schedule/schedule-1',
           '/meetings/meeting-1',
         ]) {
           expect(
@@ -1389,12 +1399,13 @@ void main() {
           AppRoute.accountDeletion.path,
           AppRoute.landing.path,
           '/todo/group-1',
+          '/schedule/s1',
         ]) {
           expect(guest(path), notice(path), reason: path);
         }
         expect(
-          guest(AppRoute.scheduleDetail.path, query: {'id': 's1'}),
-          notice('${AppRoute.scheduleDetail.path}?id=s1'),
+          guest(AppRoute.timerDetail.path, query: {'id': 't1'}),
+          notice('${AppRoute.timerDetail.path}?id=t1'),
         );
       });
 
@@ -1541,7 +1552,7 @@ void main() {
           AppRoute.todo.path,
           AppRoute.mypage.path,
           '/todo/group-1',
-          AppRoute.scheduleDetail.path,
+          '/schedule/schedule-1',
         ]) {
           expect(
             signedIn(path, deletionPending: true),

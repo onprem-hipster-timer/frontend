@@ -225,15 +225,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
                 routes: [
                   GoRoute(
-                    path: 'schedule/detail',
+                    path: 'schedule/:scheduleId',
                     name: AppRoute.scheduleDetail.name,
                     builder: (context, state) {
-                      final scheduleId = state.uri.queryParameters['id'];
-                      if (scheduleId == null) {
-                        return const Scaffold(
-                          body: Center(child: Text('잘못된 접근입니다')),
-                        );
-                      }
+                      final scheduleId = state.pathParameters['scheduleId']!;
                       return DeferredWidget(
                         loader: schedule_detail.loadLibrary,
                         builder: (_) => schedule_detail.ScheduleDetailPage(

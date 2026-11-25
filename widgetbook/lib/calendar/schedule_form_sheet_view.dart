@@ -6,11 +6,7 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 import '../shared/samples_shared.dart';
 import 'samples_plan.dart';
 
-@widgetbook.UseCase(
-  name: '일정 입력 시트',
-  type: ScheduleFormSheetView,
-  path: '[달력]',
-)
+@widgetbook.UseCase(name: '일정 입력 시트', type: ScheduleFormSheetView, path: '[달력]')
 Widget scheduleFormSheetView(BuildContext context) {
   final knobs = context.knobs;
   final edit = knobs.boolean(

@@ -225,10 +225,10 @@ void main() {
                 ),
                 routes: [
                   GoRoute(
-                    path: 'schedule/detail',
+                    path: 'schedule/:scheduleId',
                     name: AppRoute.scheduleDetail.name,
                     builder: (context, state) =>
-                        Text('상세 ${state.uri.queryParameters['id']}'),
+                        Text('상세 ${state.pathParameters['scheduleId']}'),
                   ),
                 ],
               ),
