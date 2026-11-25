@@ -422,6 +422,11 @@ body.landing-active {
   margin: 0 auto;
 }
 
+.meet .bento-title {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .meet-desc {
   font-size: 1rem;
   color: var(--ink-light);
