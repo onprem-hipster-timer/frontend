@@ -35,6 +35,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
+      - uses: ./.github/actions/codegen
+        with:
+          api-base-url: ${{ vars.API_BASE_URL }}
+
+      # 앱은 실행 중에 assets/.env를 읽는다. 코드 생성 액션이 쓴 .env를 배포용 값으로 덮어쓴다
       - name: Create .env
         run: |
           mkdir -p assets
@@ -44,11 +49,8 @@ jobs:
           TURNSTILE_SITE_KEY=${{ vars.TURNSTILE_SITE_KEY }}
           EOF
 
-      - name: Run code generation
-        run: dart run build_runner build --delete-conflicting-outputs
-
       - name: Build Flutter Web
-        run: flutter build web --wasm --release
+        run: flutter build web --no-pub --wasm --release
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest

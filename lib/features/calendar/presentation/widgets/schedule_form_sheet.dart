@@ -122,9 +122,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
             '일정이 생성되었습니다',
             kind: AppNoticeKind.success,
             actionLabel: '일정 보기',
-            onAction: () => router.pushNamed(
+            onAction: () => router.goNamed(
               AppRoute.scheduleDetail.name,
-              queryParameters: {'id': created.id},
+              pathParameters: {'scheduleId': created.id},
             ),
           );
         }

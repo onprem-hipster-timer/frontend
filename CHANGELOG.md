@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Tooling
+- 레이아웃 점검(`test/layout_audit`의 화면 전수 점검과 위젯 테스트마다의 점검)은 CI에서 돌리지 않는다. 로컬에서 `fvm flutter test`로 돌려 `build/layout_audit/`의 보고서를 본다
+- CI의 `flutter test`·`flutter build web`은 앞 단계에서 받은 의존성을 그대로 써 `pub get`을 다시 돌리지 않는다(`--no-pub`)
+- CI의 테스트 샤드는 4개이고, 테스트 파일을 파일 크기 합이 비슷하게 나눠 받아 샤드마다 자기 파일만 컴파일한다
+- CI 정적 검사 잡의 패키지 테스트 두 단계를 `Package tests` 하나로 합친다
+- `widgetbook/`의 코드 생성 결과(`.dart_tool/build`, `lib/**/*.g.dart`)를 `.github/actions/codegen`(`directory: widgetbook/`)으로 캐시한다. 키는 `widgetbook/`의 `pubspec.lock`·`build.yaml`·`lib/**/*.dart`이고, 맞으면 `build_runner`를 돌리지 않는다. CI 정적 검사 잡과 위젯 카탈로그 배포가 함께 쓴다
+- CI 정적 검사 잡의 패키지 테스트(`packages/layout_audit`, `packages/momeet_lints`)는 PR이 `packages/`, `.fvmrc`, `.github/workflows/test.yml`을 바꿨을 때만 돈다
+- 운영 배포(`deploy-production.yml`)의 코드 생성은 `.github/actions/codegen`이 맡아 codegen 캐시를 쓴다. 배포용 `assets/.env`는 그 뒤에 쓴다
+- CI는 dev·main push에서 검사·테스트를 다시 돌리지 않고 캐시만 만든다(`Seed Caches` 잡: Flutter·pub 캐시, 앱과 `widgetbook/`의 codegen 캐시). 정적 검사·테스트 잡은 PR에서만 돈다
+
 ### Added
 
 #### Tooling
@@ -17,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provider를 읽는 위젯은 Provider 읽기와 부수 효과를 맡는 원래 위젯과, 값과 콜백만 받아 그리는 `<위젯>View`(`<위젯 파일 이름>_view.dart`)로 나누고 `<위젯>View`를 카탈로그에 담는다: 마이페이지의 프로필·활동 요약·사용한 태그·내 모임·회원 탈퇴 확인 창, 할 일과 태그의 입력 시트·상태 메뉴·목록 칸·태그 고르기, 달력 본체·일정 입력 시트·보기 설정, 타이머 기록·조작 단추·시작 시트, 구글 로그인 단추·약관 동의 줄, 시간대 고르기, 할 일 목록 줄·타이머 시작 단추, 타이머 대시보드, 모임의 링크·로그인 고르기·게스트 입력·닉네임 시트·로그인 전후 본문·모임 설정 폼·저장하기 자리·되돌리기 키
   - 카탈로그의 뷰포트 고르기에 레이아웃 점검이 보는 유난한 비율의 화면을 더한다: iPhone SE 1세대, Galaxy Z Flip 펼침·커버, Galaxy Z Fold 안쪽, Surface Duo 한쪽·두 화면, 가로로 눕힌 폰, 울트라와이드
   - Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope`로 고정 값을 준다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다
-  - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI 정적 검사 잡에서 함께 돈다
+  - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI에서는 돌지 않는다
 
 #### Calendar
 - 새 일정을 만든 뒤 알림에 '일정 보기'를 두고, 누르면 만든 일정의 상세로 간다. 모임 화면의 '내 달력에 일정 만들기'로 만들어도 같다
@@ -362,9 +374,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 00:00에 시작해 23:59에 끝나는 일정(일정 폼의 종일)을 종일로 본다. 폼에서 종일로 만든 일정을 수정하려고 열면 종일이 켜져 있다
 - 달력이 일정을 불러오지 못했을 때 '다시 시도'를 누르면 일정을 다시 받는다
 - 일정 만들기·수정 시트가 디버그 빌드에서 종일 스위치 때문에 오류로 그려지지 않던 문제를 고친다. 시트 배경을 시트 자체에 칠한다
+- 일정 상세의 주소는 `/schedule/<일정 ID>`다. 달력의 일정이나 날짜의 일정 목록에서 상세를 열면 웹 주소가 이 주소가 되고, 뒤로 가거나 일정을 지우면 달력(`/`)이다
 
 #### MyPage
 - 활동 요약이 통계를 불러오지 못했을 때 '다시 시도'를 누르면 할 일 목록을 다시 받는다
+- '내 모임'의 '모두 보기'로 전체 목록을 열면 웹 주소가 `/mypage/meetings`가 되고, 뒤로 가면 `/mypage`다
 
 #### Settings
 - 타임존 선택 시트가 디버그 빌드에서 목록 항목 때문에 오류로 그려지지 않던 문제를 고친다. 시트 배경을 시트 자체에 칠한다

@@ -60,7 +60,6 @@ class CalendarPage extends StatelessWidget {
           Expanded(
             child: CalendarViewWidget(
               // TODO: 라우팅 연결
-              // onScheduleTap: (id) => context.go('/schedule/detail?id=$id'),
               // onDateLongPress: (date) => _showCreateScheduleDialog(context, date),
             ),
           ),

@@ -239,9 +239,9 @@ class _CalendarViewWidgetViewState extends State<CalendarViewWidgetView> {
       onScheduleTap(scheduleId);
       return;
     }
-    context.pushNamed(
+    context.goNamed(
       AppRoute.scheduleDetail.name,
-      queryParameters: {'id': scheduleId},
+      pathParameters: {'scheduleId': scheduleId},
     );
   }
 

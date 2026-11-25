@@ -39,7 +39,7 @@ void main() {
     path: AppRoute.scheduleDetail.path,
     name: AppRoute.scheduleDetail.name,
     builder: (context, state) =>
-        Text('일정 상세 ${state.uri.queryParameters['id']}'),
+        Text('일정 상세 ${state.pathParameters['scheduleId']}'),
   );
 
   Future<void> openCreate(
@@ -269,23 +269,8 @@ void main() {
       await tester.tap(viewAction());
       await tester.pumpAndSettle();
 
-      expect(router.state.uri.path, AppRoute.scheduleDetail.path);
-      expect(router.state.uri.queryParameters['id'], 'schedule-new-1');
+      expect(router.state.uri.path, '/schedule/schedule-new-1');
       expect(find.text('일정 상세 schedule-new-1'), findsOneWidget);
-    });
-
-    testWidgets('일정 보기로 간 상세에서 뒤로 가면 시트를 열었던 화면으로 돌아온다', (tester) async {
-      await openCreate(tester, initialStartTime: start, initialEndTime: end);
-      await tester.enterText(field('제목'), '회의');
-      await tapVisible(tester, find.text('저장'));
-      await tester.tap(viewAction());
-      await tester.pumpAndSettle();
-
-      router.pop();
-      await tester.pumpAndSettle();
-
-      expect(router.state.uri.path, '/');
-      expect(find.text('열기'), findsOneWidget);
     });
 
     testWidgets('보내기에 실패하면 일정 보기가 없다', (tester) async {
@@ -309,10 +294,10 @@ void main() {
       await tester.tap(viewAction());
       await tester.pumpAndSettle();
 
-      expect(router.state.uri.queryParameters['id'], 'schedule-new-2');
+      expect(router.state.uri.path, '/schedule/schedule-new-2');
     });
 
-    testWidgets('달력 탭 밖 화면(모임)에서 연 시트로 만들어도 일정 보기로 상세에 가고, 뒤로 가면 그 화면으로 돌아온다', (
+    testWidgets('모임 화면에서 일정을 만든 뒤 알림의 일정 보기를 누르면 상세로 가고, 거기서 뒤로 가면 달력이 나온다', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1600);
@@ -348,10 +333,10 @@ void main() {
                     builder: (context, state) => const Text('달력 화면'),
                     routes: [
                       GoRoute(
-                        path: 'schedule/detail',
+                        path: 'schedule/:scheduleId',
                         name: AppRoute.scheduleDetail.name,
                         builder: (context, state) =>
-                            Text('일정 상세 ${state.uri.queryParameters['id']}'),
+                            Text('일정 상세 ${state.pathParameters['scheduleId']}'),
                       ),
                     ],
                   ),
@@ -390,8 +375,8 @@ void main() {
 
       router.pop();
       await tester.pumpAndSettle();
-      expect(router.state.uri.path, '/m/meeting-1');
-      expect(find.text('모임 화면'), findsOneWidget);
+      expect(router.state.uri.path, '/');
+      expect(find.text('달력 화면'), findsOneWidget);
     });
   });
 

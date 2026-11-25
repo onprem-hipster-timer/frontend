@@ -17,11 +17,7 @@ final _todos = [
   sampleTodo(title: '운동 계획 세우기').copyWith(id: 'todo-3'),
 ];
 
-@widgetbook.UseCase(
-  name: '새 타이머 시트',
-  type: StartTimerSheetView,
-  path: '[타이머]',
-)
+@widgetbook.UseCase(name: '새 타이머 시트', type: StartTimerSheetView, path: '[타이머]')
 Widget startTimerSheetView(BuildContext context) {
   final knobs = context.knobs;
   final linked = knobs.boolean(

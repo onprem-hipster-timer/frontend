@@ -48,14 +48,15 @@ jobs:
         working-directory: widgetbook
         run: flutter pub get --enforce-lockfile
 
-      - name: Generate use case directories
-        working-directory: widgetbook
-        run: dart run build_runner build
+      - uses: ./.github/actions/codegen
+        with:
+          directory: widgetbook/
+          cache-key: codegen-widgetbook
 
       # 이 저장소의 Pages 주소는 https://<owner>.github.io/frontend/ 다
       - name: Build Widgetbook
         working-directory: widgetbook
-        run: flutter build web --wasm --base-href /frontend/
+        run: flutter build web --no-pub --wasm --base-href /frontend/
 
       - uses: actions/upload-pages-artifact@v5
         with:
