@@ -192,6 +192,15 @@ Future<void> goToTimer(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// 끝 화면의 물음
+final meetingQuestion = find.text(trialMeetingQuestion);
+
+/// 끝 화면에서 물음을 눌러 모임 만들기와 모임 화면 그림을 펼친다
+Future<void> openMeetingAnswer(WidgetTester tester) async {
+  await tester.tap(meetingQuestion);
+  await tester.pumpAndSettle();
+}
+
 /// 타이머 단계에서 시간이 모두 지나가 끝까지
 Future<void> goToEnd(WidgetTester tester) async {
   await goToTimer(tester);

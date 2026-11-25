@@ -51,7 +51,10 @@ const trialTimerLead = '이 시간에는 이 일 하나만 하면 돼요.';
 const trialEndLead = '앱 세 개를 오가던 일이 한곳에서 이어졌어요.';
 
 const trialSignUp = '가입하고 내 일정으로 시작하기';
-const trialMeetingLead = '친구와 만날 날짜는 링크 하나로 같이 정해 보세요.';
+
+/// 끝에서 가입하기 아래의 물음. 누르면 그 답([trialMeetingLead])과 모임 만들기가 펼쳐진다
+const trialMeetingQuestion = '$trialDinnerTitle 날짜는 아직 못 정했는데요?';
+const trialMeetingLead = "'언제 돼?'를 주고받는 대신, 링크 하나로 다 같이 되는 날을 찾아요.";
 const trialMeetingAction = '${Terms.meeting} 만들기';
 
 const trialExamTitle = '어학 시험';

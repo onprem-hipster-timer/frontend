@@ -50,6 +50,7 @@ void main() {
     final titles = recordTitles(tester);
     await openTrial(tester);
     await goToEnd(tester);
+    await openMeetingAnswer(tester);
 
     await tester.tap(find.text(trialMeetingAction));
     await tester.pumpAndSettle();
