@@ -63,6 +63,19 @@ class ScheduleDetailBody extends StatelessWidget {
   }
 }
 
+/// 일정을 할 일로 바꾼 뒤의 알림. '할 일 보기'를 누르면 [onShowTodo]를 부른다.
+/// 일정 상세 화면과 체험하기 흐름이 같은 알림을 띄우려고 공개한다.
+void showTodoConvertedNotice(
+  BuildContext context, {
+  required VoidCallback onShowTodo,
+}) => showAppSnackBar(
+  context,
+  '${Terms.todo.withJosa('으로', '로')} 변환되었습니다',
+  kind: AppNoticeKind.success,
+  actionLabel: '${Terms.todo} 보기',
+  onAction: onShowTodo,
+);
+
 /// 상세 화면의 넓은 버튼 공통 모양
 final _actionButtonStyle = ButtonStyle(
   padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 12)),

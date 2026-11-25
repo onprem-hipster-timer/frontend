@@ -11,7 +11,6 @@ import 'package:momeet/features/calendar/presentation/widgets/schedule_form_shee
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
 import 'package:momeet/shared/ui/ui.dart';
-import 'package:momeet/shared/domain/terms.dart';
 
 /// 캘린더에서 일정을 탭하면 이동하는 풀스크린 상세 페이지.
 /// 일정 정보, 타이머 이력, TODO 변환, 수정/삭제 기능을 제공합니다.
@@ -100,12 +99,9 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
         // 알림이 떠 있는 사이 상세 화면을 떠나도 이동할 수 있게 라우터와 컨테이너를 잡아 둔다
         final router = GoRouter.of(context);
         final container = ProviderScope.containerOf(context, listen: false);
-        showAppSnackBar(
+        showTodoConvertedNotice(
           context,
-          '${Terms.todo.withJosa('으로', '로')} 변환되었습니다',
-          kind: AppNoticeKind.success,
-          actionLabel: '${Terms.todo} 보기',
-          onAction: () => goToTodoOfSchedule(container, router, schedule.id),
+          onShowTodo: () => goToTodoOfSchedule(container, router, schedule.id),
         );
       }
     } catch (error) {

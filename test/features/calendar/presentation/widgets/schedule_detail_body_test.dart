@@ -77,4 +77,31 @@ void main() {
     await tester.tap(find.text('삭제'));
     expect(pressed, isEmpty);
   });
+
+  testWidgets('변환 알림은 할 일 보기를 두고, 누르면 받은 콜백을 부른다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showTodoConvertedNotice(
+                context,
+                onShowTodo: () => pressed.add('show'),
+              ),
+              child: const Text('띄우기'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('띄우기'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('${Terms.todo.withJosa('으로', '로')} 변환되었습니다'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('${Terms.todo} 보기'));
+    expect(pressed, ['show']);
+  });
 }
