@@ -239,8 +239,8 @@ class _RingPainter extends CustomPainter {
   /// 컨트롤과 테두리 사이
   static const _gap = 3.0;
 
-  /// 옅은 테두리가 퍼지는 거리
-  static const _spread = 6.0;
+  /// 옅은 테두리가 퍼지는 거리. 작은 아이콘 단추에서도 옆 단추에 닿지 않는 만큼이다
+  static const _spread = 4.0;
 
   RRect _around(Size size, double outset) {
     final rect = (Offset.zero & size).inflate(outset);

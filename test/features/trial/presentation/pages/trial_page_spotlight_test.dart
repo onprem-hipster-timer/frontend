@@ -55,10 +55,21 @@ void main() {
     _expectRingOn(tester, _button(linkedLabel));
   });
 
-  testWidgets('할 일 단계에서는 재생 버튼을, 타이머를 시작한 뒤에는 남은 시간을 강조한다', (tester) async {
+  testWidgets('할 일 단계에서는 재생 버튼의 둥근 아이콘을, 타이머를 시작한 뒤에는 남은 시간을 강조한다', (
+    tester,
+  ) async {
     await openTrial(tester);
     await goToTodo(tester);
-    _expectRingOn(tester, find.byType(TodoTimerStartButtonView));
+    _expectRingOn(
+      tester,
+      find.descendant(
+        of: find.byType(TodoTimerStartButtonView),
+        matching: find.byIcon(Icons.play_circle_outline),
+      ),
+    );
+    // 퍼지는 테두리까지(사이 3, 퍼짐 4, 선 굵기의 반 1) 옆의 수정 단추에 닿지 않는다
+    final reach = tester.getRect(_ring).inflate(8);
+    expect(reach.overlaps(tester.getRect(_button('수정'))), isFalse);
 
     await startTimer(tester);
     _expectRingOn(tester, find.byType(ActionChip));

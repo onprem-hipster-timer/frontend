@@ -26,9 +26,11 @@ TrialSpotlightTarget? trialSpotlightOf(TrialFlow flow) => switch (flow.step) {
   ),
   TrialStep.todo =>
     flow.timer == null
-        ? TrialSpotlightTarget.ofType<TodoTimerStartButtonView>(
+        // 누르는 자리보다 작은, 보이는 둥근 아이콘을 두른다
+        ? TrialSpotlightTarget.ofType<Icon>(
             id: TodoTimerStartButtonView,
             radius: AppRadius.pill,
+            where: (icon) => icon.icon == Icons.play_circle_outline,
           )
         : TrialSpotlightTarget.ofType<ActionChip>(
             id: ActionChip,

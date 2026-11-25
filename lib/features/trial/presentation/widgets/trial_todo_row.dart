@@ -14,8 +14,8 @@ import 'package:momeet/shared/api/rest/export.dart';
 /// 진행 중인 [timer]의 남은 시간, 누적 집중 시간(끝난 [recordedSeconds]에 진행 중인 시간을 더한다), 태그,
 /// 타이머를 이을 수 있으면 시작 버튼(진행 중이면 숨긴다).
 ///
-/// 시작 버튼은 [onStartTimer]를, 남은 시간은 앱처럼 타이머로 가는 [onOpenTimer]를 부른다. 상태·수정·삭제·고르기·
-/// 끌기는 반응하지 않는다
+/// 시작 버튼은 [onStartTimer]를, 남은 시간은 앱처럼 타이머로 가는 [onOpenTimer]를 부른다. 수정·삭제는 누를 수 없는
+/// 모양이고, 상태·고르기·끌기는 반응하지 않는다
 class TrialTodoRow extends StatelessWidget {
   const TrialTodoRow({
     super.key,
@@ -65,8 +65,8 @@ class TrialTodoRow extends StatelessWidget {
               starting: false,
               onPressed: onStartTimer ?? () {},
             ),
-      onEdit: () {},
-      onDelete: () {},
+      onEdit: null,
+      onDelete: null,
       onTap: () {},
       canAccept: (_) => false,
       onAccept: (_) {},

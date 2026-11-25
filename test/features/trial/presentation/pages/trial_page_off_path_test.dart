@@ -73,6 +73,23 @@ void main() {
       expect(find.text(convertLabel), findsOneWidget);
     });
 
+    testWidgets('할 일 단계에서는 수정과 삭제를 누를 수 없다', (tester) async {
+      await openTrial(tester);
+      await goToTodo(tester);
+
+      for (final label in ['수정', '삭제']) {
+        final button = tester.widget<ButtonStyleButton>(
+          find.ancestor(
+            of: find.text(label),
+            matching: find.byWidgetPredicate(
+              (widget) => widget is ButtonStyleButton,
+            ),
+          ),
+        );
+        expect(button.enabled, isFalse, reason: label);
+      }
+    });
+
     testWidgets('할 일 단계에서 상태·수정·삭제·줄을 눌러도 아무것도 열리지 않는다', (tester) async {
       await openTrial(tester);
       await goToTodo(tester);

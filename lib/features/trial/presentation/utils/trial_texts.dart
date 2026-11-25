@@ -35,7 +35,7 @@ const trialMeetingLead = '친구와 만날 날짜는 링크 하나로 같이 정
 const trialMeetingAction = '${Terms.meeting} 만들기';
 
 const trialExamTitle = '토익';
-const trialExamDescription = '단어 외우기';
+const trialExamDescription = '수험표 출력하기';
 const trialExamTag = '공부';
 const trialDinnerTitle = '민지랑 저녁';
 const trialDinnerDescription = '이번 주쯤, 날짜는 같이 정하기';
