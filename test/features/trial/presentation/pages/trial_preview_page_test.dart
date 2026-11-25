@@ -444,5 +444,24 @@ void main() {
 
       expect(ready, [TrialPreviewKind.calendar.name]);
     });
+
+    testWidgets('굵기를 받기 전에 화면을 떠나면 알리지 않는다', (tester) async {
+      final fonts = Completer<void>();
+      final ready = <String>[];
+      await _open(
+        tester,
+        TrialPreviewKind.todo,
+        fontWeights: () => fonts.future,
+        onReady: ready.add,
+      );
+
+      await tester.pumpWidget(const SizedBox());
+      fonts.complete();
+      await tester.pumpAndSettle();
+      await tester.pump();
+
+      expect(ready, isEmpty);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
