@@ -57,8 +57,15 @@ jobs:
         run: cd packages/momeet_lints && dart pub get
 
       # 루트 analyze가 widgetbook/도 분석하므로 그 의존성과 생성 파일(main.directories.g.dart)을 먼저 만든다
-      - name: Prepare widgetbook for analysis
-        run: cd widgetbook && flutter pub get --enforce-lockfile && dart run build_runner build
+      - name: Install widgetbook dependencies
+        run: cd widgetbook && flutter pub get --enforce-lockfile
+
+      # 생성 파일은 widgetbook/lib의 @widgetbook.UseCase 값으로만 정해져 캐시 키에 앱 lib/를 넣지 않는다.
+      # UseCase에서 path를 빼면 메뉴 위치가 앱 파일 위치를 따르게 되므로 path는 늘 적는다
+      - uses: ./.github/actions/codegen
+        with:
+          directory: widgetbook/
+          cache-key: codegen-widgetbook
 
       # flutter analyze는 analyzer 플러그인(momeet_lints) 결과를 기다리지 않는다
       - name: Analyze
