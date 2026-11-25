@@ -23,24 +23,74 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "모모밋 모임 일정 조율",
-    "url": "https://mo.momeet.date/meet",
-    "description": "약속 잡기와 일정 조율을 링크 하나로. 날짜를 고르고 링크를 보내면 모두가 되는 시간이 한눈에 보입니다.",
-    "isPartOf": {
-      "@type": "WebSite",
-      "@id": "https://mo.momeet.date/#website",
-      "name": "모모밋",
-      "url": "https://mo.momeet.date/"
-    },
-    "applicationCategory": "ProductivityApplication",
-    "operatingSystem": "Web",
-    "inLanguage": "ko",
-    "featureList": [
-      "링크나 QR 코드로 보내기",
-      "시간별·날짜별·요일별로 받기",
-      "모두 되는 추천 시간",
-      "게스트 참여"
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "모모밋 모임 일정 조율",
+        "url": "https://mo.momeet.date/meet",
+        "description": "약속 잡기와 일정 조율을 링크 하나로. 날짜를 고르고 링크를 보내면 모두가 되는 시간이 한눈에 보입니다.",
+        "isPartOf": {
+          "@type": "WebSite",
+          "@id": "https://mo.momeet.date/#website",
+          "name": "모모밋",
+          "url": "https://mo.momeet.date/"
+        },
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "ko",
+        "featureList": [
+          "링크나 QR 코드로 보내기",
+          "시간별·날짜별·요일별로 받기",
+          "모두 되는 추천 시간",
+          "게스트 참여"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "url": "https://mo.momeet.date/meet",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "가입해야 하나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "모임을 만드는 사람은 로그인해야 합니다. 링크로 공유한 모임은 누구나 로그인 없이 볼 수 있고, 만든 사람이 게스트를 허용하면 닉네임과 비밀번호만으로 시간을 칠할 수 있습니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "휴대폰에서도 되나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "네. 앱을 설치하지 않고 휴대폰 브라우저에서 링크를 열어 만들고 참여합니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "시간 없이 날짜만 고를 수 있나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "네. 받는 방식을 날짜별로 고르면 되는 날만 받습니다. 매주 모이면 요일별로 받습니다. 시간별은 5일까지 받을 수 있습니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "만든 뒤에 고칠 수 있나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "만든 사람은 모임 설정에서 제목, 날짜, 받는 방식, 시간, 공개 범위, 게스트 허용을 바꿀 수 있습니다. 참여자는 칠한 시간을 언제든 다시 고칠 수 있습니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "웬투밋(when2meet)을 써 봤는데 비슷하게 쓰나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "네. 링크를 받은 사람이 되는 시간을 칠하는 방식으로 씁니다. 날짜만 받거나 요일별로도 받을 수 있고, 로그인한 참여자는 추천 시간을 내 달력에 바로 넣을 수 있습니다."
+            }
+          }
+        ]
+      }
     ]
   }
   </script>
@@ -203,6 +253,33 @@
           게스트 비밀번호는 바꾸거나 찾을 수 없습니다. 잊을까 걱정되면 로그인해서 참여하는 편이 안전합니다.
         </p>
       </div>
+    </section>
+
+    <section class="bento">
+      <p class="bento-label">FAQ</p>
+      <h2 class="bento-title">자주 묻는 질문</h2>
+      <dl class="faq-list">
+        <div class="faq-item">
+          <dt>가입해야 하나요?</dt>
+          <dd>모임을 만드는 사람은 로그인해야 합니다. 링크로 공유한 모임은 누구나 로그인 없이 볼 수 있고, 만든 사람이 게스트를 허용하면 닉네임과 비밀번호만으로 시간을 칠할 수 있습니다.</dd>
+        </div>
+        <div class="faq-item">
+          <dt>휴대폰에서도 되나요?</dt>
+          <dd>네. 앱을 설치하지 않고 휴대폰 브라우저에서 링크를 열어 만들고 참여합니다.</dd>
+        </div>
+        <div class="faq-item">
+          <dt>시간 없이 날짜만 고를 수 있나요?</dt>
+          <dd>네. 받는 방식을 날짜별로 고르면 되는 날만 받습니다. 매주 모이면 요일별로 받습니다. 시간별은 5일까지 받을 수 있습니다.</dd>
+        </div>
+        <div class="faq-item">
+          <dt>만든 뒤에 고칠 수 있나요?</dt>
+          <dd>만든 사람은 모임 설정에서 제목, 날짜, 받는 방식, 시간, 공개 범위, 게스트 허용을 바꿀 수 있습니다. 참여자는 칠한 시간을 언제든 다시 고칠 수 있습니다.</dd>
+        </div>
+        <div class="faq-item">
+          <dt>웬투밋(when2meet)을 써 봤는데 비슷하게 쓰나요?</dt>
+          <dd>네. 링크를 받은 사람이 되는 시간을 칠하는 방식으로 씁니다. 날짜만 받거나 요일별로도 받을 수 있고, 로그인한 참여자는 추천 시간을 내 달력에 바로 넣을 수 있습니다.</dd>
+        </div>
+      </dl>
     </section>
 
     <section class="cta">
