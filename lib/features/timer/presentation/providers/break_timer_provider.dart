@@ -1,38 +1,17 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:momeet/core/network/server_clock.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/features/timer/domain/break_session.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/timer_elapsed.dart';
 
+export 'package:momeet/features/timer/domain/break_session.dart';
+export 'package:momeet/features/timer/domain/default_durations.dart'
+    show defaultBreakDuration;
+
 part 'break_timer_provider.g.dart';
-
-/// 새 휴식의 기본 길이
-const defaultBreakDuration = Duration(minutes: 5);
-
-/// 진행 중인 휴식. [endAt]에 끝나는 [total] 길이의 휴식
-@immutable
-class BreakSession {
-  const BreakSession({required this.endAt, required this.total});
-
-  final DateTime endAt;
-  final Duration total;
-
-  /// [now] 기준 남은 시간. 초 단위로 올리고 0 아래로 내려가지 않는다
-  ///
-  /// 올리므로 시작한 순간에 [total]을 보이고, [endAt]이 되어야 0이 된다.
-  Duration remainingAt(DateTime now) {
-    final micros = endAt.difference(now).inMicroseconds;
-    if (micros <= 0) return Duration.zero;
-    return Duration(
-      seconds:
-          (micros + Duration.microsecondsPerSecond - 1) ~/
-          Duration.microsecondsPerSecond,
-    );
-  }
-}
 
 /// [timers] 중 시간이 남은 실행 중(RUNNING) 타이머가 있어 휴식을 둘 수 없는지. [now]는 서버 기준 시각이다
 ///
