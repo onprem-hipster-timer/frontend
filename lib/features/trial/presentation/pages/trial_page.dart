@@ -10,7 +10,6 @@ import 'package:momeet/features/meeting/meeting.dart'
     show
         MeetingCreateLayout,
         MeetingGlassScaffold,
-        MeetingQuestionPrompt,
         MeetingStagger,
         MeetingStepSwitcher;
 import 'package:momeet/features/timer/timer.dart'
@@ -23,6 +22,7 @@ import 'package:momeet/features/trial/presentation/widgets/trial_calendar.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_spotlights.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_prompt.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_todo_row.dart';
@@ -38,7 +38,8 @@ const _stageHeight = 440.0;
 /// 단계씩, 그 단계가 덜어 주는 것을 말하는 앞 줄과 다음에 누를 것을 말하는 한 줄 아래에 앱의 위젯을 그대로 두고, 누르면 앱처럼 시트와 알림(이동 단추
 /// 포함)을 띄운다. 단계가 바뀌면 떠 있던 알림을 닫는다. 서버에 보내지 않고 앱의 데이터 Provider도 읽지 않는다.
 ///
-/// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]).
+/// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]). 방금 누른 것으로 얻은 것을 말하는
+/// 앞 줄은 보상 줄로 먼저 보이고 큰 한 줄이 그 뒤에 온다([TrialPrompt], [trialLeadRewards]).
 ///
 /// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와, 누르면 모임
 /// 만들기와 견본 모임([trialMeeting])의 모임 화면 그림이 펼쳐지는 물음을 둔다([TrialEnd]). 끝이 화면보다 길면(가로로
@@ -162,9 +163,11 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                MeetingQuestionPrompt(
+                TrialPrompt(
                   lead: trialLead(flow),
                   headline: trialHeadline(flow),
+                  guide: trialGuide(flow),
+                  reward: trialLeadRewards(flow),
                 ),
                 const SizedBox(height: 24),
                 MeetingStagger(

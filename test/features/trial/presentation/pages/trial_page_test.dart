@@ -20,6 +20,7 @@ import 'package:momeet/features/trial/domain/trial_flow.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -186,31 +187,38 @@ void main() {
         expect(meetingQuestion, findsOneWidget);
       });
 
-      testWidgets('단계를 따라 누르면 단계마다 앞 줄과 누를 것이 함께 바뀐다', (tester) async {
+      testWidgets('단계를 따라 누르면 단계마다 앞 줄과 누를 것이 함께 바뀌고, 안내는 타이머를 시작한 뒤에만 보인다', (
+        tester,
+      ) async {
         await openTrial(tester, size: size);
         expect(leadOf(TrialStep.calendar), findsOneWidget);
         expect(headlineOf(TrialStep.calendar), findsOneWidget);
+        expect(startedGuide, findsNothing);
 
         await goToSchedule(tester);
         expect(leadOf(TrialStep.calendar), findsNothing);
         expect(leadOf(TrialStep.schedule), findsOneWidget);
         expect(headlineOf(TrialStep.schedule), findsOneWidget);
+        expect(startedGuide, findsNothing);
 
         await tester.tap(find.text(convertLabel));
         await tester.pumpAndSettle();
         expect(leadOf(TrialStep.schedule), findsNothing);
         expect(convertedLead, findsOneWidget);
         expect(convertedHeadline, findsOneWidget);
+        expect(startedGuide, findsNothing);
 
         await tester.tap(find.text(linkedLabel));
         await tester.pumpAndSettle();
         expect(leadOf(TrialStep.todo), findsOneWidget);
         expect(headlineOf(TrialStep.todo), findsOneWidget);
+        expect(startedGuide, findsNothing);
 
         await startTimer(tester);
         expect(leadOf(TrialStep.todo), findsNothing);
         expect(startedLead, findsOneWidget);
         expect(startedHeadline, findsOneWidget);
+        expect(startedGuide, findsOneWidget);
 
         await tester.tap(
           find.widgetWithText(SnackBarAction, '${Terms.timer} 보기'),
@@ -219,11 +227,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(leadOf(TrialStep.timer), findsOneWidget);
         expect(headlineOf(TrialStep.timer), findsOneWidget);
+        expect(startedGuide, findsNothing);
 
         await tester.pump(trialTimerSweep);
         await tester.pumpAndSettle();
         expect(leadOf(TrialStep.end), findsOneWidget);
         expect(headlineOf(TrialStep.end), findsOneWidget);
+        expect(startedGuide, findsNothing);
       });
 
       testWidgets('끝에서 가입하기를 누르면 회원가입 화면으로 간다', (tester) async {
@@ -290,9 +300,22 @@ void main() {
     );
 
     final started = todo.startTimer(defaultFocusDuration);
-    expect(await announced(() => startTimer(tester), trialStartedLead), [
-      trialAnnouncement(started),
-    ]);
+    final startedAnnounced = await announced(
+      () => startTimer(tester),
+      trialStartedLead,
+    );
+    expect(startedAnnounced, [trialAnnouncement(started)]);
+    // 앞 줄, 큰 한 줄, 안내 차례로 한 번씩
+    final message = startedAnnounced.single;
+    expect(trialStartedGuide.allMatches(message), hasLength(1));
+    expect(
+      message.indexOf(trialStartedLead),
+      lessThan(message.indexOf(trialStartedHeadline)),
+    );
+    expect(
+      message.indexOf(trialStartedHeadline),
+      lessThan(message.indexOf(trialStartedGuide)),
+    );
 
     final timer = started.openTimer();
     expect(
@@ -383,6 +406,22 @@ void main() {
 
     await goToSchedule(tester);
     expect(headlineOf(TrialStep.schedule), findsOneWidget);
+  });
+
+  testWidgets('작은 휴대폰(320×568)에서 타이머를 시작하면 안내가 더해져도 강조한 남은 시간이 화면 안에 있다', (
+    tester,
+  ) async {
+    await openTrial(tester, size: const Size(320, 568));
+    await goToTodo(tester);
+    await startTimer(tester);
+
+    expect(startedGuide, findsOneWidget);
+    final ring = tester.getRect(find.byKey(TrialSpotlight.ringKey));
+    expect(
+      (Offset.zero & const Size(320, 568)).contains(ring.bottomRight),
+      isTrue,
+    );
+    expect(ring.top, greaterThanOrEqualTo(0));
   });
 
   testWidgets('작은 휴대폰(320×568)에서도 끝까지 따라갈 수 있다', (tester) async {
