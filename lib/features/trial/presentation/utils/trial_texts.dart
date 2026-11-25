@@ -76,6 +76,14 @@ String trialLead(TrialFlow flow) => switch (flow.step) {
   TrialStep.end => trialEndLead,
 };
 
+/// [flow]의 앞 줄이 방금 누른 것으로 얻은 것을 말하는 보상 줄인가: 할 일로 바꾼 뒤, 타이머를 시작한 뒤, 끝
+bool trialLeadRewards(TrialFlow flow) => switch (flow.step) {
+  TrialStep.schedule => flow.todo != null,
+  TrialStep.todo => flow.timer != null,
+  TrialStep.end => true,
+  TrialStep.calendar || TrialStep.timer => false,
+};
+
 /// [flow]에서 스크린 리더에 알리는 글: 앞 줄과 큰 한 줄
 String trialAnnouncement(TrialFlow flow) =>
     '${trialLead(flow)} ${trialHeadline(flow)}';

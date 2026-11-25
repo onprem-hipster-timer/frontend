@@ -2,6 +2,7 @@ import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -183,4 +184,32 @@ Future<void> goToEnd(WidgetTester tester) async {
   await goToTimer(tester);
   await tester.pump(trialTimerSweep);
   await tester.pumpAndSettle();
+}
+
+/// 애니메이션을 줄인 채 연 체험하기에서 애니메이션을 다시 켠다. 강조가 되풀이해 움직이므로 켠 뒤에는
+/// pumpAndSettle을 쓰지 않는다
+Future<void> turnMotionOn(WidgetTester tester) async {
+  tester.platformDispatcher.accessibilityFeaturesTestValue =
+      const FakeAccessibilityFeatures();
+  await tester.pump(const Duration(seconds: 1));
+}
+
+/// [duration]을 프레임마다 그리며 보낸다. 한 번에 보내면 그 사이에 시작한 움직임이 첫 프레임에 머문다
+Future<void> pumpFrames(WidgetTester tester, Duration duration) async {
+  const frame = Duration(milliseconds: 16);
+  for (var left = duration; left > Duration.zero; left -= frame) {
+    await tester.pump(left < frame ? left : frame);
+  }
+}
+
+/// [finder]가 그려지는 진하기(0 → 1). 위의 투명도를 모두 곱한다
+double shownOf(WidgetTester tester, Finder finder) {
+  var shown = 1.0;
+  RenderObject? node = tester.renderObject(finder);
+  while (node != null) {
+    if (node is RenderAnimatedOpacity) shown *= node.opacity.value;
+    if (node is RenderOpacity) shown *= node.opacity;
+    node = node.parent;
+  }
+  return shown;
 }
