@@ -52,6 +52,21 @@ jobs:
       - name: Build Flutter Web
         run: flutter build web --no-pub --wasm --release
 
+      # 랜딩 기능 카드의 미리보기 그림은 방금 빌드한 앱의 미리보기 화면을 찍어 build/web/landing/previews/에 둔다. 하나라도 찍지 못하면 배포하지 않는다
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install preview capture dependencies
+        run: npm ci
+        working-directory: tool/landing_previews
+
+      - name: Capture landing previews
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node tool/landing_previews/capture.mjs build/web
+
       # 사이트 주소와 검색 엔진 소유 확인 파일은 저장소 변수로 받는다. 소스에는 기본 주소(https://mo.momeet.date) 말고 배포하는 곳의 값을 두지 않는다
       - name: Apply site settings
         env:
