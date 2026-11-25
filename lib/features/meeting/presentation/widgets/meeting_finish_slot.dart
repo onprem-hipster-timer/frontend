@@ -15,7 +15,7 @@ import 'package:momeet/features/meeting/presentation/widgets/meeting_finish_slot
 /// 뒤에는 다음에 바꿀 때까지 조용하고, 또 바꾸면 저장하는 중부터 다시 보인다.
 ///
 /// Ctrl+S(macOS·iOS는 Cmd+S)는 그때 누를 수 있는 단추를 누른다. 누를 단추가 없어도(바꾸기 전, 누른 뒤 기다리는
-/// 중, 마친 뒤) 키를 받아 브라우저가 페이지 저장을 열지 않는다. 초점이 어디 있든 받도록 [HardwareKeyboard]에
+/// 중, 마친 뒤) 키를 받아 브라우저가 페이지 저장을 열지 않는다. 초점이 어디 있든 받도록 `HardwareKeyboard`에
 /// 달고, 이 화면 위에 시트·대화상자·다른 화면이 있으면 받지 않는다.
 ///
 /// 모양과 키 받기는 [MeetingFinishSlotView]
