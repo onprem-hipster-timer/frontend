@@ -33,7 +33,10 @@ jobs:
       contents: read
 
     steps:
+      # PR 실행은 머지 커밋을 받으므로 첫 부모(베이스)와 비교하려면 깊이 2가 필요하다
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -71,10 +74,23 @@ jobs:
       - name: Analyze
         run: dart analyze --fatal-infos
 
+      # 패키지 테스트는 PR이 packages/, .fvmrc, 이 워크플로를 바꿨을 때만 돈다. 비교에 실패하면 돈다
+      - name: Check package changes
+        id: packages
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --quiet HEAD^1 HEAD -- packages/ .fvmrc .github/workflows/test.yml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Layout audit library tests
+        if: github.event_name != 'pull_request' || steps.packages.outputs.changed == 'true'
         run: cd packages/layout_audit && flutter pub get && flutter test
 
       - name: Lint rule tests
+        if: github.event_name != 'pull_request' || steps.packages.outputs.changed == 'true'
         run: cd packages/momeet_lints && dart test
 
   test:

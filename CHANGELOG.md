@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Tooling
 - `widgetbook/`의 코드 생성 결과(`.dart_tool/build`, `lib/**/*.g.dart`)를 `.github/actions/codegen`(`directory: widgetbook/`)으로 캐시한다. 키는 `widgetbook/`의 `pubspec.lock`·`build.yaml`·`lib/**/*.dart`이고, 맞으면 `build_runner`를 돌리지 않는다. CI 정적 검사 잡과 위젯 카탈로그 배포가 함께 쓴다
+- CI 정적 검사 잡의 패키지 테스트(`packages/layout_audit`, `packages/momeet_lints`)는 PR이 `packages/`, `.fvmrc`, `.github/workflows/test.yml`을 바꿨을 때만 돈다
 
 ### Added
 
