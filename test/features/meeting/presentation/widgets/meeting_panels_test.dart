@@ -295,10 +295,10 @@ void main() {
       expect(find.byType(MeetingNameChip), findsNothing);
     });
 
-    testWidgets('내 달력에 일정 만들기는 그 카드의 묶음을 넘긴다', (tester) async {
+    testWidgets('카드의 달력 단추를 누르면 그 카드의 묶음을 넘긴다', (tester) async {
       await pumpSlots(tester, boardOf(threePeople()));
 
-      await tester.tap(find.byTooltip('내 달력에 일정 만들기').first);
+      await tester.tap(find.text('내 달력에 넣기').first);
 
       expect(added.single.people, {'a', 'b', 'c'});
     });

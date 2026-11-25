@@ -6,7 +6,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 카드에 보이는 참여자 한 명
 typedef MeetingSlotPerson = ({String name, bool owner, bool guest, bool self});
 
-/// 추천 시간 카드: 날짜, 시각(날 수), 되는 사람 수, '복사'([onCopy])와 '내 달력에 일정 만들기'([onAddToCalendar]가
+/// 추천 시간 카드: 날짜, 시각(날 수), 되는 사람 수, '복사'([onCopy])와 '내 달력에 넣기'([onAddToCalendar]가
 /// 있을 때). 카드의 글은 마우스로 끌거나 길게 눌러 골라 복사할 수 있다(누르면 펼치는 것은 그대로다).
 ///
 /// 이름은 고정하기 전에는 마우스를 올리면 카드 아래에 떠서 보이고([onHoverChanged]도 부른다), 카드를 누르면
@@ -44,9 +44,6 @@ class MeetingSlotCard extends StatefulWidget {
 }
 
 class _MeetingSlotCardState extends State<MeetingSlotCard> {
-  /// 이 너비부터 시각 줄에 펼침 표시와 달력 버튼을 함께 둔다
-  static const _wideFrom = 260.0;
-
   final _link = LayerLink();
   final _hover = OverlayPortalController();
 
@@ -84,7 +81,7 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
                 people: widget.people,
                 unavailable: widget.unavailable,
                 pinned: widget.pinned,
-                wide: constraints.maxWidth >= _wideFrom,
+                width: constraints.maxWidth,
                 onTap: _toggle,
                 onAddToCalendar: widget.onAddToCalendar,
                 onCopy: widget.onCopy,
@@ -97,7 +94,9 @@ class _MeetingSlotCardState extends State<MeetingSlotCard> {
   }
 }
 
-/// 카드 겉: 날짜·사람 수, 시각, 고정하면 이름, 펼침 표시·복사·달력 버튼. 넓으면 버튼을 시각 줄에 둔다
+/// 카드 겉: 위 줄에 날짜, 사람 수, 펼침 표시, 그 아래 시각, 고정하면 이름, 맨 아래 줄에 '내 달력에 넣기'(있을 때)와
+/// 끝의 복사. 카드가 좁아 '내 달력에 넣기'와 복사가 한 줄에 안 들어가면 '내 달력에 넣기'가 아래 줄을 다 쓰고 복사는
+/// 위 줄의 사람 수 앞으로 간다
 class _CardFace extends StatelessWidget {
   const _CardFace({
     required this.title,
@@ -105,7 +104,7 @@ class _CardFace extends StatelessWidget {
     required this.people,
     required this.unavailable,
     required this.pinned,
-    required this.wide,
+    required this.width,
     required this.onTap,
     required this.onAddToCalendar,
     required this.onCopy,
@@ -116,20 +115,30 @@ class _CardFace extends StatelessWidget {
   final List<MeetingSlotPerson> people;
   final List<String> unavailable;
   final bool pinned;
-  final bool wide;
+  final double width;
   final VoidCallback onTap;
   final VoidCallback? onAddToCalendar;
   final VoidCallback onCopy;
+
+  static const _padding = EdgeInsets.fromLTRB(14, 12, 6, 6);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final actions = _Actions(
-      pinned: pinned,
-      wide: wide,
-      onAddToCalendar: onAddToCalendar,
-      onCopy: onCopy,
+    final muted = scheme.onSurfaceVariant;
+    final onAddToCalendar = this.onAddToCalendar;
+    final shared =
+        onAddToCalendar == null ||
+        _CalendarButton.widthIn(context) + _copySize <=
+            width - _padding.horizontal;
+    final copy = IconButton(
+      tooltip: '복사',
+      visualDensity: VisualDensity.compact,
+      iconSize: 18,
+      color: muted,
+      icon: const Icon(Icons.content_copy_outlined),
+      onPressed: onCopy,
     );
     return Material(
       color: scheme.surface,
@@ -141,12 +150,11 @@ class _CardFace extends StatelessWidget {
           expanded: pinned,
           selected: pinned,
           child: Padding(
-            padding: EdgeInsets.fromLTRB(14, wide ? 8 : 12, 8, 2),
+            padding: _padding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
@@ -156,28 +164,33 @@ class _CardFace extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (!shared) copy,
                     const SizedBox(width: 8),
                     _HeadCount(people.length),
+                    const SizedBox(width: 2),
+                    ExcludeSemantics(
+                      child: Icon(
+                        pinned ? Icons.expand_less : Icons.expand_more,
+                        size: 20,
+                        color: muted,
+                      ),
+                    ),
+                    // 펼침 표시의 끝을 아래 줄 복사 아이콘의 끝에 맞춘다
+                    const SizedBox(width: 8),
                   ],
                 ),
                 const SizedBox(height: 2),
-                if (wide)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(detail, style: theme.textTheme.bodyMedium),
-                      ),
-                      actions,
-                    ],
-                  )
-                else
-                  Text(detail, style: theme.textTheme.bodyMedium),
+                Text(detail, style: theme.textTheme.bodyMedium),
                 if (pinned)
                   Padding(
-                    padding: EdgeInsets.only(top: 8, bottom: wide ? 10 : 0),
+                    padding: const EdgeInsets.only(top: 8),
                     child: _Names(people: people, unavailable: unavailable),
                   ),
-                if (!wide) actions,
+                const SizedBox(height: 8),
+                _ActionRow(
+                  onAddToCalendar: onAddToCalendar,
+                  copy: shared ? copy : null,
+                ),
               ],
             ),
           ),
@@ -185,56 +198,38 @@ class _CardFace extends StatelessWidget {
       ),
     );
   }
+
+  /// 촘촘한 복사 단추의 너비
+  static const _copySize = 40.0;
 }
 
-/// 펼침 표시와 '복사'·'내 달력에 일정 만들기'(있을 때). 좁으면 펼침 표시와 단추들을 양 끝에 둔다
-class _Actions extends StatelessWidget {
-  const _Actions({
-    required this.pinned,
-    required this.wide,
-    required this.onAddToCalendar,
-    required this.onCopy,
-  });
+/// 맨 아래 줄: 앞에 '내 달력에 넣기'(있을 때), 끝에 [copy](위 줄로 옮기지 않았을 때). [copy]가 없으면
+/// '내 달력에 넣기'가 줄을 다 쓴다
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.onAddToCalendar, required this.copy});
 
-  final bool pinned;
-  final bool wide;
   final VoidCallback? onAddToCalendar;
-  final VoidCallback onCopy;
+  final Widget? copy;
 
   @override
   Widget build(BuildContext context) {
     final onAddToCalendar = this.onAddToCalendar;
-    return Row(
-      mainAxisSize: wide ? MainAxisSize.min : MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        ExcludeSemantics(
-          child: Icon(
-            pinned ? Icons.expand_less : Icons.expand_more,
-            size: 20,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: '복사',
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.content_copy_outlined),
-              onPressed: onCopy,
-            ),
-            if (onAddToCalendar != null)
-              IconButton(
-                tooltip: '내 달력에 일정 만들기',
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.edit_calendar_outlined),
-                onPressed: onAddToCalendar,
-              ),
-          ],
-        ),
-      ],
-    );
+    final copy = this.copy;
+    return switch ((onAddToCalendar, copy)) {
+      (null, final copy?) => Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: copy,
+      ),
+      (final onPressed?, final copy?) => Row(
+        children: [
+          _CalendarButton(onPressed: onPressed),
+          const Spacer(),
+          copy,
+        ],
+      ),
+      (final onPressed?, null) => _CalendarButton(onPressed: onPressed),
+      (null, null) => const SizedBox.shrink(),
+    };
   }
 }
 
@@ -352,4 +347,42 @@ class _Names extends StatelessWidget {
       ],
     );
   }
+}
+
+/// '내 달력에 넣기': 그 시간과 모임 제목으로 새 일정을 연다
+class _CalendarButton extends StatelessWidget {
+  const _CalendarButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  static const _label = '내 달력에 넣기';
+  static const _iconSize = 18.0;
+  static const _gap = 8.0;
+  static const _padding = 12.0;
+
+  /// 글자 크기를 반영한 이 단추의 너비
+  static double widthIn(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: _label,
+        style: Theme.of(context).textTheme.labelLarge,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return _padding * 2 + _iconSize + _gap + width;
+  }
+
+  @override
+  Widget build(BuildContext context) => FilledButton.tonalIcon(
+    onPressed: onPressed,
+    style: FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.symmetric(horizontal: _padding),
+    ),
+    icon: const Icon(Icons.edit_calendar_outlined, size: _iconSize),
+    label: const Text(_label),
+  );
 }

@@ -506,14 +506,14 @@ void main() {
     });
   });
 
-  testWidgets('카드의 내 달력에 일정 만들기는 모임 제목과 그 시간으로 새 일정을 연다', (tester) async {
+  testWidgets('카드의 달력 단추를 누르면 모임 제목과 그 시간으로 새 일정이 열린다', (tester) async {
     meetings.availability = [
       availabilityOf('a', name: '민수', slots: [(seoul(1, 9), seoul(1, 10))]),
       availabilityOf('b', name: '서연', slots: [(seoul(1, 9), seoul(1, 10))]),
     ];
     await pumpMeeting(tester);
 
-    final button = find.byTooltip('내 달력에 일정 만들기');
+    final button = find.text('내 달력에 넣기');
     await tester.ensureVisible(button);
     await tester.pumpAndSettle();
     await tester.tap(button);

@@ -12,7 +12,7 @@ import 'package:momeet/shared/api/rest/export.dart';
 
 /// '추천 시간': 두 명 이상 함께 되는 이어진 시간 카드와 정렬 고르기(기본 모모밋 추천).
 ///
-/// [onAddToCalendar]가 없으면(게스트는 달력이 없다) 카드에 '내 달력에 일정 만들기'가 없다. [fill]이면 받은
+/// [onAddToCalendar]가 없으면(게스트는 달력이 없다) 카드에 '내 달력에 넣기'가 없다. [fill]이면 받은
 /// 높이를 채우고 제목 줄은 둔 채 카드 목록만 상자 안에서 굴린다(넓은 화면 옆 칸).
 ///
 /// 카드마다 '복사'가 그 카드를 글로 복사하고([meetingRunCopyText]), 제목 줄의 '모두 복사'는 모임 제목과
@@ -154,7 +154,8 @@ class _RunList extends StatelessWidget {
   final MeetingRunHighlight highlight;
   final ValueChanged<MeetingRun>? onAddToCalendar;
 
-  static const _minCardWidth = 168.0;
+  /// 카드의 '내 달력에 넣기'와 복사가 보통 글자 크기에서 한 줄에 들어가는 너비
+  static const _minCardWidth = 192.0;
   static const _gap = 12.0;
 
   @override

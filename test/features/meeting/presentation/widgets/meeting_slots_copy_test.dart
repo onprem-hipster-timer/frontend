@@ -22,7 +22,7 @@ void main() {
 
   setUp(() => copied = []);
 
-  /// [board]의 추천 시간. [guest]면 게스트가 보는 것처럼 '내 달력에 일정 만들기'가 없다
+  /// [board]의 추천 시간. [guest]면 게스트가 보는 것처럼 '내 달력에 넣기'가 없다
   Future<void> pumpSlots(
     WidgetTester tester,
     MeetingBoard board, {
@@ -80,10 +80,7 @@ void main() {
             boardIn(mode, userId: guest ? null : 'user-1'),
             guest: guest,
           );
-          expect(
-            find.byTooltip('내 달력에 일정 만들기'),
-            guest ? findsNothing : findsOneWidget,
-          );
+          expect(find.text('내 달력에 넣기'), guest ? findsNothing : findsOneWidget);
 
           await tester.tap(find.byTooltip('복사'));
           await tester.pumpAndSettle();
