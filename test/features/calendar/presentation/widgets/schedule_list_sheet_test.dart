@@ -248,7 +248,7 @@ void main() {
       expect(find.text('상세 sched-2'), findsOneWidget);
     });
 
-    testWidgets('누른 일정을 받는 콜백을 주면 시트를 닫고 상세 대신 그 콜백을 부른다', (tester) async {
+    testWidgets('콜백을 주고 일정을 누르면 시트를 닫고 상세로 가지 않고 그 콜백을 부른다', (tester) async {
       final tapped = <String>[];
       await tester.pumpWidget(
         sheetApp(onScheduleTap: (schedule) => tapped.add(schedule.id)),

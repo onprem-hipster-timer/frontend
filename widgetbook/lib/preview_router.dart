@@ -110,6 +110,7 @@ String _screenName(AppRoute route) => switch (route) {
   AppRoute.guestSession => '게스트 안내',
   AppRoute.verification => '이메일 인증',
   AppRoute.authError => '인증 오류',
+  AppRoute.trial => '체험하기',
   AppRoute.consent => '약관 동의',
   AppRoute.accountDeletion => '탈퇴 대기',
   AppRoute.calendar => '캘린더',

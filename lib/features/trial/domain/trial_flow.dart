@@ -4,7 +4,8 @@
 //   생기고, 일정의 sourceTodoId가 그 할 일을 가리킨다
 // - 타이머 시작([TrialFlow.startTimer]): 그 할 일에 이어진 RUNNING 타이머가 생긴다
 // - 시간 종료([TrialFlow.finishTimer]): 타이머가 정한 시간을 모두 쓴 COMPLETED가 되고, 이어진 할 일은 DONE이
-//   되어 그 시간을 누적 시간으로 보인다
+//   되어 그 시간을 누적 시간으로 보인다. 앱에서는 시간이 다 된 타이머가 일시정지로 기다리고, 사용자가 '완료'를
+//   눌러 확인해야 끝나며 그때 할 일이 DONE이 된다. 체험은 이 둘을 시간 종료 하나로 합친다
 //
 // 테스트: test/features/trial/domain/trial_flow_test.dart, 화면을 따라 누르는 테스트는
 // test/features/trial/presentation/pages/trial_page_test.dart
@@ -17,8 +18,8 @@ const trialTimerSweep = Duration(seconds: 3);
 /// 체험하기의 단계. 보이는 차례다
 enum TrialStep { calendar, schedule, todo, timer, end }
 
-/// [today] 기준 견본 일정의 날: 시험은 일주일 뒤, 약속은 그 사흘 전(그러면 달이 바뀌면 사흘 뒤). 달력이 여는
-/// 시험의 달 안에 둘 다 든다
+/// [today] 기준 견본 일정의 날: 시험은 일주일 뒤, 약속은 그 사흘 전(사흘 전이 앞 달이면 사흘 뒤). 둘 다
+/// 달력이 여는 시험의 달 안에 든다
 ({DateTime exam, DateTime dinner}) trialDays(DateTime today) {
   final exam = DateTime(today.year, today.month, today.day + 7);
   final before = DateTime(exam.year, exam.month, exam.day - 3);

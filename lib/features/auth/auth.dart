@@ -18,3 +18,6 @@ export 'presentation/pages/guest_session_page.dart';
 // Widgets
 export 'presentation/widgets/auth_button.dart';
 export 'presentation/widgets/auth_text_field.dart';
+
+// 체험하기 흐름이 앱의 화면 그대로 쓰는 위젯·함수
+export 'presentation/widgets/auth_switch_prompt.dart' show AuthSwitchPrompt;

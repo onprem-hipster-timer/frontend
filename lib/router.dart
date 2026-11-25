@@ -19,6 +19,8 @@ import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page
 import 'package:momeet/features/timer/presentation/pages/timer_page.dart'
     deferred as timer;
 import 'package:momeet/features/todo/todo.dart' deferred as todo;
+import 'package:momeet/features/trial/presentation/pages/trial_page.dart'
+    deferred as trial;
 import 'package:momeet/features/tag/tag.dart' deferred as tag;
 import 'package:momeet/features/mypage/presentation/pages/mypage_page.dart'
     deferred as mypage;
@@ -187,6 +189,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoute.securityWarning.name,
         builder: (context, state) => SecurityWarningPage(
           attemptedUrl: state.uri.queryParameters['blocked'],
+        ),
+      ),
+
+      // 체험하기 (탭 셸 밖의 독립 화면)
+      GoRoute(
+        path: AppRoute.trial.path,
+        name: AppRoute.trial.name,
+        builder: (context, state) => DeferredWidget(
+          loader: trial.loadLibrary,
+          builder: (_) => trial.TrialPage(),
         ),
       ),
 

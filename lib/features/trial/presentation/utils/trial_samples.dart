@@ -14,7 +14,8 @@ TagRead _tag(String id, String name, String color, DateTime now) => TagRead(
 DateTime _at(DateTime day, int hour) =>
     DateTime(day.year, day.month, day.day, hour);
 
-/// [now]에 시작하는 체험: 일주일 뒤 오전의 시험(확정)과 같은 달 저녁의 약속(계획됨)이 든 달력([trialDays])
+/// [now]에 시작하는 체험: 일주일 뒤 오전의 시험과 같은 달 저녁의 약속이 든 달력([trialDays]). 앱이 새 일정에
+/// 주는 상태처럼 둘 다 계획됨이다
 TrialFlow trialStart(DateTime now) {
   final days = trialDays(DateTime(now.year, now.month, now.day));
   final exam = days.exam;
@@ -26,7 +27,7 @@ TrialFlow trialStart(DateTime now) {
       title: trialExamTitle,
       startTime: _at(exam, 9),
       endTime: _at(exam, 12),
-      state: ScheduleState.confirmed,
+      state: ScheduleState.planned,
       createdAt: now,
       description: trialExamDescription,
       tags: [_tag('trial-tag-study', trialExamTag, '#2E7D32', now)],
