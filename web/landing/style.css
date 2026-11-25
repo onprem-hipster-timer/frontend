@@ -286,6 +286,11 @@ body.landing-active {
   line-height: 1.7;
 }
 
+.bento-card a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
 /* ===== How it works ===== */
 .how {
   padding: 6rem 2rem;

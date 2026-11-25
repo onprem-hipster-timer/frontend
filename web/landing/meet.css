@@ -20,7 +20,9 @@ body.meet-page {
 .meet-page h1,
 .meet-page h2,
 .meet-page h3,
-.meet-page p {
+.meet-page p,
+.meet-page dt,
+.meet-page dd {
   word-break: keep-all;
 }
 
@@ -53,6 +55,29 @@ body.meet-page {
   width: 160px;
   height: auto;
   margin: 0 auto 1.5rem;
+}
+
+/* 자주 묻는 질문. 질문과 답을 접지 않고 모두 보인다 */
+.faq-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.faq-item {
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+}
+
+.faq-item dt {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.faq-item dd {
+  margin: 0;
+  color: var(--ink-light);
 }
 
 @media (max-width: 640px) {

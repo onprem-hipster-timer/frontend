@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 검색 엔진이 랜딩·모임 소개·체험하기 주소를 찾도록 `sitemap.xml`과 `robots.txt`를 둔다
 - 랜딩·모임 소개·체험하기 페이지는 공유 미리보기 이미지를 전체 주소(`https://mo.momeet.date/preview.webp`)로 적고, 각 페이지의 주소를 `og:url`과 canonical로 밝힌다
 - 랜딩·모임 소개·체험하기 페이지에 구조화 데이터(JSON-LD)를 둔다. 랜딩은 사이트(`WebSite`)와 앱(`WebApplication`, 일정 관리·할 일·타이머·모임 일정 조율), 모임 소개는 모임 일정 조율 앱(`WebApplication`), 체험하기는 페이지(`WebPage`)다
+- 공부 타이머를 찾는 사람을 위한 정적 페이지 `/study-timer`(`web/study-timer.html`)를 둔다. 할 일 고르기 → 타이머 시작 → 집중한 시간이 남음, 휴식·시간 늘리기·친구와 공유, 자주 묻는 질문을 담고, '체험하기'는 `/demo`로 간다. 자주 묻는 질문은 구조화 데이터(`FAQPage`)에도 같은 글로 담는다. 랜딩의 집중 타이머 소개에서 이 페이지로 간다
 
 ---
 

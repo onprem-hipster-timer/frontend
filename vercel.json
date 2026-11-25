@@ -32,6 +32,10 @@
       "dest": "/meet.html"
     },
     {
+      "src": "/study-timer/?",
+      "dest": "/study-timer.html"
+    },
+    {
       "src": "/demo/?",
       "dest": "/demo.html"
     },

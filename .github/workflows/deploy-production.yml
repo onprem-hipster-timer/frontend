@@ -71,7 +71,7 @@ jobs:
             sed -i \
               -e "s#https://mo\.momeet\.date#${url_escaped}#g" \
               -e "s#<meta property=\"twitter:domain\" content=\"mo\.momeet\.date\">#<meta property=\"twitter:domain\" content=\"${host_escaped}\">#" \
-              index.html meet.html demo.html sitemap.xml robots.txt
+              index.html meet.html demo.html study-timer.html sitemap.xml robots.txt
           fi
           if [ -n "${NAVER_SITE_VERIFICATION}" ]; then
             if [[ ! "${NAVER_SITE_VERIFICATION}" =~ ^naver[0-9a-f]+$ ]]; then
