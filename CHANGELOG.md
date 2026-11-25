@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope`로 고정 값을 준다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다
   - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI 정적 검사 잡에서 함께 돈다
 
+#### Calendar
+- 새 일정을 만든 뒤 알림에 '일정 보기'를 두고, 누르면 만든 일정의 상세로 간다. 모임 화면의 '내 달력에 일정 만들기'로 만들어도 같다
+
 ---
 
 ## [v2026.11.07-a9689f6] - 2026-11-07

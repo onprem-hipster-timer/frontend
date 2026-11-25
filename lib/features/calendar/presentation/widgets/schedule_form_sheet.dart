@@ -1,16 +1,21 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:momeet/core/network/explicit_null_interceptor.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet_view.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_time_range_fields.dart';
+import 'package:momeet/router.dart';
 
 /// 일정 생성/수정을 위한 Modal Bottom Sheet 위젯. 칸은 [ScheduleFormSheetView]
 ///
 /// FloatingActionButton을 눌렀을 때 올라오는 Bottom Sheet 내부에서 사용됩니다.
 /// 제목, 일시(시작/종료), 설명, 종일 옵션을 입력받아 새로운 일정을 생성하거나 기존 일정을 수정합니다.
+/// 새로 만들면 '일정 보기'(만든 일정의 상세로 이동)가 있는 알림을 띄운다.
+///
+/// 테스트: test/features/calendar/presentation/widgets/schedule_form_sheet_test.dart
 class ScheduleFormSheet extends ConsumerStatefulWidget {
   /// 초기 시작 시간 (선택사항)
   final DateTime? initialStartTime;
@@ -102,7 +107,9 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           description: description.isEmpty ? null : description,
         );
 
-        await createScheduleMutation.run(
+        // 시트를 닫은 뒤에도 알림에서 이동할 수 있게 라우터를 잡아 둔다
+        final router = GoRouter.of(context);
+        final created = await createScheduleMutation.run(
           ref,
           (tsx) => tsx
               .get(scheduleMutationsProvider.notifier)
@@ -114,6 +121,11 @@ class _ScheduleFormSheetState extends ConsumerState<ScheduleFormSheet> {
           scaffoldMessenger.showAppSnackBar(
             '일정이 생성되었습니다',
             kind: AppNoticeKind.success,
+            actionLabel: '일정 보기',
+            onAction: () => router.pushNamed(
+              AppRoute.scheduleDetail.name,
+              queryParameters: {'id': created.id},
+            ),
           );
         }
       }
