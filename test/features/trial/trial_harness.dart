@@ -78,17 +78,28 @@ final convertedHeadline = find.text(keepWords(trialConvertedHeadline));
 /// 타이머를 시작한 뒤의 큰 질문
 final startedHeadline = find.text(keepWords(trialStartedHeadline));
 
-/// [size] 화면에 체험하기를 연다
+/// [size] 화면에 체험하기를 연다. 누를 것 강조가 끝없이 움직이지 않도록 애니메이션을 줄인 채로 연다([motion]이면
+/// 그대로)
 Future<void> openTrial(
   WidgetTester tester, {
   Size size = const Size(360, 800),
   List<ProviderObserver> observers = const [],
+  bool motion = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+  tester.platformDispatcher.accessibilityFeaturesTestValue =
+      FakeAccessibilityFeatures(disableAnimations: !motion);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
   await tester.pumpWidget(trialApp(observers: observers));
-  await tester.pumpAndSettle();
+  if (motion) {
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  } else {
+    await tester.pumpAndSettle();
+  }
 }
 
 /// 달력에서 [day] 칸의 날짜 숫자 자리를 누른다(일정 막대 위가 아니다)

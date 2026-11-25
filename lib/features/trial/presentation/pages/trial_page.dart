@@ -19,7 +19,9 @@ import 'package:momeet/features/trial/domain/trial_flow.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_calendar.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_spotlights.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_todo_row.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -33,6 +35,8 @@ const _stageHeight = 440.0;
 /// 할 일에서 타이머 시작 → 타이머의 시간이 [trialTimerSweep] 만에 지나감 → 끝. 모임 만들기처럼 한 번에 한
 /// 단계씩, 다음에 누를 것을 말하는 한 줄 아래에 앱의 위젯을 그대로 두고, 누르면 앱처럼 시트와 알림(이동 단추
 /// 포함)을 띄운다. 단계가 바뀌면 떠 있던 알림을 닫는다. 서버에 보내지 않고 앱의 데이터 Provider도 읽지 않는다.
+///
+/// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]).
 ///
 /// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와 모임 만들기를 둔다.
 ///
@@ -63,9 +67,11 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
   late var _flow = trialStart(widget.start);
 
   /// 타이머의 정한 시간이 지나가는 움직임(0 → 1). 다 지나가면 끝으로 간다
+  /// 시간이 흐르는 것을 보이므로 애니메이션을 줄여도 같은 길이다
   late final _sweep = AnimationController(
     vsync: this,
     duration: trialTimerSweep,
+    animationBehavior: AnimationBehavior.preserve,
   )..addStatusListener(_swept);
 
   @override
@@ -133,30 +139,34 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
       ),
       body: MeetingCreateLayout(
         maxWidth: 640,
-        builder: (context, wide) => MeetingStepSwitcher(
-          step: step,
-          announcement: trialHeadline(flow),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              MeetingQuestionPrompt(headline: trialHeadline(flow)),
-              const SizedBox(height: 24),
-              MeetingStagger(
-                order: 2,
-                child: _TrialStage(
-                  flow: flow,
-                  sweep: _sweep,
-                  onOpenExam: () => _go(_flow.openExam()),
-                  onConvert: _convert,
-                  onOpenTodo: () => _go(_flow.openTodo()),
-                  onStartTimer: _startTimer,
-                  onOpenTimer: () => _go(_flow.openTimer()),
-                  onSignUp: _signUp,
-                  onCreateMeeting: () =>
-                      context.pushNamed(AppRoute.meetings.name),
+        // 단계가 넘어가며 잘리지 않도록 강조는 넘어가는 단계 밖에 그린다
+        builder: (context, wide) => TrialSpotlight(
+          target: trialSpotlightOf(flow),
+          child: MeetingStepSwitcher(
+            step: step,
+            announcement: trialHeadline(flow),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                MeetingQuestionPrompt(headline: trialHeadline(flow)),
+                const SizedBox(height: 24),
+                MeetingStagger(
+                  order: 2,
+                  child: _TrialStage(
+                    flow: flow,
+                    sweep: _sweep,
+                    onOpenExam: () => _go(_flow.openExam()),
+                    onConvert: _convert,
+                    onOpenTodo: () => _go(_flow.openTodo()),
+                    onStartTimer: _startTimer,
+                    onOpenTimer: () => _go(_flow.openTimer()),
+                    onSignUp: _signUp,
+                    onCreateMeeting: () =>
+                        context.pushNamed(AppRoute.meetings.name),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
