@@ -317,31 +317,57 @@ body.landing-active {
 }
 
 /* 기능 미리보기: 배포 때 앱의 미리보기 화면을 찍은 그림 (tool/landing_previews/capture.mjs) */
+.bento-preview {
+  margin: 1.25rem 0 1rem;
+}
+
 .bento-preview img {
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 1.25rem 0 1rem;
   background: var(--surface);
   border-radius: var(--radius-sm);
   /* 테두리 대신 그림자 선으로 그려 그림이 width 그대로 보이게 한다 */
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-/* 넓은 카드는 글을 왼쪽, 미리보기를 오른쪽에 두고, 글 칸이 좁아지면 미리보기를 아래로 내린다 */
-.bento-card.wide {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1.25rem 2rem;
+.bento-preview figcaption {
+  margin-top: 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ink-light);
+  /* 한국어는 낱말 단위로 줄을 바꾼다 */
+  word-break: keep-all;
 }
 
-.bento-card-text {
-  flex: 1 1 16rem;
-}
+/* 넓은 카드는 글과 링크를 왼쪽 가운데에, 미리보기를 오른쪽에 둔다. 이보다 좁으면 위에서 아래로 쌓는다 */
+@media (min-width: 800px) {
+  .bento-card.wide {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas: ". preview" "text preview" "links preview" ". preview";
+    column-gap: 2rem;
+  }
 
-.bento-card.wide .bento-preview img {
-  margin: 0;
+  .bento-card-text {
+    grid-area: text;
+  }
+
+  .bento-card-links {
+    grid-area: links;
+  }
+
+  .bento-card.wide .bento-preview {
+    grid-area: preview;
+    width: min-content;
+    margin: 0;
+  }
+
+  /* 미리보기 칸의 폭은 그림의 폭(width)이고, 글줄은 그 폭에서 줄을 바꾼다 */
+  .bento-card.wide .bento-preview img {
+    max-width: none;
+  }
 }
 
 /* ===== How it works ===== */
@@ -751,17 +777,12 @@ body.landing-active #flutter-host {
   }
 
   .bento-card.wide {
-    display: block;
     grid-column: auto;
   }
 
   .bento-preview img {
     width: 100%;
     max-width: 368px;
-  }
-
-  .bento-card.wide .bento-preview img {
-    margin-top: 1.25rem;
   }
 
   .bento-title {
