@@ -58,7 +58,7 @@ enum AppRoute {
   // 탈퇴를 신청한 사용자는 다른 보호 페이지(약관 동의 포함) 대신 여기로 온다
   accountDeletion(path: '/account-deletion'),
   calendar(path: '/'),
-  scheduleDetail(path: '/schedule/detail'),
+  scheduleDetail(path: '/schedule/:scheduleId'),
   todo(path: '/todo'),
   todoGroupDetail(path: '/todo/:groupId'),
   timer(path: '/timer'),
