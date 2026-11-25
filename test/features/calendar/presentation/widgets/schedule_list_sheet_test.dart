@@ -1,7 +1,9 @@
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:momeet/app_route.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
@@ -201,6 +203,66 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오전 회의'), findsNothing);
+    });
+
+    /// '열기'로 시트를 여는 화면. 일정 상세 경로는 받은 id를 보인다
+    Widget sheetApp({ValueChanged<ScheduleRead>? onScheduleTap}) =>
+        MaterialApp.router(
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () => showScheduleListSheet(
+                      context,
+                      testDate,
+                      testSchedules,
+                      onScheduleTap: onScheduleTap,
+                    ),
+                    child: const Text('열기'),
+                  ),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'schedule/detail',
+                    name: AppRoute.scheduleDetail.name,
+                    builder: (context, state) =>
+                        Text('상세 ${state.uri.queryParameters['id']}'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+
+    testWidgets('일정을 누르면 시트를 닫고 그 일정의 상세로 간다', (tester) async {
+      await tester.pumpWidget(sheetApp());
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('점심 약속'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('점심 약속'), findsNothing);
+      expect(find.text('상세 sched-2'), findsOneWidget);
+    });
+
+    testWidgets('누른 일정을 받는 콜백을 주면 시트를 닫고 상세 대신 그 콜백을 부른다', (tester) async {
+      final tapped = <String>[];
+      await tester.pumpWidget(
+        sheetApp(onScheduleTap: (schedule) => tapped.add(schedule.id)),
+      );
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('점심 약속'));
+      await tester.pumpAndSettle();
+
+      expect(tapped, ['sched-2']);
+      expect(find.text('점심 약속'), findsNothing);
+      expect(find.textContaining('상세'), findsNothing);
+      expect(find.text('열기'), findsOneWidget);
     });
   });
 
