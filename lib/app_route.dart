@@ -54,7 +54,7 @@ enum AppRoute {
 
   // 체험하기 (탭 셸 밖). 서버에 보내지 않아 로그인 여부와 상관없이, 게스트도 머문다
   trial(
-    path: '/try',
+    path: '/demo',
     requiresAuth: false,
     authNeutral: true,
     allowsGuest: true,

@@ -30,7 +30,7 @@ void main() {
     }
   }
 
-  testWidgets('로그인하지 않은 채 /try를 열면 탭 셸 밖에서 체험하기의 달력 단계가 열린다', (tester) async {
+  testWidgets('로그인하지 않은 채 /demo를 열면 탭 셸 밖에서 체험하기의 달력 단계가 열린다', (tester) async {
     final harness = await KratosTestHarness.create(authenticated: false);
     harness.stubCreateFlow(KratosFlowType.login, 'flow-login');
     await tester.pumpWidget(
@@ -55,7 +55,7 @@ void main() {
       tester.element(find.byType(Router<Object>)),
     ).read(routerProvider);
 
-    router.go(AppRoute.trial.path);
+    router.go('/demo');
     await pumpAWhile(tester);
 
     expect(

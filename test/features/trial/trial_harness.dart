@@ -26,7 +26,7 @@ const meetingsScreen = '모임 만들기 화면';
 /// 앱이 쓰는 휴대폰 크기와 넓은 크기
 const trialSizes = {'휴대폰': Size(360, 800), '넓은 화면': Size(800, 1280)};
 
-/// `/try`에서 여는 체험하기. 가입·모임 만들기는 그 화면 이름만 보인다
+/// `/demo`에서 여는 체험하기. 가입·모임 만들기는 그 화면 이름만 보인다
 Widget trialApp({List<ProviderObserver> observers = const []}) => ProviderScope(
   observers: observers,
   child: MaterialApp.router(
