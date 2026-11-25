@@ -48,8 +48,10 @@ class EditableTodoTreeTileView extends StatelessWidget {
 
   /// 수정·삭제 앞의 타이머 시작 버튼. 타이머를 연결할 수 없는 할 일이면 null
   final Widget? timerButton;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+
+  /// null이면 누를 수 없는 모양이다. 체험하기가 길 밖의 수정·삭제를 보이기만 하려고 쓴다
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final bool selected;
   final VoidCallback onTap;
 
@@ -228,8 +230,8 @@ class _TileActions extends StatelessWidget {
   });
 
   final Widget? timerButton;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   /// [width] 폭의 줄에 버튼을 옆에 두면 제목 칸이 글자 배율을 반영한 최소 폭(140)보다 좁아지는지
   ///

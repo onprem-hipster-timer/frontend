@@ -18,6 +18,10 @@ Widget appEditDeleteButtons(BuildContext context) {
     divisions: 57,
     precision: 0,
   );
+  final disabled = context.knobs.boolean(
+    label: '누를 수 없음',
+    description: '보이기만 하고 누를 수 없을 때. 삭제도 오류색 대신 흐린 모양이다',
+  );
   return Center(
     child: Container(
       width: width,
@@ -29,8 +33,8 @@ Widget appEditDeleteButtons(BuildContext context) {
       ),
       child: AppEditDeleteButtons(
         itemName: '운동 태그',
-        onEdit: () {},
-        onDelete: () {},
+        onEdit: disabled ? null : () {},
+        onDelete: disabled ? null : () {},
       ),
     ),
   );

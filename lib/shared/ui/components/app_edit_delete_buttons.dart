@@ -14,8 +14,9 @@ class AppEditDeleteButtons extends StatelessWidget {
     this.itemName,
   });
 
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  /// null이면 누를 수 없는 모양이다. 체험하기처럼 길 밖의 버튼을 보이기만 하는 화면이 쓴다
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final String? itemName;
 
   /// 두 버튼이 차지하는 폭. 줄에 옆으로 둘지 정할 때 쓴다
@@ -61,9 +62,16 @@ class AppEditDeleteButtons extends StatelessWidget {
           onPressed: onDelete,
           icon: const Icon(Icons.delete_outline, size: 16),
           label: Text('삭제', semanticsLabel: name == null ? null : '$name 삭제'),
+          // 누를 수 없으면 오류색 대신 기본 비활성 모양으로 둔다
           style: _style.copyWith(
-            foregroundColor: WidgetStatePropertyAll(error),
-            side: WidgetStatePropertyAll(BorderSide(color: error)),
+            foregroundColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.disabled) ? null : error,
+            ),
+            side: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.disabled)
+                  ? null
+                  : BorderSide(color: error),
+            ),
           ),
         ),
       ],
