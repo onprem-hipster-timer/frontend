@@ -33,7 +33,7 @@ final trialEndHeadline =
     '일정이 ${Terms.todo.withJosa('이', '가')} 되고, ${Terms.focus}한 흔적이 남았어요';
 
 const trialCalendarLead = '시험 날짜만 적어 두면 준비는 자꾸 밀려요.';
-const trialScheduleLead = '달력에 적은 일을 ${Terms.todo} 앱에 또 옮겨 적지 않아도 돼요.';
+const trialScheduleLead = '달력에 적은 일을 또 옮겨 적지 않아도 돼요.';
 
 /// 할 일로 바꾼 뒤
 const trialConvertedLead = '이제 시험은 날짜가 아니라 준비할 일이에요.';
