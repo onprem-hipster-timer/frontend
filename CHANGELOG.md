@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Tooling
 - 레이아웃 점검(`test/layout_audit`의 화면 전수 점검과 위젯 테스트마다의 점검)은 CI에서 돌리지 않는다. 로컬에서 `fvm flutter test`로 돌려 `build/layout_audit/`의 보고서를 본다
 - CI의 `flutter test`·`flutter build web`은 앞 단계에서 받은 의존성을 그대로 써 `pub get`을 다시 돌리지 않는다(`--no-pub`)
-- CI의 테스트 샤드 2개는 테스트 파일을 이름순으로 번갈아 나눠 받아 샤드마다 자기 파일만 컴파일한다
+- CI의 테스트 샤드는 4개이고, 테스트 파일을 이름순으로 번갈아 나눠 받아 샤드마다 자기 파일만 컴파일한다
+- CI 정적 검사 잡의 패키지 테스트 두 단계를 `Package tests` 하나로 합친다
 - `widgetbook/`의 코드 생성 결과(`.dart_tool/build`, `lib/**/*.g.dart`)를 `.github/actions/codegen`(`directory: widgetbook/`)으로 캐시한다. 키는 `widgetbook/`의 `pubspec.lock`·`build.yaml`·`lib/**/*.dart`이고, 맞으면 `build_runner`를 돌리지 않는다. CI 정적 검사 잡과 위젯 카탈로그 배포가 함께 쓴다
 - CI 정적 검사 잡의 패키지 테스트(`packages/layout_audit`, `packages/momeet_lints`)는 PR이 `packages/`, `.fvmrc`, `.github/workflows/test.yml`을 바꿨을 때만 돈다
 - 운영 배포(`deploy-production.yml`)의 코드 생성은 `.github/actions/codegen`이 맡아 codegen 캐시를 쓴다. 배포용 `assets/.env`는 그 뒤에 쓴다

@@ -123,13 +123,11 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Layout audit library tests
+      - name: Package tests
         if: steps.packages.outputs.changed == 'true'
-        run: cd packages/layout_audit && flutter test
-
-      - name: Lint rule tests
-        if: steps.packages.outputs.changed == 'true'
-        run: cd packages/momeet_lints && dart test
+        run: |
+          (cd packages/layout_audit && flutter test)
+          (cd packages/momeet_lints && dart test)
 
   test:
     name: Tests (shard ${{ matrix.shard }})
@@ -138,11 +136,11 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-    # 샤드마다 셋업·코드 생성 비용이 붙어 2개를 넘기면 이득이 거의 없다
+    # 샤드는 자기 파일만 컴파일한다. 정적 검사 잡보다 빨라지면 더 늘려도 PR이 끝나는 시간은 줄지 않는다
     strategy:
       fail-fast: true
       matrix:
-        shard: [0, 1]
+        shard: [0, 1, 2, 3]
 
     steps:
       - uses: actions/checkout@v7
@@ -166,7 +164,7 @@ jobs:
           SHARD: ${{ matrix.shard }}
         # 테스트 파일을 이름순으로 번갈아 나눠 샤드마다 자기 파일만 컴파일한다
         run: |
-          mapfile -t files < <(find test -name '*_test.dart' -not -path 'test/layout_audit/*' | sort | awk -v shard="$SHARD" 'NR % 2 == shard')
+          mapfile -t files < <(find test -name '*_test.dart' -not -path 'test/layout_audit/*' | sort | awk -v shard="$SHARD" 'NR % 4 == shard')
           flutter test --no-pub --exclude-tags layout_audit --dart-define=LAYOUT_AUDIT=false "${files[@]}"
 
   arch-guard:
