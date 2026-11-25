@@ -310,6 +310,78 @@ void main() {
       expect(StartSheet.sheet, findsOneWidget);
       semantics.dispose();
     });
+
+    const arrows = [
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown,
+    ];
+
+    testWidgets('타이머 단계에서 방향키로 포커스를 옮겨도 대시보드에 닿지 않는다', (tester) async {
+      await openTrial(tester);
+      await goToTimer(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // 머리띠의 단추에서 시작한다
+      await _tab(tester);
+      for (final key in arrows) {
+        await tester.sendKeyEvent(key);
+        await tester.pump();
+        expect(_focusWithin(find.byType(TimerDashboardView)), isFalse);
+        if (!_focusOnHeader()) await _press(tester);
+      }
+
+      await tester.pump(trialTimerSweep);
+      await tester.pumpAndSettle();
+      _expectNothingOpened();
+    });
+
+    testWidgets('할 일 단계에서 방향키로 포커스를 옮겨도 상태에 닿지 않는다', (tester) async {
+      await openTrial(tester);
+      await goToTodo(tester);
+
+      await _tab(tester);
+      for (final key in arrows) {
+        await tester.sendKeyEvent(key);
+        await tester.pump();
+        expect(_focusWithin(find.byType(TodoStatusSelectorView)), isFalse);
+      }
+      expect(find.byType(PopupMenuItem<TodoStatus>), findsNothing);
+    });
+
+    final steps = <String, Future<void> Function(WidgetTester)>{
+      '달력 단계': (_) async {},
+      '일정 상세 단계': goToSchedule,
+      '할 일 단계': goToTodo,
+      '타이머 단계': goToTimer,
+      '끝 화면': goToEnd,
+    };
+    for (final MapEntry(key: step, value: reach) in steps.entries) {
+      for (final MapEntry(key: screen, value: size) in trialSizes.entries) {
+        testWidgets(
+          '$step($screen)부터 Tab으로 닿는 것을 모두 Enter·Space로 눌러도 공유 설정과 상태 메뉴가 열리지 않고 앱의 프로바이더가 만들어지지 않는다',
+          (tester) async {
+            final created = _Created();
+            await openTrial(tester, size: size, observers: [created]);
+            await reach(tester);
+
+            // 누른 것이 체험을 앞으로 넘기면 넘어간 단계에서 이어 누른다
+            for (var i = 0; i < 40; i++) {
+              await _tab(tester);
+              if (_focusOnHeader()) continue;
+              await _press(tester);
+              await tester.pump(const Duration(milliseconds: 400));
+              expect(find.text('공유 설정'), findsNothing);
+              expect(find.byType(PopupMenuItem<TodoStatus>), findsNothing);
+            }
+            expect(created.providers, isEmpty);
+          },
+        );
+      }
+    }
   });
 
   group('건너뛰기', () {
