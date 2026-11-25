@@ -122,6 +122,7 @@ Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 
 `demo.html`은 랜딩 없이 체험하기의 제목·설명과 앱을 담은 페이지이고, `web/landing/kratos-paths.js`가 주소를 `/#/demo`로 바꿔
 체험하기 화면을 바로 엽니다. `$FLUTTER_BASE_HREF`는 `index.html`에서만 바뀌므로 `demo.html`에는 `<base href="/">`를 적습니다.
 그 밖의 경로는 SPA(Single Page Application) 라우팅을 위해 파일이 없으면 `index.html`로 폴백합니다.
+검색 엔진용 `sitemap.xml`(`/`·`/meet`·`/demo`)과 `robots.txt`는 `web/`에 있는 파일 그대로 내보냅니다. 공개 페이지를 더하면 `sitemap.xml`에도 적습니다.
 앱의 해시 라우트로 쓴 모임 소개(`/#/meet`, 끝의 `/`·쿼리 포함)는 `web/landing/kratos-paths.js`가 앱이 뜨기 전이나 주소의
 해시가 바뀔 때 `/meet`(쿼리 그대로)로 바꿉니다.
 `flutter_service_worker.js`는 캐시 무효화를 위해 `Cache-Control: no-cache`로 설정합니다.
