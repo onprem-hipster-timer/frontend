@@ -209,7 +209,7 @@ use case 추가:
 카탈로그 전체를 감싸는 `ProviderScope`는 없다. Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope(overrides: […])`(`widgetbook/lib/sample_provider_scope.dart`)로 감싸고, 그 트리가 읽는 Provider를 모두 고정 값으로 덮어쓴다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다.
 
 ```bash
-# 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외(넘침 포함)가 없는지 본다. CI도 돌린다
+# 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외(넘침 포함)가 없는지 본다
 cd widgetbook && fvm flutter test
 ```
 
