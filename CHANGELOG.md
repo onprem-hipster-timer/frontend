@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 카탈로그의 뷰포트 고르기에 레이아웃 점검이 보는 유난한 비율의 화면을 더한다: iPhone SE 1세대, Galaxy Z Flip 펼침·커버, Galaxy Z Fold 안쪽, Surface Duo 한쪽·두 화면, 가로로 눕힌 폰, 울트라와이드
   - Provider를 읽는 자식이 있는 위젯은 use case에서 `SampleProviderScope`로 고정 값을 준다. 덮어쓰지 않은 Provider를 읽으면 오류가 난다
   - `widgetbook/`의 `flutter test`가 모든 use case를 360x800 화면에서 라이트·다크 모드로 그려 예외가 없는지 확인한다. CI에서는 돌지 않는다
+- 운영 배포는 저장소 변수 `SITE_URL`이 있으면 빌드한 공개 페이지·`sitemap.xml`·`robots.txt`의 사이트 주소를 그 값으로 바꾸고, `NAVER_SITE_VERIFICATION`이 있으면 네이버 사이트 소유 확인 파일을 만든다. 소스의 기본 주소는 `https://mo.momeet.date`다
 
 #### Calendar
 - 새 일정을 만든 뒤 알림에 '일정 보기'를 두고, 누르면 만든 일정의 상세로 간다. 모임 화면의 '내 달력에 일정 만들기'로 만들어도 같다

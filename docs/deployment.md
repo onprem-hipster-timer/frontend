@@ -160,6 +160,8 @@ Flutter 로더는 `web/flutter_bootstrap.js` 템플릿에 있습니다.
 | `API_BASE_URL` | 백엔드 API 서버 URL (인증은 `API_BASE_URL/auth`) |
 | `REALTIME_BACKEND` | 타이머 실시간 소켓 모드 (`inprocess` 또는 `cloudflare`, 비우면 `inprocess`) |
 | `TURNSTILE_SITE_KEY` | Cloudflare Turnstile 사이트 키 (infra `terraform output turnstile_site_key`). 비우면 게스트 입장이 없다 |
+| `SITE_URL` | 사이트 주소 (끝에 `/` 없이, 예: `https://example.com`). 소스에 적힌 기본 주소는 `https://mo.momeet.date`이고, 다른 값이면 빌드한 `index.html`·`meet.html`·`demo.html`·`sitemap.xml`·`robots.txt`의 주소와 `twitter:domain`을 이 값으로 바꾼다. 비우면 기본 주소 그대로다 |
+| `NAVER_SITE_VERIFICATION` | 네이버 서치어드바이저 HTML 파일 확인의 파일 이름 (확장자 없이, 예: `naver0123abcd`). 값이 있으면 사이트 루트에 `<값>.html`을 만든다. 비우면 만들지 않는다 |
 
 !!! tip "환경변수 변경 시 재배포"
     GitHub vars를 변경해도 자동으로 재배포되지 않습니다.
