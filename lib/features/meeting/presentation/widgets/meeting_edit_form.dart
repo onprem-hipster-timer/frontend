@@ -12,7 +12,7 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_create_texts.
 import 'package:momeet/features/meeting/presentation/utils/meeting_edit_texts.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_formatters.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_create_form.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_edit_actions.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_edit_form_view.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
 /// 모임 설정: 만들기의 펼친 폼([MeetingCreateForm])에 지금 값을 채워 고친다. 규칙과 저절로 맞추는 것은 만들기와
@@ -23,8 +23,9 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 것만 다시 보낼 수 있다. 서버가 거절한 칸은 그 아래에 알린다. 참여자가 이미 답을 넣었으면 방식을 바꾸거나
 /// 날이 빠질 때 저장 전에 한 줄로 알린다. 맨 아래 '모임 삭제'는 확인한 뒤 지우고 처음 화면으로 간다.
 ///
+/// 모양은 [MeetingEditFormView]
+///
 /// 테스트: test/features/meeting/presentation/pages/meeting_edit_page_test.dart
-// ignore: momeet_lints/require_widgetbook_view
 class MeetingEditForm extends ConsumerStatefulWidget {
   const MeetingEditForm({super.key, required this.source});
 
@@ -36,9 +37,6 @@ class MeetingEditForm extends ConsumerStatefulWidget {
 
 class _MeetingEditFormState extends ConsumerState<MeetingEditForm> {
   late var _base = widget.source.base;
-  late var _flow = MeetingFlow(draft: _base.draft, expanded: true);
-  late final _title = TextEditingController(text: _base.meeting.title)
-    ..addListener(_titleChanged);
   var _saving = false;
   var _deleting = false;
 
@@ -53,31 +51,21 @@ class _MeetingEditFormState extends ConsumerState<MeetingEditForm> {
   String get _placeholder =>
       meetingTitlePlaceholder(ref.read(currentUserProvider)?.name);
 
-  String get _titleText {
-    final typed = _title.text.trim();
-    return typed.isEmpty ? _placeholder : typed;
+  /// 제목 칸에 적은 글([typed]). 비웠으면 칸에 보이는 제목이다
+  String _titleText(String typed) {
+    final trimmed = typed.trim();
+    return trimmed.isEmpty ? _placeholder : trimmed;
   }
 
-  @override
-  void dispose() {
-    _title.dispose();
-    super.dispose();
-  }
+  void _edited() => setState(() => _failed = null);
 
-  void _titleChanged() => setState(() => _failed = null);
-
-  void _change(MeetingFlow next) => setState(() {
-    _flow = next;
-    _failed = null;
-  });
-
-  Future<void> _save() async {
+  Future<void> _save(MeetingFlow flow, String typed) async {
     if (_saving) return;
-    if (_flow.rangeStart != null) {
+    if (flow.rangeStart != null) {
       showAppSnackBar(context, meetingRangeUnfinished);
       return;
     }
-    final steps = _base.plan(_flow.draft, title: _titleText);
+    final steps = _base.plan(flow.draft, title: _titleText(typed));
     if (steps == null) return setState(() => _accessAsked = true);
     if (steps.isEmpty) return;
     setState(() => _saving = true);
@@ -129,8 +117,6 @@ class _MeetingEditFormState extends ConsumerState<MeetingEditForm> {
 
   @override
   Widget build(BuildContext context) {
-    final draft = _flow.draft;
-    final steps = _base.plan(draft, title: _titleText);
     final failed = _failed;
     final refusals = {
       if (failed != null)
@@ -140,37 +126,19 @@ class _MeetingEditFormState extends ConsumerState<MeetingEditForm> {
     // 지난 날에 시작한 모임도 지금 기간을 그대로 보이고 고를 수 있다
     final today = calendarDay(DateTime.now());
     final first = _base.draft.dates.first;
-    final busy = _saving || _deleting;
-    return MeetingCreateForm(
-      flow: _flow,
+    return MeetingEditFormView(
+      base: _base,
+      hasAnswers: widget.source.hasAnswers,
       today: first.isBefore(today) ? first : today,
+      placeholder: _placeholder,
+      saving: _saving,
+      deleting: _deleting,
       accessAsked: _accessAsked,
-      accessRequiredText: meetingEditAccessRequired,
-      timezone: _base.meeting.timezone,
       refusals: refusals,
-      onChanged: _change,
-      titleField: MeetingEditActions(
-        controller: _title,
-        placeholder: _placeholder,
-        notices: [
-          if (widget.source.hasAnswers)
-            for (final notice in _base.notices(draft))
-              meetingEditNoticeText(notice),
-        ],
-        saving: _saving,
-        onSave: busy || (steps != null && steps.isEmpty) ? null : _save,
-        titleRefusal: refusals[MeetingEditPart.title],
-        outcome: failed == null ? null : meetingEditOutcomeText(failed),
-      ),
-      footer: TextButton.icon(
-        onPressed: busy ? null : _delete,
-        style: TextButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.error,
-          minimumSize: const Size(48, 48),
-        ),
-        icon: const Icon(Icons.delete_outline),
-        label: const Text(meetingDelete),
-      ),
+      outcome: failed == null ? null : meetingEditOutcomeText(failed),
+      onEdited: _edited,
+      onSave: _save,
+      onDelete: _delete,
     );
   }
 }
