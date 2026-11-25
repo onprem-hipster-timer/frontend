@@ -69,5 +69,5 @@ void main() async {
     ),
   );
   // 글꼴의 나머지 굵기는 첫 화면을 그린 뒤에 받는다
-  WidgetsBinding.instance.addPostFrameCallback((_) => loadAppFontWeights());
+  WidgetsBinding.instance.addPostFrameCallback((_) => appFontWeights());
 }

@@ -28,3 +28,8 @@ Future<void> loadAppFontWeights({AssetBundle? bundle, String? package}) async {
 
   await Future.wait([for (final asset in appFontLateAssets) load(asset)]);
 }
+
+/// 앱의 나머지 굵기를 한 번만 불러온다([loadAppFontWeights]). 몇 번을 불러도 처음 시작한 불러오기를 돌려준다
+Future<void> appFontWeights() => _appFontWeights ??= loadAppFontWeights();
+
+Future<void>? _appFontWeights;
