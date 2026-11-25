@@ -147,6 +147,21 @@ void main() {
     expect(find.text('운동'), findsOneWidget);
   });
 
+  testWidgets('새 할 일 그룹을 만든 알림의 목록 보기를 누르면 그 그룹 화면으로 간다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.text('새 해야 할 일 목록'));
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '해야 할 일 목록 이름'),
+      '운동',
+    );
+    await tapVisible(tester, find.text('생성'));
+    await tester.tap(find.widgetWithText(SnackBarAction, '목록 보기'));
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, '/todo/todo-group-new-1');
+    expect(find.text('그룹 화면 todo-group-new-1'), findsOneWidget);
+  });
+
   testWidgets('불러오지 못하면 오류를 보이고 다시 시도하면 카드를 그린다', (tester) async {
     todos.groupsReadError = Exception('끊김');
     await pumpPage(tester);

@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Todo
 - 새 할 일을 만든 뒤 알림에 '할 일 보기'를 두고, 누르면 새 할 일이 든 해야 할 일 목록 화면으로 간다. 그 목록 화면에서 만들었으면 새 할 일이 이미 보이므로 두지 않는다
+- 새 해야 할 일 목록을 만든 뒤 알림에 '목록 보기'를 두고, 누르면 만든 목록 화면으로 간다
 
 ---
 

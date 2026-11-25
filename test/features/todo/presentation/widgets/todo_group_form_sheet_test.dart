@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_form_sheet.dart';
+import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 
@@ -9,6 +11,7 @@ import '../../../../helpers/sheet_host.dart';
 
 void main() {
   late FakeTodosClient todos;
+  late GoRouter router;
   final work = makeTodoGroup(
     id: 'group-work',
     name: '업무',
@@ -20,12 +23,23 @@ void main() {
     todos = FakeTodosClient(const [], [work]);
   });
 
-  Future<void> open(WidgetTester tester, {TodoGroupRead? group}) =>
-      pumpSheetHost(
-        tester,
-        overrides: [todosApiProvider.overrideWithValue(todos)],
-        open: (context) => showTodoGroupFormSheet(context, group: group),
-      );
+  Future<void> open(WidgetTester tester, {TodoGroupRead? group}) async {
+    router = await pumpSheetHost(
+      tester,
+      overrides: [todosApiProvider.overrideWithValue(todos)],
+      routes: [
+        GoRoute(
+          path: '/todo/:groupId',
+          name: AppRoute.todoGroupDetail.name,
+          builder: (context, state) =>
+              Text('그룹 화면 ${state.pathParameters['groupId']}'),
+        ),
+      ],
+      open: (context) => showTodoGroupFormSheet(context, group: group),
+    );
+  }
+
+  Finder viewListAction() => find.widgetWithText(SnackBarAction, '목록 보기');
 
   Finder field(String label) => find.widgetWithText(TextFormField, label);
 
@@ -80,6 +94,29 @@ void main() {
 
       expect(find.text('새 해야 할 일 목록 만들기'), findsOneWidget);
       expect(find.textContaining('해야 할 일 목록 생성에 실패했습니다'), findsOneWidget);
+      expect(find.text('목록 보기'), findsNothing);
+    });
+
+    testWidgets('만든 뒤 알림에 목록 보기가 있고, 누르기 전에는 화면을 옮기지 않는다', (tester) async {
+      await open(tester);
+      await tester.enterText(field('해야 할 일 목록 이름'), '운동');
+      await tapVisible(tester, find.text('생성'));
+
+      expect(viewListAction(), findsOneWidget);
+      expect(router.state.uri.path, '/');
+    });
+
+    testWidgets('닫힌 시트의 알림에서 목록 보기를 누르면 만든 그룹 화면으로 간다', (tester) async {
+      await open(tester);
+      await tester.enterText(field('해야 할 일 목록 이름'), '운동');
+      await tapVisible(tester, find.text('생성'));
+      expect(find.text('새 해야 할 일 목록 만들기'), findsNothing);
+
+      await tester.tap(viewListAction());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, '/todo/todo-group-new-1');
+      expect(find.text('그룹 화면 todo-group-new-1'), findsOneWidget);
     });
   });
 
@@ -101,6 +138,7 @@ void main() {
       expect(explicitNullFields(options), isEmpty);
       expect(find.text('해야 할 일 목록 수정'), findsNothing);
       expect(find.text('해야 할 일 목록이 수정되었습니다'), findsOneWidget);
+      expect(find.byType(SnackBarAction), findsNothing);
     });
 
     testWidgets('기본 그룹도 이름을 바꿀 수 있다', (tester) async {
