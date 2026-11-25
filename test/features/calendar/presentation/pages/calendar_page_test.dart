@@ -16,6 +16,7 @@ import 'package:momeet/features/calendar/presentation/providers/calendar_provide
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
+import 'package:momeet/shared/ui/ui.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../../../../helpers/fake_rest_clients.dart';
@@ -254,6 +255,24 @@ void main() {
 
     await tapVisible(tester, find.widgetWithText(ChoiceChip, '자동'));
     expect(settings().monthEventsPerDay, isNull);
+  });
+
+  testWidgets('달력을 보는 중에 주말 강조를 끄면 월 칸의 일요일 색이 바로 따라 바뀌고, 켜면 돌아온다', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    // 2026년 11월 29일은 일요일이다
+    bool sundayHighlighted() => tester
+        .widgetList<Text>(find.text('29'))
+        .any((text) => text.style?.color == AppColors.light.holiday);
+    expect(sundayHighlighted(), isTrue);
+
+    await tapVisible(tester, find.byTooltip('보기 설정'));
+    await tapVisible(tester, find.text('주말 강조'));
+    expect(sundayHighlighted(), isFalse);
+
+    await tapVisible(tester, find.text('주말 강조'));
+    expect(sundayHighlighted(), isTrue);
   });
 
   testWidgets('일정 한 줄도 들어가지 않는 낮은 월 칸은 일정을 점으로 보이고 오류가 나지 않는다', (tester) async {

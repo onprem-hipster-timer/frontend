@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_link.dart';
-import 'package:momeet/shared/ui/ui.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_link_row_view.dart';
 
 /// 모임 공유 링크 글과 복사 버튼. 복사하면 알린다
 class MeetingLinkRow extends ConsumerWidget {
@@ -11,31 +11,9 @@ class MeetingLinkRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: AppRadius.mdAll,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Text(
-                '${meetingLink(context, ref, meetingId)}',
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          tooltip: '링크 복사',
-          icon: const Icon(Icons.copy),
-          onPressed: () => copyMeetingLink(context, ref, meetingId),
-        ),
-      ],
+    return MeetingLinkRowView(
+      link: meetingLink(context, ref, meetingId),
+      onCopy: () => copyMeetingLink(context, ref, meetingId),
     );
   }
 }

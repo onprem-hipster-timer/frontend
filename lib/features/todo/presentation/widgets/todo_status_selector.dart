@@ -1,36 +1,11 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import '../providers/todo_provider.dart';
 
-extension TodoStatusUI on TodoStatus {
-  IconData get icon => switch (this) {
-    TodoStatus.unscheduled => Icons.circle_outlined,
-    TodoStatus.scheduled => Icons.schedule,
-    TodoStatus.done => Icons.check_circle,
-    TodoStatus.cancelled => Icons.cancel,
-    TodoStatus.$unknown => Icons.help_outline,
-  };
-
-  Color color(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return switch (this) {
-      TodoStatus.unscheduled || TodoStatus.$unknown => scheme.onSurfaceVariant,
-      TodoStatus.scheduled => scheme.primary,
-      TodoStatus.done => AppColors.of(context).success,
-      TodoStatus.cancelled => scheme.error,
-    };
-  }
-
-  String get label => switch (this) {
-    TodoStatus.unscheduled => '미예정',
-    TodoStatus.scheduled => '예정됨',
-    TodoStatus.done => '완료',
-    TodoStatus.cancelled => '취소',
-    TodoStatus.$unknown => '알 수 없음',
-  };
-}
+export 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart'
+    show TodoStatusUI;
 
 /// Todo 상태 선택 위젯
 ///
@@ -55,8 +30,9 @@ class TodoStatusSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return PopupMenuButton<TodoStatus>(
-      initialValue: todo.status,
+    return TodoStatusSelectorView(
+      status: todo.status,
+      iconSize: iconSize,
       onSelected: (TodoStatus newStatus) async {
         if (newStatus != todo.status) {
           final updated = await updateTodoMutation.run(
@@ -68,28 +44,6 @@ class TodoStatusSelector extends ConsumerWidget {
           onChanged?.call(updated);
         }
       },
-      itemBuilder: (BuildContext context) {
-        return TodoStatus.values
-            .where((status) => status != TodoStatus.$unknown)
-            .map((TodoStatus status) {
-              return PopupMenuItem<TodoStatus>(
-                value: status,
-                child: Row(
-                  children: [
-                    Icon(status.icon, color: status.color(context), size: 20),
-                    const SizedBox(width: 12),
-                    Text(status.label),
-                  ],
-                ),
-              );
-            })
-            .toList();
-      },
-      child: Icon(
-        todo.status.icon,
-        color: todo.status.color(context),
-        size: iconSize,
-      ),
     );
   }
 }

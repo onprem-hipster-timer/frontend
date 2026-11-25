@@ -1,0 +1,6 @@
+targets:
+  $default:
+    builders:
+      # 로컬 빌드 때 git 사용자 이메일 해시·저장소 주소·컴포넌트·use case 개수를 Mixpanel로 보내는 빌더다
+      widgetbook_generator:telemetry:
+        enabled: false

@@ -14,7 +14,7 @@ import 'package:momeet/features/calendar/presentation/pages/schedule_detail_page
 import 'package:momeet/features/calendar/presentation/providers/calendar_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/state/calendar_state.dart';
-import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell.dart';
+import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell_view.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_appointment_block.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
@@ -154,7 +154,7 @@ void main() {
     final router = await pumpApp(tester);
     expect(find.byType(CalendarPage), findsOneWidget);
     final cell = find.byWidgetPredicate(
-      (widget) => widget is CalendarMonthCell && widget.details.date == day,
+      (widget) => widget is CalendarMonthCellView && widget.date == day,
     );
     await tester.tapAt(tester.getTopRight(cell) + const Offset(-4, 4));
     await tester.pumpAndSettle();

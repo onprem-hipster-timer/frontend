@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/features/todo/presentation/providers/todo_group_providers.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_form_status_chips.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_tag_picker.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form_sheet_view.dart';
+import 'package:momeet/shared/providers/tag_providers.dart' as tag_providers;
+import 'package:momeet/features/tag/presentation/widgets/tag_form_sheet.dart';
+import 'package:momeet/features/tag/presentation/widgets/tag_group_form_sheet.dart';
 import 'package:momeet/features/todo/presentation/utils/todo_form_submit.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -36,24 +37,7 @@ class TodoFormSheet extends ConsumerStatefulWidget {
 }
 
 class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
-  final _formKey = GlobalKey<FormState>();
   late final _isEditMode = widget.todo != null;
-  late final _titleController = TextEditingController(text: widget.todo?.title);
-  late final _descriptionController = TextEditingController(
-    text: widget.todo?.description,
-  );
-  late var _selectedStatus = widget.todo?.status ?? TodoStatus.unscheduled;
-  late final _selectedTagIds = {...?widget.todo?.tags.map((tag) => tag.id)};
-  late var _selectedDeadline = widget.todo?.deadline;
-  late var _selectedGroupId =
-      widget.todo?.todoGroupId ?? widget.defaultTodoGroupId;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,109 +45,23 @@ class _TodoFormSheetState extends ConsumerState<TodoFormSheet> {
         ? ref.watch(updateTodoMutation).isPending
         : ref.watch(createTodoMutation).isPending;
 
-    return AppFormSheet(
-      title: _isEditMode ? '${Terms.todo} 수정' : '새 ${Terms.todo} 만들기',
-      formKey: _formKey,
-      actions: AppFormActionBar(
-        submitLabel: _isEditMode ? '수정' : '생성',
-        onSubmit: _handleSubmit,
-        busy: isLoading,
-      ),
-      children: [
-        TextFormField(
-          controller: _titleController,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: '${Terms.todo} 제목',
-            hintText: '${Terms.todo.withJosa('을', '를')} 입력하세요',
-            hintMaxLines: 2,
-            prefixIcon: const Icon(Icons.task_alt),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return '${Terms.todo} 제목을 입력해주세요';
-            }
-            if (value.trim().length > 200) {
-              return '제목은 200자 이하로 입력해주세요';
-            }
-            return null;
-          },
-          textInputAction: TextInputAction.next,
-        ),
-        TextFormField(
-          controller: _descriptionController,
-          decoration: const InputDecoration(
-            label: Text('설명 (선택사항)', maxLines: 2),
-            hintText: '상세 설명을 입력하세요',
-            prefixIcon: Icon(Icons.notes),
-            alignLabelWithHint: true,
-          ),
-          maxLines: 3,
-          validator: (value) {
-            if (value != null && value.length > 500) {
-              return '설명은 500자 이하로 입력해주세요';
-            }
-            return null;
-          },
-          textInputAction: TextInputAction.done,
-        ),
-        TodoGroupField(
-          selectedId: _selectedGroupId,
-          onChanged: (id) => setState(() => _selectedGroupId = id),
-          locked: widget.defaultParentId != null,
-          pickerContent: _isEditMode ? todoGroupMoveNote(widget.todo!) : null,
-        ),
-        TodoFormStatusChips(
-          selected: _selectedStatus,
-          onChanged: (status) => setState(() => _selectedStatus = status),
-        ),
-        AppPickerField(
-          label: '마감일',
-          icon: Icons.calendar_today,
-          value: _selectedDeadline == null
-              ? null
-              : '${_selectedDeadline!.year}년 ${_selectedDeadline!.month}월 ${_selectedDeadline!.day}일',
-          placeholder: '선택 안 함',
-          onTap: () async {
-            final picked = await pickTodoDeadline(context, _selectedDeadline);
-            if (picked != null) setState(() => _selectedDeadline = picked);
-          },
-          onClear: () => setState(() => _selectedDeadline = null),
-        ),
-        TodoTagPicker(selectedTagIds: _selectedTagIds, onToggle: _toggleTag),
-      ],
+    return TodoFormSheetView(
+      todo: widget.todo,
+      defaultTodoGroupId: widget.defaultTodoGroupId,
+      groupLocked: widget.defaultParentId != null,
+      todoGroups: ref.watch(todoGroupsProvider),
+      tagGroups: ref.watch(tag_providers.tagTreeProvider),
+      busy: isLoading,
+      onSubmit: _handleSubmit,
+      onCreateTag: (groupId) => _createTag(context, ref, groupId: groupId),
     );
   }
 
-  void _toggleTag(String id, bool selected) {
-    setState(() {
-      if (selected) {
-        _selectedTagIds.add(id);
-      } else {
-        _selectedTagIds.remove(id);
-      }
-    });
-  }
-
-  /// 마감일 선택
-
   /// 폼 제출 처리
-  Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+  Future<void> _handleSubmit(TodoFormValues values) async {
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-    final values = (
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      status: _selectedStatus,
-      tagIds: _selectedTagIds.toList(),
-      deadline: _selectedDeadline,
-      todoGroupId: _selectedGroupId,
-    );
     try {
       if (_isEditMode) {
         if (!mounted) return;
@@ -227,4 +125,40 @@ Future<void> showTodoFormSheet(
       defaultTodoGroupId: defaultTodoGroupId,
     ),
   );
+}
+
+/// 새 태그 만들기. [groupId]를 주면 그 그룹을 기본으로 고른다.
+///
+/// 태그 그룹이 없으면 태그 그룹 폼을 먼저 열고, 태그 그룹이 생기면 그 그룹을 고른 채 태그 폼으로 잇는다.
+/// 태그 그룹 폼을 닫으면 아무것도 하지 않는다. 태그 목록을 아직 받지 못했으면 열지 않는다.
+/// 태그 목록 조회가 실패한 상태면 목록을 다시 받아 이어 가고, 또 실패하면 목록 자리의 오류 안내로 둔다.
+Future<void> _createTag(
+  BuildContext context,
+  WidgetRef ref, {
+  String? groupId,
+}) async {
+  final tree = ref.read(tag_providers.tagTreeProvider);
+  var groups = tree.value;
+  try {
+    if (tree.hasError) {
+      ref.invalidate(tag_providers.tagGroupsRawProvider);
+      groups = await ref.read(tag_providers.tagTreeProvider.future);
+      if (!context.mounted) return;
+    }
+    if (groups == null) return;
+    if (groups.isEmpty) {
+      await showTagGroupFormSheet(context);
+      if (!context.mounted) return;
+      groups = await ref.read(tag_providers.tagTreeProvider.future);
+      if (!context.mounted || groups.isEmpty) return;
+    }
+  } catch (_) {
+    return;
+  }
+  await showTagFormSheet(
+    context,
+    defaultGroupId: groupId ?? groups.first.group.id,
+  );
+  // 새로 만든 태그를 목록에 반영한다
+  if (context.mounted) ref.invalidate(tag_providers.tagTreeProvider);
 }

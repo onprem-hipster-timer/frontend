@@ -3,14 +3,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/timer/presentation/providers/break_timer_provider.dart';
 import 'package:momeet/features/timer/presentation/providers/timer_providers.dart';
 import 'package:momeet/features/timer/presentation/utils/timer_actions.dart';
-import 'package:momeet/features/timer/presentation/widgets/timer_control_button.dart';
+import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_controls_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
-/// 대시보드 맨 아래의 조작 버튼
+/// 대시보드 맨 아래의 조작 버튼. 모양은 [TimerDashboardControlsView]
 ///
-/// 휴식 중이면 휴식 끝내기(끝났으면 확인)를, 아니면 [TimerControlButton]을 둔다.
 /// 일시정지·재개·연장은 그 타이머를 대시보드가 계속 보이게 고른다.
 class TimerDashboardControls extends ConsumerWidget {
   const TimerDashboardControls({
@@ -39,27 +38,19 @@ class TimerDashboardControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
     // 휴식 중에도 구독해 둔다. 놓으면 컨트롤러가 정리되어 진행 중이던 명령 상태를 잃는다
     final starting = ref.watch(timerControllerProvider).isLoading;
-    if (onBreak) {
-      return FloatingActionButton(
-        onPressed: () => ref.read(breakTimerProvider.notifier).end(),
-        tooltip: breakOver ? '확인' : '${Terms.rest} 끝내기',
-        backgroundColor: colorScheme.tertiary,
-        child: Icon(
-          breakOver ? Icons.check : Icons.stop,
-          color: colorScheme.onTertiary,
-        ),
-      );
-    }
-    final controller = ref.read(timerControllerProvider.notifier);
     final id = activeTimer?.id;
-    return TimerControlButton(
+    // 컨트롤러는 누를 때 읽는다
+    TimerController controller() => ref.read(timerControllerProvider.notifier);
+    return TimerDashboardControlsView(
+      onBreak: onBreak,
+      breakOver: breakOver,
       activeTimer: activeTimer,
       starting: starting,
       timeUp: timeUp,
       breakSelected: breakSelected,
+      onEndBreak: () => ref.read(breakTimerProvider.notifier).end(),
       onStart: () =>
           startTimerFromSheet(context, ref, initialDuration: pendingDuration),
       onStartBreak: breakBlocked
@@ -68,15 +59,23 @@ class TimerDashboardControls extends ConsumerWidget {
                 .read(breakTimerProvider.notifier)
                 .start(pendingBreakDuration),
       onStop: () => _stop(context, ref),
-      onPause: () =>
-          _run(context, ref, '일시정지', () => controller.pauseTimer(timerId: id!)),
-      onResume: () =>
-          _run(context, ref, '재개', () => controller.resumeTimer(timerId: id!)),
+      onPause: () => _run(
+        context,
+        ref,
+        '일시정지',
+        () => controller().pauseTimer(timerId: id!),
+      ),
+      onResume: () => _run(
+        context,
+        ref,
+        '재개',
+        () => controller().resumeTimer(timerId: id!),
+      ),
       onExtend: () => _run(
         context,
         ref,
         '연장',
-        () => controller.extendTimer(timerId: id!, by: timerExtendStep),
+        () => controller().extendTimer(timerId: id!, by: timerExtendStep),
       ),
     );
   }

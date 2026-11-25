@@ -173,8 +173,47 @@ Rules enforced:
 | `unused_consumer_ref` | A `ConsumerWidget` or `ConsumerState` that never uses `ref` should be a `StatelessWidget` or `State` |
 | `prefer_media_query_aspect` | Use aspect accessors such as `MediaQuery.sizeOf(context)` instead of `MediaQuery.of(context).size` |
 | `prefer_when_or_null` | A `when` whose `loading` and `error` only return `null` should be `whenOrNull(data: …)` |
+| `require_widgetbook_use_case` | Public widgets in `lib/shared/ui/`, `lib/shared/widgets/`, and `lib/features/<feature>/presentation/widgets/` have a Widgetbook use case (see Widget Catalog below) |
+| `require_widgetbook_view` | Consumer widgets in the same folders have a `<Widget>View` in the neighbouring file `<widget file name>_view.dart` (see Widget Catalog below) |
 
 > To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
+
+### Widget Catalog (Widgetbook)
+
+`widgetbook/` is a catalog for viewing app widgets across the app themes, screen sizes, text scales and locales. Pushing to main deploys it to https://onprem-hipster-timer.github.io/frontend/ via `.github/workflows/widgetbook.yml`.
+
+```bash
+# The catalog imports app code, so run the app's code generation first
+fvm dart run build_runner build --delete-conflicting-outputs
+
+cd widgetbook
+fvm flutter pub get
+fvm dart run build_runner build   # lib/main.directories.g.dart
+fvm flutter run -d chrome
+```
+
+Every public, non-abstract widget under `lib/shared/ui/`, `lib/shared/widgets/`, or `lib/features/<feature>/presentation/widgets/` (including subfolders) must have a use case, except InheritedWidgets and Consumer widgets (checked by `require_widgetbook_use_case`). The use case goes in `widgetbook/lib/<shared or feature>/<same file name>.dart`, with subfolders flattened.
+
+A widget that reads providers (a Consumer widget) is split in two. The widget with the original name only reads providers and owns side effects such as requests and notices; the rendering lives in `<Widget>View` in the neighbouring file `<widget file name>_view.dart`, which takes only values and callbacks. `<Widget>View` does not import provider files or use `ref`, and the use case is written for `<Widget>View`. A `<Widget>View` that renders its own loading and error states takes an `AsyncValue`. State used only on screen, such as text fields and checkboxes, belongs to `<Widget>View`; state that comes from requests, such as submitting, belongs to the original widget. If a type `<Widget>View` needs is declared in a provider file, move it to `domain/` and re-export it from the provider file. `require_widgetbook_view` checks that `<Widget>View` exists. Do not split a widget whose rendering is only an assembly of widgets that already have use cases; put `// ignore: momeet_lints/require_widgetbook_view` on the line right above its class declaration instead.
+
+The catalog is also where planning and design look at screen elements and judge them. Show each widget the way a user meets it in the app.
+
+Adding a use case:
+
+1. In `widgetbook/lib/<shared or feature>/<widget file name>.dart`, add a top-level function annotated with `@widgetbook.UseCase(name: …, type: <Widget>, path: '[모임]/추천 시간')`. The `[…]` in `path` is the catalog category and the rest is a folder. `name` is what the element is called in the app's on-screen Korean wording; write knob `label`s the same way. A widget with a single use case is listed in the menu as `name (ClassName)`.
+2. Keep one use case per widget and take the states needed to judge it (empty, long text, error, disabled, narrow width, …) from `context.knobs`. Match the width and background the widget has in the app, and for widgets that change when tapped, hold the state in the use case so they react. The catalog is a public site, so example names and text must not be real people, and dates and times are fixed values.
+3. Run `fvm dart run build_runner build` in `widgetbook/` again. Generated files are not committed.
+
+The catalog provides app images, the timezone database and navigation (`widgetbook/lib/main.dart`). A tap that goes to an app screen shows a placeholder page naming that screen, and a sheet or dialog that closes itself is drawn again. Sheets, dialogs and pickers the app opens with `showApp…` open inside the preview in the selected theme and read the use case's `SampleProviderScope` values. If a use case needs its own router, use `PreviewRouter` (`widgetbook/lib/preview_router.dart`). Do not use `MaterialApp.router`; it rewrites the catalog site's URL.
+
+There is no catalog-wide `ProviderScope`. For a widget whose children read providers, wrap the use case in `SampleProviderScope(overrides: […])` (`widgetbook/lib/sample_provider_scope.dart`) and override every provider that tree reads with a fixed value. Reading a provider that is not overridden throws.
+
+```bash
+# Renders every use case on a 360x800 screen in light and dark mode and fails on any exception (overflow included). CI runs it too
+cd widgetbook && fvm flutter test
+```
+
+When you change dependencies in the root `pubspec.yaml`, also run `fvm flutter pub get` in `widgetbook/` and commit `widgetbook/pubspec.lock`. CI installs it with `--enforce-lockfile`.
 
 ---
 

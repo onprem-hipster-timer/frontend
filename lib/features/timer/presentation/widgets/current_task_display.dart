@@ -1,22 +1,22 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/timer/presentation/widgets/timer_share_sheet.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
 /// 현재 작업 표시 위젯
 ///
 /// 연결된 Todo가 있으면 제목 옆에 Todo 상태를 표시하고, 일시정지 중에는 그 자리에서 바꿀 수 있습니다.
-/// 바꾼 뒤 서버가 돌려준 Todo로 [onTodoChanged]를 부릅니다.
+/// 고른 상태로 [onTodoStatusSelected]를 부릅니다.
 /// 내 타이머면 제목 뒤에 공유 범위 버튼([TimerShareButton])을 둡니다.
 class CurrentTaskDisplay extends StatelessWidget {
   final TimerRead? timer;
-  final ValueChanged<TodoRead>? onTodoChanged;
+  final ValueChanged<TodoStatus>? onTodoStatusSelected;
 
   const CurrentTaskDisplay({
     super.key,
     required this.timer,
-    this.onTodoChanged,
+    this.onTodoStatusSelected,
   });
 
   @override
@@ -44,7 +44,10 @@ class CurrentTaskDisplay extends StatelessWidget {
       children: [
         if (todo != null) ...[
           if (timer!.status == TimerStatus.paused)
-            TodoStatusSelector(todo: todo, onChanged: onTodoChanged)
+            TodoStatusSelectorView(
+              status: todo.status,
+              onSelected: (status) => onTodoStatusSelected?.call(status),
+            )
           else
             Icon(
               todo.status.icon,

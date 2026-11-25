@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:momeet/features/todo/presentation/widgets/todo_status_selector.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
