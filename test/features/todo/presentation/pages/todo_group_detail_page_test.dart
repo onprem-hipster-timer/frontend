@@ -123,6 +123,38 @@ void main() {
     expect(find.text('정리'), findsOneWidget);
   });
 
+  Finder viewTodoAction() => find.widgetWithText(SnackBarAction, '할 일 보기');
+
+  testWidgets('이 그룹에 할 일을 만들면 이미 보이므로 알림에 할 일 보기가 없다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.byTooltip('이 목록에 할 일 추가'));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.text('생성'));
+
+    expect(find.text('할 일이 생성되었습니다'), findsOneWidget);
+    expect(find.byType(SnackBarAction), findsNothing);
+  });
+
+  testWidgets('추가 시트에서 다른 그룹을 골라 만들면 알림의 할 일 보기로 그 그룹 화면에 간다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.byTooltip('이 목록에 할 일 추가'));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.byType(TodoGroupFieldView));
+    await tapVisible(tester, find.widgetWithText(ListTile, '학습'));
+    await tapVisible(tester, find.text('생성'));
+
+    expect(todos.created.single.todoGroupId, 'group-study');
+    expect(find.text('정리'), findsNothing);
+    expect(location(), '/todo/group-work');
+
+    await tester.tap(viewTodoAction());
+    await tester.pumpAndSettle();
+
+    expect(location(), '/todo/group-study');
+    expect(find.text('정리'), findsOneWidget);
+    expect(find.text('다른 그룹 일'), findsOneWidget);
+  });
+
   testWidgets('할 일을 누르면 그 할 일의 수정 시트를 연다', (tester) async {
     await pumpPage(tester);
     await tapVisible(tester, find.text('회의 준비'));
@@ -142,6 +174,7 @@ void main() {
     expect(find.text('보고서'), findsNothing);
     expect(find.text('회의 준비'), findsOneWidget);
     expect(find.text("'학습' 해야 할 일 목록으로 옮겼습니다"), findsOneWidget);
+    expect(find.byType(SnackBarAction), findsNothing);
     expect(todos.readGroupIds.last, ['group-work']);
     expect(
       [

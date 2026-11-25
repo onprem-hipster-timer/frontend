@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/todo/presentation/pages/todo_dashboard_page.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_form/todo_group_field_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_group_card.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
@@ -13,6 +14,7 @@ import '../../../../helpers/sheet_host.dart';
 
 void main() {
   late FakeTodosClient todos;
+  late GoRouter router;
 
   setUp(() {
     todos = FakeTodosClient(const [], [
@@ -25,7 +27,7 @@ void main() {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final router = GoRouter(
+    router = GoRouter(
       initialLocation: AppRoute.todo.path,
       routes: [
         GoRoute(
@@ -78,6 +80,46 @@ void main() {
 
     expect(todos.created.single.title, '정리');
     expect(todos.created.single.todoGroupId, defaultTodoGroupId);
+  });
+
+  Finder viewTodoAction() => find.widgetWithText(SnackBarAction, '할 일 보기');
+
+  testWidgets('할 일을 만든 뒤 알림에 할 일 보기가 있고, 누르기 전에는 대시보드에 머문다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.byType(FloatingActionButton));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.text('생성'));
+
+    expect(find.text('할 일이 생성되었습니다'), findsOneWidget);
+    expect(viewTodoAction(), findsOneWidget);
+    expect(router.state.uri.path, AppRoute.todo.path);
+  });
+
+  testWidgets('닫힌 시트의 알림에서 할 일 보기를 누르면 새 할 일이 든 그룹 화면으로 간다', (tester) async {
+    await pumpPage(tester);
+    await tapVisible(tester, find.byType(FloatingActionButton));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.byType(TodoGroupFieldView));
+    await tapVisible(tester, find.widgetWithText(ListTile, '업무'));
+    await tapVisible(tester, find.text('생성'));
+    expect(find.text('새 할 일 만들기'), findsNothing);
+
+    await tester.tap(viewTodoAction());
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, '/todo/group-work');
+    expect(find.text('그룹 화면 group-work'), findsOneWidget);
+  });
+
+  testWidgets('할 일을 만들지 못하면 할 일 보기가 없다', (tester) async {
+    todos.writeError = Exception('서버 오류');
+    await pumpPage(tester);
+    await tapVisible(tester, find.byType(FloatingActionButton));
+    await tester.enterText(find.widgetWithText(TextFormField, '할 일 제목'), '정리');
+    await tapVisible(tester, find.text('생성'));
+
+    expect(find.textContaining('할 일 생성에 실패했습니다'), findsOneWidget);
+    expect(find.text('할 일 보기'), findsNothing);
   });
 
   testWidgets('그룹 목록을 받지 못해도 할 일 추가는 그룹 없이 보낸다', (tester) async {

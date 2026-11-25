@@ -77,8 +77,8 @@ String todoUpdatedMessage(
   return "'${target.name}' ${Terms.todoGroup.withJosa('으로', '로')} 옮겼습니다";
 }
 
-/// [values]로 할 일을 만든다(할 일 그룹이 없으면 서버가 기본 그룹에 넣는다). [parentId]를 주면 그 할 일의 하위로 만든다
-Future<void> createTodoFromForm(
+/// [values]로 할 일을 만들어 돌려준다(할 일 그룹이 없으면 서버가 기본 그룹에 넣는다). [parentId]를 주면 그 할 일의 하위로 만든다
+Future<TodoRead> createTodoFromForm(
   WidgetRef ref,
   TodoFormValues values, {
   String? parentId,
