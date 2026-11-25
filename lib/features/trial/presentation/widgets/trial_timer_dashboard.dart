@@ -1,12 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/features/timer/timer.dart'
     show TimerDashboardControlsView, TimerDashboardModel, TimerDashboardView;
+import 'package:momeet/features/trial/presentation/widgets/trial_inert.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 
 /// 체험하기의 타이머. 앱의 타이머 대시보드([TimerDashboardView])에 진행 중인 [timer]를 [remaining]만큼 남은
 /// 채로 보인다. 남은 시간이 0이면 앱처럼 시간 종료다.
 ///
-/// 누르는 것은 모두 반응하지 않는다. 작업 제목 옆 공유 설정처럼 앱의 데이터를 읽는 것이 있어 통째로 막는다
+/// 누르는 것은 포인터로도 키보드로도 스크린 리더로도 반응하지 않는다([TrialInert]). 작업 제목 옆 공유 설정처럼
+/// 앱의 데이터를 읽는 것이 있어 통째로 막는다
 class TrialTimerDashboard extends StatelessWidget {
   const TrialTimerDashboard({
     super.key,
@@ -34,7 +36,7 @@ class TrialTimerDashboard extends StatelessWidget {
     // 조작 단추(떠 있는 단추 둘)가 화면을 떠날 때 날아가지 않게 Hero를 끈다
     return HeroMode(
       enabled: false,
-      child: IgnorePointer(
+      child: TrialInert(
         child: TimerDashboardView(
           model: model,
           onFocusTimer: (_) {},
