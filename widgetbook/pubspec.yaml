@@ -27,6 +27,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
+  layout_audit:
+    path: ../packages/layout_audit
   widgetbook_generator: ^3.24.0
 
 flutter:

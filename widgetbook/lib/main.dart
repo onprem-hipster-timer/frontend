@@ -12,6 +12,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:widgetbook/widgetbook.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
+import 'edge_viewports.dart';
 import 'main.directories.g.dart';
 import 'preview_router.dart';
 
@@ -104,6 +105,7 @@ final widgetbookAddons = <WidgetbookAddon>[
     IosViewports.iPhone13,
     IosViewports.iPadAir4,
     MacosViewports.macbookPro,
+    ...edgeViewports,
   ]),
   ThemeAddon<ThemeData>(
     themes: [
