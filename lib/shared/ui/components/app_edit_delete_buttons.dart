@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/theme/app_theme.dart';
 
 /// 목록 줄 끝의 작은 '수정'·'삭제' 버튼 한 쌍. 삭제는 오류색이다.
 ///
@@ -23,7 +24,7 @@ class AppEditDeleteButtons extends StatelessWidget {
   /// 버튼 사이 8을 더한다.
   static double widthOf(BuildContext context) {
     final painter = TextPainter(
-      text: const TextSpan(text: '수정', style: _labelStyle),
+      text: TextSpan(text: '수정', style: _labelStyle),
       textScaler: MediaQuery.textScalerOf(context),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -32,7 +33,8 @@ class AppEditDeleteButtons extends StatelessWidget {
     return 2 * (44 + label) + 8;
   }
 
-  static const _labelStyle = TextStyle(fontSize: 12);
+  // 단추의 글자 스타일은 테마를 통째로 바꾸므로 앱 글꼴에서 시작한다
+  static final _labelStyle = AppTheme.font.copyWith(fontSize: 12);
 
   static final _style = OutlinedButton.styleFrom(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
