@@ -69,6 +69,16 @@
     });
   });
 
+  // ── 기능 미리보기: 그림은 배포 때 찍으므로, 없거나 받지 못하면 미리보기 칸째 숨긴다 ──
+  document.querySelectorAll('.bento-preview img').forEach(function (img) {
+    function hide() { img.parentElement.hidden = true; }
+    if (img.complete && img.naturalWidth === 0) {
+      hide();
+    } else {
+      img.addEventListener('error', hide);
+    }
+  });
+
   // ── Initial route ──
   if (m.isLanding) {
     showLanding();
