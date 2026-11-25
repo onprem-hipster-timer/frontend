@@ -12,18 +12,17 @@ import 'package:momeet/features/meeting/presentation/utils/meeting_participant_r
 import 'package:momeet/features/meeting/presentation/utils/meeting_run_highlight.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_schedule.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_account_panel.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_finish_slot.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_import_notice.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_problem.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_upgrade_prompt.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_guest_sheet.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_layout.dart';
+import 'package:momeet/features/meeting/presentation/widgets/meeting_member_body_view.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_link_panel.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_name_sheet.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_not_found.dart';
 import 'package:momeet/features/meeting/presentation/widgets/meeting_participants_panel.dart';
-import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
 
@@ -40,7 +39,8 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 못하면 [MeetingGuestProblem]이 까닭(약관 동의, 게스트를 받지 않음, 지워진 게스트)에 맞게 보인다.
 ///
 /// 추천 시간 카드에 마우스를 올리거나 누르면 격자의 그 칸을 강조한다([MeetingRunHighlight]).
-// ignore: momeet_lints/require_widgetbook_view
+///
+/// 모양은 [MeetingMemberBodyView]
 class MeetingMemberBody extends ConsumerStatefulWidget {
   const MeetingMemberBody({super.key, required this.meetingId, this.guest});
 
@@ -81,52 +81,30 @@ class _MeetingMemberBodyState extends ConsumerState<MeetingMemberBody> {
             }
             final board = state.board;
             final notifier = ref.read(provider.notifier);
-            final availability = MeetingAvailabilitySection(
-              meeting: board.meeting,
-              shading: board,
-              onPaint: notifier.paint,
-              highlight: _highlight,
-            );
-            // 넓으면 오른쪽 칸, 좁으면 격자 아래에 하나만 그린다
-            Widget slots({bool fill = false}) => KeyedSubtree(
-              key: _slotsKey,
-              child: MeetingSlotsPanel(
-                board: board,
-                fill: fill,
-                highlight: _highlight,
-                link: meetingLink(context, ref, meetingId),
-                onAddToCalendar: guest != null
-                    ? null
-                    : (run) => addMeetingRunToCalendar(context, board, run),
-              ),
-            );
-            final participants = _Participants(
+            return MeetingMemberBodyView(
               board: board,
-              meetingId: meetingId,
-              guest: guest,
-            );
-            final link = MeetingLinkPanel(
-              meetingId: meetingId,
-              title: board.meeting.title,
-              owner: board.ownedByMe,
-              level: board.meeting.visibilityLevel,
-            );
-            final account = _Account(meetingId: meetingId, guest: guest);
-            return MeetingLayout(
-              main: guest != null
-                  ? availability
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        MeetingGuestImportNotice(meetingId: meetingId),
-                        availability,
-                      ],
-                    ),
-              side: [account, link, participants],
-              sideFill: slots(fill: true),
-              header: account,
-              secondary: [slots()],
-              tertiary: [participants, link],
+              highlight: _highlight,
+              slotsKey: _slotsKey,
+              link: meetingLink(context, ref, meetingId),
+              onPaint: notifier.paint,
+              onAddToCalendar: guest != null
+                  ? null
+                  : (run) => addMeetingRunToCalendar(context, board, run),
+              account: _Account(meetingId: meetingId, guest: guest),
+              linkPanel: MeetingLinkPanel(
+                meetingId: meetingId,
+                title: board.meeting.title,
+                owner: board.ownedByMe,
+                level: board.meeting.visibilityLevel,
+              ),
+              participants: _Participants(
+                board: board,
+                meetingId: meetingId,
+                guest: guest,
+              ),
+              notice: guest != null
+                  ? null
+                  : MeetingGuestImportNotice(meetingId: meetingId),
               action: (pinned) => MeetingFinishSlot(
                 meetingId: meetingId,
                 slotsKey: _slotsKey,
