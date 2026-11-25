@@ -6,7 +6,7 @@ import 'package:momeet/shared/domain/terms.dart';
 const trialTitle = '체험하기';
 
 /// 체험하기를 보는 동안의 브라우저 탭 제목. web/demo.html의 <title>과 같다
-const trialDocumentTitle = '가입 없이 체험하기 - 모모밋';
+const trialDocumentTitle = '가입 없이 체험하기 | 모모밋';
 const trialSkip = '건너뛰기';
 
 /// 단계 표시('1/4'). 끝에는 두지 않는다
