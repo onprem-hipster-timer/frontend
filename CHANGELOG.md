@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 체험하기는 `https://momeet.date/demo`로도 열린다. 체험하기의 제목과 설명이 담긴 페이지가 앱을 띄워 바로 체험하기 화면을 연다. 체험하기를 보는 동안 브라우저 탭 제목도 이 페이지의 제목이다. 랜딩의 '체험하기'와 모임 소개 머리띠의 '체험하기'가 이 주소로 간다
 - 검색 엔진이 랜딩·모임 소개·체험하기 주소를 찾도록 `sitemap.xml`과 `robots.txt`를 둔다
 - 랜딩·모임 소개·체험하기 페이지는 공유 미리보기 이미지를 전체 주소(`https://momeet.date/preview.webp`)로 적고, 각 페이지의 주소를 `og:url`과 canonical로 밝힌다
+- 랜딩·모임 소개·체험하기 페이지에 구조화 데이터(JSON-LD)를 둔다. 랜딩은 사이트(`WebSite`)와 앱(`WebApplication`, 일정 관리·할 일·타이머·모임 시간 정하기), 모임 소개는 모임 시간 정하기 앱(`WebApplication`), 체험하기는 페이지(`WebPage`)다
 
 ---
 

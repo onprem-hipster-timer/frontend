@@ -124,6 +124,7 @@ Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 
 그 밖의 경로는 SPA(Single Page Application) 라우팅을 위해 파일이 없으면 `index.html`로 폴백합니다.
 `index.html`의 canonical은 `https://momeet.date/`이므로, `index.html`로 응답하는 앱 경로(`/login`, `/meetings/<모임 번호>`, 없는 경로 등)는 검색 엔진에 랜딩과 같은 주소로 잡힙니다.
 검색 엔진용 `sitemap.xml`(`/`·`/meet`·`/demo`)과 `robots.txt`는 `web/`에 있는 파일 그대로 내보냅니다. 공개 페이지를 더하면 `sitemap.xml`에도 적습니다.
+`index.html`·`meet.html`·`demo.html`의 `<head>`에 있는 구조화 데이터(`application/ld+json`)는 그 페이지의 제목·설명과 같은 글을 쓰므로, 제목이나 설명을 고치면 함께 고칩니다.
 앱의 해시 라우트로 쓴 모임 소개(`/#/meet`, 끝의 `/`·쿼리 포함)는 `web/landing/kratos-paths.js`가 앱이 뜨기 전이나 주소의
 해시가 바뀔 때 `/meet`(쿼리 그대로)로 바꿉니다.
 `flutter_service_worker.js`는 캐시 무효화를 위해 `Cache-Control: no-cache`로 설정합니다.
