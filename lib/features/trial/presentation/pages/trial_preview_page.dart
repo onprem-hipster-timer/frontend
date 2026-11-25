@@ -9,6 +9,7 @@ import 'package:momeet/features/trial/presentation/utils/trial_preview_kind.dart
 import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_calendar_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_inert.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_todo_row.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -22,8 +23,12 @@ const _timerMinHeight = 400.0;
 /// 랜딩의 기능 소개에 두는 미리보기 화면(`/demo/preview?kind=<종류>`). 배포 때 이 화면을 찍어 그림으로 둔다.
 ///
 /// 체험하기와 같은 견본([trialStart])으로 앱의 위젯 하나를 화면 가득 그린다: 견본 일정이 든 두 주의 달력, 시험에서
-/// 바꾼 할 일 한 줄, 그 할 일로 시작한 타이머. 머리띠나 안내 없이 앱의 밝은 테마로만 그리고(랜딩이 밝다), 무엇도
+/// 바꾼 할 일 한 줄, 그 할 일로 시작한 타이머, 견본 약속으로 만든 모임의 모임 화면 그림([TrialMeetingPreview]).
+/// 체험하기의 머리띠나 안내 없이 앱의 밝은 테마로만 그리고(랜딩이 밝다), 무엇도
 /// 반응하지 않는다([TrialInert]). 앱의 데이터 Provider와 서버는 쓰지 않는다.
+///
+/// 모임 화면 그림은 폭 360 휴대폰 화면을 칸의 폭에 맞게 줄이고 칸 높이만큼 위에서부터 보인다. 격자와 추천 시간
+/// 제목까지 들려면 칸의 높이가 폭의 2.2배는 되어야 한다(test/landing/landing_previews_markup_test.dart).
 ///
 /// 첫 화면 뒤에 받는 글꼴 굵기([fontWeights])를 기다려 그 글꼴로 한 프레임을 그린 뒤 [onReady]로 종류의 이름을
 /// 알린다. 굵기를 받지 못해도 알린다.
@@ -59,6 +64,8 @@ class _TrialPreviewPageState extends State<TrialPreviewPage> {
   ).openExam().convert().openTodo().startTimer(defaultFocusDuration);
 
   late final _timer = _flow.timer!.copyWith(elapsedTime: _elapsed.inSeconds);
+
+  late final _meeting = trialMeeting(_flow);
 
   @override
   void initState() {
@@ -108,6 +115,10 @@ class _TrialPreviewPageState extends State<TrialPreviewPage> {
                   timer: _timer,
                   remaining: defaultFocusDuration - _elapsed,
                 ),
+              ),
+              TrialPreviewKind.meeting => TrialMeetingPreview(
+                board: _meeting,
+                email: trialMeetingEmail,
               ),
             },
           ),

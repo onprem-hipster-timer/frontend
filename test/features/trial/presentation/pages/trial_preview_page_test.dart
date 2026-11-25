@@ -18,13 +18,18 @@ import 'package:momeet/features/timer/presentation/widgets/timer_dashboard_view.
 import 'package:momeet/features/timer/presentation/widgets/timer_dial.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_status_selector_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/editable_todo_tree_tile_view.dart';
+import 'package:momeet/features/meeting/meeting.dart'
+    show MeetingMemberBodyView;
+import 'package:momeet/features/meeting/presentation/widgets/meeting_availability_section.dart';
 import 'package:momeet/features/trial/domain/trial_flow.dart';
 import 'package:momeet/features/trial/presentation/pages/trial_preview_page.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_preview_kind.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_inert.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 /// 시험은 12월 2일(수), 약속은 사흘 전이 앞 달이라 사흘 뒤 12월 5일(토)
 final _now = DateTime(2026, 11, 25, 10);
@@ -51,6 +56,14 @@ const _sizes = {
     Size(360, 380),
     Size(480, 300),
     Size(480, 440),
+  ],
+  // 높이가 폭의 2.2배부터
+  TrialPreviewKind.meeting: [
+    Size(272, 599),
+    Size(304, 672),
+    Size(360, 800),
+    Size(480, 1056),
+    Size(480, 1100),
   ],
 };
 
@@ -141,9 +154,17 @@ bool _focusInPreview() {
       .isNotEmpty;
 }
 
-/// 위아래로 굴려야 보이는 것이 없다
+/// 위아래로 굴려야 보이는 것이 없다. 모임 화면 그림은 화면의 위쪽만 보이는 그림이라 그 안은 보지 않는다
 void _expectNothingScrolledAway(WidgetTester tester) {
+  final inPicture = find
+      .descendant(
+        of: find.byType(TrialMeetingPreview),
+        matching: find.byType(Scrollable),
+      )
+      .evaluate()
+      .toSet();
   for (final element in find.byType(Scrollable).evaluate()) {
+    if (inPicture.contains(element)) continue;
     final position = (element as StatefulElement).state as ScrollableState;
     if (position.position.axis == Axis.vertical) {
       expect(position.position.maxScrollExtent, 0);
@@ -183,6 +204,7 @@ void _expectScheduleOnDay(WidgetTester tester, String title, DateTime day) {
 
 void main() {
   setUpAll(() async {
+    tz.initializeTimeZones();
     await initializeDateFormatting('ko');
   });
 
@@ -223,6 +245,24 @@ void main() {
                     reason: text,
                   );
                 }
+              case TrialPreviewKind.meeting:
+                expect(find.byType(MeetingMemberBodyView), findsOneWidget);
+                expect(
+                  _shown(tester, find.byType(MeetingAvailabilitySection)),
+                  hasLength(1),
+                );
+                for (final text in [trialDinnerTitle, '추천 시간']) {
+                  expect(
+                    _shown(tester, find.text(text)),
+                    hasLength(1),
+                    reason: text,
+                  );
+                }
+                // 그림은 칸의 폭을 채운다
+                expect(
+                  tester.getRect(find.byType(TrialMeetingPreview)).width,
+                  size.width - 16,
+                );
               case TrialPreviewKind.timer:
                 expect(find.byType(TimerDashboardView), findsOneWidget);
                 expect(_shown(tester, find.byType(TimerDial)), hasLength(1));
@@ -308,9 +348,12 @@ void main() {
         final semantics = tester.ensureSemantics();
         await _open(tester, kind, size: size);
 
+        final read = kind == TrialPreviewKind.meeting
+            ? trialMeetingPreviewLabel
+            : trialExamTitle;
         expect(
           find.semantics.byPredicate(
-            (node) => node.getSemanticsData().label.contains(trialExamTitle),
+            (node) => node.getSemanticsData().label.contains(read),
           ),
           findsAny,
         );
@@ -326,7 +369,7 @@ void main() {
       });
     }
 
-    testWidgets('세 미리보기를 차례로 열어도 앱의 프로바이더는 하나도 만들어지지 않는다', (tester) async {
+    testWidgets('미리보기를 종류마다 차례로 열어도 앱의 프로바이더는 하나도 만들어지지 않는다', (tester) async {
       final created = _Created();
       for (final kind in TrialPreviewKind.values) {
         await _open(tester, kind, observers: [created]);
@@ -384,7 +427,10 @@ void main() {
         Brightness.dark,
         reason: '앱은 어두운 테마다',
       );
-      final inside = Theme.of(tester.element(find.text(trialExamTitle).first));
+      final sample = kind == TrialPreviewKind.meeting
+          ? trialDinnerTitle
+          : trialExamTitle;
+      final inside = Theme.of(tester.element(find.text(sample).first));
       expect(inside.brightness, Brightness.light, reason: kind.name);
       expect(
         tester

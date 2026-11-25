@@ -13,6 +13,8 @@ import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/providers/api_providers.dart';
 import 'package:momeet/shared/widgets/scaffold_with_nav.dart';
 
+import 'package:timezone/data/latest.dart' as tz;
+
 import '../../helpers/fake_rest_clients.dart';
 import '../../helpers/kratos_mocks.dart';
 
@@ -23,6 +25,7 @@ import '../../helpers/kratos_mocks.dart';
 void main() {
   setUpAll(() async {
     registerKratosFallbacks();
+    tz.initializeTimeZones();
     await initializeDateFormatting('ko_KR');
   });
 

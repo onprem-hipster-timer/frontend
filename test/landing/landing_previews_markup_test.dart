@@ -20,11 +20,21 @@ void main() {
     TrialPreviewKind.calendar: (200, 260),
     TrialPreviewKind.todo: (88, 200),
     TrialPreviewKind.timer: (300, 460),
+    TrialPreviewKind.meeting: (599, 1100),
   };
 
-  test('미리보기 칸의 종류는 미리보기 화면이 아는 이름이고 세 종류가 모두 있다', () {
-    final kinds = slots.map((tag) => attr(tag, 'data-preview')).toSet();
-    expect(kinds, TrialPreviewKind.values.map((k) => k.name).toSet());
+  // 모임 화면 그림은 폭 360 휴대폰 화면을 칸의 폭에 맞게 줄이므로, 격자와 추천 시간 제목까지 들려면 높이가 폭의
+  // 이만큼은 되어야 한다
+  const meetingMinRatio = 2.2;
+
+  // 랜딩의 기능 소개 카드마다 있는 종류
+  const bentoKinds = {'calendar', 'todo', 'timer'};
+
+  final kinds = slots.map((tag) => attr(tag, 'data-preview')).toSet();
+
+  test('미리보기 칸의 종류는 미리보기 화면이 아는 이름이고 기능 소개의 세 종류가 모두 있다', () {
+    expect(TrialPreviewKind.values.map((k) => k.name), containsAll(kinds));
+    expect(kinds, containsAll(bentoKinds));
   });
 
   test('미리보기 칸마다 미리보기 화면이 그릴 수 있는 정수 폭·높이가 있다', () {
@@ -37,12 +47,19 @@ void main() {
       expect(height, isNotNull, reason: tag);
       expect(width, inInclusiveRange(widths.$1, widths.$2), reason: tag);
       expect(height, inInclusiveRange(minHeight, maxHeight), reason: tag);
+      if (kind == TrialPreviewKind.meeting) {
+        expect(
+          height,
+          greaterThanOrEqualTo(width! * meetingMinRatio),
+          reason: tag,
+        );
+      }
     }
   });
 
   test('미리보기 그림에는 무엇을 보이는지 적은 대체 글이 있다', () {
     final images = slots.where((tag) => tag.startsWith('<img'));
-    expect(images, hasLength(TrialPreviewKind.values.length));
+    expect(images, hasLength(kinds.length));
     for (final tag in images) {
       expect(attr(tag, 'alt')?.trim(), isNotEmpty, reason: tag);
     }
