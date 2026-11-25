@@ -174,6 +174,7 @@ Rules enforced:
 | `prefer_media_query_aspect` | Use aspect accessors such as `MediaQuery.sizeOf(context)` instead of `MediaQuery.of(context).size` |
 | `prefer_when_or_null` | A `when` whose `loading` and `error` only return `null` should be `whenOrNull(data: …)` |
 | `require_widgetbook_use_case` | Public widgets in `lib/shared/ui/`, `lib/shared/widgets/`, and `lib/features/<feature>/presentation/widgets/` have a Widgetbook use case (see Widget Catalog below) |
+| `require_widgetbook_view` | Consumer widgets in the same folders have a `<Widget>View` in the neighbouring file `<widget file name>_view.dart` (see Widget Catalog below) |
 
 > To allow a single line, use `// ignore: momeet_lints/<rule>`. Restart the IDE's analysis server after changing the plugin code.
 
@@ -193,7 +194,7 @@ fvm flutter run -d chrome
 
 Every public, non-abstract widget under `lib/shared/ui/`, `lib/shared/widgets/`, or `lib/features/<feature>/presentation/widgets/` (including subfolders) must have a use case, except InheritedWidgets and Consumer widgets (checked by `require_widgetbook_use_case`). The use case goes in `widgetbook/lib/<shared or feature>/<same file name>.dart`, with subfolders flattened.
 
-A widget that reads providers (a Consumer widget) is split in two. The widget with the original name only reads providers and owns side effects such as requests and notices; the rendering lives in `<Widget>View` in the neighbouring file `<widget file name>_view.dart`, which takes only values and callbacks. `<Widget>View` does not import provider files or use `ref`, and the use case is written for `<Widget>View`. A `<Widget>View` that renders its own loading and error states takes an `AsyncValue`. State used only on screen, such as text fields and checkboxes, belongs to `<Widget>View`; state that comes from requests, such as submitting, belongs to the original widget. If a type `<Widget>View` needs is declared in a provider file, move it to `domain/` and re-export it from the provider file. Do not split a widget whose rendering is only an assembly of widgets that already have use cases.
+A widget that reads providers (a Consumer widget) is split in two. The widget with the original name only reads providers and owns side effects such as requests and notices; the rendering lives in `<Widget>View` in the neighbouring file `<widget file name>_view.dart`, which takes only values and callbacks. `<Widget>View` does not import provider files or use `ref`, and the use case is written for `<Widget>View`. A `<Widget>View` that renders its own loading and error states takes an `AsyncValue`. State used only on screen, such as text fields and checkboxes, belongs to `<Widget>View`; state that comes from requests, such as submitting, belongs to the original widget. If a type `<Widget>View` needs is declared in a provider file, move it to `domain/` and re-export it from the provider file. `require_widgetbook_view` checks that `<Widget>View` exists. Do not split a widget whose rendering is only an assembly of widgets that already have use cases; put `// ignore: momeet_lints/require_widgetbook_view` on the line right above its class declaration instead.
 
 The catalog is also where planning and design look at screen elements and judge them. Show each widget the way a user meets it in the app.
 

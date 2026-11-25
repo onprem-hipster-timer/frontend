@@ -12,6 +12,7 @@ import 'package:momeet/features/meeting/presentation/providers/meeting_providers
 /// 화면을 열면 본문이 초점을 받아 격자를 누르지 않아도 키를 받는다. 초점이 본문 밖(머리띠)으로 가면 본문을 누를 때
 /// 다시 받는다. 본문 안의 카드·단추에 초점이 있어도 받고, 시트·대화상자에 초점이 있으면(글 칸 포함) 그쪽이 받는다.
 /// 본문을 누르고 있는 동안(끌어 칠하는 중)과 게스트가 거절되어 칠할 수 없는 동안은 아무것도 하지 않는다.
+// ignore: momeet_lints/require_widgetbook_view
 class MeetingPaintKeys extends ConsumerStatefulWidget {
   const MeetingPaintKeys({
     super.key,

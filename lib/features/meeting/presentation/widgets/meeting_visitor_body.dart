@@ -25,6 +25,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 보고 만져 보게 로그인 상자를 두지 않는다: 화면 아래에 '내 시간 입력하기'를 붙여 두고, 그것을 누르거나
 /// 칠하려 하면 그때 요청 시트([showMeetingLoginRequest])를 올린다. 공개가 아니거나 없는 모임은 같은
 /// '모임을 찾을 수 없습니다'와 로그인이다.
+// ignore: momeet_lints/require_widgetbook_view
 class MeetingVisitorBody extends ConsumerStatefulWidget {
   const MeetingVisitorBody({super.key, required this.meetingId});
 

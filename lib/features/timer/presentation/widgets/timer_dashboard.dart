@@ -33,6 +33,7 @@ const timerWideLayoutMinWidth = 600.0;
 /// 새 작업을 시작합니다. 휴식 중에는 갤러리와 '새 타이머' 칩이 없습니다.
 /// 둘 다 없으면 작업·휴식을 고르고 다이얼을 끌거나 시계를 눌러 '시간 정하기'에서 각각의 시간을 초 단위로 고릅니다.
 /// 휴식은 서버에 보내지 않고 바로 시작합니다.
+// ignore: momeet_lints/require_widgetbook_view
 class TimerDashboard extends ConsumerStatefulWidget {
   const TimerDashboard({
     super.key,

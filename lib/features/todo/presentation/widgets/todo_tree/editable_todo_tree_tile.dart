@@ -24,6 +24,7 @@ const double kDraggingOpacity = 0.5;
 ///
 /// 누르면 선택하고 [onTap]을 부른다. 상태 메뉴·수정·삭제·타이머 시작을 두고,
 /// 길게 눌러 다른 줄 위에 놓으면 그 하위로 옮긴다(자기 하위 위에는 놓을 수 없다).
+// ignore: momeet_lints/require_widgetbook_view
 class EditableTodoTreeTile extends ConsumerWidget {
   const EditableTodoTreeTile({
     super.key,

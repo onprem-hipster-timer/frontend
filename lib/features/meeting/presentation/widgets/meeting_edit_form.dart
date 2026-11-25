@@ -24,6 +24,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 날이 빠질 때 저장 전에 한 줄로 알린다. 맨 아래 '모임 삭제'는 확인한 뒤 지우고 처음 화면으로 간다.
 ///
 /// 테스트: test/features/meeting/presentation/pages/meeting_edit_page_test.dart
+// ignore: momeet_lints/require_widgetbook_view
 class MeetingEditForm extends ConsumerStatefulWidget {
   const MeetingEditForm({super.key, required this.source});
 

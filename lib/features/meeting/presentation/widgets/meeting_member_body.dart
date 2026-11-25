@@ -40,6 +40,7 @@ import 'package:momeet/shared/ui/ui.dart';
 /// 못하면 [MeetingGuestProblem]이 까닭(약관 동의, 게스트를 받지 않음, 지워진 게스트)에 맞게 보인다.
 ///
 /// 추천 시간 카드에 마우스를 올리거나 누르면 격자의 그 칸을 강조한다([MeetingRunHighlight]).
+// ignore: momeet_lints/require_widgetbook_view
 class MeetingMemberBody extends ConsumerStatefulWidget {
   const MeetingMemberBody({super.key, required this.meetingId, this.guest});
 

@@ -41,7 +41,7 @@ class RequireWidgetbookUseCase extends AnalysisRule {
 
 /// [path](패키지 상대 경로)의 use case가 있을 `widgetbook/lib/` 아래 묶음 이름.
 /// 대상 폴더 밖이면 null.
-String? _group(String path) {
+String? widgetbookGroup(String path) {
   final parts = path.split('/');
   if (parts.length > 3 &&
       parts[0] == 'lib' &&
@@ -59,7 +59,8 @@ String? _group(String path) {
   return null;
 }
 
-bool _isConsumerWidget(InterfaceElement element) => element.allSupertypes.any(
+/// Riverpod Consumer 위젯(ConsumerWidget·ConsumerStatefulWidget 하위)인지.
+bool isConsumerWidget(InterfaceElement element) => element.allSupertypes.any(
   (t) =>
       t.element.name == 'ConsumerWidget' ||
       t.element.name == 'ConsumerStatefulWidget',
@@ -74,7 +75,7 @@ class _Visitor extends SimpleAstVisitor<void> {
   @override
   void visitCompilationUnit(CompilationUnit node) {
     final path = packageRelativePath(context);
-    final group = _group(path);
+    final group = widgetbookGroup(path);
     final root = context.package?.root;
     if (group == null || root == null) return;
     final fileName = path.split('/').last;
@@ -87,7 +88,7 @@ class _Visitor extends SimpleAstVisitor<void> {
       if (name.lexeme.startsWith('_')) continue;
       final element = declaration.declaredFragment?.element;
       if (element == null || !isBuiltWidgetType(element.thisType)) continue;
-      if (_isConsumerWidget(element)) continue;
+      if (isConsumerWidget(element)) continue;
       types ??= _useCaseTypes(root.getFile(useCasePath));
       if (types.contains(name.lexeme)) continue;
       rule.reportAtToken(name, arguments: [name.lexeme, useCasePath]);

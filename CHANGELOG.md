@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Tooling
 - 린트 `require_widgetbook_use_case`: `lib/shared/ui/`·`lib/shared/widgets/`·`lib/features/<기능>/presentation/widgets/`의 공개 위젯(InheritedWidget·Consumer 위젯 제외)은 `widgetbook/lib/<shared 또는 기능>/<같은 파일 이름>`에 `@widgetbook.UseCase(type: 위젯)`이 있어야 한다
+- 린트 `require_widgetbook_view`: 같은 폴더의 Consumer 위젯은 옆 파일 `<위젯 파일 이름>_view.dart`에 `<위젯>View`가 있어야 한다
 - 위젯 카탈로그에 이 린트가 보는 위젯을 모두 담는다: 공통, 로그인·회원가입, 마이페이지, 태그 관리, 달력, 할 일, 타이머, 모임. 분류 아래를 폴더로 나누고(공통: 상태 안내·입력 양식·버튼·확인 창·화면 틀, 모임: 모임 만들기·내 시간 선택하기·추천 시간·참여자·들어오기·계정·화면 틀), use case가 하나인 위젯은 메뉴에 'use case 이름 (클래스 이름)'으로 보인다
   - 카탈로그에서 앱 이미지와 시간대 데이터를 쓴다. 앱 화면으로 가는 누르기는 어느 화면이 열리는지 알리는 안내 화면을 띄우고, 스스로 닫는 시트·확인 창은 다시 그린다. 앱이 여는 시트·확인 창·고르기는 미리보기 안에서 고른 테마로 열린다
   - Provider를 읽는 위젯은 Provider 읽기와 부수 효과를 맡는 원래 위젯과, 값과 콜백만 받아 그리는 `<위젯>View`(`<위젯 파일 이름>_view.dart`)로 나누고 `<위젯>View`를 카탈로그에 담는다: 마이페이지의 프로필·활동 요약·사용한 태그·내 모임·회원 탈퇴 확인 창, 할 일과 태그의 입력 시트·상태 메뉴·목록 칸·태그 고르기, 달력 본체·일정 입력 시트·보기 설정, 타이머 기록·조작 단추·시작 시트, 구글 로그인 단추·약관 동의 줄, 시간대 고르기, 모임의 링크·로그인 고르기·게스트 입력·닉네임 시트

@@ -18,6 +18,7 @@ import 'package:momeet/shared/domain/terms.dart';
 /// 새 타이머를 시작하는 동안에는 누를 수 없다.
 ///
 /// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
+// ignore: momeet_lints/require_widgetbook_view
 class TodoTimerStartButton extends ConsumerWidget {
   final TodoRead todo;
 
