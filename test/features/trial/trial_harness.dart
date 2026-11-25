@@ -15,6 +15,10 @@ import 'package:momeet/features/trial/presentation/pages/trial_page.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/shared/domain/terms.dart';
 import 'package:momeet/shared/ui/ui.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../../helpers/start_timer_sheet_driver.dart';
 
 /// 체험을 연 시각. 시험은 12월 2일, 약속은 12월 5일이다
 final trialTestNow = DateTime(2026, 11, 25, 10);
@@ -74,6 +78,14 @@ Finder headlineOf(TrialStep step) => find.text(
   }),
 );
 
+/// [finder]가 굴리지 않아도 머리띠 아래 화면 안에 보인다
+void expectShown(WidgetTester tester, Finder finder) {
+  final rect = tester.getRect(finder);
+  final height = tester.view.physicalSize.height / tester.view.devicePixelRatio;
+  expect(rect.top, greaterThanOrEqualTo(kToolbarHeight), reason: '$finder');
+  expect(rect.bottom, lessThanOrEqualTo(height), reason: '$finder');
+}
+
 /// 할 일로 바꾼 뒤의 큰 질문
 final convertedHeadline = find.text(keepWords(trialConvertedHeadline));
 
@@ -81,13 +93,14 @@ final convertedHeadline = find.text(keepWords(trialConvertedHeadline));
 final startedHeadline = find.text(keepWords(trialStartedHeadline));
 
 /// [size] 화면에 체험하기를 연다. 누를 것 강조가 끝없이 움직이지 않도록 애니메이션을 줄인 채로 연다([motion]이면
-/// 그대로)
+/// 그대로). 끝의 견본 모임을 그리도록 앱처럼 시간대 DB를 불러 둔다
 Future<void> openTrial(
   WidgetTester tester, {
   Size size = const Size(360, 800),
   List<ProviderObserver> observers = const [],
   bool motion = false,
 }) async {
+  if (!tz.timeZoneDatabase.isInitialized) tz.initializeTimeZones();
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -147,12 +160,11 @@ Future<void> goToTodo(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// 할 일 단계에서 타이머를 시작한다(시트의 '시작'까지)
+/// 할 일 단계에서 타이머를 시작한다(시트의 '시작'까지. 낮은 화면이면 시트를 굴려 누른다)
 Future<void> startTimer(WidgetTester tester) async {
   await tester.tap(find.byTooltip('${Terms.timer} 시작'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('시작'));
-  await tester.pumpAndSettle();
+  await tester.startFromSheet();
 }
 
 /// 타이머를 시작하고 알림의 '타이머 보기'로 타이머 단계까지. 시간이 지나가기 시작한 첫 프레임에서 멈춘다

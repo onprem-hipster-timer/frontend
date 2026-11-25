@@ -12,8 +12,13 @@ import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_elapsed
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tag_indicators.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_tree_tile_view.dart';
 import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_chip_view.dart';
+import 'package:momeet/features/meeting/meeting.dart'
+    show MeetingMemberBodyView, MeetingParticipantsPanel;
+import 'package:momeet/features/meeting/presentation/widgets/meeting_slots_panel.dart';
 import 'package:momeet/features/trial/domain/trial_flow.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_samples.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/domain/terms.dart';
@@ -184,7 +189,7 @@ void main() {
         await openTrial(tester, size: size);
         await goToEnd(tester);
 
-        await tester.ensureVisible(find.text(trialMeetingAction));
+        expectShown(tester, find.text(trialMeetingAction));
         await tester.tap(find.text(trialMeetingAction));
         await tester.pumpAndSettle();
         expect(find.text(meetingsScreen), findsOneWidget);
@@ -268,7 +273,7 @@ void main() {
     await goToEnd(tester);
 
     expect(headlineOf(TrialStep.end), findsOneWidget);
-    await tester.ensureVisible(find.text(trialSignUp));
+    expectShown(tester, find.text(trialSignUp));
     await tester.tap(find.text(trialSignUp));
     await tester.pumpAndSettle();
     expect(find.text(signupScreen), findsOneWidget);
@@ -291,7 +296,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(headlineOf(TrialStep.end), findsOneWidget);
-    await tester.ensureVisible(find.text(trialSignUp));
+    expectShown(tester, find.text(trialSignUp));
     await tester.tap(find.text(trialSignUp));
     await tester.pumpAndSettle();
     expect(find.text(signupScreen), findsOneWidget);
@@ -307,12 +312,78 @@ void main() {
       find.widgetWithText(OutlinedButton, trialMeetingAction),
       findsNothing,
     );
-    final divider = tester.getTopLeft(find.byType(Divider)).dy;
+    // 모임 화면 그림 속 구분선보다 앞에 있다
+    final divider = tester.getTopLeft(find.byType(Divider).first).dy;
     expect(tester.getBottomLeft(find.text(trialSignUp)).dy, lessThan(divider));
     expect(
       tester.getTopLeft(find.text(trialMeetingAction)).dy,
       greaterThan(divider),
     );
+  });
+
+  group('끝 화면은 모임 만들기 줄과 함께 모임 화면 그림을 둔다', () {
+    final sizes = {
+      ...trialSizes,
+      '작은 휴대폰': const Size(320, 568),
+      '가로로 눕힌 휴대폰': const Size(844, 390),
+    };
+    for (final MapEntry(key: label, value: size) in sizes.entries) {
+      testWidgets(
+        '$label에서는 가입하기와 모임 만들기 줄이 굴리지 않아도 보이고, 줄 밑이나 옆에 앱의 모임 화면 그림이 있다',
+        (tester) async {
+          await openTrial(tester, size: size);
+          await goToEnd(tester);
+
+          expect(tester.takeException(), isNull);
+          final board = trialMeeting(trialStart(trialTestNow));
+          final lead = find.text(trialMeetingLead);
+          final action = find.text(trialMeetingAction);
+          expectShown(tester, find.text(trialSignUp));
+          expectShown(tester, lead);
+          expectShown(tester, action);
+
+          final picture = find.byType(TrialMeetingPreview);
+          expect(picture, findsOneWidget);
+          for (final type in [
+            MeetingMemberBodyView,
+            MeetingSlotsPanel,
+            MeetingParticipantsPanel,
+          ]) {
+            expect(
+              find.descendant(of: picture, matching: find.byType(type)),
+              findsOneWidget,
+              reason: '$type',
+            );
+          }
+          final inPicture = [
+            trialDinnerTitle,
+            for (final participant in board.participants)
+              participant.displayName,
+          ];
+          for (final text in inPicture) {
+            expect(
+              find.descendant(of: picture, matching: find.text(text)),
+              findsWidgets,
+              reason: text,
+            );
+          }
+
+          // 가입하기 아래 구분선 밑에서 줄과 같은 높이부터 시작하고, 넓은 화면에서도 작은 그림이다
+          final rect = tester.getRect(picture);
+          expect(
+            rect.top,
+            greaterThan(tester.getBottomLeft(find.text(trialSignUp)).dy),
+          );
+          expect(rect.top, greaterThanOrEqualTo(tester.getTopLeft(lead).dy));
+          expect(rect.width, lessThanOrEqualTo(200));
+          expect(tester.binding.hasScheduledFrame, isFalse);
+
+          await tester.tap(action);
+          await tester.pumpAndSettle();
+          expect(find.text(meetingsScreen), findsOneWidget);
+        },
+      );
+    }
   });
 
   testWidgets('변환한 뒤 1분이 지나도 할 일 보기가 있는 알림이 남아 있다', (tester) async {

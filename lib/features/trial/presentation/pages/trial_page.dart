@@ -22,6 +22,7 @@ import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_calendar.dart';
 import 'package:momeet/features/trial/presentation/utils/trial_spotlights.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_end.dart';
+import 'package:momeet/features/trial/presentation/widgets/trial_meeting_preview.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_spotlight.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_timer_dashboard.dart';
 import 'package:momeet/features/trial/presentation/widgets/trial_todo_row.dart';
@@ -39,7 +40,8 @@ const _stageHeight = 440.0;
 ///
 /// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]).
 ///
-/// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와 모임 만들기를 둔다.
+/// 끝 전까지 머리띠 오른쪽에 단계 표시와 '건너뛰기'(가입 화면으로 간다)를 둔다. 끝에는 가입하기와 모임 만들기,
+/// 견본 모임([trialMeeting])의 모임 화면 그림을 둔다. 끝이 화면보다 길면 첫머리(한 줄과 가입하기)가 보이게 굴린다.
 ///
 /// 테스트: test/features/trial/presentation/pages/trial_page_test.dart
 class TrialPage extends StatelessWidget {
@@ -155,6 +157,7 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
           child: MeetingStepSwitcher(
             step: step,
             announcement: trialHeadline(flow),
+            revealStart: step == TrialStep.end,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -259,6 +262,10 @@ class _TrialStage extends StatelessWidget {
         recordedSeconds: flow.recordedSeconds,
         onSignUp: onSignUp,
         onCreateMeeting: onCreateMeeting,
+        meetingPreview: TrialMeetingPreview(
+          board: trialMeeting(flow),
+          email: trialMeetingEmail,
+        ),
       ),
     };
   }

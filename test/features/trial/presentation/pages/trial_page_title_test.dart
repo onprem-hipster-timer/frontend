@@ -51,7 +51,6 @@ void main() {
     await openTrial(tester);
     await goToEnd(tester);
 
-    await tester.ensureVisible(find.text(trialMeetingAction));
     await tester.tap(find.text(trialMeetingAction));
     await tester.pumpAndSettle();
     expect(find.text(meetingsScreen), findsOneWidget);
