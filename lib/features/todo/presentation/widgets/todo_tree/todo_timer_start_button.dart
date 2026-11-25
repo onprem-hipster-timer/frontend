@@ -5,6 +5,7 @@ import 'package:momeet/features/timer/presentation/providers/timer_providers.dar
     show defaultFocusDuration, timerControllerProvider;
 import 'package:momeet/features/timer/presentation/widgets/start_timer_sheet.dart';
 import 'package:momeet/features/todo/presentation/providers/timer_providers.dart';
+import 'package:momeet/features/todo/presentation/widgets/todo_tree/todo_timer_start_button_view.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/shared/ui/ui.dart';
@@ -17,8 +18,9 @@ import 'package:momeet/shared/domain/terms.dart';
 /// 실패하면 알린다. 시트에서 할 일을 여럿 고르면 할 일마다 시작하고, 시작하지 못한 할 일만 알린다.
 /// 새 타이머를 시작하는 동안에는 누를 수 없다.
 ///
+/// 모양은 [TodoTimerStartButtonView]
+///
 /// 테스트: test/features/todo/presentation/widgets/todo_tree_tile_timer_test.dart
-// ignore: momeet_lints/require_widgetbook_view
 class TodoTimerStartButton extends ConsumerWidget {
   final TodoRead todo;
 
@@ -83,11 +85,9 @@ class TodoTimerStartButton extends ConsumerWidget {
     );
     if (active) return const SizedBox.shrink();
 
-    return IconButton(
-      icon: const Icon(Icons.play_circle_outline),
-      tooltip: '${Terms.timer} 시작',
-      visualDensity: VisualDensity.compact,
-      onPressed: starting ? null : () => _start(context, ref),
+    return TodoTimerStartButtonView(
+      starting: starting,
+      onPressed: () => _start(context, ref),
     );
   }
 }
