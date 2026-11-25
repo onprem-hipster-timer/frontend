@@ -33,7 +33,7 @@ const _stageHeight = 440.0;
 ///
 /// 처음 온 사람이 입력 없이 앱의 한 바퀴를 따라간다([TrialFlow]): 달력의 시험 → 일정 상세에서 할 일로 변환 →
 /// 할 일에서 타이머 시작 → 타이머의 시간이 [trialTimerSweep] 만에 지나감 → 끝. 모임 만들기처럼 한 번에 한
-/// 단계씩, 다음에 누를 것을 말하는 한 줄 아래에 앱의 위젯을 그대로 두고, 누르면 앱처럼 시트와 알림(이동 단추
+/// 단계씩, 그 단계가 덜어 주는 것을 말하는 앞 줄과 다음에 누를 것을 말하는 한 줄 아래에 앱의 위젯을 그대로 두고, 누르면 앱처럼 시트와 알림(이동 단추
 /// 포함)을 띄운다. 단계가 바뀌면 떠 있던 알림을 닫는다. 서버에 보내지 않고 앱의 데이터 Provider도 읽지 않는다.
 ///
 /// 다음에 누를 컨트롤은 [TrialSpotlight]로 강조한다([trialSpotlightOf]).
@@ -88,11 +88,11 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
     if (!mounted || identical(next, _flow)) return;
     if (next.step != _flow.step) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    } else if (trialHeadline(next) != trialHeadline(_flow)) {
-      // 단계가 바뀌면 MeetingStepSwitcher가 알리고, 같은 단계에서 한 줄만 바뀌면 여기서 알린다
+    } else if (trialAnnouncement(next) != trialAnnouncement(_flow)) {
+      // 단계가 바뀌면 MeetingStepSwitcher가 알리고, 같은 단계에서 글만 바뀌면 여기서 알린다
       SemanticsService.sendAnnouncement(
         View.of(context),
-        trialHeadline(next),
+        trialAnnouncement(next),
         Directionality.of(context),
       );
     }
@@ -150,11 +150,14 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
           target: trialSpotlightOf(flow),
           child: MeetingStepSwitcher(
             step: step,
-            announcement: trialHeadline(flow),
+            announcement: trialAnnouncement(flow),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                MeetingQuestionPrompt(headline: trialHeadline(flow)),
+                MeetingQuestionPrompt(
+                  lead: trialLead(flow),
+                  headline: trialHeadline(flow),
+                ),
                 const SizedBox(height: 24),
                 MeetingStagger(
                   order: 2,
