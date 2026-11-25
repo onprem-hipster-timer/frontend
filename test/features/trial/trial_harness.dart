@@ -74,6 +74,23 @@ Finder headlineOf(TrialStep step) => find.text(
   }),
 );
 
+/// [step]을 처음 열었을 때의 앞 줄
+Finder leadOf(TrialStep step) => find.text(
+  keepWords(switch (step) {
+    TrialStep.calendar => trialCalendarLead,
+    TrialStep.schedule => trialScheduleLead,
+    TrialStep.todo => trialTodoLead,
+    TrialStep.timer => trialTimerLead,
+    TrialStep.end => trialEndLead,
+  }),
+);
+
+/// 할 일로 바꾼 뒤의 앞 줄
+final convertedLead = find.text(keepWords(trialConvertedLead));
+
+/// 타이머를 시작한 뒤의 앞 줄
+final startedLead = find.text(keepWords(trialStartedLead));
+
 /// 할 일로 바꾼 뒤의 큰 질문
 final convertedHeadline = find.text(keepWords(trialConvertedHeadline));
 
