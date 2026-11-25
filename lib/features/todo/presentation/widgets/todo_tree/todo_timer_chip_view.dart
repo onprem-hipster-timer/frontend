@@ -11,13 +11,20 @@ String _formatRemaining(Duration remaining) {
   return hours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
 }
 
-/// 할 일에 연결된 타이머의 남은 시간 칩. 누르면 타이머 화면으로 간다
+/// 할 일에 연결된 타이머의 남은 시간 칩. 누르면 [onPressed]를, 없으면 타이머 화면으로 간다
 ///
 /// 남은 시간이 0이면 에러 색이다.
 class TodoTimerChipView extends StatelessWidget {
-  const TodoTimerChipView({super.key, required this.remainingSeconds});
+  const TodoTimerChipView({
+    super.key,
+    required this.remainingSeconds,
+    this.onPressed,
+  });
 
   final int remainingSeconds;
+
+  /// 누르면 부른다. 체험하기 흐름이 타이머 화면 대신 제 단계로 가려고 받는다
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +46,7 @@ class TodoTimerChipView extends StatelessWidget {
         tooltip: '${Terms.timer.withJosa('으로', '로')} 이동',
         visualDensity: VisualDensity.compact,
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        onPressed: () => context.go(AppRoute.timer.path),
+        onPressed: onPressed ?? () => context.go(AppRoute.timer.path),
       ),
     );
   }

@@ -1,0 +1,46 @@
+import 'package:momeet/features/trial/domain/trial_flow.dart';
+import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
+import 'package:momeet/shared/api/rest/export.dart';
+
+TagRead _tag(String id, String name, String color, DateTime now) => TagRead(
+  id: id,
+  name: name,
+  color: color,
+  groupId: 'trial-tag-group',
+  createdAt: now,
+  updatedAt: now,
+);
+
+DateTime _at(DateTime day, int hour) =>
+    DateTime(day.year, day.month, day.day, hour);
+
+/// [now]에 시작하는 체험: 일주일 뒤 오전의 시험과 같은 달 저녁의 약속이 든 달력([trialDays]). 앱이 새 일정에
+/// 주는 상태처럼 둘 다 계획됨이다
+TrialFlow trialStart(DateTime now) {
+  final days = trialDays(DateTime(now.year, now.month, now.day));
+  final exam = days.exam;
+  final dinner = days.dinner;
+  return TrialFlow(
+    now: now,
+    exam: ScheduleRead(
+      id: 'trial-exam',
+      title: trialExamTitle,
+      startTime: _at(exam, 9),
+      endTime: _at(exam, 12),
+      state: ScheduleState.planned,
+      createdAt: now,
+      description: trialExamDescription,
+      tags: [_tag('trial-tag-study', trialExamTag, '#2E7D32', now)],
+    ),
+    dinner: ScheduleRead(
+      id: 'trial-dinner',
+      title: trialDinnerTitle,
+      startTime: _at(dinner, 19),
+      endTime: _at(dinner, 21),
+      state: ScheduleState.planned,
+      createdAt: now,
+      description: trialDinnerDescription,
+      tags: [_tag('trial-tag-friend', trialDinnerTag, '#8E24AA', now)],
+    ),
+  );
+}

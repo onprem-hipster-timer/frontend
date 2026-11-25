@@ -4,6 +4,7 @@
 
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/shared/ui/theme/app_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -67,4 +68,6 @@ void main() async {
       child: const MoMeetApp(),
     ),
   );
+  // 글꼴의 나머지 굵기는 첫 화면을 그린 뒤에 받는다
+  WidgetsBinding.instance.addPostFrameCallback((_) => loadAppFontWeights());
 }

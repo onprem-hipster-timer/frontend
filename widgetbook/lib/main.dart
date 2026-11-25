@@ -18,6 +18,10 @@ import 'preview_router.dart';
 
 void main() {
   runApp(const MoMeetWidgetbook());
+  // 앱 글꼴의 나머지 굵기는 첫 화면을 그린 뒤에 받는다
+  WidgetsBinding.instance.addPostFrameCallback(
+    (_) => loadAppFontWeights(package: 'momeet'),
+  );
 }
 
 /// 앱 위젯은 material_ui의 Theme·MaterialLocalizations를 찾으므로, Widgetbook의 MaterialApp·

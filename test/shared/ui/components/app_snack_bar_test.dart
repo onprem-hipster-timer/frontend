@@ -99,6 +99,24 @@ void main() {
     expect(find.text('둘'), findsNothing);
   });
 
+  testWidgets('시트 위 알림도 남기기를 고르면 1분이 지나도 남는다', (tester) async {
+    late BuildContext sheetContext;
+    await pumpSheetHost(
+      tester,
+      open: (context) => showAppSheet<void>(
+        context,
+        builder: (sheet) {
+          sheetContext = sheet;
+          return const SizedBox(height: 200);
+        },
+      ),
+    );
+
+    showAppSnackBar(sheetContext, '하나', persist: true);
+    await tester.pump(const Duration(minutes: 1));
+    expect(find.text('하나'), findsOneWidget);
+  });
+
   group('버튼이 있는 알림', () {
     late BuildContext page;
 
@@ -150,6 +168,28 @@ void main() {
       await tester.pump(const Duration(seconds: 30));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(SnackBarAction, '보기'), findsOneWidget);
+    });
+
+    testWidgets('남기기를 고르면 1분이 지나도 닫히지 않고, 버튼을 누르면 닫힌다', (tester) async {
+      var pressed = 0;
+      await open(tester);
+      showAppSnackBar(
+        page,
+        '만들었습니다',
+        actionLabel: '보기',
+        onAction: () => pressed++,
+        persist: true,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(SnackBarAction, '보기'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(SnackBarAction, '보기'));
+      await tester.pumpAndSettle();
+      expect(pressed, 1);
+      expect(find.byType(SnackBar), findsNothing);
     });
   });
 

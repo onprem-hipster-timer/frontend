@@ -157,7 +157,7 @@ class _GroupActions extends ConsumerWidget {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             minimumSize: const Size(0, 32),
-            textStyle: const TextStyle(fontSize: 12),
+            textStyle: AppTheme.font.copyWith(fontSize: 12),
           ),
         ),
 
@@ -172,7 +172,7 @@ class _GroupActions extends ConsumerWidget {
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             minimumSize: const Size(0, 32),
-            textStyle: const TextStyle(fontSize: 12),
+            textStyle: AppTheme.font.copyWith(fontSize: 12),
           ),
         ),
 
@@ -189,7 +189,7 @@ class _GroupActions extends ConsumerWidget {
             side: BorderSide(color: theme.colorScheme.error),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             minimumSize: const Size(0, 32),
-            textStyle: const TextStyle(fontSize: 12),
+            textStyle: AppTheme.font.copyWith(fontSize: 12),
           ),
         ),
       ],

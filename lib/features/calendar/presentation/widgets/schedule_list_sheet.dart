@@ -12,17 +12,21 @@ import 'package:momeet/shared/api/rest/export.dart';
 ///
 /// 다중 일정이 있는 날짜를 탭하거나 "+N more"를 탭했을 때
 /// 해당 날짜의 모든 일정을 리스트로 표시합니다.
-/// 일정을 선택하면 상세 페이지로 이동합니다.
+/// 일정을 선택하면 시트를 닫고 [onScheduleTap]을, 없으면 상세 페이지로 이동합니다.
 class ScheduleListSheet extends StatelessWidget {
   static final _headerDateFormat = DateFormat('M월 d일 (E)', 'ko');
 
   final DateTime date;
   final List<ScheduleRead> schedules;
 
+  /// 시트를 닫은 뒤 누른 일정으로 부른다. 체험하기 흐름이 상세 화면 대신 제 단계로 가려고 받는다
+  final ValueChanged<ScheduleRead>? onScheduleTap;
+
   const ScheduleListSheet({
     super.key,
     required this.date,
     required this.schedules,
+    this.onScheduleTap,
   });
 
   @override
@@ -84,7 +88,7 @@ class ScheduleListSheet extends StatelessWidget {
                 const Divider(height: 1, indent: 56),
             itemBuilder: (context, index) {
               final schedule = schedules[index];
-              return _ScheduleTile(schedule: schedule);
+              return _ScheduleTile(schedule: schedule, onTap: onScheduleTap);
             },
           ),
         ),
@@ -96,13 +100,14 @@ class ScheduleListSheet extends StatelessWidget {
   }
 }
 
-/// 일정 한 줄. 누르면 시트를 닫고 상세로 간다.
+/// 일정 한 줄. 누르면 시트를 닫고 [onTap]을, 없으면 상세로 간다.
 class _ScheduleTile extends StatelessWidget {
   static final _timeFormat = DateFormat('HH:mm');
 
-  const _ScheduleTile({required this.schedule});
+  const _ScheduleTile({required this.schedule, required this.onTap});
 
   final ScheduleRead schedule;
+  final ValueChanged<ScheduleRead>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +151,8 @@ class _ScheduleTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right, size: 20),
       onTap: () {
         Navigator.of(context).pop();
+        final onTap = this.onTap;
+        if (onTap != null) return onTap(schedule);
         context.goNamed(
           AppRoute.scheduleDetail.name,
           pathParameters: {'scheduleId': schedule.id},
@@ -155,19 +162,24 @@ class _ScheduleTile extends StatelessWidget {
   }
 }
 
-/// 일정 목록 바텀시트를 표시하는 헬퍼 함수
+/// 일정 목록 바텀시트를 표시하는 헬퍼 함수. 일정을 누르면 [onScheduleTap]을, 없으면 상세로 간다
 Future<void> showScheduleListSheet(
   BuildContext context,
   DateTime date,
-  List<ScheduleRead> schedules,
-) {
+  List<ScheduleRead> schedules, {
+  ValueChanged<ScheduleRead>? onScheduleTap,
+}) {
   return showAppSheet<void>(
     context,
     builder: (context) => ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.5,
       ),
-      child: ScheduleListSheet(date: date, schedules: schedules),
+      child: ScheduleListSheet(
+        date: date,
+        schedules: schedules,
+        onScheduleTap: onScheduleTap,
+      ),
     ),
   );
 }

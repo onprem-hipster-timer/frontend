@@ -52,6 +52,14 @@ enum AppRoute {
     allowsGuest: true,
   ),
 
+  // 체험하기 (탭 셸 밖). 서버에 보내지 않아 로그인 여부와 상관없이, 게스트도 머문다
+  trial(
+    path: '/demo',
+    requiresAuth: false,
+    authNeutral: true,
+    allowsGuest: true,
+  ),
+
   // 인증 필요 (보호된 페이지)
   // 약관 동의가 필요한 사용자는 다른 보호 페이지 대신 여기로 온다
   consent(path: '/consent'),

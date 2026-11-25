@@ -503,6 +503,74 @@ void main() {
     });
 
     // ----------------------------------------------------------
+    // 체험하기
+    // ----------------------------------------------------------
+    group('체험하기 (/demo)', () {
+      test('로그인하지 않은 사용자는 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('로그인한 사용자도 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+        );
+        expect(result, isNull);
+      });
+
+      test('약관 동의 전이거나 탈퇴 대기 중이어도 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: true,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+          consentRequired: true,
+          deletionPending: true,
+        );
+        expect(result, isNull);
+      });
+
+      test('게스트도 체험하기에 머문다', () {
+        final result = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.trial.path,
+          isGuest: true,
+          guestMeetingId: 'meeting-1',
+        );
+        expect(result, isNull);
+      });
+
+      test('인증을 확인하는 동안 체험하기를 열면 로딩 화면을 거쳐 체험하기로 돌아온다', () {
+        final loading = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: true,
+          matchedLocation: AppRoute.trial.path,
+        );
+        expect(
+          loading,
+          '${AppRoute.loading.path}?redirect=${Uri.encodeComponent(AppRoute.trial.path)}',
+        );
+        final back = authRedirect(
+          isAuthenticated: false,
+          isAuthLoading: false,
+          matchedLocation: AppRoute.loading.path,
+          redirectAfterLogin: AppRoute.trial.path,
+        );
+        expect(back, AppRoute.trial.path);
+      });
+
+      test('체험하기에 있다가 라우터를 새로 만들면 체험하기에서 이어 간다', () {
+        expect(signedOutStay(AppRoute.trial.path), AppRoute.trial.path);
+      });
+    });
+
+    // ----------------------------------------------------------
     // 인증 상태
     // ----------------------------------------------------------
     group('인증 상태', () {
