@@ -1,10 +1,9 @@
 import 'package:flutter/semantics.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
-import 'package:momeet/core/config/app_config.dart';
+import 'package:momeet/core/title/page_title.dart';
 import 'package:momeet/features/calendar/calendar.dart'
     show ScheduleDetailBody, ScheduleTimerSectionView, showTodoConvertedNotice;
 import 'package:momeet/features/meeting/meeting.dart'
@@ -52,7 +51,10 @@ class TrialPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 알림이 이 화면에만 뜨고 화면을 떠나면 함께 사라진다
-    return ScaffoldMessenger(child: _Trial(start: now()));
+    return PageTitle(
+      title: trialDocumentTitle,
+      child: ScaffoldMessenger(child: _Trial(start: now())),
+    );
   }
 }
 
@@ -76,25 +78,9 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
     animationBehavior: AnimationBehavior.preserve,
   )..addStatusListener(_swept);
 
-  /// 탭 제목의 색. 떠날 때 앱 제목으로 되돌리며 같은 색을 쓴다
-  late Color _titleColor;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _titleColor = Theme.of(context).primaryColor.withValues(alpha: 1);
-  }
-
   @override
   void dispose() {
     _sweep.dispose();
-    // 앱의 Title은 제목이 바뀔 때만 다시 알리므로 떠날 때 직접 되돌린다
-    SystemChrome.setApplicationSwitcherDescription(
-      ApplicationSwitcherDescription(
-        label: AppConfig.appName,
-        primaryColor: _titleColor.toARGB32(),
-      ),
-    );
     super.dispose();
   }
 
@@ -156,7 +142,7 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final flow = _flow;
     final step = flow.step;
-    final page = MeetingGlassScaffold(
+    return MeetingGlassScaffold(
       title: _TrialTitle(
         number: step == TrialStep.end ? null : step.index + 1,
         onSkip: _signUp,
@@ -194,13 +180,6 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
           ),
         ),
       ),
-    );
-    // 체험하기 위에 다른 화면(모임 만들기)이 열려 있으면 앱 제목을 보인다
-    final shown = ModalRoute.isCurrentOf(context) ?? true;
-    return Title(
-      title: shown ? trialDocumentTitle : AppConfig.appName,
-      color: _titleColor,
-      child: page,
     );
   }
 }

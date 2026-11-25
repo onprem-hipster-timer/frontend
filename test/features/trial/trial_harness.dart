@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/config/app_config.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_month_cell_view.dart';
 import 'package:momeet/features/meeting/presentation/utils/meeting_brush_texts.dart';
 import 'package:momeet/features/trial/domain/trial_flow.dart';
@@ -30,6 +31,7 @@ const trialSizes = {'휴대폰': Size(360, 800), '넓은 화면': Size(800, 1280
 Widget trialApp({List<ProviderObserver> observers = const []}) => ProviderScope(
   observers: observers,
   child: MaterialApp.router(
+    title: AppConfig.appName,
     localizationsDelegates: const [
       GlobalMaterialLocalizations.delegate,
       GlobalWidgetsLocalizations.delegate,
