@@ -1,16 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:momeet/router.dart';
 import 'package:momeet/shared/api/rest/export.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_detail_providers.dart';
 import 'package:momeet/features/calendar/presentation/providers/schedule_mutations.dart';
+import 'package:momeet/features/calendar/presentation/utils/linked_todo_navigation.dart';
 import 'package:momeet/features/calendar/presentation/utils/source_todo_policy_dialog.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_info.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_form_sheet.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_timer_section.dart';
 import 'package:momeet/features/timer/presentation/utils/linked_timer_policy_dialog.dart';
-import 'package:momeet/features/todo/presentation/providers/todo_provider.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:momeet/shared/domain/terms.dart';
 
@@ -97,7 +96,8 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     );
   }
 
-  /// 일정을 할 일로 바꾼다. 할 일은 기본 할 일 그룹에 들어간다
+  /// 일정을 할 일로 바꾼다. 할 일은 기본 할 일 그룹에 들어간다.
+  /// 바꾸면 '할 일 보기'(바꾼 할 일이 있는 할 일 그룹으로 이동)가 있는 알림을 띄운다
   Future<void> _handleConvertToTodo(
     BuildContext context,
     WidgetRef ref,
@@ -113,10 +113,15 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
       );
 
       if (context.mounted) {
+        // 알림이 떠 있는 사이 상세 화면을 떠나도 이동할 수 있게 라우터와 컨테이너를 잡아 둔다
+        final router = GoRouter.of(context);
+        final container = ProviderScope.containerOf(context, listen: false);
         showAppSnackBar(
           context,
           '${Terms.todo.withJosa('으로', '로')} 변환되었습니다',
           kind: AppNoticeKind.success,
+          actionLabel: '${Terms.todo} 보기',
+          onAction: () => goToTodoOfSchedule(container, router, schedule.id),
         );
       }
     } catch (error) {
@@ -137,28 +142,14 @@ class _ScheduleDetailPageState extends ConsumerState<ScheduleDetailPage> {
     BuildContext context,
     String todoId,
   ) async {
-    final provider = todoByIdProvider(todoId);
     setState(() => _pendingAction = _PendingAction.openLinked);
-    // 받는 동안 autoDispose 프로바이더를 붙잡아 둔다
-    final keepAlive = ref.listenManual(provider, (_, _) {});
-    String? groupId;
-    try {
-      groupId = (await ref.read(provider.future)).todoGroupId;
-    } catch (_) {
-      groupId = null;
-    } finally {
-      keepAlive.close();
-      if (mounted) setState(() => _pendingAction = null);
-    }
+    final groupId = await todoGroupIdOf(
+      ProviderScope.containerOf(context, listen: false),
+      todoId,
+    );
+    if (mounted) setState(() => _pendingAction = null);
     if (!context.mounted) return;
-    if (groupId == null) {
-      context.goNamed(AppRoute.todo.name);
-    } else {
-      context.goNamed(
-        AppRoute.todoGroupDetail.name,
-        pathParameters: {'groupId': groupId},
-      );
-    }
+    goToTodoGroup(GoRouter.of(context), groupId);
   }
 
   Future<void> _handleDelete(
