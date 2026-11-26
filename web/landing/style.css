@@ -772,10 +772,42 @@ body.landing-active #flutter-host {
   text-underline-offset: 0.2em;
 }
 
+/* 링크 묶음은 한 덩어리로 두고, 링크가 넘치면 링크 사이에서만 줄을 바꾼다. 구분점은 링크 앞에 그려 줄 끝에 남지 않는다 */
+.landing-footer-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.landing-footer-links::before,
+.landing-footer-links a + a::before {
+  content: '·';
+  display: inline-block;
+  margin: 0 0.4em;
+}
+
+.landing-footer-links a + a::before {
+  font-weight: normal;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .landing-nav {
     padding: 0.75rem 1.25rem;
+  }
+
+  .landing-footer {
+    padding: 2rem 1rem;
+  }
+
+  /* 저작권 한 줄, 링크 한 줄 */
+  .landing-footer-copy {
+    display: block;
+  }
+
+  .landing-footer-links::before {
+    content: none;
   }
 
   .hero {

@@ -1,8 +1,11 @@
 import 'package:flutter/semantics.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show AsyncData, ConsumerWidget, WidgetRef;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/config/legal_links.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/title/page_title.dart';
 import 'package:momeet/features/calendar/calendar.dart'
     show ScheduleDetailBody, ScheduleTimerSectionView, showTodoConvertedNotice;
@@ -195,7 +198,7 @@ class _TrialState extends State<_Trial> with SingleTickerProviderStateMixin {
 }
 
 /// 단계마다 앱의 위젯. 길 밖의 수정·삭제는 누를 수 없게 둔다. 달력과 타이머 대시보드는 [_stageHeight] 높이에 둔다
-class _TrialStage extends StatelessWidget {
+class _TrialStage extends ConsumerWidget {
   const _TrialStage({
     required this.flow,
     required this.sweep,
@@ -221,7 +224,7 @@ class _TrialStage extends StatelessWidget {
   final VoidCallback onCreateMeeting;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final todo = flow.todo;
     final timer = flow.timer;
     return switch (flow.step) {
@@ -268,6 +271,7 @@ class _TrialStage extends StatelessWidget {
         todo: todo!,
         recordedSeconds: flow.recordedSeconds,
         onSignUp: onSignUp,
+        onOpenTrust: () => ref.read(openLinkProvider)(LegalLinks.trust),
         onCreateMeeting: onCreateMeeting,
         meetingPreview: TrialMeetingPreview(
           board: trialMeeting(flow),

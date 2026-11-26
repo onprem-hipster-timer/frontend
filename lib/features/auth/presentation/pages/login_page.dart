@@ -2,8 +2,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:momeet/shared/ui/ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/exceptions/exceptions.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/router.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_button.dart';
 import 'package:momeet/features/auth/presentation/widgets/auth_heading.dart';
@@ -227,14 +229,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
 
               const SizedBox(height: 24),
-              AuthSwitchPrompt(
-                question: '계정이 없으신가요?',
-                actionLabel: '회원가입',
-                onPressed: () => context.push(
-                  AppRoute.signup.path,
-                  extra: _emailController.text.trim(),
-                ),
-              ),
+              _LoginFooter(email: _emailController),
             ],
           ),
         ),
@@ -255,6 +250,34 @@ class _ForgotPasswordLink extends StatelessWidget {
         onPressed: () => context.push(AppRoute.forgotPassword.path),
         child: const Text('비밀번호를 잊으셨나요?'),
       ),
+    );
+  }
+}
+
+/// 로그인 아래의 회원가입 줄과, 그 아래 가입 전에도 읽을 수 있는 개인정보 보호 조치 안내 링크(새 탭).
+/// 링크는 로그인·회원가입보다 눈에 덜 띄게 둔다
+class _LoginFooter extends ConsumerWidget {
+  const _LoginFooter({required this.email});
+
+  /// 회원가입으로 넘길 이메일
+  final TextEditingController email;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        AuthSwitchPrompt(
+          question: '계정이 없으신가요?',
+          actionLabel: '회원가입',
+          onPressed: () =>
+              context.push(AppRoute.signup.path, extra: email.text.trim()),
+        ),
+        const SizedBox(height: 8),
+        AppTextLink(
+          label: '내 정보는 어떻게 지키나요?',
+          onPressed: () => ref.read(openLinkProvider)(LegalLinks.trust),
+        ),
+      ],
     );
   }
 }

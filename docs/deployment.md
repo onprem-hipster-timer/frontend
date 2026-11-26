@@ -153,7 +153,7 @@ Turnstile 위젯에는 쿠키를 쓰는 설정(사전 승인, pre-clearance)을 
 
 ### 라우팅
 
-`/privacy`·`/terms`·`/meet`(모임 소개)·`/timer`(집중 타이머 안내)·`/demo`(체험하기)는 정적 페이지 `privacy.html`·`terms.html`·`meet.html`·`timer.html`·`demo.html`로 보냅니다.
+`/privacy`·`/terms`·`/trust`(개인정보 보호 조치 안내)·`/meet`(모임 소개)·`/timer`(집중 타이머 안내)·`/demo`(체험하기)는 정적 페이지 `privacy.html`·`terms.html`·`trust.html`·`meet.html`·`timer.html`·`demo.html`로 보냅니다.
 `demo.html`은 랜딩 없이 체험하기의 제목·설명과 앱을 담은 페이지이고, `web/landing/kratos-paths.js`가 주소를 `/#/demo`로 바꿔
 체험하기 화면을 바로 엽니다. `$FLUTTER_BASE_HREF`는 `index.html`에서만 바뀌므로 `demo.html`에는 `<base href="/">`를 적습니다.
 그 밖의 경로는 SPA(Single Page Application) 라우팅을 위해 파일이 없으면 `index.html`로 폴백합니다.

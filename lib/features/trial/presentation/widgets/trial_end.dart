@@ -4,6 +4,7 @@ import 'package:momeet/features/todo/todo.dart'
     show TodoElapsedBadgeView, TodoTagIndicators, TodoTreeTileView;
 import 'package:momeet/features/trial/presentation/utils/trial_texts.dart';
 import 'package:momeet/shared/api/rest/export.dart';
+import 'package:momeet/shared/ui/ui.dart';
 
 /// 모임 화면 그림의 크기
 const _previewSize = Size(180, 450);
@@ -17,8 +18,8 @@ const _duration = Durations.medium1;
 /// 펼쳐지는 답이 올라오는 거리(답 높이에 대한 몫)
 const _rise = 0.04;
 
-/// 체험하기의 끝. 할 일 줄(읽기만: 상태 아이콘·누적 집중 시간·태그, [TodoTreeTileView]), 가입하기([onSignUp])를
-/// 두고, 구분선 아래에 방문자의 물음([trialMeetingQuestion])을 조용한 글자 버튼 한 줄로 둔다.
+/// 체험하기의 끝. 할 일 줄(읽기만: 상태 아이콘·누적 집중 시간·태그, [TodoTreeTileView]), 가입하기([onSignUp])와
+/// 그 바로 아래 글자 링크([trialTrust], [onOpenTrust])를 두고, 구분선 아래에 방문자의 물음([trialMeetingQuestion])을 조용한 글자 버튼 한 줄로 둔다.
 ///
 /// 물음을 누르면 그 아래에 답이 펼쳐진다: 답 한 줄([trialMeetingLead]), 모임 만들기([onCreateMeeting]), 모임 화면
 /// 그림([meetingPreview], [_previewSize]. 좁으면 그 아래, 넓으면 그 옆). 다시 누르면 접힌다. 처음에는 접혀 있고,
@@ -32,6 +33,7 @@ class TrialEnd extends StatefulWidget {
     required this.todo,
     required this.recordedSeconds,
     required this.onSignUp,
+    required this.onOpenTrust,
     required this.onCreateMeeting,
     required this.meetingPreview,
     this.initiallyExpanded = false,
@@ -40,6 +42,9 @@ class TrialEnd extends StatefulWidget {
   final TodoRead todo;
   final int recordedSeconds;
   final VoidCallback onSignUp;
+
+  /// 개인정보 보호 조치 안내를 연다
+  final VoidCallback onOpenTrust;
   final VoidCallback onCreateMeeting;
 
   /// 펼친 답에 두는 모임 화면 그림
@@ -139,7 +144,12 @@ class _TrialEndState extends State<TrialEnd>
           onPressed: widget.onSignUp,
           child: const Text(trialSignUp),
         ),
-        const SizedBox(height: 32),
+        // 가입하기와 구분선 사이 32 안에 둔다
+        const SizedBox(height: 8),
+        Center(
+          child: AppTextLink(label: trialTrust, onPressed: widget.onOpenTrust),
+        ),
+        const SizedBox(height: 4),
         const Divider(),
         const SizedBox(height: 8),
         _Question(expanded: _expanded, turns: curve, onPressed: _toggle),

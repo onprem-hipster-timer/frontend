@@ -1,4 +1,28 @@
-// /privacy, /terms: body[data-gist]의 Gist에서 마크다운을 읽어 그린다. Gist 개정 이력이 문서의 변경 이력이다.
+// 돌아가기: 이 사이트에서 같은 탭으로 왔으면 뒤로, 새 탭으로 열렸으면 탭을 닫고, 둘 다 안 되면 링크대로 홈으로 간다.
+(function () {
+  var back = document.getElementById('legal-back');
+  if (!back) return;
+  back.addEventListener('click', function (event) {
+    var fromSite = false;
+    try {
+      fromSite = new URL(document.referrer).origin === location.origin;
+    } catch (_) {
+      // 리퍼러가 없다
+    }
+    if (fromSite && history.length > 1) {
+      event.preventDefault();
+      history.back();
+      return;
+    }
+    if (window.opener || history.length === 1) {
+      window.close();
+      // 브라우저가 닫기를 막으면 링크대로 간다
+      if (window.closed) event.preventDefault();
+    }
+  });
+})();
+
+// /privacy, /terms, /trust: body[data-gist]의 Gist에서 마크다운을 읽어 그린다. Gist 개정 이력이 문서의 변경 이력이다.
 (function () {
   var GIST_OWNER = 'jjh4450';
   var id = document.body.getAttribute('data-gist');

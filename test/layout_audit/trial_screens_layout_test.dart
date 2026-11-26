@@ -107,6 +107,7 @@ void main() {
             todo: ended.todo!,
             recordedSeconds: ended.recordedSeconds,
             onSignUp: () {},
+            onOpenTrust: () {},
             onCreateMeeting: () {},
             meetingPreview: meetingPreview(),
             initiallyExpanded: expanded,
