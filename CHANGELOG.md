@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+---
+
+## [v2026.11.26-36c99da0] - 2026-11-26
+
 ### Added
 
 #### Legal
@@ -591,7 +597,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.11.25-02f05a0...HEAD
+[Unreleased]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.11.26-36c99da0...HEAD
+[v2026.11.26-36c99da0]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.11.25-02f05a0...v2026.11.26-36c99da0
 [v2026.11.25-02f05a0]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.11.07-a9689f6...v2026.11.25-02f05a0
 [v2026.11.07-a9689f6]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.24-079c3c0...v2026.11.07-a9689f6
 [v2026.06.24-079c3c0]: https://github.com/onprem-hipster-timer/frontend/compare/v2026.06.16-ad57845...v2026.06.24-079c3c0
