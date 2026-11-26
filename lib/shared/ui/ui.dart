@@ -21,4 +21,5 @@ export 'components/app_loading.dart';
 export 'components/app_snack_bar.dart';
 export 'components/app_hint_card.dart';
 export 'components/app_reveal.dart';
+export 'components/app_text_link.dart';
 export 'form/app_form_sheet.dart';

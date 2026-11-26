@@ -205,9 +205,8 @@ Future<void> goToTimer(WidgetTester tester) async {
 /// 끝 화면의 물음
 final meetingQuestion = find.text(trialMeetingQuestion);
 
-/// 끝 화면에서 물음까지 굴려 눌러 모임 만들기와 모임 화면 그림을 펼친다
+/// 끝 화면에서 물음을 눌러 모임 만들기와 모임 화면 그림을 펼친다
 Future<void> openMeetingAnswer(WidgetTester tester) async {
-  await tester.ensureVisible(meetingQuestion);
   await tester.tap(meetingQuestion);
   await tester.pumpAndSettle();
 }

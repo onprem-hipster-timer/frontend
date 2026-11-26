@@ -495,7 +495,10 @@ void main() {
     );
     await goToEnd(tester);
 
-    expect(find.widgetWithText(TextButton, trialTrust), findsOneWidget);
+    expect(
+      tester.getSemantics(find.text(trialTrust)),
+      isSemantics(isLink: true, hasTapAction: true),
+    );
     final divider = tester.getTopLeft(find.byType(Divider).first).dy;
     final link = tester.getRect(find.text(trialTrust));
     expect(
@@ -527,7 +530,7 @@ void main() {
       final landscape = size.width > size.height;
       testWidgets(
         landscape
-            ? '$label에서는 처음에 가입하기와 그 아래 링크까지 보이고 물음은 조금만 굴리면 닿으며, 답과 그림은 접혀 있다'
+            ? '$label에서는 처음에 가입하기까지 보이고 물음은 조금만 굴리면 닿으며, 답과 그림은 접혀 있다'
             : '$label에서는 처음에 앞 줄부터 물음까지 굴리지 않아도 보이고, 답과 그림은 접혀 있다',
         (tester) async {
           await openTrial(tester, size: size);
@@ -535,16 +538,16 @@ void main() {
 
           expect(tester.takeException(), isNull);
           if (landscape) {
-            // 앞 줄은 머리띠 뒤로 지나가고, 물음은 화면 바로 아래에 있다
+            // 앞 줄은 머리띠 뒤로 지나가고, 물음은 아래 끝이 화면 밖으로 3px 나간다
             expectShown(tester, find.text(trialSignUp));
-            expectShown(tester, find.text(trialTrust));
+            expect(tester.getRect(meetingQuestion).top, lessThan(size.height));
             expect(
               tester
                   .getRect(
                     find.widgetWithText(TextButton, trialMeetingQuestion),
                   )
-                  .top,
-              lessThan(size.height + kMinInteractiveDimension),
+                  .bottom,
+              lessThanOrEqualTo(size.height + 8),
             );
           } else {
             for (final finder in [

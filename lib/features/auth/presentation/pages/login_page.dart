@@ -273,12 +273,9 @@ class _LoginFooter extends ConsumerWidget {
               context.push(AppRoute.signup.path, extra: email.text.trim()),
         ),
         const SizedBox(height: 8),
-        TextButton(
+        AppTextLink(
+          label: '내 정보는 어떻게 지키나요?',
           onPressed: () => ref.read(openLinkProvider)(LegalLinks.trust),
-          style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          child: const Text('내 정보는 어떻게 지키나요?'),
         ),
       ],
     );

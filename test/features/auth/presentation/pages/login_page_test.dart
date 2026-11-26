@@ -244,7 +244,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(TextButton, trust), findsOneWidget);
+    expect(
+      tester.getSemantics(find.text(trust)),
+      isSemantics(isLink: true, hasTapAction: true),
+    );
     expect(
       tester.getTopLeft(find.text(trust)).dy,
       greaterThan(tester.getBottomLeft(find.text('회원가입')).dy),
