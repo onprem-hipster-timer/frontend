@@ -38,6 +38,16 @@ Future<void> scrollToLogoutButton(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// 목록을 맨 위의 오류 배너 자리까지 굴린다
+Future<void> scrollToTop(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.byType(ErrorBanner),
+    -300,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late KratosTestHarness harness;
 
@@ -256,8 +266,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(ListView), const Offset(0, 1200));
-      await tester.pumpAndSettle();
+      await scrollToTop(tester);
 
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
     });
@@ -275,8 +284,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(ListView), const Offset(0, 1200));
-      await tester.pumpAndSettle();
+      await scrollToTop(tester);
 
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
 
@@ -309,8 +317,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, '로그아웃').last);
       await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(ListView), const Offset(0, 1200));
-      await tester.pumpAndSettle();
+      await scrollToTop(tester);
 
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
 
