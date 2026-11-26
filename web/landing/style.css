@@ -770,6 +770,8 @@ body.landing-active #flutter-host {
 .landing-footer a {
   color: inherit;
   text-underline-offset: 0.2em;
+  /* 좁은 화면에서는 링크 사이에서 줄을 바꾼다 */
+  white-space: nowrap;
 }
 
 /* ===== Responsive ===== */

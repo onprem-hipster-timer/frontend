@@ -129,13 +129,14 @@ void main() {
     });
   });
 
-  testWidgets('이용약관과 개인정보처리방침을 연다', (tester) async {
+  testWidgets('이용약관과 개인정보처리방침, 개인정보 보호 조치 안내를 연다', (tester) async {
     await pumpSettings(tester, InMemoryAnalyticsConsentBridge());
 
     await tapText(tester, '이용약관');
     await tapText(tester, '개인정보처리방침');
+    await tapText(tester, '개인정보 보호 조치 안내');
 
-    expect(opened, [LegalLinks.terms, LegalLinks.privacy]);
+    expect(opened, [LegalLinks.terms, LegalLinks.privacy, LegalLinks.trust]);
   });
 
   testWidgets('맨 아래 회원 탈퇴를 누르면 탈퇴 확인을 연다', (tester) async {

@@ -67,6 +67,12 @@ class SettingsSection extends StatelessWidget {
                 url: LegalLinks.privacy,
               ),
               const Divider(height: 1),
+              _LegalLinkTile(
+                icon: Icons.shield_outlined,
+                title: '개인정보 보호 조치 안내',
+                url: LegalLinks.trust,
+              ),
+              const Divider(height: 1),
               ListTile(
                 leading: Icon(Icons.logout, color: theme.colorScheme.error),
                 title: Text(
