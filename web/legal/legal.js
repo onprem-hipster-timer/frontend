@@ -1,4 +1,4 @@
-// /privacy, /terms: body[data-gist]의 Gist에서 마크다운을 읽어 그린다. Gist 개정 이력이 문서의 변경 이력이다.
+// /privacy, /terms, /trust: body[data-gist]의 Gist에서 마크다운을 읽어 그린다. Gist 개정 이력이 문서의 변경 이력이다.
 (function () {
   var GIST_OWNER = 'jjh4450';
   var id = document.body.getAttribute('data-gist');
