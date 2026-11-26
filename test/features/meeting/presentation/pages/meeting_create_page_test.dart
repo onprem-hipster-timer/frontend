@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:momeet/app_route.dart';
+import 'package:momeet/core/config/legal_links.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/core/providers/retry_policy.dart';
 import 'package:momeet/core/providers/shared_preferences_provider.dart';
 import 'package:momeet/features/meeting/domain/meeting_dates.dart';
@@ -79,8 +81,10 @@ void main() {
   late List<String> calls;
   late GoRouter router;
   late SharedPreferences prefs;
+  late List<Uri> opened;
 
   setUp(() async {
+    opened = [];
     calls = [];
     meetings = FakeMeetingsClient(calls: calls);
     visibility = FakeVisibilityClient(calls: calls);
@@ -131,6 +135,7 @@ void main() {
             signedIn: signedIn,
           ),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          openLinkProvider.overrideWithValue((url) async => opened.add(url)),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -1389,6 +1394,49 @@ void main() {
       await tester.pumpAndSettle();
       expect(location(), AppRoute.login.path);
     });
+
+    for (final (label, size, prompt) in [
+      ('좁은 화면의 시트', const Size(480, 1800), BottomSheet),
+      ('넓은 화면의 대화상자', const Size(1280, 900), AlertDialog),
+    ]) {
+      group('$label에서 보호 조치 안내 링크를 누르면 안내를 열고 묻기는 그대로 남아', () {
+        const trust = '내 정보는 어떻게 지키나요?';
+
+        Future<void> openTrust(WidgetTester tester) async {
+          await pumpPage(tester, signedIn: false, size: size);
+          await answerAll(tester);
+          await submit(tester);
+          expect(
+            find.descendant(
+              of: find.byType(prompt),
+              matching: find.widgetWithText(TextButton, trust),
+            ),
+            findsOneWidget,
+          );
+          await tester.tap(find.text(trust));
+          await tester.pumpAndSettle();
+          expect(opened, [LegalLinks.trust]);
+          expect(find.byType(prompt), findsOneWidget);
+        }
+
+        testWidgets('로그인하고 계속하기로 로그인 화면에 간다', (tester) async {
+          await openTrust(tester);
+
+          await tester.tap(find.widgetWithText(FilledButton, '로그인하고 계속하기'));
+          await tester.pumpAndSettle();
+          expect(location(), AppRoute.login.path);
+        });
+
+        testWidgets('닫기로 닫으면 만들기 화면에 머문다', (tester) async {
+          await openTrust(tester);
+
+          await tester.tap(find.widgetWithText(TextButton, '닫기'));
+          await tester.pumpAndSettle();
+          expect(find.byType(prompt), findsNothing);
+          expect(location(), AppRoute.meetings.path);
+        });
+      });
+    }
 
     testWidgets('로그인하고 돌아오면 답한 것을 요약하고 제목부터 이어, 화살표 한 번으로 만든다', (tester) async {
       await pumpPage(tester, signedIn: false);
