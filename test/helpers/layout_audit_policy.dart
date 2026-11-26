@@ -18,7 +18,10 @@ final appLayoutAuditPolicy = LayoutAuditPolicy(
   isUnscaledText: _isIconGlyph,
   // 눌러서 닫는 장벽(시트·다이얼로그 뒤 배경)
   isBackdrop: (data) => data.hasAction(SemanticsAction.dismiss),
-  ignore: (finding) => _isFoldedSchedule(finding) || _isTagName(finding),
+  ignore: (finding) =>
+      _isFoldedSchedule(finding) ||
+      _isTagName(finding) ||
+      _isOptionalTrustLink(finding),
 );
 
 /// 아이콘 글꼴의 글리프(사용자 정의 영역)만으로 된 문단. 아이콘은 글자 배율을 따르지 않는다.
@@ -40,6 +43,14 @@ bool _isFoldedSchedule(LayoutFinding finding) =>
 bool _isTagName(LayoutFinding finding) =>
     finding.kind == LayoutFindingKind.scaleTruncation &&
     _inFile(finding, const ['tag_stats_section.dart']);
+
+/// 모임을 만들 때 로그인을 묻는 시트·대화상자의 개인정보 보호 조치 안내 링크는 자리가 없으면 빠지는 것이 설계다.
+/// 빠져도 묻기가 굴러가지 않고 두 버튼이 다 보이는지는
+/// test/features/meeting/presentation/widgets/meeting_create_login_prompt_test.dart가 본다.
+bool _isOptionalTrustLink(LayoutFinding finding) =>
+    (finding.kind == LayoutFindingKind.scaleVanished ||
+        finding.kind == LayoutFindingKind.scaleUnreachable) &&
+    finding.texts.contains('내 정보는 어떻게 지키나요?');
 
 bool _inFile(LayoutFinding finding, List<String> files) => finding.locations
     .any((l) => l != null && files.any((file) => l.file.endsWith(file)));

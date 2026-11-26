@@ -1409,9 +1409,13 @@ void main() {
           expect(
             find.descendant(
               of: find.byType(prompt),
-              matching: find.widgetWithText(TextButton, trust),
+              matching: find.text(trust),
             ),
             findsOneWidget,
+          );
+          expect(
+            tester.getSemantics(find.text(trust)),
+            isSemantics(isLink: true, hasTapAction: true),
           );
           await tester.tap(find.text(trust));
           await tester.pumpAndSettle();
