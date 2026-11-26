@@ -56,6 +56,9 @@ const trialEndLead = '앱 세 개를 오가던 일이 한곳에서 이어졌어�
 
 const trialSignUp = '가입하고 내 일정으로 시작하기';
 
+/// 끝에서 가입하기 바로 아래의 조용한 링크. 누르면 개인정보 보호 조치 안내를 연다
+const trialTrust = '내 정보는 어떻게 지키나요?';
+
 /// 끝에서 가입하기 아래의 물음. 누르면 그 답([trialMeetingLead])과 모임 만들기가 펼쳐진다
 const trialMeetingQuestion = '$trialDinnerTitle 날짜는 아직 못 정했는데요?';
 const trialMeetingLead = "'언제 돼?'를 주고받는 대신, 링크 하나로 다 같이 되는 날을 찾아요.";

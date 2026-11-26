@@ -35,6 +35,7 @@ Future<void> _open(WidgetTester tester, {bool reduceMotion = false}) async {
             todo: _ended.todo!,
             recordedSeconds: _ended.recordedSeconds,
             onSignUp: () {},
+            onOpenTrust: () {},
             onCreateMeeting: () {},
             meetingPreview: const ColoredBox(key: _picture, color: Colors.grey),
           ),

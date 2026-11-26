@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:momeet/shared/api/kratos/kratos_client.dart';
 import 'package:momeet/shared/api/kratos/kratos_models.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:momeet/core/config/legal_links.dart';
 import 'package:momeet/core/providers/auth_provider.dart';
 import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/shared/pages/security_warning_page.dart';
@@ -227,6 +228,33 @@ void main() {
       expect(signupField(1), ''); // 비밀번호는 전달 안 됨
       expect(signupField(2), ''); // 비밀번호 확인도 전달 안 됨
     });
+  });
+
+  testWidgets('가입하기 전에 회원가입 줄 아래 링크를 누르면 개인정보 보호 조치 안내를 연다', (tester) async {
+    const trust = '내 정보는 어떻게 지키나요?';
+    final opened = <Uri>[];
+    await tester.pumpWidget(
+      pumpApp(
+        const LoginPage(),
+        overrides: [
+          ...harness.overrides,
+          openLinkProvider.overrideWithValue((url) async => opened.add(url)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextButton, trust), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text(trust)).dy,
+      greaterThan(tester.getBottomLeft(find.text('회원가입')).dy),
+    );
+
+    await tester.ensureVisible(find.text(trust));
+    await tester.tap(find.text(trust));
+    await tester.pumpAndSettle();
+
+    expect(opened, [LegalLinks.trust]);
   });
 
   testWidgets('인증 전 로그인은 서버가 준 플로우와 이메일로 인증 화면을 연다', (tester) async {

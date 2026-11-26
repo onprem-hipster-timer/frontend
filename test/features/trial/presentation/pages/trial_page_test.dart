@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:momeet/core/config/legal_links.dart';
+import 'package:momeet/core/providers/browser_provider.dart';
 import 'package:momeet/features/calendar/presentation/widgets/calendar_view_view.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_detail_body.dart';
 import 'package:momeet/features/calendar/presentation/widgets/schedule_list_sheet.dart';
@@ -483,6 +485,32 @@ void main() {
     expect(tester.getTopLeft(meetingQuestion).dy, greaterThan(divider));
   });
 
+  testWidgets('끝에서 가입하기 바로 아래 글자 링크를 누르면 개인정보 보호 조치 안내를 연다', (tester) async {
+    final opened = <Uri>[];
+    await openTrial(
+      tester,
+      overrides: [
+        openLinkProvider.overrideWithValue((url) async => opened.add(url)),
+      ],
+    );
+    await goToEnd(tester);
+
+    expect(find.widgetWithText(TextButton, trialTrust), findsOneWidget);
+    final divider = tester.getTopLeft(find.byType(Divider).first).dy;
+    final link = tester.getRect(find.text(trialTrust));
+    expect(
+      link.top,
+      greaterThan(tester.getBottomLeft(find.text(trialSignUp)).dy),
+    );
+    expect(link.bottom, lessThan(divider));
+
+    await tester.ensureVisible(find.text(trialTrust));
+    await tester.tap(find.text(trialTrust));
+    await tester.pumpAndSettle();
+
+    expect(opened, [LegalLinks.trust]);
+  });
+
   group('끝 화면의 물음을 누르면 모임 만들기와 모임 화면 그림이 펼쳐진다', () {
     final sizes = {
       ...trialSizes,
@@ -499,7 +527,7 @@ void main() {
       final landscape = size.width > size.height;
       testWidgets(
         landscape
-            ? '$label에서는 처음에 가입하기까지 보이고 물음은 조금만 굴리면 닿으며, 답과 그림은 접혀 있다'
+            ? '$label에서는 처음에 가입하기와 그 아래 링크까지 보이고 물음은 조금만 굴리면 닿으며, 답과 그림은 접혀 있다'
             : '$label에서는 처음에 앞 줄부터 물음까지 굴리지 않아도 보이고, 답과 그림은 접혀 있다',
         (tester) async {
           await openTrial(tester, size: size);
@@ -507,16 +535,16 @@ void main() {
 
           expect(tester.takeException(), isNull);
           if (landscape) {
-            // 앞 줄은 머리띠 뒤로 지나가고, 물음은 아래 끝이 화면 밖으로 3px 나간다
+            // 앞 줄은 머리띠 뒤로 지나가고, 물음은 화면 바로 아래에 있다
             expectShown(tester, find.text(trialSignUp));
-            expect(tester.getRect(meetingQuestion).top, lessThan(size.height));
+            expectShown(tester, find.text(trialTrust));
             expect(
               tester
                   .getRect(
                     find.widgetWithText(TextButton, trialMeetingQuestion),
                   )
-                  .bottom,
-              lessThanOrEqualTo(size.height + 8),
+                  .top,
+              lessThan(size.height + kMinInteractiveDimension),
             );
           } else {
             for (final finder in [

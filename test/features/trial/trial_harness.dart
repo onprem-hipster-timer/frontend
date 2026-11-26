@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -33,8 +34,12 @@ const meetingsScreen = '모임 만들기 화면';
 const trialSizes = {'휴대폰': Size(360, 800), '넓은 화면': Size(800, 1280)};
 
 /// `/demo`에서 여는 체험하기. 가입·모임 만들기는 그 화면 이름만 보인다
-Widget trialApp({List<ProviderObserver> observers = const []}) => ProviderScope(
+Widget trialApp({
+  List<ProviderObserver> observers = const [],
+  List<Override> overrides = const [],
+}) => ProviderScope(
   observers: observers,
+  overrides: overrides,
   child: MaterialApp.router(
     title: AppConfig.appName,
     localizationsDelegates: const [
@@ -119,6 +124,7 @@ Future<void> openTrial(
   WidgetTester tester, {
   Size size = const Size(360, 800),
   List<ProviderObserver> observers = const [],
+  List<Override> overrides = const [],
   bool motion = false,
 }) async {
   if (!tz.timeZoneDatabase.isInitialized) tz.initializeTimeZones();
@@ -128,7 +134,7 @@ Future<void> openTrial(
   tester.platformDispatcher.accessibilityFeaturesTestValue =
       FakeAccessibilityFeatures(disableAnimations: !motion);
   addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-  await tester.pumpWidget(trialApp(observers: observers));
+  await tester.pumpWidget(trialApp(observers: observers, overrides: overrides));
   if (motion) {
     for (var i = 0; i < 15; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -199,8 +205,9 @@ Future<void> goToTimer(WidgetTester tester) async {
 /// 끝 화면의 물음
 final meetingQuestion = find.text(trialMeetingQuestion);
 
-/// 끝 화면에서 물음을 눌러 모임 만들기와 모임 화면 그림을 펼친다
+/// 끝 화면에서 물음까지 굴려 눌러 모임 만들기와 모임 화면 그림을 펼친다
 Future<void> openMeetingAnswer(WidgetTester tester) async {
+  await tester.ensureVisible(meetingQuestion);
   await tester.tap(meetingQuestion);
   await tester.pumpAndSettle();
 }
